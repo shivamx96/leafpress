@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/shivamx96/leafpress/internal/assets"
 	"github.com/shivamx96/leafpress/internal/config"
 	"github.com/shivamx96/leafpress/internal/content"
 	"github.com/shivamx96/leafpress/internal/templates"
@@ -132,6 +133,11 @@ func (b *Builder) Build() (*Stats, error) {
 	// Generate CSS
 	if err := b.generateCSS(); err != nil {
 		return nil, fmt.Errorf("failed to generate CSS: %w", err)
+	}
+
+	// Copy favicons
+	if err := b.copyFavicons(); err != nil {
+		return nil, fmt.Errorf("failed to copy favicons: %w", err)
 	}
 
 	// Generate graph.json if enabled
@@ -340,6 +346,40 @@ func (b *Builder) copyStatic() error {
 
 	dstDir := filepath.Join(b.outputDir, "static")
 	return copyDir(srcDir, dstDir)
+}
+
+// copyFavicons copies favicons from user directory or uses embedded defaults
+func (b *Builder) copyFavicons() error {
+	favicons := []string{"favicon.ico", "favicon.svg", "favicon-96x96.png"}
+
+	for _, name := range favicons {
+		userPath := filepath.Join(b.rootDir, name)
+		outPath := filepath.Join(b.outputDir, name)
+
+		// Check if user has provided their own favicon
+		if data, err := os.ReadFile(userPath); err == nil {
+			// Use user's favicon
+			if err := os.WriteFile(outPath, data, 0644); err != nil {
+				return fmt.Errorf("failed to write %s: %w", name, err)
+			}
+		} else {
+			// Use embedded default favicon
+			var defaultData []byte
+			switch name {
+			case "favicon.ico":
+				defaultData = assets.FaviconICO
+			case "favicon.svg":
+				defaultData = assets.FaviconSVG
+			case "favicon-96x96.png":
+				defaultData = assets.FaviconPNG
+			}
+			if err := os.WriteFile(outPath, defaultData, 0644); err != nil {
+				return fmt.Errorf("failed to write default %s: %w", name, err)
+			}
+		}
+	}
+
+	return nil
 }
 
 // generateCSS writes the combined stylesheet
