@@ -22,20 +22,21 @@ const DefaultCSS = `/* LeafPress Default Styles */
 
 /* Navigation */
 .lp-nav {
-  height: var(--lp-nav-height);
   border-bottom: 1px solid var(--lp-border);
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 1rem 0;
 }
 
 .lp-nav-container {
   width: 100%;
   max-width: var(--lp-max-width);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 2rem;
+  gap: 1rem;
+  padding: 0 1rem;
 }
 
 .lp-nav-title {
@@ -51,7 +52,9 @@ const DefaultCSS = `/* LeafPress Default Styles */
 
 .lp-nav-links {
   display: flex;
-  gap: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
 }
 
 .lp-nav-link {
@@ -62,6 +65,25 @@ const DefaultCSS = `/* LeafPress Default Styles */
 
 .lp-nav-link:hover {
   color: var(--lp-accent);
+}
+
+/* Desktop navigation */
+@media (min-width: 769px) {
+  .lp-nav {
+    padding: 0;
+    min-height: var(--lp-nav-height);
+  }
+
+  .lp-nav-container {
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 0 2rem;
+  }
+
+  .lp-nav-links {
+    gap: 1.5rem;
+    justify-content: flex-end;
+  }
 }
 
 /* Main content */
@@ -379,22 +401,14 @@ const DefaultCSS = `/* LeafPress Default Styles */
   text-decoration: underline;
 }
 
-/* Responsive */
+/* Mobile responsive */
 @media (max-width: 768px) {
-  .lp-nav-container {
-    padding: 0 1rem;
-  }
-
   .lp-main {
     padding: 1.5rem 1rem;
   }
 
   .lp-title {
     font-size: 1.5rem;
-  }
-
-  .lp-nav-links {
-    gap: 1rem;
   }
 }
 `
