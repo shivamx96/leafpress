@@ -36,8 +36,8 @@ This document breaks down the LeafPress implementation into discrete phases with
   ```
 
 **Acceptance Criteria:**
-- [ ] `go build ./cmd/leafpress` produces a binary
-- [ ] `./leafpress --version` prints version info
+- [x] `go build ./cmd/leafpress` produces a binary
+- [x] `./leafpress --version` prints version info
 
 ### 1.2 CLI Framework
 
@@ -58,9 +58,9 @@ This document breaks down the LeafPress implementation into discrete phases with
   - `build --drafts, -d` - Include drafts
 
 **Acceptance Criteria:**
-- [ ] `leafpress --help` shows all commands
-- [ ] `leafpress init --help` shows init options
-- [ ] Global flags propagate to subcommands
+- [x] `leafpress --help` shows all commands
+- [x] `leafpress init --help` shows init options
+- [x] Global flags propagate to subcommands
 
 ### 1.3 Configuration System
 
@@ -84,9 +84,9 @@ This document breaks down the LeafPress implementation into discrete phases with
 - Create default config template for `init`
 
 **Acceptance Criteria:**
-- [ ] Missing config file returns sensible defaults
-- [ ] Invalid JSON reports line number
-- [ ] All fields have documented defaults
+- [x] Missing config file returns sensible defaults
+- [x] Invalid JSON reports line number
+- [x] All fields have documented defaults
 
 ---
 
@@ -125,8 +125,8 @@ This document breaks down the LeafPress implementation into discrete phases with
 - Implement output path generation (clean URLs)
 
 **Acceptance Criteria:**
-- [ ] `projects/leafpress.md` → slug: `projects/leafpress`
-- [ ] Output: `_site/projects/leafpress/index.html`
+- [x] `projects/leafpress.md` → slug: `projects/leafpress`
+- [x] Output: `_site/projects/leafpress/index.html`
 
 ### 2.2 Frontmatter Parser
 
@@ -144,9 +144,9 @@ This document breaks down the LeafPress implementation into discrete phases with
 - Validate `growth` values (seedling|budding|evergreen)
 
 **Acceptance Criteria:**
-- [ ] Files without frontmatter use defaults
-- [ ] Invalid YAML reports helpful error
-- [ ] Growth validation rejects invalid values
+- [x] Files without frontmatter use defaults
+- [x] Invalid YAML reports helpful error
+- [x] Growth validation rejects invalid values
 
 ### 2.3 Content Scanner
 
@@ -161,9 +161,9 @@ This document breaks down the LeafPress implementation into discrete phases with
 - Handle `_index.md` files specially (section index)
 
 **Acceptance Criteria:**
-- [ ] Reserved paths are excluded
-- [ ] Nested directories are traversed
-- [ ] `_index.md` marked as section index
+- [x] Reserved paths are excluded
+- [x] Nested directories are traversed
+- [x] `_index.md` marked as section index
 
 ### 2.4 Wiki-Link Parser
 
@@ -174,9 +174,9 @@ This document breaks down the LeafPress implementation into discrete phases with
 - Store extracted links in `Page.OutLinks`
 
 **Acceptance Criteria:**
-- [ ] Both link formats parsed correctly
-- [ ] Links with special characters handled
-- [ ] Multiple links per file extracted
+- [x] Both link formats parsed correctly
+- [x] Links with special characters handled
+- [x] Multiple links per file extracted
 
 ### 2.5 Link Resolution
 
@@ -189,9 +189,9 @@ This document breaks down the LeafPress implementation into discrete phases with
 - Handle broken links (warn, add `lp-broken-link` class)
 
 **Acceptance Criteria:**
-- [ ] `[[systems-thinking]]` resolves to `notes/systems-thinking.md`
-- [ ] Ambiguous links log warning
-- [ ] Broken links don't crash build
+- [x] `[[systems-thinking]]` resolves to `notes/systems-thinking.md`
+- [x] Ambiguous links log warning
+- [x] Broken links don't crash build
 
 ---
 
@@ -216,9 +216,9 @@ This document breaks down the LeafPress implementation into discrete phases with
   - External: `<a class="lp-external" href="..." target="_blank" rel="noopener">... ↗</a>`
 
 **Acceptance Criteria:**
-- [ ] Standard markdown renders correctly
-- [ ] Wiki-links become clickable anchors
-- [ ] External links open in new tab
+- [x] Standard markdown renders correctly
+- [x] Wiki-links become clickable anchors
+- [x] External links open in new tab
 
 ### 3.2 HTML Template System
 
@@ -247,9 +247,9 @@ This document breaks down the LeafPress implementation into discrete phases with
   - `formatDate(date, format)` → formatted string
 
 **Acceptance Criteria:**
-- [ ] All page types render without error
-- [ ] Template inheritance works
-- [ ] Custom functions available
+- [x] All page types render without error
+- [x] Template inheritance works
+- [x] Custom functions available
 
 ### 3.3 Embedded CSS
 
@@ -269,9 +269,9 @@ This document breaks down the LeafPress implementation into discrete phases with
 - Growth stage indicators via CSS
 
 **Acceptance Criteria:**
-- [ ] Site looks good with zero user CSS
-- [ ] Theme config values reflected in output
-- [ ] User CSS overrides work
+- [x] Site looks good with zero user CSS
+- [x] Theme config values reflected in output
+- [x] User CSS overrides work
 
 ---
 
@@ -297,9 +297,9 @@ This document breaks down the LeafPress implementation into discrete phases with
 - Report build statistics (pages, time)
 
 **Acceptance Criteria:**
-- [ ] `leafpress build` produces complete site
-- [ ] All pages accessible via clean URLs
-- [ ] Build completes in <1s for small sites
+- [x] `leafpress build` produces complete site
+- [x] All pages accessible via clean URLs
+- [x] Build completes in <1s for small sites
 
 ### 4.2 Tag System
 
@@ -310,9 +310,9 @@ This document breaks down the LeafPress implementation into discrete phases with
 - Sort pages within tag by date (descending)
 
 **Acceptance Criteria:**
-- [ ] Tag pages list correct posts
-- [ ] Tag index shows all tags
-- [ ] Empty tags handled gracefully
+- [x] Tag pages list correct posts
+- [x] Tag index shows all tags
+- [x] Empty tags handled gracefully
 
 ### 4.3 Section Indexes
 
@@ -326,9 +326,9 @@ This document breaks down the LeafPress implementation into discrete phases with
 - Render section intro content
 
 **Acceptance Criteria:**
-- [ ] Directories without `_index.md` get auto-generated index
-- [ ] Custom sort orders work
-- [ ] Section content renders above listing
+- [x] Directories without `_index.md` get auto-generated index
+- [x] Custom sort orders work
+- [x] Section content renders above listing
 
 ### 4.4 Static File Handling
 
@@ -338,8 +338,8 @@ This document breaks down the LeafPress implementation into discrete phases with
 - Skip hidden files (`.DS_Store`, etc.)
 
 **Acceptance Criteria:**
-- [ ] Images and assets accessible
-- [ ] Nested directories preserved
+- [x] Images and assets accessible
+- [x] Nested directories preserved
 
 ### 4.5 Graph Generation
 
@@ -357,9 +357,9 @@ This document breaks down the LeafPress implementation into discrete phases with
   ```
 
 **Acceptance Criteria:**
-- [ ] Graph includes all non-draft pages
-- [ ] Edges represent wiki-links
-- [ ] File only generated when enabled
+- [x] Graph includes all non-draft pages
+- [x] Edges represent wiki-links
+- [x] File only generated when enabled
 
 ---
 
@@ -378,9 +378,9 @@ This document breaks down the LeafPress implementation into discrete phases with
 - Configurable port with auto-increment on conflict
 
 **Acceptance Criteria:**
-- [ ] All pages accessible
-- [ ] Port conflict handled gracefully
-- [ ] 404 returns styled page
+- [x] All pages accessible
+- [x] Port conflict handled gracefully
+- [x] 404 returns styled page
 
 ### 5.2 File Watcher
 
@@ -393,9 +393,9 @@ This document breaks down the LeafPress implementation into discrete phases with
 - Ignore `_site/` and `.leafpress/`
 
 **Acceptance Criteria:**
-- [ ] Changes detected within 200ms
-- [ ] Only relevant files trigger rebuild
-- [ ] No infinite loops from output changes
+- [x] Changes detected within 200ms
+- [x] Only relevant files trigger rebuild
+- [x] No infinite loops from output changes
 
 ### 5.3 Live Reload
 
@@ -408,9 +408,9 @@ This document breaks down the LeafPress implementation into discrete phases with
 - Handle client reconnection
 
 **Acceptance Criteria:**
-- [ ] Browser reloads automatically on save
-- [ ] Multiple browsers sync
-- [ ] Graceful handling of disconnects
+- [x] Browser reloads automatically on save
+- [x] Multiple browsers sync
+- [x] Graceful handling of disconnects
 
 ### 5.4 Serve Command Integration
 
@@ -421,9 +421,9 @@ This document breaks down the LeafPress implementation into discrete phases with
 - Print server URL on startup
 
 **Acceptance Criteria:**
-- [ ] `leafpress serve` starts everything
-- [ ] Ctrl+C stops cleanly
-- [ ] Errors during rebuild don't crash server
+- [x] `leafpress serve` starts everything
+- [x] Ctrl+C stops cleanly
+- [x] Errors during rebuild don't crash server
 
 ---
 
@@ -445,9 +445,9 @@ This document breaks down the LeafPress implementation into discrete phases with
 - Detect existing config and warn
 
 **Acceptance Criteria:**
-- [ ] Running in empty folder creates starter project
-- [ ] Running in existing garden just adds config
-- [ ] No overwriting of existing files
+- [x] Running in empty folder creates starter project
+- [x] Running in existing garden just adds config
+- [x] No overwriting of existing files
 
 ### 6.2 New Command
 
@@ -468,9 +468,9 @@ This document breaks down the LeafPress implementation into discrete phases with
 - Open in `$EDITOR` if set (optional enhancement)
 
 **Acceptance Criteria:**
-- [ ] File created with correct frontmatter
-- [ ] Nested directories created as needed
-- [ ] Existing file not overwritten
+- [x] File created with correct frontmatter
+- [x] Nested directories created as needed
+- [x] Existing file not overwritten
 
 ---
 

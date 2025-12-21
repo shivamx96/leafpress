@@ -26,7 +26,8 @@ go.work
 .DS_Store
 Thumbs.db
 
-# Test data (keep structure but ignore generated output)
+# Generated output directories
+_site/
 testdata/**/_site/
 
 # Temporary files
