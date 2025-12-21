@@ -78,6 +78,7 @@ func New() (*Templates, error) {
 		"growthEmoji": growthEmoji,
 		"lower":       strings.ToLower,
 		"safeHTML":    func(s string) template.HTML { return template.HTML(s) },
+		"safeCSS":     func(s string) template.CSS { return template.CSS(s) },
 		"fontURL":     fontURL,
 	}
 
@@ -252,6 +253,11 @@ const baseTemplate = `<!DOCTYPE html>
       --lp-max-width: 680px;
       --lp-nav-height: 60px;
     }
+    {{if .Site.Theme.Background.Light}}
+    :root {
+      --lp-bg: {{.Site.Theme.Background.Light | safeCSS}};
+    }
+    {{end}}
     {{if .Site.Theme.StickyNav}}
     .lp-nav {
       position: sticky;
@@ -268,6 +274,11 @@ const baseTemplate = `<!DOCTYPE html>
       --lp-border: #333333;
       --lp-code-bg: #2a2a2a;
     }
+    {{if .Site.Theme.Background.Dark}}
+    [data-theme="dark"] {
+      --lp-bg: {{.Site.Theme.Background.Dark | safeCSS}};
+    }
+    {{end}}
   </style>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

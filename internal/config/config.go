@@ -9,6 +9,12 @@ import (
 	"strings"
 )
 
+// Background represents background configuration that can be a string or object
+type Background struct {
+	Light string
+	Dark  string
+}
+
 // Config represents the leafpress.json configuration
 type Config struct {
 	Title       string    `json:"title"`
@@ -30,11 +36,99 @@ type NavItem struct {
 
 // Theme represents theme configuration
 type Theme struct {
-	FontHeading string `json:"fontHeading"`
-	FontBody    string `json:"fontBody"`
-	FontMono    string `json:"fontMono"`
-	Accent      string `json:"accent"`
-	StickyNav   bool   `json:"stickyNav"`
+	FontHeading string     `json:"fontHeading"`
+	FontBody    string     `json:"fontBody"`
+	FontMono    string     `json:"fontMono"`
+	Accent      string     `json:"accent"`
+	Background  Background `json:"-"` // Custom unmarshaling
+	StickyNav   bool       `json:"stickyNav"`
+}
+
+// UnmarshalJSON implements custom JSON unmarshaling for Theme
+func (t *Theme) UnmarshalJSON(data []byte) error {
+	// Create a temporary struct to avoid recursion
+	type Alias Theme
+	aux := &struct {
+		Background json.RawMessage `json:"background,omitempty"`
+		*Alias
+	}{
+		Alias: (*Alias)(t),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	// Handle background field
+	if len(aux.Background) > 0 {
+		// Try to unmarshal as object first
+		var bgObj struct {
+			Light string `json:"light"`
+			Dark  string `json:"dark"`
+		}
+		if err := json.Unmarshal(aux.Background, &bgObj); err == nil {
+			t.Background = Background{
+				Light: bgObj.Light,
+				Dark:  bgObj.Dark,
+			}
+		} else {
+			// Try as string - only apply to light mode, dark mode keeps defaults
+			var bgStr string
+			if err := json.Unmarshal(aux.Background, &bgStr); err == nil {
+				t.Background = Background{
+					Light: bgStr,
+					Dark:  "", // Empty means use default dark background
+				}
+			} else {
+				return fmt.Errorf("background must be a string or object with light/dark fields")
+			}
+		}
+	}
+
+	return nil
+}
+
+// validateBackground checks if a background value is valid
+func validateBackground(bg string) error {
+	// Check for common CSS background patterns
+	// Allow: hex colors, rgb/rgba, gradients, keywords
+	bg = strings.TrimSpace(bg)
+	if bg == "" {
+		return fmt.Errorf("background cannot be empty")
+	}
+
+	// Check for dangerous patterns (script injection)
+	dangerous := []string{"<script", "javascript:", "onerror=", "onload="}
+	bgLower := strings.ToLower(bg)
+	for _, pattern := range dangerous {
+		if strings.Contains(bgLower, pattern) {
+			return fmt.Errorf("background contains potentially dangerous content")
+		}
+	}
+
+	// Valid patterns: hex color, rgb/rgba, hsl/hsla, gradients, keywords
+	validPatterns := []string{
+		`^#[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?$`, // hex color
+		`^rgb\(`,                             // rgb()
+		`^rgba\(`,                            // rgba()
+		`^hsl\(`,                             // hsl()
+		`^hsla\(`,                            // hsla()
+		`^linear-gradient\(`,                 // linear-gradient()
+		`^radial-gradient\(`,                 // radial-gradient()
+		`^conic-gradient\(`,                  // conic-gradient()
+		`^repeating-linear-gradient\(`,       // repeating-linear-gradient()
+		`^repeating-radial-gradient\(`,       // repeating-radial-gradient()
+		`^(transparent|white|black|gray|silver|red|blue|green|yellow|orange)$`, // color keywords
+	}
+
+	for _, pattern := range validPatterns {
+		matched, _ := regexp.MatchString(pattern, bg)
+		if matched {
+			return nil
+		}
+	}
+
+	return fmt.Errorf("invalid CSS background value: %s (must be a hex color, rgb/rgba, gradient, or color keyword)", bg)
 }
 
 // Default returns a Config with default values
@@ -140,6 +234,18 @@ func (c *Config) Validate() error {
 	hexColorRegex := regexp.MustCompile(`^#[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?$`)
 	if !hexColorRegex.MatchString(c.Theme.Accent) {
 		return fmt.Errorf("accent color must be a valid hex color (e.g., #50ac00), got %s", c.Theme.Accent)
+	}
+
+	// Validate background values (basic check for common patterns)
+	if c.Theme.Background.Light != "" {
+		if err := validateBackground(c.Theme.Background.Light); err != nil {
+			return fmt.Errorf("invalid light background: %w", err)
+		}
+	}
+	if c.Theme.Background.Dark != "" {
+		if err := validateBackground(c.Theme.Background.Dark); err != nil {
+			return fmt.Errorf("invalid dark background: %w", err)
+		}
 	}
 
 	// Validate nav paths are well-formed

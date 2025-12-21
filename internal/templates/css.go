@@ -14,7 +14,7 @@ const DefaultCSS = `/* LeafPress Default Styles */
   font-size: 16px;
   line-height: 1.6;
   color: var(--lp-text);
-  background-color: var(--lp-bg);
+  background: var(--lp-bg);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
