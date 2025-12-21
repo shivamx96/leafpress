@@ -511,10 +511,7 @@ const DefaultCSS = `/* LeafPress Default Styles */
 
   .lp-content pre {
     padding: 0.75rem;
-    margin-left: -1rem;
-    margin-right: -1rem;
     border-radius: 0;
-    max-width: calc(100vw - 2rem);
   }
 
   .lp-copy-button {
