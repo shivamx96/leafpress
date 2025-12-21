@@ -2,6 +2,7 @@
 title: "Now"
 date: 2025-01-15
 growth: "budding"
+toc: false
 ---
 
 # What I'm Doing Now

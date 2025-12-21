@@ -17,6 +17,7 @@ type Frontmatter struct {
 	Draft  bool     `yaml:"draft"`
 	Growth string   `yaml:"growth"`
 	Sort   string   `yaml:"sort"` // For _index.md files
+	TOC    *bool    `yaml:"toc"`  // Override site-wide TOC setting (nil = use site default)
 }
 
 // ParseFrontmatter extracts frontmatter and content from markdown

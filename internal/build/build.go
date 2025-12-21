@@ -95,10 +95,12 @@ func (b *Builder) Build() (*Stats, error) {
 
 	// Generate site data
 	siteData := templates.SiteData{
-		Title:   b.cfg.Title,
-		Nav:     b.cfg.Nav,
-		Theme:   b.cfg.Theme,
-		BaseURL: b.cfg.BaseURL,
+		Title:       b.cfg.Title,
+		Nav:         b.cfg.Nav,
+		Theme:       b.cfg.Theme,
+		BaseURL:     b.cfg.BaseURL,
+		TOC:         b.cfg.TOC,
+		GraphOnHome: b.cfg.GraphOnHome,
 	}
 
 	// Render pages
@@ -168,11 +170,23 @@ func (b *Builder) renderPage(page *content.Page, siteData templates.SiteData) er
 	}
 	defer f.Close()
 
+	// Extract TOC if enabled (check page override first, then site default)
+	var toc []templates.TOCItem
+	htmlContent := page.HTMLContent
+	showTOC := siteData.TOC
+	if page.TOC != nil {
+		showTOC = *page.TOC
+	}
+	if showTOC {
+		htmlContent, toc = templates.ExtractTOC(page.HTMLContent)
+	}
+
 	// Render template
 	data := templates.PageData{
 		Site:    siteData,
 		Page:    page,
-		Content: template.HTML(page.HTMLContent),
+		Content: template.HTML(htmlContent),
+		TOC:     toc,
 	}
 
 	return b.templates.RenderPage(f, data)

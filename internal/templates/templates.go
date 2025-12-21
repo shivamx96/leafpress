@@ -1,8 +1,10 @@
 package templates
 
 import (
+	"html"
 	"html/template"
 	"io"
+	"regexp"
 	"strings"
 
 	"github.com/shivamx96/leafpress/internal/config"
@@ -23,6 +25,14 @@ type PageData struct {
 	Site    SiteData
 	Page    *content.Page
 	Content template.HTML
+	TOC     []TOCItem
+}
+
+// TOCItem represents a table of contents entry
+type TOCItem struct {
+	ID    string
+	Text  string
+	Level int
 }
 
 // IndexData is the data passed to index templates
@@ -54,10 +64,12 @@ type TagInfo struct {
 
 // SiteData contains site-wide information
 type SiteData struct {
-	Title   string
-	Nav     []config.NavItem
-	Theme   config.Theme
-	BaseURL string
+	Title       string
+	Nav         []config.NavItem
+	Theme       config.Theme
+	BaseURL     string
+	TOC         bool
+	GraphOnHome bool
 }
 
 // New creates a new Templates instance
@@ -142,6 +154,77 @@ func fontURL(font string) template.URL {
 	// Replace spaces with + for Google Fonts URL
 	fontParam := strings.ReplaceAll(font, " ", "+")
 	return template.URL("https://fonts.googleapis.com/css2?family=" + fontParam + ":wght@400;500;600;700&display=swap")
+}
+
+// ExtractTOC extracts headings from HTML content and adds IDs to them
+func ExtractTOC(htmlContent string) (string, []TOCItem) {
+	headingRegex := regexp.MustCompile(`<h([2-3])([^>]*)>(.*?)</h[2-3]>`)
+	var toc []TOCItem
+	idCounter := make(map[string]int)
+
+	modifiedHTML := headingRegex.ReplaceAllStringFunc(htmlContent, func(match string) string {
+		// Extract level, attributes, and text
+		matches := headingRegex.FindStringSubmatch(match)
+		if len(matches) != 4 {
+			return match
+		}
+
+		level := matches[1]
+		attrs := matches[2]
+		text := matches[3]
+
+		// Strip HTML tags from text for TOC display
+		plainText := regexp.MustCompile(`<[^>]*>`).ReplaceAllString(text, "")
+		// Unescape HTML entities (e.g., &amp; -> &, &#39; -> ')
+		plainText = html.UnescapeString(plainText)
+
+		// Generate ID from text
+		id := generateHeadingID(plainText)
+
+		// Handle duplicate IDs
+		if count, exists := idCounter[id]; exists {
+			idCounter[id] = count + 1
+			id = id + "-" + string(rune('0'+count))
+		} else {
+			idCounter[id] = 1
+		}
+
+		// Add to TOC
+		levelInt := 2
+		if level == "3" {
+			levelInt = 3
+		}
+		toc = append(toc, TOCItem{
+			ID:    id,
+			Text:  plainText,
+			Level: levelInt,
+		})
+
+		// Return heading with ID (preserve existing attributes if any)
+		if attrs != "" && !regexp.MustCompile(`id\s*=`).MatchString(attrs) {
+			return "<h" + level + attrs + " id=\"" + id + "\">" + text + "</h" + level + ">"
+		} else if attrs == "" {
+			return "<h" + level + " id=\"" + id + "\">" + text + "</h" + level + ">"
+		}
+		// If it already has an id, skip
+		return match
+	})
+
+	return modifiedHTML, toc
+}
+
+// generateHeadingID creates a URL-safe ID from heading text
+func generateHeadingID(text string) string {
+	// Convert to lowercase
+	id := strings.ToLower(text)
+
+	// Replace spaces and special characters with hyphens
+	id = regexp.MustCompile(`[^a-z0-9]+`).ReplaceAllString(id, "-")
+
+	// Remove leading/trailing hyphens
+	id = strings.Trim(id, "-")
+
+	return id
 }
 
 // Template strings
@@ -272,6 +355,283 @@ const baseTemplate = `<!DOCTYPE html>
         pre.style.position = 'relative';
         pre.appendChild(button);
       });
+
+      // Knowledge Graph Visualization
+      var graphContainer = document.getElementById('lp-graph');
+      if (graphContainer) {
+        fetch('/graph.json')
+          .then(function(response) { return response.json(); })
+          .then(function(data) {
+            renderGraph(data);
+          });
+      }
+
+      function renderGraph(data) {
+        var width = graphContainer.offsetWidth;
+        var height = 500;
+
+        var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('width', width);
+        svg.setAttribute('height', height);
+        svg.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
+        graphContainer.appendChild(svg);
+
+        // Simple force simulation without D3 - create nodes with positions first
+        var nodes = data.nodes.map(function(d) {
+          return {
+            id: d.id,
+            title: d.title,
+            growth: d.growth,
+            x: Math.random() * width,
+            y: Math.random() * height,
+            vx: 0,
+            vy: 0
+          };
+        });
+
+        // Create node lookup from nodes with x/y coordinates
+        var nodeMap = {};
+        nodes.forEach(function(n) {
+          nodeMap[n.id] = n;
+        });
+
+        // Create links with proper node references
+        var links = [];
+        data.edges.forEach(function(edge) {
+          var source = nodeMap[edge.source];
+          var target = nodeMap[edge.target];
+          if (source && target) {
+            links.push({
+              source: source,
+              target: target,
+              sourceId: edge.source,
+              targetId: edge.target
+            });
+          }
+        });
+
+        console.log('Graph data:', nodes.length, 'nodes,', links.length, 'links');
+
+        // Create groups for proper layering
+        var linkGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        linkGroup.setAttribute('class', 'lp-graph-links');
+        svg.appendChild(linkGroup);
+
+        var nodeGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        nodeGroup.setAttribute('class', 'lp-graph-nodes');
+        svg.appendChild(nodeGroup);
+
+        // Get theme colors
+        var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        var linkColor = isDark ? '#444444' : '#d0d0d0';
+
+        // Draw links with initial positions
+        links.forEach(function(link) {
+          var line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+          line.setAttribute('class', 'lp-graph-link');
+          line.setAttribute('stroke', linkColor);
+          line.setAttribute('stroke-width', '1.5');
+          line.setAttribute('stroke-opacity', '0.5');
+          line.setAttribute('x1', link.source.x);
+          line.setAttribute('y1', link.source.y);
+          line.setAttribute('x2', link.target.x);
+          line.setAttribute('y2', link.target.y);
+          linkGroup.appendChild(line);
+          link.element = line;
+        });
+
+        console.log('Drew', links.length, 'links');
+
+        // Text labels group
+        var labelGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        labelGroup.setAttribute('class', 'lp-graph-labels');
+        svg.appendChild(labelGroup);
+
+        // Draw nodes
+        nodes.forEach(function(node) {
+          var circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          circle.setAttribute('class', 'lp-graph-node');
+          circle.setAttribute('r', '8');
+          circle.setAttribute('fill', getNodeColor(node.growth));
+          circle.setAttribute('stroke', '#fff');
+          circle.setAttribute('stroke-width', '2');
+          circle.style.cursor = 'pointer';
+
+          // Hover to highlight connections
+          circle.addEventListener('mouseenter', function() {
+            highlightConnections(node);
+          });
+
+          circle.addEventListener('mouseleave', function() {
+            clearHighlight();
+          });
+
+          circle.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (node.id) {
+              window.location.href = '/' + node.id + '/';
+            } else {
+              window.location.href = '/';
+            }
+          });
+
+          nodeGroup.appendChild(circle);
+          node.element = circle;
+
+          // Add text label
+          var text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          text.setAttribute('class', 'lp-graph-label');
+          text.setAttribute('text-anchor', 'middle');
+          text.setAttribute('dy', '28');
+          text.setAttribute('font-size', '12');
+          text.setAttribute('font-weight', '500');
+          text.setAttribute('pointer-events', 'none');
+          text.textContent = node.title || 'Home';
+          text.style.opacity = '0';
+          text.style.fill = getComputedStyle(document.documentElement).getPropertyValue('--lp-text').trim();
+          labelGroup.appendChild(text);
+          node.label = text;
+        });
+
+        function highlightConnections(selectedNode) {
+          var accentColor = getComputedStyle(document.documentElement).getPropertyValue('--lp-accent').trim();
+
+          // Dim all
+          nodes.forEach(function(n) {
+            n.element.style.opacity = '0.15';
+            if (n.label) n.label.style.opacity = '0';
+          });
+          links.forEach(function(l) {
+            l.element.style.opacity = '0.05';
+          });
+
+          // Highlight selected
+          selectedNode.element.style.opacity = '1';
+          selectedNode.element.setAttribute('r', '10');
+          if (selectedNode.label) selectedNode.label.style.opacity = '1';
+
+          // Highlight connected
+          links.forEach(function(link) {
+            if (link.sourceId === selectedNode.id || link.targetId === selectedNode.id) {
+              link.element.style.opacity = '0.8';
+              link.element.setAttribute('stroke', accentColor);
+              link.element.setAttribute('stroke-width', '2.5');
+
+              var connectedNode = link.sourceId === selectedNode.id ?
+                nodes.find(function(n) { return n.id === link.targetId; }) :
+                nodes.find(function(n) { return n.id === link.sourceId; });
+
+              if (connectedNode) {
+                connectedNode.element.style.opacity = '1';
+                connectedNode.element.setAttribute('r', '9');
+                if (connectedNode.label) connectedNode.label.style.opacity = '0.9';
+              }
+            }
+          });
+        }
+
+        function clearHighlight() {
+          nodes.forEach(function(n) {
+            n.element.style.opacity = '1';
+            n.element.setAttribute('r', '8');
+            if (n.label) n.label.style.opacity = '0';
+          });
+          links.forEach(function(l) {
+            l.element.style.opacity = '0.5';
+            l.element.setAttribute('stroke', linkColor);
+            l.element.setAttribute('stroke-width', '1.5');
+          });
+        }
+
+        function getNodeColor(growth) {
+          var accent = getComputedStyle(document.documentElement).getPropertyValue('--lp-accent').trim();
+          if (growth === 'seedling') return '#a8e6a1';
+          if (growth === 'budding') return accent;
+          if (growth === 'evergreen') return '#2d8659';
+          return accent;
+        }
+
+        // Simple physics simulation
+        function simulate() {
+          var alpha = 0.3;
+          var iterations = 300;
+
+          for (var k = 0; k < iterations; k++) {
+            // Apply forces
+            nodes.forEach(function(node) {
+              node.vx = 0;
+              node.vy = 0;
+            });
+
+            // Repulsion between nodes
+            for (var i = 0; i < nodes.length; i++) {
+              for (var j = i + 1; j < nodes.length; j++) {
+                var dx = nodes[j].x - nodes[i].x;
+                var dy = nodes[j].y - nodes[i].y;
+                var dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                var force = 100 / (dist * dist);
+
+                nodes[i].vx -= force * dx / dist;
+                nodes[i].vy -= force * dy / dist;
+                nodes[j].vx += force * dx / dist;
+                nodes[j].vy += force * dy / dist;
+              }
+            }
+
+            // Link attraction
+            links.forEach(function(link) {
+              var dx = link.target.x - link.source.x;
+              var dy = link.target.y - link.source.y;
+              var dist = Math.sqrt(dx * dx + dy * dy) || 1;
+              var force = (dist - 50) * 0.1;
+
+              link.source.vx += force * dx / dist;
+              link.source.vy += force * dy / dist;
+              link.target.vx -= force * dx / dist;
+              link.target.vy -= force * dy / dist;
+            });
+
+            // Center attraction
+            var centerX = width / 2;
+            var centerY = height / 2;
+            nodes.forEach(function(node) {
+              node.vx += (centerX - node.x) * 0.01;
+              node.vy += (centerY - node.y) * 0.01;
+            });
+
+            // Update positions
+            nodes.forEach(function(node) {
+              node.x += node.vx * alpha;
+              node.y += node.vy * alpha;
+
+              // Keep in bounds
+              node.x = Math.max(20, Math.min(width - 20, node.x));
+              node.y = Math.max(20, Math.min(height - 20, node.y));
+            });
+
+            alpha *= 0.99;
+          }
+
+          // Update DOM
+          nodes.forEach(function(node) {
+            node.element.setAttribute('cx', node.x);
+            node.element.setAttribute('cy', node.y);
+            if (node.label) {
+              node.label.setAttribute('x', node.x);
+              node.label.setAttribute('y', node.y);
+            }
+          });
+
+          links.forEach(function(link) {
+            link.element.setAttribute('x1', link.source.x);
+            link.element.setAttribute('y1', link.source.y);
+            link.element.setAttribute('x2', link.target.x);
+            link.element.setAttribute('y2', link.target.y);
+          });
+        }
+
+        simulate();
+      }
     });
   </script>
 </body>
@@ -281,41 +641,64 @@ const baseTemplate = `<!DOCTYPE html>
 const pageTemplate = `
 {{define "title"}}{{.Page.Title}} | {{.Site.Title}}{{end}}
 {{define "content"}}
-<article class="lp-article">
-  <header class="lp-header">
-    <h1 class="lp-title">{{.Page.Title}}</h1>
-    <div class="lp-meta">
-      {{if not .Page.Date.IsZero}}
-      <time class="lp-date" datetime="{{.Page.ISODate}}">{{.Page.FormattedDate}}</time>
-      {{end}}
-      {{if .Page.Growth}}
-      <span class="lp-growth lp-growth--{{.Page.Growth}}">{{growthEmoji .Page.Growth}}</span>
-      {{end}}
-    </div>
-    {{if .Page.Tags}}
-    <div class="lp-tags">
-      {{range .Page.Tags}}
-      <a class="lp-tag" href="/tags/{{. | lower}}/">#{{.}}</a>
-      {{end}}
-    </div>
-    {{end}}
-  </header>
-
-  <div class="lp-content">
-    {{.Content}}
-  </div>
-
-  {{if .Page.Backlinks}}
-  <aside class="lp-backlinks">
-    <h2 class="lp-backlinks-title">Linked from</h2>
-    <ul class="lp-backlinks-list">
-      {{range .Page.Backlinks}}
-      <li><a class="lp-backlink" href="{{.Permalink}}">{{.Title}}</a></li>
-      {{end}}
-    </ul>
+<div class="lp-page-container">
+  {{if and .Site.TOC .TOC}}
+  <aside class="lp-toc">
+    <nav class="lp-toc-nav">
+      <ul class="lp-toc-list">
+        {{range .TOC}}
+        <li class="lp-toc-item lp-toc-level-{{.Level}}">
+          <a href="#{{.ID}}" class="lp-toc-link">{{.Text}}</a>
+        </li>
+        {{end}}
+      </ul>
+    </nav>
   </aside>
   {{end}}
-</article>
+
+  <article class="lp-article">
+    <header class="lp-header">
+      <h1 class="lp-title">{{.Page.Title}}</h1>
+      <div class="lp-meta">
+        {{if not .Page.Date.IsZero}}
+        <time class="lp-date" datetime="{{.Page.ISODate}}">{{.Page.FormattedDate}}</time>
+        {{end}}
+        {{if .Page.Growth}}
+        <span class="lp-growth lp-growth--{{.Page.Growth}}">{{growthEmoji .Page.Growth}}</span>
+        {{end}}
+      </div>
+      {{if .Page.Tags}}
+      <div class="lp-tags">
+        {{range .Page.Tags}}
+        <a class="lp-tag" href="/tags/{{. | lower}}/">#{{.}}</a>
+        {{end}}
+      </div>
+      {{end}}
+    </header>
+
+    <div class="lp-content">
+      {{.Content}}
+    </div>
+
+    {{if and .Site.GraphOnHome (eq .Page.Slug "")}}
+    <div class="lp-graph-container">
+      <h2 class="lp-graph-title">Knowledge Graph</h2>
+      <div id="lp-graph"></div>
+    </div>
+    {{end}}
+
+    {{if .Page.Backlinks}}
+    <aside class="lp-backlinks">
+      <h2 class="lp-backlinks-title">Linked from</h2>
+      <ul class="lp-backlinks-list">
+        {{range .Page.Backlinks}}
+        <li><a class="lp-backlink" href="{{.Permalink}}">{{.Title}}</a></li>
+        {{end}}
+      </ul>
+    </aside>
+    {{end}}
+  </article>
+</div>
 {{end}}
 `
 

@@ -12,6 +12,7 @@ type Page struct {
 	Tags   []string
 	Draft  bool
 	Growth string // seedling | budding | evergreen
+	TOC    *bool  // Override site-wide TOC setting (nil = use site default)
 
 	// Paths
 	SourcePath string // Relative path to .md file (e.g., "projects/leafpress.md")

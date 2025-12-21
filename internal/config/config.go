@@ -11,13 +11,15 @@ import (
 
 // Config represents the leafpress.json configuration
 type Config struct {
-	Title     string    `json:"title"`
-	BaseURL   string    `json:"baseURL"`
-	OutputDir string    `json:"outputDir"`
-	Port      int       `json:"port"`
-	Nav       []NavItem `json:"nav"`
-	Theme     Theme     `json:"theme"`
-	Graph     bool      `json:"graph"`
+	Title       string    `json:"title"`
+	BaseURL     string    `json:"baseURL"`
+	OutputDir   string    `json:"outputDir"`
+	Port        int       `json:"port"`
+	Nav         []NavItem `json:"nav"`
+	Theme       Theme     `json:"theme"`
+	Graph       bool      `json:"graph"`
+	GraphOnHome bool      `json:"graphOnHome"`
+	TOC         bool      `json:"toc"`
 }
 
 // NavItem represents a navigation link
@@ -50,7 +52,9 @@ func Default() *Config {
 			Accent:      "#4a9eff",
 			StickyNav:   true,
 		},
-		Graph: false,
+		Graph:       false,
+		GraphOnHome: false,
+		TOC:         true,
 	}
 }
 

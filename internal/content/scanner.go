@@ -135,6 +135,7 @@ func (s *Scanner) parsePage(absPath, relPath string, info os.FileInfo) (*Page, e
 		Tags:        fm.Tags,
 		Draft:       fm.Draft,
 		Growth:      fm.Growth,
+		TOC:         fm.TOC,
 		SourcePath:  relPath,
 		Slug:        slug,
 		OutputPath:  outputPath,

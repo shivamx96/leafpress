@@ -16,5 +16,7 @@
     "accent": "#4a9eff",
     "stickyNav": true
   },
-  "graph": true
+  "graph": true,
+  "graphOnHome": false,
+  "toc": true
 }

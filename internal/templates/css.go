@@ -152,9 +152,80 @@ const DefaultCSS = `/* LeafPress Default Styles */
   padding: 2rem;
 }
 
+/* Page container with TOC */
+.lp-page-container {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+
+/* Table of Contents */
+.lp-toc {
+  display: none;
+}
+
+@media (min-width: 1280px) {
+  .lp-toc {
+    display: block;
+    width: 220px;
+    flex-shrink: 0;
+    position: sticky;
+    top: calc(var(--lp-nav-height) + 2rem);
+    align-self: flex-start;
+    max-height: calc(100vh - var(--lp-nav-height) - 4rem);
+    overflow-y: auto;
+  }
+
+  .lp-main:has(.lp-toc) {
+    max-width: 1200px;
+  }
+}
+
+.lp-toc-nav {
+  font-size: 0.875rem;
+}
+
+.lp-toc-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.lp-toc-item {
+  margin-bottom: 0.1rem;
+}
+
+.lp-toc-level-2 {
+  padding-left: 0;
+}
+
+.lp-toc-level-3 {
+  padding-left: 1rem;
+  font-size: 0.8rem;
+}
+
+.lp-toc-link {
+  color: var(--lp-text-muted);
+  text-decoration: none;
+  display: block;
+  padding: 0.1rem 0;
+  transition: color 0.2s;
+}
+
+.lp-toc-link:hover {
+  color: var(--lp-accent);
+}
+
 /* Article */
 .lp-article {
   width: 100%;
+  min-width: 0;
+}
+
+/* Scroll offset for anchor links (accounts for sticky nav) */
+.lp-content h2[id],
+.lp-content h3[id] {
+  scroll-margin-top: calc(var(--lp-nav-height) + 2rem);
 }
 
 .lp-header {
@@ -364,6 +435,60 @@ const DefaultCSS = `/* LeafPress Default Styles */
 
 .lp-external::after {
   content: "";
+}
+
+/* Knowledge Graph */
+.lp-graph-container {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--lp-border);
+}
+
+.lp-graph-title {
+  font-family: var(--lp-font-heading);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--lp-text);
+  margin-bottom: 1.5rem;
+}
+
+#lp-graph {
+  width: 100%;
+  height: 500px;
+  border-radius: 6px;
+  background: linear-gradient(to bottom, var(--lp-bg), var(--lp-code-bg));
+  overflow: hidden;
+  position: relative;
+}
+
+.lp-graph-node {
+  transition: all 0.2s ease;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.lp-graph-node:hover {
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+}
+
+.lp-graph-link {
+  transition: all 0.2s ease;
+}
+
+.lp-graph-label {
+  font-family: var(--lp-font-body);
+  transition: opacity 0.2s ease;
+}
+
+[data-theme="dark"] .lp-graph-link {
+  stroke: #444444 !important;
+}
+
+[data-theme="dark"] .lp-graph-node {
+  filter: drop-shadow(0 2px 4px rgba(255, 255, 255, 0.1));
+}
+
+[data-theme="dark"] .lp-graph-node:hover {
+  filter: drop-shadow(0 4px 8px rgba(255, 255, 255, 0.2));
 }
 
 /* Backlinks */

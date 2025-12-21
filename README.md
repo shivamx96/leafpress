@@ -171,6 +171,23 @@ Edit `leafpress.json` to customize your site:
 
 **Sticky Navigation**: Set `stickyNav` to `true` (default) to make the navigation bar stick to the top when scrolling
 
+### Table of Contents
+
+Enable an automatic table of contents that appears on the right side of pages (desktop only):
+
+```json
+{
+  "toc": true
+}
+```
+
+When enabled:
+- Automatically extracts h2 and h3 headings from your content
+- Displays as a sticky sidebar on wide screens (1280px+)
+- Hidden on mobile and tablet for better reading experience
+- Highlights the current section as you scroll
+- Smooth scroll navigation to headings
+
 ### Custom Favicons
 
 LeafPress includes default favicons, but you can override them by placing your own in the root directory:

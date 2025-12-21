@@ -2,6 +2,7 @@
 title: "Welcome to My Garden"
 date: 2025-01-15
 growth: "evergreen"
+toc: false
 ---
 This is a test garden for LeafPress development.
 
