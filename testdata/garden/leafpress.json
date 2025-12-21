@@ -1,0 +1,16 @@
+{
+  "title": "Shivam's Digital Garden",
+  "baseURL": "",
+  "outputDir": "_site",
+  "port": 3000,
+  "nav": [
+    { "label": "Now", "path": "/now/" },
+    { "label": "Projects", "path": "/projects/" },
+    { "label": "Notes", "path": "/notes/" }
+  ],
+  "theme": {
+    "font": "Space+Grotesk",
+    "accent": "#4a9eff"
+  },
+  "graph": true
+}

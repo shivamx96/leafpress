@@ -1,0 +1,34 @@
+# Binaries
+leafpress
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Go workspace file
+go.work
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test data (keep structure but ignore generated output)
+testdata/**/_site/
+
+# Temporary files
+/tmp/
+*.tmp
