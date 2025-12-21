@@ -421,11 +421,22 @@ const DefaultCSS = `/* LeafPress Default Styles */
 .lp-wikilink {
   color: var(--lp-accent);
   text-decoration: none;
-  border-bottom: 1px dashed var(--lp-accent);
+  background-color: rgba(74, 158, 255, 0.1);
+  padding: 0.1em 0.25em;
+  border-radius: 3px;
+  transition: background-color 0.2s;
 }
 
 .lp-wikilink:hover {
-  border-bottom-style: solid;
+  background-color: rgba(74, 158, 255, 0.15);
+}
+
+[data-theme="dark"] .lp-wikilink {
+  background-color: rgba(74, 158, 255, 0.15);
+}
+
+[data-theme="dark"] .lp-wikilink:hover {
+  background-color: rgba(74, 158, 255, 0.25);
 }
 
 .lp-broken-link {
