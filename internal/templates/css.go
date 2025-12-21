@@ -120,7 +120,7 @@ const DefaultCSS = `/* LeafPress Default Styles */
 
   .lp-nav-links {
     width: 100%;
-    justify-content: center;
+    justify-content: flex-start;
   }
 }
 
