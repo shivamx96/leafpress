@@ -172,11 +172,13 @@ const baseTemplate = `<!DOCTYPE html>
 </head>
 <body class="lp-body">
   <nav class="lp-nav">
-    <a class="lp-nav-title" href="/">{{.Site.Title}}</a>
-    <div class="lp-nav-links">
-      {{range .Site.Nav}}
-      <a class="lp-nav-link" href="{{.Path}}">{{.Label}}</a>
-      {{end}}
+    <div class="lp-nav-container">
+      <a class="lp-nav-title" href="/">{{.Site.Title}}</a>
+      <div class="lp-nav-links">
+        {{range .Site.Nav}}
+        <a class="lp-nav-link" href="{{.Path}}">{{.Label}}</a>
+        {{end}}
+      </div>
     </div>
   </nav>
   <main class="lp-main">

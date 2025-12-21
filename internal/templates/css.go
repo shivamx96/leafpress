@@ -26,9 +26,16 @@ const DefaultCSS = `/* LeafPress Default Styles */
   border-bottom: 1px solid var(--lp-border);
   display: flex;
   align-items: center;
+  justify-content: center;
+}
+
+.lp-nav-container {
+  width: 100%;
+  max-width: var(--lp-max-width);
+  display: flex;
+  align-items: center;
   justify-content: space-between;
   padding: 0 2rem;
-  max-width: 100%;
 }
 
 .lp-nav-title {
@@ -374,7 +381,7 @@ const DefaultCSS = `/* LeafPress Default Styles */
 
 /* Responsive */
 @media (max-width: 768px) {
-  .lp-nav {
+  .lp-nav-container {
     padding: 0 1rem;
   }
 

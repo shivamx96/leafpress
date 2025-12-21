@@ -9,7 +9,7 @@
     { "label": "Notes", "path": "/notes/" }
   ],
   "theme": {
-    "font": "Space+Grotesk",
+    "font": "Space Grotesk",
     "accent": "#4a9eff"
   },
   "graph": true
