@@ -11,13 +11,14 @@ import (
 
 // Frontmatter represents the YAML frontmatter of a page
 type Frontmatter struct {
-	Title  string   `yaml:"title"`
-	Date   string   `yaml:"date"`
-	Tags   []string `yaml:"tags"`
-	Draft  bool     `yaml:"draft"`
-	Growth string   `yaml:"growth"`
-	Sort   string   `yaml:"sort"` // For _index.md files
-	TOC    *bool    `yaml:"toc"`  // Override site-wide TOC setting (nil = use site default)
+	Title    string   `yaml:"title"`
+	Date     string   `yaml:"date"`
+	Tags     []string `yaml:"tags"`
+	Draft    bool     `yaml:"draft"`
+	Growth   string   `yaml:"growth"`
+	Sort     string   `yaml:"sort"`     // For _index.md files
+	TOC      *bool    `yaml:"toc"`      // Override site-wide TOC setting (nil = use site default)
+	ShowList *bool    `yaml:"showList"` // Show page list on section index (nil = true)
 }
 
 // ParseFrontmatter extracts frontmatter and content from markdown

@@ -1,5 +1,5 @@
 ---
-title: "LeafPress"
+title: "leafpress"
 date: 2025-01-10
 tags: [go, tools, side-projects]
 growth: "seedling"

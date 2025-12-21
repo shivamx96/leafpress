@@ -37,10 +37,11 @@ type TOCItem struct {
 
 // IndexData is the data passed to index templates
 type IndexData struct {
-	Site  SiteData
-	Title string
-	Pages []*content.Page
-	Intro template.HTML // Optional intro content for section indexes
+	Site     SiteData
+	Title    string
+	Pages    []*content.Page
+	Intro    template.HTML // Optional intro content for section indexes
+	ShowList bool          // Show the page list
 }
 
 // TagIndexData is the data passed to the tags index template
@@ -216,8 +217,14 @@ func ExtractTOC(htmlContent string) (string, []TOCItem) {
 
 // generateHeadingID creates a URL-safe ID from heading text
 func generateHeadingID(text string) string {
+	// Remove emojis and other non-ASCII characters first
+	id := regexp.MustCompile(`[^\x00-\x7F]+`).ReplaceAllString(text, "")
+
+	// Trim spaces that may be left after emoji removal
+	id = strings.TrimSpace(id)
+
 	// Convert to lowercase
-	id := strings.ToLower(text)
+	id = strings.ToLower(id)
 
 	// Replace spaces and special characters with hyphens
 	id = regexp.MustCompile(`[^a-z0-9]+`).ReplaceAllString(id, "-")
@@ -263,7 +270,7 @@ const baseTemplate = `<!DOCTYPE html>
       position: sticky;
       top: 0;
       z-index: 100;
-      background-color: var(--lp-bg);
+      background: var(--lp-bg);
     }
     {{end}}
 
@@ -319,7 +326,7 @@ const baseTemplate = `<!DOCTYPE html>
     {{block "content" .}}{{end}}
   </main>
   <footer class="lp-footer">
-    <span class="lp-footer-text">Grown with <a href="https://github.com/shivamx96/leafpress">LeafPress</a></span>
+    <span class="lp-footer-text">Grown with <a href="https://leafpress.in">leafpress</a></span>
   </footer>
   <script>
     // Theme switching
@@ -725,6 +732,7 @@ const indexTemplate = `
   </div>
   {{end}}
 
+  {{if .ShowList}}
   <ul class="lp-index">
     {{range .Pages}}
     <li class="lp-index-item">
@@ -740,6 +748,7 @@ const indexTemplate = `
     </li>
     {{end}}
   </ul>
+  {{end}}
 </div>
 {{end}}
 `

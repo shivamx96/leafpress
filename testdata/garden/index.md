@@ -4,7 +4,7 @@ date: 2025-01-15
 growth: "evergreen"
 toc: false
 ---
-This is a test garden for LeafPress development.
+This is a test garden for leafpress development.
 
 ## What's Here
 

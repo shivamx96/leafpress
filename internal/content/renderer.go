@@ -2,7 +2,9 @@ package content
 
 import (
 	"bytes"
+	"fmt"
 	"regexp"
+	"strings"
 
 	chromahtml "github.com/alecthomas/chroma/v2/formatters/html"
 	"github.com/yuin/goldmark"
@@ -70,9 +72,19 @@ func (r *Renderer) Render(content string) (string, []string) {
 
 // processWikiLinks replaces [[links]] with HTML anchors
 func (r *Renderer) processWikiLinks(content string, warnings *[]string) string {
-	links := ExtractWikiLinks(content)
+	// Extract code blocks and inline code to protect them
+	codeBlocks := extractCodeBlocks(content)
+	protectedContent := content
 
-	result := content
+	// Replace code blocks with placeholders
+	for i, block := range codeBlocks {
+		placeholder := fmt.Sprintf("___CODE_BLOCK_%d___", i)
+		protectedContent = strings.Replace(protectedContent, block, placeholder, 1)
+	}
+
+	links := ExtractWikiLinks(protectedContent)
+
+	result := protectedContent
 	for _, link := range links {
 		var replacement string
 
@@ -98,7 +110,28 @@ func (r *Renderer) processWikiLinks(content string, warnings *[]string) string {
 		result = replaceFirst(result, link.Raw, replacement)
 	}
 
+	// Restore code blocks
+	for i, block := range codeBlocks {
+		placeholder := fmt.Sprintf("___CODE_BLOCK_%d___", i)
+		result = strings.Replace(result, placeholder, block, 1)
+	}
+
 	return result
+}
+
+// extractCodeBlocks extracts code blocks and inline code from markdown
+func extractCodeBlocks(content string) []string {
+	var blocks []string
+
+	// Extract fenced code blocks (```...```)
+	codeBlockRegex := regexp.MustCompile("(?s)```[^`]*```")
+	blocks = append(blocks, codeBlockRegex.FindAllString(content, -1)...)
+
+	// Extract inline code (`...`)
+	inlineCodeRegex := regexp.MustCompile("`[^`]+`")
+	blocks = append(blocks, inlineCodeRegex.FindAllString(content, -1)...)
+
+	return blocks
 }
 
 // replaceFirst replaces only the first occurrence

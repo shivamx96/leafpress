@@ -1,10 +1,10 @@
-# LeafPress
+# leafpress
 
 ## Overview
 
-LeafPress is a CLI-driven static site generator purpose-built for digital gardens. It transforms a folder of Markdown files into a clean, interlinked website with minimal configuration. The aesthetic is terminal-inspired—focused, distraction-free, and typographically sharp.
+leafpress is a CLI-driven static site generator purpose-built for digital gardens. It transforms a folder of Markdown files into a clean, interlinked website with minimal configuration. The aesthetic is terminal-inspired—focused, distraction-free, and typographically sharp.
 
-**Core philosophy:** Your garden folder IS the product. LeafPress is invisible infrastructure.
+**Core philosophy:** Your garden folder IS the product. leafpress is invisible infrastructure.
 
 ## Goals
 
@@ -119,7 +119,7 @@ These are hardcoded. Any markdown outside these paths is content.
 
 ```yaml
 ---
-title: "Building LeafPress"
+title: "Building leafpress"
 date: 2025-01-15
 tags: [go, tools, side-projects]
 draft: false
@@ -272,7 +272,7 @@ Semantic HTML with `lp-` prefixed classes. User overrides via `style.css`.
 
 ```html
 <footer class="lp-footer">
-  <span class="lp-footer-text">Grown with <a href="https://leafpress.dev">LeafPress</a></span>
+  <span class="lp-footer-text">Grown with <a href="https://leafpress.dev">leafpress</a></span>
 </footer>
 ```
 
@@ -384,7 +384,7 @@ _site/
 ### `style.css`
 
 ```css
-/* LeafPress Custom Styles
+/* leafpress Custom Styles
  * Override CSS variables or add custom rules below.
  * See: https://leafpress.dev/docs/theming
  */

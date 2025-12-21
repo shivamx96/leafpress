@@ -7,12 +7,13 @@ import (
 // Page represents a content page
 type Page struct {
 	// Metadata from frontmatter
-	Title  string
-	Date   time.Time
-	Tags   []string
-	Draft  bool
-	Growth string // seedling | budding | evergreen
-	TOC    *bool  // Override site-wide TOC setting (nil = use site default)
+	Title    string
+	Date     time.Time
+	Tags     []string
+	Draft    bool
+	Growth   string // seedling | budding | evergreen
+	TOC      *bool  // Override site-wide TOC setting (nil = use site default)
+	ShowList *bool  // Show page list on section index (nil = true)
 
 	// Paths
 	SourcePath string // Relative path to .md file (e.g., "projects/leafpress.md")

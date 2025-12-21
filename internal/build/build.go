@@ -213,11 +213,18 @@ func (b *Builder) renderSectionIndex(indexPage *content.Page, allPages []*conten
 	}
 	defer f.Close()
 
+	// Determine if we should show the list (default true if not specified)
+	showList := true
+	if indexPage.ShowList != nil {
+		showList = *indexPage.ShowList
+	}
+
 	data := templates.IndexData{
-		Site:  siteData,
-		Title: indexPage.Title,
-		Pages: sectionPages,
-		Intro: template.HTML(indexPage.HTMLContent),
+		Site:     siteData,
+		Title:    indexPage.Title,
+		Pages:    sectionPages,
+		Intro:    template.HTML(indexPage.HTMLContent),
+		ShowList: showList,
 	}
 
 	return b.templates.RenderIndex(f, data)

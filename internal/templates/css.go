@@ -1,7 +1,7 @@
 package templates
 
 // DefaultCSS is the embedded default stylesheet
-const DefaultCSS = `/* LeafPress Default Styles */
+const DefaultCSS = `/* leafpress Default Styles */
 
 * {
   box-sizing: border-box;
@@ -550,7 +550,49 @@ const DefaultCSS = `/* LeafPress Default Styles */
 
 .lp-section-intro {
   margin-bottom: 2rem;
-  color: var(--lp-text-muted);
+  line-height: 1.7;
+}
+
+.lp-section-intro h1,
+.lp-section-intro h2,
+.lp-section-intro h3,
+.lp-section-intro h4,
+.lp-section-intro h5,
+.lp-section-intro h6 {
+  font-family: var(--lp-font-heading);
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--lp-text);
+}
+
+.lp-section-intro h1 { font-size: 1.75rem; }
+.lp-section-intro h2 { font-size: 1.5rem; }
+.lp-section-intro h3 { font-size: 1.25rem; }
+.lp-section-intro h4 { font-size: 1.1rem; }
+
+.lp-section-intro p {
+  margin-bottom: 1rem;
+}
+
+.lp-section-intro ul,
+.lp-section-intro ol {
+  margin-bottom: 0.5rem;
+  padding-left: 1.5rem;
+}
+
+.lp-section-intro li {
+  margin-bottom: 0.25rem;
+}
+
+.lp-section-intro a {
+  color: var(--lp-accent);
+  text-decoration: none;
+}
+
+.lp-section-intro a:hover {
+  text-decoration: underline;
 }
 
 .lp-index {

@@ -15,10 +15,10 @@ func Execute(version string) error {
 	rootCmd := &cobra.Command{
 		Use:   "leafpress",
 		Short: "A CLI-driven static site generator for digital gardens",
-		Long: `LeafPress transforms a folder of Markdown files into a clean,
+		Long: `leafpress transforms a folder of Markdown files into a clean,
 interlinked website with minimal configuration.
 
-Your garden folder IS the product. LeafPress is invisible infrastructure.`,
+Your garden folder IS the product. leafpress is invisible infrastructure.`,
 		Version: version,
 	}
 
@@ -33,7 +33,7 @@ Your garden folder IS the product. LeafPress is invisible infrastructure.`,
 	rootCmd.AddCommand(newCmd())
 
 	// Custom version template
-	rootCmd.SetVersionTemplate(fmt.Sprintf("LeafPress %s\n", version))
+	rootCmd.SetVersionTemplate(fmt.Sprintf("leafpress %s\n", version))
 
 	return rootCmd.Execute()
 }

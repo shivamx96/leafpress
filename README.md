@@ -1,8 +1,8 @@
-# LeafPress
+# leafpress
 
 A CLI-driven static site generator for digital gardens. Transform a folder of Markdown files into a clean, interlinked website with minimal configuration.
 
-**Your garden folder IS the product. LeafPress is invisible infrastructure.**
+**Your garden folder IS the product. leafpress is invisible infrastructure.**
 
 ## Features
 
@@ -133,7 +133,7 @@ sort: "date"  # date, title, or growth
 Here are my projects...
 ```
 
-Without `_index.md`, LeafPress auto-generates index pages.
+Without `_index.md`, leafpress auto-generates index pages.
 
 ## Configuration
 
@@ -190,7 +190,7 @@ When enabled:
 
 ### Custom Favicons
 
-LeafPress includes default favicons, but you can override them by placing your own in the root directory:
+leafpress includes default favicons, but you can override them by placing your own in the root directory:
 
 - `favicon.ico` - Classic ICO format (16x16 or 32x32)
 - `favicon.svg` - Scalable vector format (recommended for modern browsers)

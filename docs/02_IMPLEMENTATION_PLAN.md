@@ -1,8 +1,8 @@
-# LeafPress Implementation Plan
+# leafpress Implementation Plan
 
 ## Overview
 
-This document breaks down the LeafPress implementation into discrete phases with detailed tasks, dependencies, and acceptance criteria.
+This document breaks down the leafpress implementation into discrete phases with detailed tasks, dependencies, and acceptance criteria.
 
 **Target:** Single Go binary with zero runtime dependencies.
 

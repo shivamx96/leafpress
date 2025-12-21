@@ -12,7 +12,7 @@ import (
 func initCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "init",
-		Short: "Initialize a new LeafPress site in the current directory",
+		Short: "Initialize a new leafpress site in the current directory",
 		Long: `Scaffolds leafpress.json and optional style.css in current directory.
 If no markdown files exist, creates a sample index.md.`,
 		RunE: runInit,
@@ -41,7 +41,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 	// Create style.css
 	stylePath := filepath.Join(cwd, "style.css")
 	if _, err := os.Stat(stylePath); os.IsNotExist(err) {
-		styleContent := `/* LeafPress Custom Styles
+		styleContent := `/* leafpress Custom Styles
  * Override CSS variables or add custom rules below.
  * See: https://leafpress.dev/docs/theming
  *
@@ -72,7 +72,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 
 	// Update .gitignore
 	gitignorePath := filepath.Join(cwd, ".gitignore")
-	gitignoreEntries := "\n# LeafPress\n_site/\n.leafpress/\n"
+	gitignoreEntries := "\n# leafpress\n_site/\n.leafpress/\n"
 
 	if _, err := os.Stat(gitignorePath); os.IsNotExist(err) {
 		if err := os.WriteFile(gitignorePath, []byte(gitignoreEntries[1:]), 0644); err != nil {
@@ -134,6 +134,6 @@ This is your digital garden. Start writing!
 		fmt.Println("Created index.md")
 	}
 
-	fmt.Println("\nLeafPress initialized! Run 'leafpress serve' to start the dev server.")
+	fmt.Println("\nleafpress initialized! Run 'leafpress serve' to start the dev server.")
 	return nil
 }
