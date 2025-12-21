@@ -13,6 +13,8 @@ import (
 	"github.com/shivamx96/leafpress/internal/config"
 	"github.com/shivamx96/leafpress/internal/content"
 	"github.com/shivamx96/leafpress/internal/templates"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 // Options configures the build process
@@ -243,7 +245,7 @@ func (b *Builder) generateAutoIndexes(pages []*content.Page, siteData templates.
 			return err
 		}
 
-		title := strings.Title(filepath.Base(dir))
+		title := cases.Title(language.English).String(filepath.Base(dir))
 		data := templates.IndexData{
 			Site:  siteData,
 			Title: title,

@@ -108,7 +108,7 @@ func (s *Server) Start() error {
 	}()
 
 	fmt.Printf("\n  Server running at http://localhost:%d\n", port)
-	fmt.Println("  Press Ctrl+C to stop\n")
+	fmt.Println("  Press Ctrl+C to stop")
 
 	return server.Serve(listener)
 }

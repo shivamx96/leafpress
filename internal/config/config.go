@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
+	"regexp"
+	"strings"
 )
 
 // Config represents the leafpress.json configuration
@@ -88,6 +91,11 @@ func Load(path string) (*Config, error) {
 		cfg.Theme.Accent = "#4a9eff"
 	}
 
+	// Validate configuration
+	if err := cfg.Validate(); err != nil {
+		return nil, err
+	}
+
 	return cfg, nil
 }
 
@@ -100,6 +108,47 @@ func Write(path string, cfg *Config) error {
 
 	if err := os.WriteFile(path, data, 0644); err != nil {
 		return fmt.Errorf("failed to write config: %w", err)
+	}
+
+	return nil
+}
+
+// Validate checks if the configuration values are valid
+func (c *Config) Validate() error {
+	// Validate port range
+	if c.Port < 1 || c.Port > 65535 {
+		return fmt.Errorf("port must be between 1 and 65535, got %d", c.Port)
+	}
+
+	// Validate output directory is not a dangerous path
+	absPath, err := filepath.Abs(c.OutputDir)
+	if err != nil {
+		return fmt.Errorf("invalid output directory path: %w", err)
+	}
+	dangerousPaths := []string{"/", "/etc", "/bin", "/usr", "/var", "/sys", "/proc"}
+	for _, dangerous := range dangerousPaths {
+		if absPath == dangerous || strings.HasPrefix(absPath, dangerous+string(filepath.Separator)) {
+			return fmt.Errorf("output directory cannot be set to system path: %s", absPath)
+		}
+	}
+
+	// Validate accent color format (hex color)
+	hexColorRegex := regexp.MustCompile(`^#[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?$`)
+	if !hexColorRegex.MatchString(c.Theme.Accent) {
+		return fmt.Errorf("accent color must be a valid hex color (e.g., #4a9eff), got %s", c.Theme.Accent)
+	}
+
+	// Validate nav paths are well-formed
+	for i, nav := range c.Nav {
+		if nav.Label == "" {
+			return fmt.Errorf("nav item %d has empty label", i)
+		}
+		if nav.Path == "" {
+			return fmt.Errorf("nav item %d (%s) has empty path", i, nav.Label)
+		}
+		if !strings.HasPrefix(nav.Path, "/") {
+			return fmt.Errorf("nav path must start with /, got %s for %s", nav.Path, nav.Label)
+		}
 	}
 
 	return nil

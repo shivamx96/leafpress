@@ -150,8 +150,11 @@ Edit `leafpress.json` to customize your site:
     {"label": "Projects", "path": "/projects/"}
   ],
   "theme": {
-    "font": "Inter",
-    "accent": "#4a9eff"
+    "fontHeading": "Crimson Pro",
+    "fontBody": "Inter",
+    "fontMono": "JetBrains Mono",
+    "accent": "#4a9eff",
+    "stickyNav": true
   },
   "graph": true
 }
@@ -160,8 +163,23 @@ Edit `leafpress.json` to customize your site:
 ### Theme Options
 
 **Fonts**: Any Google Fonts family name (e.g., "Inter", "Space Grotesk", "Roboto")
+- `fontHeading`: Font for headings and titles
+- `fontBody`: Font for body text
+- `fontMono`: Font for code blocks
 
-**Accent**: Any CSS color (hex, rgb, hsl)
+**Accent**: Hex color for links and accents (e.g., "#4a9eff")
+
+**Sticky Navigation**: Set `stickyNav` to `true` (default) to make the navigation bar stick to the top when scrolling
+
+### Custom Favicons
+
+LeafPress includes default favicons, but you can override them by placing your own in the root directory:
+
+- `favicon.ico` - Classic ICO format (16x16 or 32x32)
+- `favicon.svg` - Scalable vector format (recommended for modern browsers)
+- `favicon-96x96.png` - High-resolution PNG (96x96 pixels)
+
+Place any or all of these files in your garden's root directory, and they'll be used instead of the defaults.
 
 ## Project Structure
 

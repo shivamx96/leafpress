@@ -56,6 +56,20 @@ func runInit(cmd *cobra.Command, args []string) error {
 		fmt.Println("Created style.css")
 	}
 
+	// Create static directory
+	staticDir := filepath.Join(cwd, "static")
+	if _, err := os.Stat(staticDir); os.IsNotExist(err) {
+		if err := os.MkdirAll(staticDir, 0755); err != nil {
+			return fmt.Errorf("failed to create static directory: %w", err)
+		}
+		// Create images subdirectory
+		imagesDir := filepath.Join(staticDir, "images")
+		if err := os.MkdirAll(imagesDir, 0755); err != nil {
+			return fmt.Errorf("failed to create static/images directory: %w", err)
+		}
+		fmt.Println("Created static/images/")
+	}
+
 	// Update .gitignore
 	gitignorePath := filepath.Join(cwd, ".gitignore")
 	gitignoreEntries := "\n# LeafPress\n_site/\n.leafpress/\n"
