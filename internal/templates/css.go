@@ -40,6 +40,7 @@ const DefaultCSS = `/* LeafPress Default Styles */
 }
 
 .lp-nav-title {
+  font-family: var(--lp-font-heading);
   font-weight: 600;
   font-size: 1.1rem;
   color: var(--lp-text);
@@ -159,8 +160,8 @@ const DefaultCSS = `/* LeafPress Default Styles */
 .lp-content h5,
 .lp-content h6 {
   font-family: var(--lp-font-heading);
-  margin-top: 2rem;
-  margin-bottom: 1rem;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
   font-weight: 600;
   line-height: 1.3;
 }
@@ -185,7 +186,7 @@ const DefaultCSS = `/* LeafPress Default Styles */
 
 .lp-content ul,
 .lp-content ol {
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
   padding-left: 1.5rem;
 }
 
