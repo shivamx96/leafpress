@@ -5,8 +5,6 @@ tags: [go, tools, side-projects]
 growth: "seedling"
 ---
 
-# LeafPress
-
 A CLI-driven static site generator for digital gardens.
 
 ## Features

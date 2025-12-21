@@ -6,11 +6,12 @@
   "nav": [
     { "label": "Now", "path": "/now/" },
     { "label": "Projects", "path": "/projects/" },
-    { "label": "Notes", "path": "/notes/" }
+    { "label": "Notes", "path": "/notes/" },
+    { "label": "Tags", "path": "/tags/" }
   ],
   "theme": {
     "fontHeading": "Fjord One",
-    "fontBody": "Plus Jakarta Sans",
+    "fontBody": "Kumbh Sans",
     "fontMono": "Fira Code",
     "accent": "#4a9eff",
     "stickyNav": true
