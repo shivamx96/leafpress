@@ -157,8 +157,9 @@ const baseTemplate = `<!DOCTYPE html>
   <link rel="stylesheet" href="/style.css">
   <style>
     :root {
-      --lp-font: "{{.Site.Theme.Font}}", system-ui, -apple-system, sans-serif;
-      --lp-font-mono: "JetBrains Mono", "Fira Code", monospace;
+      --lp-font-heading: "{{.Site.Theme.FontHeading}}", Georgia, serif;
+      --lp-font-body: "{{.Site.Theme.FontBody}}", system-ui, -apple-system, sans-serif;
+      --lp-font-mono: "{{.Site.Theme.FontMono}}", "Fira Code", "Courier New", monospace;
       --lp-accent: {{.Site.Theme.Accent}};
       --lp-bg: #ffffff;
       --lp-text: #1a1a1a;
@@ -171,7 +172,9 @@ const baseTemplate = `<!DOCTYPE html>
   </style>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="{{.Site.Theme.Font | fontURL}}" rel="stylesheet">
+  <link href="{{.Site.Theme.FontHeading | fontURL}}" rel="stylesheet">
+  <link href="{{.Site.Theme.FontBody | fontURL}}" rel="stylesheet">
+  <link href="{{.Site.Theme.FontMono | fontURL}}" rel="stylesheet">
 </head>
 <body class="lp-body">
   <nav class="lp-nav">

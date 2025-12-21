@@ -9,7 +9,9 @@
     { "label": "Notes", "path": "/notes/" }
   ],
   "theme": {
-    "font": "Space Grotesk",
+    "fontHeading": "Cherry Swash",
+    "fontBody": "Figtree",
+    "fontMono": "Fira Code",
     "accent": "#4a9eff"
   },
   "graph": true

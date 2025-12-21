@@ -16,6 +16,17 @@ My journey learning the Go programming language.
 - Great tooling
 - Single binary deployment
 
+```go
+package main
+
+import "fmt"
+
+func main() {
+    fmt.Println("Hello World!")
+    fmt.Println("Hello World!")
+}
+```
+
 ## Projects
 
 Using Go to build [[leafpress]].

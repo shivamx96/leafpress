@@ -25,8 +25,10 @@ type NavItem struct {
 
 // Theme represents theme configuration
 type Theme struct {
-	Font   string `json:"font"`
-	Accent string `json:"accent"`
+	FontHeading string `json:"fontHeading"`
+	FontBody    string `json:"fontBody"`
+	FontMono    string `json:"fontMono"`
+	Accent      string `json:"accent"`
 }
 
 // Default returns a Config with default values
@@ -38,8 +40,10 @@ func Default() *Config {
 		Port:      3000,
 		Nav:       []NavItem{},
 		Theme: Theme{
-			Font:   "Inter",
-			Accent: "#4a9eff",
+			FontHeading: "Crimson Pro",
+			FontBody:    "Inter",
+			FontMono:    "JetBrains Mono",
+			Accent:      "#4a9eff",
 		},
 		Graph: false,
 	}
@@ -69,8 +73,14 @@ func Load(path string) (*Config, error) {
 	if cfg.Port == 0 {
 		cfg.Port = 3000
 	}
-	if cfg.Theme.Font == "" {
-		cfg.Theme.Font = "Inter"
+	if cfg.Theme.FontHeading == "" {
+		cfg.Theme.FontHeading = "Crimson Pro"
+	}
+	if cfg.Theme.FontBody == "" {
+		cfg.Theme.FontBody = "Inter"
+	}
+	if cfg.Theme.FontMono == "" {
+		cfg.Theme.FontMono = "JetBrains Mono"
 	}
 	if cfg.Theme.Accent == "" {
 		cfg.Theme.Accent = "#4a9eff"
