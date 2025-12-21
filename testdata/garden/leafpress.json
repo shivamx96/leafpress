@@ -13,7 +13,6 @@
     "fontHeading": "Fjord One",
     "fontBody": "Kumbh Sans",
     "fontMono": "Fira Code",
-    "accent": "#4a9eff",
     "stickyNav": true
   },
   "graph": true,

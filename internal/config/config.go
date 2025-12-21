@@ -49,7 +49,7 @@ func Default() *Config {
 			FontHeading: "Crimson Pro",
 			FontBody:    "Inter",
 			FontMono:    "JetBrains Mono",
-			Accent:      "#4a9eff",
+			Accent:      "#50ac00",
 			StickyNav:   true,
 		},
 		Graph:       false,
@@ -92,7 +92,7 @@ func Load(path string) (*Config, error) {
 		cfg.Theme.FontMono = "JetBrains Mono"
 	}
 	if cfg.Theme.Accent == "" {
-		cfg.Theme.Accent = "#4a9eff"
+		cfg.Theme.Accent = "#50ac00"
 	}
 
 	// Validate configuration
@@ -139,7 +139,7 @@ func (c *Config) Validate() error {
 	// Validate accent color format (hex color)
 	hexColorRegex := regexp.MustCompile(`^#[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?$`)
 	if !hexColorRegex.MatchString(c.Theme.Accent) {
-		return fmt.Errorf("accent color must be a valid hex color (e.g., #4a9eff), got %s", c.Theme.Accent)
+		return fmt.Errorf("accent color must be a valid hex color (e.g., #50ac00), got %s", c.Theme.Accent)
 	}
 
 	// Validate nav paths are well-formed
