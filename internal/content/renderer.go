@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"regexp"
 
+	chromahtml "github.com/alecthomas/chroma/v2/formatters/html"
 	"github.com/yuin/goldmark"
+	highlighting "github.com/yuin/goldmark-highlighting/v2"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer/html"
@@ -22,6 +24,13 @@ func NewRenderer(resolver *LinkResolver) *Renderer {
 		goldmark.WithExtensions(
 			extension.GFM, // GitHub Flavored Markdown
 			extension.Typographer,
+			highlighting.NewHighlighting(
+				highlighting.WithStyle("github"),
+				highlighting.WithFormatOptions(
+					chromahtml.WithClasses(true),
+					chromahtml.WithLineNumbers(false),
+				),
+			),
 		),
 		goldmark.WithParserOptions(
 			parser.WithAutoHeadingID(),

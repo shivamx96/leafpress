@@ -208,6 +208,44 @@ const DefaultCSS = `/* LeafPress Default Styles */
   padding: 1rem;
   overflow-x: auto;
   margin: 1rem 0;
+  position: relative;
+  max-width: 100%;
+}
+
+.lp-content pre code {
+  display: block;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.lp-copy-button {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  background-color: var(--lp-bg);
+  color: var(--lp-text);
+  border: 1px solid var(--lp-border);
+  border-radius: 3px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.lp-content pre:hover .lp-copy-button {
+  opacity: 1;
+}
+
+.lp-copy-button:hover {
+  background-color: var(--lp-accent);
+  color: white;
+  border-color: var(--lp-accent);
+}
+
+.lp-copy-button:active {
+  transform: scale(0.95);
 }
 
 .lp-content code {
@@ -414,5 +452,94 @@ const DefaultCSS = `/* LeafPress Default Styles */
   .lp-title {
     font-size: 1.5rem;
   }
+
+  .lp-content pre {
+    padding: 0.75rem;
+    margin-left: -1rem;
+    margin-right: -1rem;
+    border-radius: 0;
+    max-width: calc(100vw - 2rem);
+  }
+
+  .lp-copy-button {
+    opacity: 1;
+  }
 }
+
+/* Syntax Highlighting (Chroma - GitHub theme) */
+.chroma { background-color: var(--lp-code-bg); }
+.chroma .err { color: #f6f8fa; background-color: #82071e }
+.chroma .lnlinks { outline: none; text-decoration: none; color: inherit }
+.chroma .lntd { vertical-align: top; padding: 0; margin: 0; border: 0; }
+.chroma .lntable { border-spacing: 0; padding: 0; margin: 0; border: 0; }
+.chroma .hl { background-color: #dedede }
+.chroma .lnt { white-space: pre; -webkit-user-select: none; user-select: none; margin-right: 0.4em; padding: 0 0.4em 0 0.4em; color: #7f7f7f }
+.chroma .ln { white-space: pre; -webkit-user-select: none; user-select: none; margin-right: 0.4em; padding: 0 0.4em 0 0.4em; color: #7f7f7f }
+.chroma .line { display: flex; }
+.chroma .k { color: #cf222e }
+.chroma .kc { color: #cf222e }
+.chroma .kd { color: #cf222e }
+.chroma .kn { color: #cf222e }
+.chroma .kp { color: #cf222e }
+.chroma .kr { color: #cf222e }
+.chroma .kt { color: #cf222e }
+.chroma .na { color: #1f2328 }
+.chroma .nc { color: #1f2328 }
+.chroma .no { color: #0550ae }
+.chroma .nd { color: #0550ae }
+.chroma .ni { color: #6639ba }
+.chroma .nl { color: #990000; font-weight: bold }
+.chroma .nn { color: #24292e }
+.chroma .nx { color: #1f2328 }
+.chroma .nt { color: #0550ae }
+.chroma .nb { color: #6639ba }
+.chroma .bp { color: #6a737d }
+.chroma .nv { color: #953800 }
+.chroma .vc { color: #953800 }
+.chroma .vg { color: #953800 }
+.chroma .vi { color: #953800 }
+.chroma .vm { color: #953800 }
+.chroma .nf { color: #6639ba }
+.chroma .fm { color: #6639ba }
+.chroma .s { color: #0a3069 }
+.chroma .sa { color: #0a3069 }
+.chroma .sb { color: #0a3069 }
+.chroma .sc { color: #0a3069 }
+.chroma .dl { color: #0a3069 }
+.chroma .sd { color: #0a3069 }
+.chroma .s2 { color: #0a3069 }
+.chroma .se { color: #0a3069 }
+.chroma .sh { color: #0a3069 }
+.chroma .si { color: #0a3069 }
+.chroma .sx { color: #0a3069 }
+.chroma .sr { color: #0a3069 }
+.chroma .s1 { color: #0a3069 }
+.chroma .ss { color: #032f62 }
+.chroma .m { color: #0550ae }
+.chroma .mb { color: #0550ae }
+.chroma .mf { color: #0550ae }
+.chroma .mh { color: #0550ae }
+.chroma .mi { color: #0550ae }
+.chroma .il { color: #0550ae }
+.chroma .mo { color: #0550ae }
+.chroma .o { color: #1f2328 }
+.chroma .ow { color: #cf222e }
+.chroma .p { color: #1f2328 }
+.chroma .c { color: #6a737d; font-style: italic }
+.chroma .ch { color: #6a737d; font-style: italic }
+.chroma .cm { color: #6a737d; font-style: italic }
+.chroma .c1 { color: #6a737d; font-style: italic }
+.chroma .cs { color: #6a737d; font-weight: bold; font-style: italic }
+.chroma .cp { color: #1f2328; font-weight: bold }
+.chroma .cpf { color: #6a737d; font-style: italic }
+.chroma .gd { color: #82071e; background-color: #ffebe9 }
+.chroma .ge { font-style: italic }
+.chroma .gr { color: #82071e }
+.chroma .gh { color: #0550ae; font-weight: bold }
+.chroma .gi { color: #116329; background-color: #dafbe1 }
+.chroma .go { color: #1f2328 }
+.chroma .gp { color: #6a737d }
+.chroma .gs { font-weight: bold }
+.chroma .gu { color: #0550ae }
+.chroma .gt { color: #82071e }
 `

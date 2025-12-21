@@ -193,6 +193,35 @@ const baseTemplate = `<!DOCTYPE html>
   <footer class="lp-footer">
     <span class="lp-footer-text">Grown with <a href="https://github.com/shivamx96/leafpress">LeafPress</a></span>
   </footer>
+  <script>
+    // Add copy buttons to code blocks
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelectorAll('pre.chroma').forEach(function(pre) {
+        var button = document.createElement('button');
+        button.className = 'lp-copy-button';
+        button.textContent = 'Copy';
+        button.setAttribute('aria-label', 'Copy code to clipboard');
+
+        button.addEventListener('click', function() {
+          var code = pre.querySelector('code').textContent;
+          navigator.clipboard.writeText(code).then(function() {
+            button.textContent = 'Copied!';
+            setTimeout(function() {
+              button.textContent = 'Copy';
+            }, 2000);
+          }).catch(function() {
+            button.textContent = 'Failed';
+            setTimeout(function() {
+              button.textContent = 'Copy';
+            }, 2000);
+          });
+        });
+
+        pre.style.position = 'relative';
+        pre.appendChild(button);
+      });
+    });
+  </script>
 </body>
 </html>
 `

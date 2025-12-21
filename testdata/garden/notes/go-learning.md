@@ -23,7 +23,9 @@ import "fmt"
 
 func main() {
     fmt.Println("Hello World!")
-    fmt.Println("Hello World!")
+    fmt.Println("Hello World and the")
+    fmt.Println("Hello World!")    
+    fmt.Println("Hello World and the rest of the Universe. Universe is composed of trillions of galaxies.")
 }
 ```
 
