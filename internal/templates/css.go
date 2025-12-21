@@ -39,6 +39,12 @@ const DefaultCSS = `/* LeafPress Default Styles */
   padding: 0 1rem;
 }
 
+.lp-nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
 .lp-nav-title {
   font-family: var(--lp-font-heading);
   font-weight: 600;
@@ -66,6 +72,56 @@ const DefaultCSS = `/* LeafPress Default Styles */
 
 .lp-nav-link:hover {
   color: var(--lp-accent);
+}
+
+.lp-theme-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  color: var(--lp-text);
+  transition: opacity 0.2s;
+}
+
+.lp-theme-toggle:hover {
+  opacity: 0.7;
+}
+
+.lp-theme-icon {
+  display: none;
+  width: 20px;
+  height: 20px;
+}
+
+.lp-theme-icon-light {
+  display: block;
+}
+
+[data-theme="dark"] .lp-theme-icon-light {
+  display: none;
+}
+
+[data-theme="dark"] .lp-theme-icon-dark {
+  display: block;
+}
+
+/* Mobile navigation */
+@media (max-width: 768px) {
+  .lp-nav-container {
+    gap: 0.5rem;
+  }
+
+  .lp-nav-brand {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .lp-nav-links {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 /* Desktop navigation */
@@ -542,4 +598,61 @@ const DefaultCSS = `/* LeafPress Default Styles */
 .chroma .gs { font-weight: bold }
 .chroma .gu { color: #0550ae }
 .chroma .gt { color: #82071e }
+
+/* Dark mode syntax highlighting */
+[data-theme="dark"] .chroma { background-color: var(--lp-code-bg); }
+[data-theme="dark"] .chroma .err { color: #960050; background-color: #1e0010 }
+[data-theme="dark"] .chroma .hl { background-color: #3c3d38 }
+[data-theme="dark"] .chroma .k { color: #66d9ef }
+[data-theme="dark"] .chroma .kc { color: #66d9ef }
+[data-theme="dark"] .chroma .kd { color: #66d9ef }
+[data-theme="dark"] .chroma .kn { color: #f92672 }
+[data-theme="dark"] .chroma .kp { color: #66d9ef }
+[data-theme="dark"] .chroma .kr { color: #66d9ef }
+[data-theme="dark"] .chroma .kt { color: #66d9ef }
+[data-theme="dark"] .chroma .na { color: #a6e22e }
+[data-theme="dark"] .chroma .nc { color: #a6e22e }
+[data-theme="dark"] .chroma .no { color: #66d9ef }
+[data-theme="dark"] .chroma .nd { color: #a6e22e }
+[data-theme="dark"] .chroma .ne { color: #a6e22e }
+[data-theme="dark"] .chroma .nx { color: #a6e22e }
+[data-theme="dark"] .chroma .nt { color: #f92672 }
+[data-theme="dark"] .chroma .nf { color: #a6e22e }
+[data-theme="dark"] .chroma .fm { color: #a6e22e }
+[data-theme="dark"] .chroma .s { color: #e6db74 }
+[data-theme="dark"] .chroma .sa { color: #e6db74 }
+[data-theme="dark"] .chroma .sb { color: #e6db74 }
+[data-theme="dark"] .chroma .sc { color: #e6db74 }
+[data-theme="dark"] .chroma .dl { color: #e6db74 }
+[data-theme="dark"] .chroma .sd { color: #e6db74 }
+[data-theme="dark"] .chroma .s2 { color: #e6db74 }
+[data-theme="dark"] .chroma .se { color: #ae81ff }
+[data-theme="dark"] .chroma .sh { color: #e6db74 }
+[data-theme="dark"] .chroma .si { color: #e6db74 }
+[data-theme="dark"] .chroma .sx { color: #e6db74 }
+[data-theme="dark"] .chroma .sr { color: #e6db74 }
+[data-theme="dark"] .chroma .s1 { color: #e6db74 }
+[data-theme="dark"] .chroma .ss { color: #e6db74 }
+[data-theme="dark"] .chroma .m { color: #ae81ff }
+[data-theme="dark"] .chroma .mb { color: #ae81ff }
+[data-theme="dark"] .chroma .mf { color: #ae81ff }
+[data-theme="dark"] .chroma .mh { color: #ae81ff }
+[data-theme="dark"] .chroma .mi { color: #ae81ff }
+[data-theme="dark"] .chroma .il { color: #ae81ff }
+[data-theme="dark"] .chroma .mo { color: #ae81ff }
+[data-theme="dark"] .chroma .o { color: #f92672 }
+[data-theme="dark"] .chroma .ow { color: #f92672 }
+[data-theme="dark"] .chroma .p { color: #f8f8f2 }
+[data-theme="dark"] .chroma .c { color: #75715e }
+[data-theme="dark"] .chroma .ch { color: #75715e }
+[data-theme="dark"] .chroma .cm { color: #75715e }
+[data-theme="dark"] .chroma .c1 { color: #75715e }
+[data-theme="dark"] .chroma .cs { color: #75715e }
+[data-theme="dark"] .chroma .cp { color: #75715e }
+[data-theme="dark"] .chroma .cpf { color: #75715e }
+[data-theme="dark"] .chroma .gd { color: #f92672 }
+[data-theme="dark"] .chroma .ge { font-style: italic }
+[data-theme="dark"] .chroma .gi { color: #a6e22e }
+[data-theme="dark"] .chroma .gs { font-weight: bold }
+[data-theme="dark"] .chroma .gu { color: #75715e }
 `
