@@ -29,6 +29,7 @@ type Theme struct {
 	FontBody    string `json:"fontBody"`
 	FontMono    string `json:"fontMono"`
 	Accent      string `json:"accent"`
+	StickyNav   bool   `json:"stickyNav"`
 }
 
 // Default returns a Config with default values
@@ -44,6 +45,7 @@ func Default() *Config {
 			FontBody:    "Inter",
 			FontMono:    "JetBrains Mono",
 			Accent:      "#4a9eff",
+			StickyNav:   true,
 		},
 		Graph: false,
 	}

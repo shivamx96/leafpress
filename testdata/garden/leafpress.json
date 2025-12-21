@@ -12,7 +12,8 @@
     "fontHeading": "Fjord One",
     "fontBody": "Plus Jakarta Sans",
     "fontMono": "Fira Code",
-    "accent": "#4a9eff"
+    "accent": "#4a9eff",
+    "stickyNav": true
   },
   "graph": true
 }

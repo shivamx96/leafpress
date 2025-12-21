@@ -169,6 +169,14 @@ const baseTemplate = `<!DOCTYPE html>
       --lp-max-width: 680px;
       --lp-nav-height: 60px;
     }
+    {{if .Site.Theme.StickyNav}}
+    .lp-nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background-color: var(--lp-bg);
+    }
+    {{end}}
 
     [data-theme="dark"] {
       --lp-bg: #1a1a1a;
