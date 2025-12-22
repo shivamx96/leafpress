@@ -9,9 +9,9 @@
     { "label": "Examples", "path": "/examples" }
   ],
   "theme": {
-    "fontHeading": "Crimson Pro",
-    "fontBody": "Inter",
-    "fontMono": "JetBrains Mono",
+    "fontHeading": "JetBrains Mono",
+    "fontBody": "Fira Code",
+    "fontMono": "Fira Code",
     "accent": "#50ac00",
     "background": {
       "light": "linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 50%, #ffffff 100%)",
