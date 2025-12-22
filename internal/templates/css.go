@@ -9,12 +9,17 @@ const DefaultCSS = `/* leafpress Default Styles */
   padding: 0;
 }
 
+html {
+  background: var(--lp-bg);
+  background-attachment: fixed;
+  min-height: 100%;
+}
+
 .lp-body {
   font-family: var(--lp-font-body);
   font-size: 16px;
   line-height: 1.6;
   color: var(--lp-text);
-  background: var(--lp-bg);
   min-height: 100vh;
   display: flex;
   flex-direction: column;

@@ -270,7 +270,8 @@ const baseTemplate = `<!DOCTYPE html>
       position: sticky;
       top: 0;
       z-index: 100;
-      background: var(--lp-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
     }
     {{end}}
 
