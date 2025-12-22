@@ -223,9 +223,17 @@ func (c *Config) Validate() error {
 	if err != nil {
 		return fmt.Errorf("invalid output directory path: %w", err)
 	}
-	dangerousPaths := []string{"/", "/etc", "/bin", "/usr", "/var", "/sys", "/proc"}
+	// Block exact system paths and their direct children (but allow deeper nesting like /var/folders/...)
+	dangerousPaths := []string{"/", "/etc", "/bin", "/usr", "/sys", "/proc", "/var/log", "/var/run"}
 	for _, dangerous := range dangerousPaths {
 		if absPath == dangerous || strings.HasPrefix(absPath, dangerous+string(filepath.Separator)) {
+			return fmt.Errorf("output directory cannot be set to system path: %s", absPath)
+		}
+	}
+	// Also block root-level system directories exactly
+	rootDirs := []string{"/etc", "/bin", "/usr", "/sys", "/proc", "/var", "/sbin", "/lib", "/boot"}
+	for _, dir := range rootDirs {
+		if absPath == dir {
 			return fmt.Errorf("output directory cannot be set to system path: %s", absPath)
 		}
 	}
