@@ -15,7 +15,7 @@
     "fontMono": "Fira Code",
     "accent": "#4a9eff",
     "background": {
-      "light": "linear-gradient(135deg, #dbeafe 0%, #eff6ff 50%, #ffffff 100%)",
+      "light": "linear-gradient(135deg, #f0f5ff 0%, #e0edff 50%, #ffffff 100%)",
       "dark": "linear-gradient(135deg, #0d1a2a 0%, #152238 50%, #1a1a1a 100%)"
     },
     "stickyNav": true
