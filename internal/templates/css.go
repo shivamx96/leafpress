@@ -250,12 +250,18 @@ html {
 .lp-meta {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
   color: var(--lp-text-muted);
   font-size: 0.9rem;
 }
 
-.lp-date {
+.lp-date-info {
+  color: var(--lp-text-muted);
+  font-size: 0.9rem;
+}
+
+.lp-date,
+.lp-modified {
   color: var(--lp-text-muted);
 }
 

@@ -218,7 +218,31 @@ fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR4"
 
-# Test 16: Custom styles
+# Test 16: Obsidian date aliases
+test_case "Obsidian date aliases are supported"
+TESTDIR5=$(mktemp -d)
+cd "$TESTDIR5"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > obsidian-dates.md << 'EOF'
+---
+title: Obsidian Dates
+created: 2024-01-15
+modified: 2024-06-20
+---
+
+This page uses Obsidian-style date fields.
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+# When modified is present, we show "Updated on" with modified date
+if grep -q "Updated on" _site/obsidian-dates/index.html && grep -q "Jun 20, 2024" _site/obsidian-dates/index.html; then
+    pass
+else
+    fail "Obsidian date aliases not rendered"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR5"
+
+# Test 17: Custom styles
 test_case "Custom style.css is used"
 if [ -f "testdata/garden/_site/style.css" ]; then
     pass
@@ -226,7 +250,7 @@ else
     fail "style.css not found"
 fi
 
-# Test 17: Dark mode toggle
+# Test 18: Dark mode toggle
 test_case "Dark mode toggle script is included"
 if grep -q 'data-theme="dark"' testdata/garden/_site/index.html; then
     pass

@@ -1,6 +1,7 @@
 ---
 title: "Learning Go"
-date: 2025-01-08
+created: 2024-11-15
+modified: 2025-01-08
 tags: [go, programming, learning]
 growth: "budding"
 ---

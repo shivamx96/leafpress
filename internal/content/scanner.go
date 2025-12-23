@@ -103,15 +103,20 @@ func (s *Scanner) parsePage(absPath, relPath string, info os.FileInfo) (*Page, e
 		return nil, err
 	}
 
-	// Parse date
-	date, err := ParseDate(fm.Date)
-	if err != nil {
-		// Use file modification time as fallback
-		date = info.ModTime()
+	// Parse created date (priority: date > created > createdAt > file mod time)
+	createdStr := fm.GetCreatedDate()
+	created, err := ParseDate(createdStr)
+	if err != nil || created.IsZero() {
+		created = info.ModTime()
 	}
-	if date.IsZero() {
-		date = info.ModTime()
-	}
+
+	// Parse modified date (priority: modified > updated > updatedAt)
+	modifiedStr := fm.GetModifiedDate()
+	modified, _ := ParseDate(modifiedStr)
+	// Note: modified can be zero if not specified
+
+	// Date is used for display/sorting, same as created
+	date := created
 
 	// Generate slug
 	slug := generateSlug(relPath)
@@ -132,6 +137,8 @@ func (s *Scanner) parsePage(absPath, relPath string, info os.FileInfo) (*Page, e
 	page := &Page{
 		Title:       title,
 		Date:        date,
+		Created:     created,
+		Modified:    modified,
 		Tags:        fm.Tags,
 		Draft:       fm.Draft,
 		Growth:      fm.Growth,

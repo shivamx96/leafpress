@@ -679,11 +679,13 @@ const pageTemplate = `
     <header class="lp-header">
       <h1 class="lp-title">{{.Page.Title}}</h1>
       <div class="lp-meta">
-        {{if not .Page.Date.IsZero}}
-        <time class="lp-date" datetime="{{.Page.ISODate}}">{{.Page.FormattedDate}}</time>
-        {{end}}
         {{if .Page.Growth}}
         <span class="lp-growth lp-growth--{{.Page.Growth}}">{{growthEmoji .Page.Growth}}</span>
+        {{end}}
+        {{if .Page.HasModified}}
+        <span class="lp-date-info">Updated on <time class="lp-modified" datetime="{{.Page.ISOModified}}">{{.Page.FormattedModified}}</time></span>
+        {{else if not .Page.Date.IsZero}}
+        <span class="lp-date-info">Created on <time class="lp-date" datetime="{{.Page.ISODate}}">{{.Page.FormattedDate}}</time></span>
         {{end}}
       </div>
       {{if .Page.Tags}}

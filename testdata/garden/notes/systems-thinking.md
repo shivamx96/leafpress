@@ -1,6 +1,6 @@
 ---
 title: "Systems Thinking"
-date: 2025-01-12
+createdAt: 2025-01-12
 tags: [thinking, mental-models]
 growth: "seedling"
 ---

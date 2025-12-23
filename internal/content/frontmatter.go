@@ -19,6 +19,13 @@ type Frontmatter struct {
 	Sort     string   `yaml:"sort"`     // For _index.md files
 	TOC      *bool    `yaml:"toc"`      // Override site-wide TOC setting (nil = use site default)
 	ShowList *bool    `yaml:"showList"` // Show page list on section index (nil = true)
+
+	// Obsidian-compatible date aliases
+	Created   string `yaml:"created"`   // Alias for date (creation date)
+	CreatedAt string `yaml:"createdAt"` // Alias for date (creation date)
+	Modified  string `yaml:"modified"`  // Last modified date
+	Updated   string `yaml:"updated"`   // Alias for modified
+	UpdatedAt string `yaml:"updatedAt"` // Alias for modified
 }
 
 // ParseFrontmatter extracts frontmatter and content from markdown
@@ -87,6 +94,7 @@ func ParseDate(dateStr string) (time.Time, error) {
 		"2006-01-02",
 		"2006-01-02T15:04:05Z",
 		"2006-01-02T15:04:05-07:00",
+		"2006-01-02 15:04:05",
 		"January 2, 2006",
 		"Jan 2, 2006",
 	}
@@ -98,4 +106,32 @@ func ParseDate(dateStr string) (time.Time, error) {
 	}
 
 	return time.Time{}, fmt.Errorf("unrecognized date format: %s", dateStr)
+}
+
+// GetCreatedDate returns the creation date with priority: date > created > createdAt
+func (fm *Frontmatter) GetCreatedDate() string {
+	if fm.Date != "" {
+		return fm.Date
+	}
+	if fm.Created != "" {
+		return fm.Created
+	}
+	if fm.CreatedAt != "" {
+		return fm.CreatedAt
+	}
+	return ""
+}
+
+// GetModifiedDate returns the modified date with priority: modified > updated > updatedAt
+func (fm *Frontmatter) GetModifiedDate() string {
+	if fm.Modified != "" {
+		return fm.Modified
+	}
+	if fm.Updated != "" {
+		return fm.Updated
+	}
+	if fm.UpdatedAt != "" {
+		return fm.UpdatedAt
+	}
+	return ""
 }

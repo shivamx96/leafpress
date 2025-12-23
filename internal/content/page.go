@@ -8,7 +8,9 @@ import (
 type Page struct {
 	// Metadata from frontmatter
 	Title    string
-	Date     time.Time
+	Date     time.Time // Primary display date (from date, created, or createdAt)
+	Created  time.Time // Creation date (from created, createdAt, or date)
+	Modified time.Time // Last modified date (from modified, updated, or updatedAt)
 	Tags     []string
 	Draft    bool
 	Growth   string // seedling | budding | evergreen
@@ -70,4 +72,35 @@ func (p *Page) ISODate() string {
 		return ""
 	}
 	return p.Date.Format("2006-01-02")
+}
+
+// FormattedModified returns the modified date in a human-readable format
+func (p *Page) FormattedModified() string {
+	if p.Modified.IsZero() {
+		return ""
+	}
+	return p.Modified.Format("Jan 2, 2006")
+}
+
+// ISOModified returns the modified date in ISO format
+func (p *Page) ISOModified() string {
+	if p.Modified.IsZero() {
+		return ""
+	}
+	return p.Modified.Format("2006-01-02")
+}
+
+// HasModified returns true if the page has a modified date different from created
+func (p *Page) HasModified() bool {
+	if p.Modified.IsZero() {
+		return false
+	}
+	// Only show modified if it's different from the created/date
+	if !p.Created.IsZero() {
+		return !p.Modified.Equal(p.Created)
+	}
+	if !p.Date.IsZero() {
+		return !p.Modified.Equal(p.Date)
+	}
+	return true
 }
