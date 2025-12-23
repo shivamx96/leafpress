@@ -265,10 +265,17 @@ const baseTemplate = `<!DOCTYPE html>
       --lp-bg: {{.Site.Theme.Background.Light | safeCSS}};
     }
     {{end}}
-    {{if .Site.Theme.StickyNav}}
+    {{if eq .Site.Theme.NavStyle "sticky"}}
     .lp-nav {
       position: sticky;
       top: 0;
+      z-index: 100;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+    {{end}}
+    {{if eq .Site.Theme.NavStyle "glassy"}}
+    .lp-nav {
       z-index: 100;
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
@@ -295,7 +302,7 @@ const baseTemplate = `<!DOCTYPE html>
   <link href="{{.Site.Theme.FontMono | fontURL}}" rel="stylesheet">
 </head>
 <body class="lp-body">
-  <div class="lp-nav-placeholder"></div>
+  {{if eq .Site.Theme.NavStyle "glassy"}}<div class="lp-nav-placeholder"></div>{{end}}
   <nav class="lp-nav">
     <div class="lp-nav-container">
       <div class="lp-nav-brand">
@@ -350,6 +357,7 @@ const baseTemplate = `<!DOCTYPE html>
         });
       }
 
+      {{if eq .Site.Theme.NavStyle "glassy"}}
       // Floating pill navbar on scroll
       var nav = document.querySelector('.lp-nav');
       var navPlaceholder = document.querySelector('.lp-nav-placeholder');
@@ -367,6 +375,7 @@ const baseTemplate = `<!DOCTYPE html>
           }
         });
       }
+      {{end}}
 
       // Copy buttons
       document.querySelectorAll('pre.chroma').forEach(function(pre) {

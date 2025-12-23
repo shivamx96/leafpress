@@ -40,8 +40,8 @@ type Theme struct {
 	FontBody    string     `json:"fontBody"`
 	FontMono    string     `json:"fontMono"`
 	Accent      string     `json:"accent"`
-	Background  Background `json:"-"` // Custom unmarshaling
-	StickyNav   bool       `json:"stickyNav"`
+	Background  Background `json:"-"`        // Custom unmarshaling
+	NavStyle    string     `json:"navStyle"` // "base", "sticky", or "glassy"
 }
 
 // UnmarshalJSON implements custom JSON unmarshaling for Theme
@@ -144,7 +144,7 @@ func Default() *Config {
 			FontBody:    "Inter",
 			FontMono:    "JetBrains Mono",
 			Accent:      "#50ac00",
-			StickyNav:   true,
+			NavStyle:    "glassy",
 		},
 		Graph:       false,
 		GraphOnHome: false,
@@ -187,6 +187,9 @@ func Load(path string) (*Config, error) {
 	}
 	if cfg.Theme.Accent == "" {
 		cfg.Theme.Accent = "#50ac00"
+	}
+	if cfg.Theme.NavStyle == "" {
+		cfg.Theme.NavStyle = "glassy"
 	}
 
 	// Validate configuration
@@ -254,6 +257,12 @@ func (c *Config) Validate() error {
 		if err := validateBackground(c.Theme.Background.Dark); err != nil {
 			return fmt.Errorf("invalid dark background: %w", err)
 		}
+	}
+
+	// Validate navStyle
+	validNavStyles := map[string]bool{"base": true, "sticky": true, "glassy": true}
+	if !validNavStyles[c.Theme.NavStyle] {
+		return fmt.Errorf("navStyle must be 'base', 'sticky', or 'glassy', got '%s'", c.Theme.NavStyle)
 	}
 
 	// Validate nav paths are well-formed
