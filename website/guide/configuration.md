@@ -19,6 +19,7 @@ leafpress is configured through `leafpress.json` in your site's root directory.
 ### Options
 
 - **title**: Site title shown in navigation and page titles
+- **author**: Your name, displayed in footer copyright notice
 - **baseURL**: Your site's URL (used for canonical links)
 - **outputDir**: Where to output built files (default: `_site`)
 - **port**: Dev server port (default: `3000`)

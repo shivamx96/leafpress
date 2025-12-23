@@ -96,6 +96,7 @@ func (b *Builder) Build() (*Stats, error) {
 	// Generate site data
 	siteData := templates.SiteData{
 		Title:       b.cfg.Title,
+		Author:      b.cfg.Author,
 		Nav:         b.cfg.Nav,
 		Theme:       b.cfg.Theme,
 		BaseURL:     b.cfg.BaseURL,

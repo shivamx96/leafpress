@@ -1,5 +1,6 @@
 {
   "title": "leafpress",
+  "author": "Shivam Shekhar",
   "baseURL": "https://leafpress.in",
   "outputDir": "_site",
   "port": 3000,

@@ -70,6 +70,7 @@ type TagInfo struct {
 // SiteData contains site-wide information
 type SiteData struct {
 	Title       string
+	Author      string
 	Nav         []config.NavItem
 	Theme       config.Theme
 	BaseURL     string
@@ -340,7 +341,8 @@ const baseTemplate = `<!DOCTYPE html>
     {{block "content" .}}{{end}}
   </main>
   <footer class="lp-footer">
-    <span class="lp-footer-text">Grown with <a href="https://leafpress.in">leafpress</a></span>
+    {{if .Site.Author}}<span class="lp-footer-text">&copy; {{.Site.Author}}. All rights reserved.</span>{{end}}
+    <span class="lp-footer-text">Grown with <a href="https://leafpress.in" target="_blank">leafpress</a></span>
   </footer>
   <script>
     // Theme switching

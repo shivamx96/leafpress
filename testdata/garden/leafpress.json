@@ -1,5 +1,6 @@
 {
   "title": "leafpress's garden",
+  "author": "Shivam Shekhar",
   "baseURL": "",
   "outputDir": "_site",
   "port": 3000,

@@ -18,6 +18,7 @@ type Background struct {
 // Config represents the leafpress.json configuration
 type Config struct {
 	Title       string    `json:"title"`
+	Author      string    `json:"author"`
 	BaseURL     string    `json:"baseURL"`
 	OutputDir   string    `json:"outputDir"`
 	Port        int       `json:"port"`

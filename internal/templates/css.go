@@ -737,6 +737,10 @@ html {
   text-align: center;
   color: var(--lp-text-muted);
   font-size: 0.85rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .lp-footer a {
@@ -746,6 +750,13 @@ html {
 
 .lp-footer a:hover {
   text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+  .lp-footer {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
 }
 
 /* Mobile responsive */

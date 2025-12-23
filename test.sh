@@ -840,6 +840,26 @@ fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR30"
 
+# Test 44: Author copyright in footer
+test_case "Author field adds copyright in footer"
+TESTDIR31=$(mktemp -d)
+cd "$TESTDIR31"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test Garden",
+  "author": "John Doe"
+}
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q '&copy; John Doe. All rights reserved.' _site/index.html; then
+    pass
+else
+    fail "Author copyright not in footer"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR31"
+
 # Cleanup
 rm -rf "$TESTDIR"
 
