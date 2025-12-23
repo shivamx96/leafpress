@@ -511,9 +511,17 @@ func sortPages(pages []*content.Page, sortBy string) {
 		sort.Slice(pages, func(i, j int) bool {
 			return growthOrder[pages[i].Growth] < growthOrder[pages[j].Growth]
 		})
-	default: // date
+	default: // date - use display date logic (modified if present, otherwise created)
 		sort.Slice(pages, func(i, j int) bool {
-			return pages[i].Date.After(pages[j].Date)
+			dateI := pages[i].Date
+			if pages[i].HasModified() {
+				dateI = pages[i].Modified
+			}
+			dateJ := pages[j].Date
+			if pages[j].HasModified() {
+				dateJ = pages[j].Modified
+			}
+			return dateI.After(dateJ)
 		})
 	}
 }

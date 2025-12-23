@@ -745,8 +745,8 @@ const indexTemplate = `
         <span class="lp-index-growth lp-index-growth--{{.Growth}}">{{growthEmoji .Growth}}</span>
         {{end}}
       </a>
-      {{if not .Date.IsZero}}
-      <time class="lp-index-date">{{.ShortDate}}</time>
+      {{if .DisplayDate}}
+      <time class="lp-index-date" datetime="{{.DisplayDateISO}}">{{.DisplayDate}}</time>
       {{end}}
     </li>
     {{end}}
@@ -788,8 +788,8 @@ const tagPageTemplate = `
         <span class="lp-index-growth lp-index-growth--{{.Growth}}">{{growthEmoji .Growth}}</span>
         {{end}}
       </a>
-      {{if not .Date.IsZero}}
-      <time class="lp-index-date">{{.ShortDate}}</time>
+      {{if .DisplayDate}}
+      <time class="lp-index-date" datetime="{{.DisplayDateISO}}">{{.DisplayDate}}</time>
       {{end}}
     </li>
     {{end}}

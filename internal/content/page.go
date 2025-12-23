@@ -104,3 +104,25 @@ func (p *Page) HasModified() bool {
 	}
 	return true
 }
+
+// DisplayDate returns the most relevant date (modified if exists, otherwise created)
+func (p *Page) DisplayDate() string {
+	if p.HasModified() {
+		return p.Modified.Format("Jan 2006")
+	}
+	if p.Date.IsZero() {
+		return ""
+	}
+	return p.Date.Format("Jan 2006")
+}
+
+// DisplayDateISO returns the most relevant date in ISO format
+func (p *Page) DisplayDateISO() string {
+	if p.HasModified() {
+		return p.Modified.Format("2006-01-02")
+	}
+	if p.Date.IsZero() {
+		return ""
+	}
+	return p.Date.Format("2006-01-02")
+}
