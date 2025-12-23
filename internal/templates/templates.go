@@ -658,7 +658,7 @@ const baseTemplate = `<!DOCTYPE html>
 `
 
 const pageTemplate = `
-{{define "title"}}{{.Page.Title}} | {{.Site.Title}}{{end}}
+{{define "title"}}{{if eq .Page.Slug ""}}{{.Site.Title}}{{else}}{{.Page.Title}} | {{.Site.Title}}{{end}}{{end}}
 {{define "content"}}
 <div class="lp-page-container">
   {{if and .Site.TOC .TOC}}
