@@ -22,10 +22,11 @@ type Templates struct {
 
 // PageData is the data passed to page templates
 type PageData struct {
-	Site    SiteData
-	Page    *content.Page
-	Content template.HTML
-	TOC     []TOCItem
+	Site        SiteData
+	Page        *content.Page
+	Content     template.HTML
+	TOC         []TOCItem
+	CurrentPath string // Current page path for nav active state
 }
 
 // TOCItem represents a table of contents entry
@@ -37,24 +38,27 @@ type TOCItem struct {
 
 // IndexData is the data passed to index templates
 type IndexData struct {
-	Site     SiteData
-	Title    string
-	Pages    []*content.Page
-	Intro    template.HTML // Optional intro content for section indexes
-	ShowList bool          // Show the page list
+	Site        SiteData
+	Title       string
+	Pages       []*content.Page
+	Intro       template.HTML // Optional intro content for section indexes
+	ShowList    bool          // Show the page list
+	CurrentPath string        // Current page path for nav active state
 }
 
 // TagIndexData is the data passed to the tags index template
 type TagIndexData struct {
-	Site SiteData
-	Tags []TagInfo
+	Site        SiteData
+	Tags        []TagInfo
+	CurrentPath string // Current page path for nav active state
 }
 
 // TagPageData is the data passed to individual tag pages
 type TagPageData struct {
-	Site  SiteData
-	Tag   string
-	Pages []*content.Page
+	Site        SiteData
+	Tag         string
+	Pages       []*content.Page
+	CurrentPath string // Current page path for nav active state
 }
 
 // TagInfo holds tag name and count
@@ -81,6 +85,7 @@ func New() (*Templates, error) {
 		"safeHTML":    func(s string) template.HTML { return template.HTML(s) },
 		"safeCSS":     func(s string) template.CSS { return template.CSS(s) },
 		"fontURL":     fontURL,
+		"hasPrefix":   strings.HasPrefix,
 	}
 
 	// Parse base template
@@ -326,7 +331,7 @@ const baseTemplate = `<!DOCTYPE html>
       </div>
       <div class="lp-nav-links">
         {{range .Site.Nav}}
-        <a class="lp-nav-link" href="{{.Path}}">{{.Label}}</a>
+        <a class="lp-nav-link{{if hasPrefix $.CurrentPath .Path}} lp-nav-link--active lp-nav-active-{{$.Site.Theme.NavActiveStyle}}{{end}}" href="{{.Path}}">{{.Label}}</a>
         {{end}}
       </div>
     </div>

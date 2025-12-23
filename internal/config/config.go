@@ -36,12 +36,13 @@ type NavItem struct {
 
 // Theme represents theme configuration
 type Theme struct {
-	FontHeading string     `json:"fontHeading"`
-	FontBody    string     `json:"fontBody"`
-	FontMono    string     `json:"fontMono"`
-	Accent      string     `json:"accent"`
-	Background  Background `json:"-"`        // Custom unmarshaling
-	NavStyle    string     `json:"navStyle"` // "base", "sticky", or "glassy"
+	FontHeading    string     `json:"fontHeading"`
+	FontBody       string     `json:"fontBody"`
+	FontMono       string     `json:"fontMono"`
+	Accent         string     `json:"accent"`
+	Background     Background `json:"-"`              // Custom unmarshaling
+	NavStyle       string     `json:"navStyle"`       // "base", "sticky", or "glassy"
+	NavActiveStyle string     `json:"navActiveStyle"` // "base", "box", or "underlined"
 }
 
 // UnmarshalJSON implements custom JSON unmarshaling for Theme
@@ -140,11 +141,12 @@ func Default() *Config {
 		Port:      3000,
 		Nav:       []NavItem{},
 		Theme: Theme{
-			FontHeading: "Crimson Pro",
-			FontBody:    "Inter",
-			FontMono:    "JetBrains Mono",
-			Accent:      "#50ac00",
-			NavStyle:    "glassy",
+			FontHeading:    "Crimson Pro",
+			FontBody:       "Inter",
+			FontMono:       "JetBrains Mono",
+			Accent:         "#50ac00",
+			NavStyle:       "glassy",
+			NavActiveStyle: "base",
 		},
 		Graph:       false,
 		GraphOnHome: false,
@@ -190,6 +192,9 @@ func Load(path string) (*Config, error) {
 	}
 	if cfg.Theme.NavStyle == "" {
 		cfg.Theme.NavStyle = "glassy"
+	}
+	if cfg.Theme.NavActiveStyle == "" {
+		cfg.Theme.NavActiveStyle = "base"
 	}
 
 	// Validate configuration
@@ -263,6 +268,12 @@ func (c *Config) Validate() error {
 	validNavStyles := map[string]bool{"base": true, "sticky": true, "glassy": true}
 	if !validNavStyles[c.Theme.NavStyle] {
 		return fmt.Errorf("navStyle must be 'base', 'sticky', or 'glassy', got '%s'", c.Theme.NavStyle)
+	}
+
+	// Validate navActiveStyle
+	validNavActiveStyles := map[string]bool{"base": true, "box": true, "underlined": true}
+	if !validNavActiveStyles[c.Theme.NavActiveStyle] {
+		return fmt.Errorf("navActiveStyle must be 'base', 'box', or 'underlined', got '%s'", c.Theme.NavActiveStyle)
 	}
 
 	// Validate nav paths are well-formed

@@ -90,17 +90,39 @@ Or separate backgrounds for light and dark mode:
 }
 ```
 
-### Sticky Navigation
+### Navigation Style
 
-Enable sticky navigation bar:
+Control how the navigation bar behaves:
 
 ```json
 {
   "theme": {
-    "stickyNav": true
+    "navStyle": "glassy"
   }
 }
 ```
+
+Options:
+- **base**: Navigation scrolls with content
+- **sticky**: Navigation sticks to the top
+- **glassy**: Navigation transforms into a floating pill on scroll (default)
+
+### Active Navigation Indicator
+
+Highlight the current page in navigation:
+
+```json
+{
+  "theme": {
+    "navActiveStyle": "base"
+  }
+}
+```
+
+Options:
+- **base**: Active link colored with accent color (default)
+- **box**: Active link in an accent-colored box
+- **underlined**: Active link with accent-colored underline
 
 ## Features
 

@@ -43,7 +43,7 @@ Technical documentation with clear navigation and search.
 ```json
 {
   "theme": {
-    "stickyNav": true
+    "navStyle": "sticky"
   },
   "toc": true
 }
@@ -87,7 +87,7 @@ An internal knowledge base with extensive cross-linking.
 {
   "toc": true,
   "theme": {
-    "stickyNav": true
+    "navStyle": "sticky"
   }
 }
 ```

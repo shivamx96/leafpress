@@ -112,6 +112,24 @@ html {
   color: var(--lp-accent);
 }
 
+/* Nav active styles */
+.lp-nav-link.lp-nav-link--active.lp-nav-active-base {
+  color: var(--lp-accent);
+}
+
+.lp-nav-link.lp-nav-link--active.lp-nav-active-box {
+  background-color: var(--lp-accent);
+  color: white;
+  padding: 0.25rem 0.5rem;
+  margin: -0.25rem -0.5rem;
+  border-radius: 4px;
+}
+
+.lp-nav-link.lp-nav-link--active.lp-nav-active-underlined {
+  box-shadow: 0 2px 0 var(--lp-accent);
+  padding-bottom: 2px;
+}
+
 .lp-theme-toggle {
   background: none;
   border: none;

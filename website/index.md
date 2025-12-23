@@ -3,7 +3,7 @@ title: "hi!"
 date: 2025-12-21
 ---
 
-**A fast, minimal static site generator for digital gardens and personal websites.**
+**A fast, minimal, opinionated (mildly configurable) static site generator for digital gardens and personal websites.**
 
 leafpress helps you build beautiful, interconnected websites from Markdown files. Perfect for digital gardens, knowledge bases, documentation, and blogs.
 
