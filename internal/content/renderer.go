@@ -54,8 +54,11 @@ func NewRenderer(resolver *LinkResolver) *Renderer {
 func (r *Renderer) Render(content string) (string, []string) {
 	var warnings []string
 
-	// First, replace wiki-links with HTML anchors
-	processed := r.processWikiLinks(content, &warnings)
+	// First, process Obsidian image embeds (![[image.png]])
+	processed := r.processObsidianImages(content)
+
+	// Then, replace wiki-links with HTML anchors
+	processed = r.processWikiLinks(processed, &warnings)
 
 	// Then render markdown to HTML
 	var buf bytes.Buffer
@@ -68,6 +71,50 @@ func (r *Renderer) Render(content string) (string, []string) {
 	html := r.processExternalLinks(buf.String())
 
 	return html, warnings
+}
+
+// obsidianImageRegex matches ![[image.png]] or ![[image.png|alt text]]
+var obsidianImageRegex = regexp.MustCompile(`!\[\[([^\]|]+?)(?:\|([^\]]+))?\]\]`)
+
+// processObsidianImages converts Obsidian image embeds to standard markdown
+func (r *Renderer) processObsidianImages(content string) string {
+	// Extract code blocks to protect them
+	codeBlocks := extractCodeBlocks(content)
+	protectedContent := content
+
+	// Replace code blocks with placeholders
+	for i, block := range codeBlocks {
+		placeholder := fmt.Sprintf("___CODE_BLOCK_%d___", i)
+		protectedContent = strings.Replace(protectedContent, block, placeholder, 1)
+	}
+
+	// Replace ![[image.png]] with ![image.png](/static/images/image.png)
+	// Replace ![[image.png|alt]] with ![alt](/static/images/image.png)
+	result := obsidianImageRegex.ReplaceAllStringFunc(protectedContent, func(match string) string {
+		submatches := obsidianImageRegex.FindStringSubmatch(match)
+		if len(submatches) < 2 {
+			return match
+		}
+
+		filename := strings.TrimSpace(submatches[1])
+		alt := filename
+		if len(submatches) > 2 && submatches[2] != "" {
+			alt = strings.TrimSpace(submatches[2])
+		}
+
+		// URL-encode spaces in filename
+		encodedFilename := strings.ReplaceAll(filename, " ", "%20")
+
+		return fmt.Sprintf("![%s](/static/images/%s)", alt, encodedFilename)
+	})
+
+	// Restore code blocks
+	for i, block := range codeBlocks {
+		placeholder := fmt.Sprintf("___CODE_BLOCK_%d___", i)
+		result = strings.Replace(result, placeholder, block, 1)
+	}
+
+	return result
 }
 
 // processWikiLinks replaces [[links]] with HTML anchors
