@@ -233,8 +233,8 @@ modified: 2024-06-20
 This page uses Obsidian-style date fields.
 EOF
 "$LEAFPRESS" build > /dev/null 2>&1
-# When modified is present, we show "Updated on" with modified date
-if grep -q "Updated on" _site/obsidian-dates/index.html && grep -q "Jun 20, 2024" _site/obsidian-dates/index.html; then
+# When modified is present, we show "Updated" with modified date
+if grep -q "Updated" _site/obsidian-dates/index.html && grep -q "Jun 20, 2024" _site/obsidian-dates/index.html; then
     pass
 else
     fail "Obsidian date aliases not rendered"
