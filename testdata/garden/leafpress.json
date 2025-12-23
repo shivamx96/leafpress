@@ -13,7 +13,7 @@
     "fontHeading": "Atkinson Hyperlegible",
     "fontBody": "Inter",
     "fontMono": "Fira Code",
-    "accent": "#4a9eff",
+    "accent": "#FF4646",
     "background": {
       "light": "linear-gradient(135deg, #f0f5ff 0%, #e0edff 50%, #ffffff 100%)",
       "dark": "linear-gradient(135deg, #0d1a2a 0%, #152238 50%, #1a1a1a 100%)"

@@ -543,6 +543,303 @@ fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR16"
 
+# Test 30: navStyle base (no sticky)
+test_case "navStyle base does not stick nav"
+TESTDIR17=$(mktemp -d)
+cd "$TESTDIR17"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test",
+  "theme": { "navStyle": "base" }
+}
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+# Should NOT have position: sticky or lp-nav-placeholder
+if ! grep -q "position: sticky" _site/index.html && ! grep -q "lp-nav-placeholder" _site/index.html; then
+    pass
+else
+    fail "Base nav style should not be sticky"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR17"
+
+# Test 31: Invalid navStyle rejected
+test_case "Invalid navStyle is rejected"
+TESTDIR18=$(mktemp -d)
+cd "$TESTDIR18"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test",
+  "theme": { "navStyle": "invalid" }
+}
+EOF
+if "$LEAFPRESS" build 2>&1 | grep -q "navStyle must be"; then
+    pass
+else
+    fail "Invalid navStyle not rejected"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR18"
+
+# Test 32: Invalid navActiveStyle rejected
+test_case "Invalid navActiveStyle is rejected"
+TESTDIR19=$(mktemp -d)
+cd "$TESTDIR19"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test",
+  "theme": { "navActiveStyle": "invalid" }
+}
+EOF
+if "$LEAFPRESS" build 2>&1 | grep -q "navActiveStyle must be"; then
+    pass
+else
+    fail "Invalid navActiveStyle not rejected"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR19"
+
+# Test 33: External links have correct class
+test_case "External links are marked correctly"
+TESTDIR20=$(mktemp -d)
+cd "$TESTDIR20"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > test.md << 'EOF'
+---
+title: Test
+---
+Visit [GitHub](https://github.com) for code.
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'class="lp-external"' _site/test/index.html && grep -q 'target="_blank"' _site/test/index.html; then
+    pass
+else
+    fail "External link not marked correctly"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR20"
+
+# Test 34: Broken wiki links have correct class
+test_case "Broken wiki links are styled"
+TESTDIR21=$(mktemp -d)
+cd "$TESTDIR21"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > test.md << 'EOF'
+---
+title: Test
+---
+Link to [[nonexistent-page]].
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'class="lp-broken-link"' _site/test/index.html; then
+    pass
+else
+    fail "Broken wiki link not styled"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR21"
+
+# Test 35: Section sorting by title
+test_case "Section can be sorted alphabetically by title"
+TESTDIR22=$(mktemp -d)
+cd "$TESTDIR22"
+"$LEAFPRESS" init > /dev/null 2>&1
+mkdir notes
+cat > notes/_index.md << 'EOF'
+---
+title: Notes
+sort: title
+---
+EOF
+cat > notes/zebra.md << 'EOF'
+---
+title: Zebra
+date: 2024-12-01
+---
+Content
+EOF
+cat > notes/apple.md << 'EOF'
+---
+title: Apple
+date: 2024-01-01
+---
+Content
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+# Apple should appear before Zebra when sorted alphabetically
+if awk '/Apple/{a=NR} /Zebra/{z=NR} END{exit !(a<z)}' _site/notes/index.html; then
+    pass
+else
+    fail "Section not sorted alphabetically"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR22"
+
+# Test 36: Tags on pages are rendered
+test_case "Tags are rendered on pages"
+TESTDIR23=$(mktemp -d)
+cd "$TESTDIR23"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > test.md << 'EOF'
+---
+title: Test
+tags: [coding, golang]
+---
+Content
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'class="lp-tag"' _site/test/index.html && grep -q '#coding' _site/test/index.html; then
+    pass
+else
+    fail "Tags not rendered on page"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR23"
+
+# Test 37: Tag cloud page is generated
+test_case "Tag cloud page is generated"
+TESTDIR24=$(mktemp -d)
+cd "$TESTDIR24"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > test.md << 'EOF'
+---
+title: Test
+tags: [coding]
+---
+Content
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if [ -f "_site/tags/index.html" ] && grep -q 'lp-tag-cloud' _site/tags/index.html; then
+    pass
+else
+    fail "Tag cloud page not generated"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR24"
+
+# Test 38: Individual tag pages are generated
+test_case "Individual tag pages are generated"
+TESTDIR25=$(mktemp -d)
+cd "$TESTDIR25"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > test.md << 'EOF'
+---
+title: Test
+tags: [coding]
+---
+Content
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if [ -f "_site/tags/coding/index.html" ]; then
+    pass
+else
+    fail "Individual tag page not generated"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR25"
+
+# Test 39: Backlinks section is shown
+test_case "Backlinks section is shown"
+TESTDIR26=$(mktemp -d)
+cd "$TESTDIR26"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > page-a.md << 'EOF'
+---
+title: Page A
+---
+Link to [[page-b]].
+EOF
+cat > page-b.md << 'EOF'
+---
+title: Page B
+---
+Content
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'class="lp-backlinks"' _site/page-b/index.html && grep -q 'Page A' _site/page-b/index.html; then
+    pass
+else
+    fail "Backlinks section not shown"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR26"
+
+# Test 40: Code syntax highlighting
+test_case "Code blocks have syntax highlighting"
+TESTDIR27=$(mktemp -d)
+cd "$TESTDIR27"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > test.md << 'EOF'
+---
+title: Test
+---
+```go
+func main() {}
+```
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'class="chroma"' _site/test/index.html; then
+    pass
+else
+    fail "Syntax highlighting not applied"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR27"
+
+# Test 41: Copy button script included
+test_case "Copy button script is included"
+TESTDIR28=$(mktemp -d)
+cd "$TESTDIR28"
+"$LEAFPRESS" init > /dev/null 2>&1
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'lp-copy-button' _site/index.html; then
+    pass
+else
+    fail "Copy button script not included"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR28"
+
+# Test 42: Custom fonts are loaded
+test_case "Custom fonts are loaded from Google Fonts"
+TESTDIR29=$(mktemp -d)
+cd "$TESTDIR29"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test",
+  "theme": {
+    "fontHeading": "Playfair Display",
+    "fontBody": "Roboto"
+  }
+}
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'fonts.googleapis.com.*Playfair' _site/index.html && grep -q 'fonts.googleapis.com.*Roboto' _site/index.html; then
+    pass
+else
+    fail "Custom fonts not loaded"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR29"
+
+# Test 43: All favicon formats are copied
+test_case "All favicon formats are present"
+TESTDIR30=$(mktemp -d)
+cd "$TESTDIR30"
+"$LEAFPRESS" init > /dev/null 2>&1
+"$LEAFPRESS" build > /dev/null 2>&1
+if [ -f "_site/favicon.svg" ] && [ -f "_site/favicon.ico" ] && [ -f "_site/favicon-96x96.png" ]; then
+    pass
+else
+    fail "Not all favicon formats present"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR30"
+
 # Cleanup
 rm -rf "$TESTDIR"
 
