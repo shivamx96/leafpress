@@ -682,10 +682,12 @@ const pageTemplate = `
         {{if .Page.Growth}}
         <span class="lp-growth lp-growth--{{.Page.Growth}}">{{growthEmoji .Page.Growth}}</span>
         {{end}}
-        {{if .Page.HasModified}}
-        <span class="lp-date-info">Updated on <time class="lp-modified" datetime="{{.Page.ISOModified}}">{{.Page.FormattedModified}}</time></span>
+        {{if and .Page.HasModified (not .Page.Date.IsZero)}}
+        <span class="lp-date-info">Updated <time class="lp-modified" datetime="{{.Page.ISOModified}}">{{.Page.FormattedModified}}</time> · Created <time class="lp-date" datetime="{{.Page.ISODate}}">{{.Page.FormattedDate}}</time></span>
+        {{else if .Page.HasModified}}
+        <span class="lp-date-info">Updated <time class="lp-modified" datetime="{{.Page.ISOModified}}">{{.Page.FormattedModified}}</time></span>
         {{else if not .Page.Date.IsZero}}
-        <span class="lp-date-info">Created on <time class="lp-date" datetime="{{.Page.ISODate}}">{{.Page.FormattedDate}}</time></span>
+        <span class="lp-date-info">Created <time class="lp-date" datetime="{{.Page.ISODate}}">{{.Page.FormattedDate}}</time></span>
         {{end}}
       </div>
       {{if .Page.Tags}}
