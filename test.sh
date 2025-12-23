@@ -860,6 +860,50 @@ fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR31"
 
+# Test 45: Backlinks are deduplicated
+test_case "Backlinks are deduplicated"
+TESTDIR32=$(mktemp -d)
+cd "$TESTDIR32"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > page-a.md << 'EOF'
+---
+title: Page A
+---
+Link to [[page-b]] once.
+Link to [[page-b]] twice.
+Link to [[page-b]] three times.
+EOF
+cat > page-b.md << 'EOF'
+---
+title: Page B
+---
+Content
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+# Count occurrences of "Page A" in backlinks - should be exactly 1
+COUNT=$(grep -o 'Page A' _site/page-b/index.html | wc -l | tr -d ' ')
+if [ "$COUNT" = "1" ]; then
+    pass
+else
+    fail "Backlinks not deduplicated (found $COUNT occurrences)"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR32"
+
+# Test 46: Leafpress footer link opens in new tab
+test_case "Footer link opens in new tab"
+TESTDIR33=$(mktemp -d)
+cd "$TESTDIR33"
+"$LEAFPRESS" init > /dev/null 2>&1
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'href="https://leafpress.in" target="_blank"' _site/index.html; then
+    pass
+else
+    fail "Footer link missing target=_blank"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR33"
+
 # Cleanup
 rm -rf "$TESTDIR"
 

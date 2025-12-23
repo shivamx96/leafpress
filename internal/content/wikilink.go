@@ -109,13 +109,22 @@ func BuildBacklinks(pages []*Page) {
 		}
 	}
 
+	// Track which pages have already been added as backlinks to avoid duplicates
+	backlinkSeen := make(map[*Page]map[*Page]bool)
+	for _, page := range pages {
+		backlinkSeen[page] = make(map[*Page]bool)
+	}
+
 	// Build reverse lookup (backlinks)
 	for _, page := range pages {
 		for _, target := range page.OutLinks {
 			result := resolver.Resolve(target)
 			if result.Page != nil && result.Page != page {
-				// Add this page as a backlink to the target
-				result.Page.Backlinks = append(result.Page.Backlinks, page)
+				// Only add if not already a backlink (deduplicate)
+				if !backlinkSeen[result.Page][page] {
+					backlinkSeen[result.Page][page] = true
+					result.Page.Backlinks = append(result.Page.Backlinks, page)
+				}
 			}
 		}
 	}
