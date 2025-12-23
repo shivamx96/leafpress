@@ -740,10 +740,10 @@ const indexTemplate = `
     {{range .Pages}}
     <li class="lp-index-item">
       <a class="lp-index-link" href="{{.Permalink}}">
-        <span class="lp-index-title">{{.Title}}</span>
         {{if .Growth}}
         <span class="lp-index-growth lp-index-growth--{{.Growth}}">{{growthEmoji .Growth}}</span>
         {{end}}
+        <span class="lp-index-title">{{.Title}}</span>
       </a>
       {{if .DisplayDate}}
       <time class="lp-index-date" datetime="{{.DisplayDateISO}}">{{.DisplayDate}}</time>
@@ -783,10 +783,10 @@ const tagPageTemplate = `
     {{range .Pages}}
     <li class="lp-index-item">
       <a class="lp-index-link" href="{{.Permalink}}">
-        <span class="lp-index-title">{{.Title}}</span>
         {{if .Growth}}
         <span class="lp-index-growth lp-index-growth--{{.Growth}}">{{growthEmoji .Growth}}</span>
         {{end}}
+        <span class="lp-index-title">{{.Title}}</span>
       </a>
       {{if .DisplayDate}}
       <time class="lp-index-date" datetime="{{.DisplayDateISO}}">{{.DisplayDate}}</time>
