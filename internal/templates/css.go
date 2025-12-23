@@ -148,7 +148,7 @@ html {
 /* Mobile navigation */
 @media (max-width: 768px) {
   .lp-nav-container {
-    gap: 0.5rem;
+    gap: 0.25rem;
   }
 
   .lp-nav-brand {
@@ -159,6 +159,10 @@ html {
   .lp-nav-links {
     width: 100%;
     justify-content: flex-start;
+  }
+
+  .lp-nav {
+    padding: 0.5rem 0;
   }
 
   .lp-nav.lp-nav--pill {
