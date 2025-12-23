@@ -32,7 +32,6 @@ html {
   align-items: center;
   justify-content: center;
   padding: 1rem 0;
-  transition: all 0.3s ease;
 }
 
 .lp-nav.lp-nav--pill {
@@ -45,6 +44,18 @@ html {
   border: 1px solid var(--lp-border);
   border-radius: 9999px;
   z-index: 1000;
+  animation: pillIn 0.3s ease-out forwards;
+}
+
+@keyframes pillIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 }
 
 /* Placeholder to prevent content jump when nav becomes fixed */
