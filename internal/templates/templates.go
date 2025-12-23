@@ -295,6 +295,7 @@ const baseTemplate = `<!DOCTYPE html>
   <link href="{{.Site.Theme.FontMono | fontURL}}" rel="stylesheet">
 </head>
 <body class="lp-body">
+  <div class="lp-nav-placeholder"></div>
   <nav class="lp-nav">
     <div class="lp-nav-container">
       <div class="lp-nav-brand">
@@ -346,6 +347,24 @@ const baseTemplate = `<!DOCTYPE html>
           var newTheme = currentTheme === 'light' ? 'dark' : 'light';
           document.documentElement.setAttribute('data-theme', newTheme);
           localStorage.setItem('theme', newTheme);
+        });
+      }
+
+      // Floating pill navbar on scroll
+      var nav = document.querySelector('.lp-nav');
+      var navPlaceholder = document.querySelector('.lp-nav-placeholder');
+      if (nav && navPlaceholder) {
+        var navHeight = nav.offsetHeight;
+        navPlaceholder.style.height = navHeight + 'px';
+
+        window.addEventListener('scroll', function() {
+          if (window.scrollY > navHeight) {
+            nav.classList.add('lp-nav--pill');
+            navPlaceholder.classList.add('lp-nav-placeholder--active');
+          } else {
+            nav.classList.remove('lp-nav--pill');
+            navPlaceholder.classList.remove('lp-nav-placeholder--active');
+          }
         });
       }
 

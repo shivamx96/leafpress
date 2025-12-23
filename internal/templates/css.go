@@ -32,6 +32,28 @@ html {
   align-items: center;
   justify-content: center;
   padding: 1rem 0;
+  transition: all 0.3s ease;
+}
+
+.lp-nav.lp-nav--pill {
+  position: fixed;
+  top: 0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 4rem);
+  max-width: var(--lp-max-width);
+  border: 1px solid var(--lp-border);
+  border-radius: 9999px;
+  z-index: 1000;
+}
+
+/* Placeholder to prevent content jump when nav becomes fixed */
+.lp-nav-placeholder {
+  display: none;
+}
+
+.lp-nav-placeholder.lp-nav-placeholder--active {
+  display: block;
 }
 
 .lp-nav-container {
@@ -126,6 +148,11 @@ html {
   .lp-nav-links {
     width: 100%;
     justify-content: flex-start;
+  }
+
+  .lp-nav.lp-nav--pill {
+    width: calc(100% - 1rem);
+    border-radius: 1rem;
   }
 }
 
