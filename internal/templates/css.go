@@ -616,6 +616,12 @@ html {
   font-family: var(--lp-font-heading);
   font-size: 2rem;
   font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.lp-section-count {
+  color: var(--lp-text-muted);
+  font-size: 0.9rem;
   margin-bottom: 1.5rem;
 }
 

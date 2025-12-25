@@ -765,6 +765,7 @@ const indexTemplate = `
 {{define "content"}}
 <div class="lp-section">
   <h1 class="lp-section-title">{{.Title}}</h1>
+  {{if .ShowList}}<p class="lp-section-count">{{len .Pages}} items in {{.Title}}</p>{{end}}
 
   {{if .Intro}}
   <div class="lp-section-intro">

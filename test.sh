@@ -904,6 +904,44 @@ fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR33"
 
+# Test 47: Section page shows item count
+test_case "Section page shows item count"
+TESTDIR34=$(mktemp -d)
+cd "$TESTDIR34"
+"$LEAFPRESS" init > /dev/null 2>&1
+mkdir notes
+cat > notes/_index.md << 'EOF'
+---
+title: Notes
+---
+EOF
+cat > notes/note1.md << 'EOF'
+---
+title: Note 1
+---
+Content
+EOF
+cat > notes/note2.md << 'EOF'
+---
+title: Note 2
+---
+Content
+EOF
+cat > notes/note3.md << 'EOF'
+---
+title: Note 3
+---
+Content
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q "3 items in Notes" _site/notes/index.html; then
+    pass
+else
+    fail "Section item count not shown"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR34"
+
 # Cleanup
 rm -rf "$TESTDIR"
 
