@@ -17,6 +17,9 @@ title = "Benchmark Test"
 compile_sass = false
 build_search_index = false
 
+[markdown]
+highlight_code = true
+
 [[taxonomies]]
 name = "tags"
 EOF
