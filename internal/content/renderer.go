@@ -225,12 +225,15 @@ func (r *Renderer) processExternalLinks(html string) string {
 }
 
 // RenderPages renders HTML content for all pages in parallel
-func RenderPages(pages []*Page, enableWikilinks bool) []string {
+// If resolver is nil, a new one will be created
+func RenderPages(pages []*Page, enableWikilinks bool, resolver *LinkResolver) []string {
 	if len(pages) == 0 {
 		return nil
 	}
 
-	resolver := NewLinkResolver(pages)
+	if resolver == nil {
+		resolver = NewLinkResolver(pages)
+	}
 	renderer := NewRenderer(resolver, enableWikilinks)
 
 	numWorkers := runtime.NumCPU()

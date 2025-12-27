@@ -42,10 +42,13 @@ type Builder struct {
 	templates *templates.Templates
 
 	// Cached state for incremental builds
-	pages       []*content.Page
-	pagesByPath map[string]*content.Page // SourcePath -> Page
-	pagesBySlug map[string]*content.Page // Slug -> Page
-	siteData    templates.SiteData
+	pages          []*content.Page
+	pagesByPath    map[string]*content.Page   // SourcePath -> Page
+	pagesBySlug    map[string]*content.Page   // Slug -> Page
+	pagesBySection map[string][]*content.Page // Section -> Pages (for fast section lookups)
+	pagesByTag     map[string][]*content.Page // Tag (lowercase) -> Pages (for fast tag lookups)
+	linkResolver   *content.LinkResolver      // Cached link resolver
+	siteData       templates.SiteData
 }
 
 // New creates a new Builder
@@ -111,16 +114,25 @@ func (b *Builder) Build() (*Stats, error) {
 		pages = filterDrafts(pages)
 	}
 
+	// Build section index for O(1) lookups
+	b.pagesBySection = buildSectionIndex(pages)
+
+	// Build tag index for O(1) lookups
+	b.pagesByTag = buildTagIndex(pages)
+
+	// Create link resolver once (reused for backlinks, rendering, graph)
+	b.linkResolver = content.NewLinkResolver(pages)
+
 	// Build backlinks (if enabled)
 	t0 = time.Now()
 	if b.cfg.Backlinks {
-		content.BuildBacklinks(pages)
+		content.BuildBacklinks(pages, b.linkResolver)
 	}
 	b.logTiming("backlinks", time.Since(t0))
 
 	// Render markdown to HTML
 	t0 = time.Now()
-	warnings := content.RenderPages(pages, b.cfg.Wikilinks)
+	warnings := content.RenderPages(pages, b.cfg.Wikilinks, b.linkResolver)
 	b.logTiming("markdown", time.Since(t0))
 	stats.WarningCount = len(warnings)
 
@@ -427,13 +439,16 @@ func (b *Builder) rebuildMarkdownFile(relPath string, changeType ChangeType) (*I
 
 	// Rebuild backlinks with updated page set
 	t0 = time.Now()
-	content.BuildBacklinks(b.pages)
+	if b.cfg.Backlinks {
+		content.BuildBacklinks(b.pages, b.linkResolver)
+	}
 	b.logTiming("backlinks", time.Since(t0))
 
 	// If the changed page has new outlinks, rebuild pages it now links to
-	resolver := content.NewLinkResolver(b.pages)
+	// Update the cached resolver with current pages
+	b.linkResolver = content.NewLinkResolver(b.pages)
 	for _, target := range changedPage.OutLinks {
-		result := resolver.Resolve(target)
+		result := b.linkResolver.Resolve(target)
 		if result.Page != nil {
 			pagesToRebuild[result.Page.SourcePath] = result.Page
 		}
@@ -451,7 +466,7 @@ func (b *Builder) rebuildMarkdownFile(relPath string, changeType ChangeType) (*I
 			}
 		}
 	}
-	content.RenderPages(pagesToRender, b.cfg.Wikilinks)
+	content.RenderPages(pagesToRender, b.cfg.Wikilinks, b.linkResolver)
 	b.logTiming("markdown", time.Since(t0))
 
 	// Render the affected pages
@@ -545,13 +560,14 @@ func (b *Builder) handleDeletedFile(relPath string) (*IncrementalStats, error) {
 	}
 	b.pages = newPages
 
-	// Rebuild backlinks
+	// Update resolver and rebuild backlinks
+	b.linkResolver = content.NewLinkResolver(b.pages)
 	if b.cfg.Backlinks {
-		content.BuildBacklinks(b.pages)
+		content.BuildBacklinks(b.pages, b.linkResolver)
 	}
 
 	// Re-render affected pages
-	content.RenderPages(pagesToRebuild, b.cfg.Wikilinks)
+	content.RenderPages(pagesToRebuild, b.cfg.Wikilinks, b.linkResolver)
 	for _, page := range pagesToRebuild {
 		if page.IsIndex {
 			if err := b.renderSectionIndex(page, b.pages, b.siteData); err != nil {
@@ -597,7 +613,7 @@ func (b *Builder) handleDeletedFile(relPath string) (*IncrementalStats, error) {
 
 // rebuildAutoIndex rebuilds a single auto-generated index
 func (b *Builder) rebuildAutoIndex(sectionSlug string, pages []*content.Page) error {
-	sectionPages := getSectionPages(sectionSlug, pages)
+	sectionPages := b.getSectionPagesFromIndex(sectionSlug)
 	sortPages(sectionPages, "date")
 
 	outPath := filepath.Join(b.outputDir, sectionSlug, "index.html")
@@ -625,22 +641,14 @@ func (b *Builder) rebuildAutoIndex(sectionSlug string, pages []*content.Page) er
 
 // rebuildTagPages rebuilds specific tag pages
 func (b *Builder) rebuildTagPages(tags map[string]bool, pages []*content.Page) error {
-	// Collect pages for each tag
-	tagPages := make(map[string][]*content.Page)
-	for _, page := range pages {
-		for _, tag := range page.Tags {
-			tagLower := strings.ToLower(tag)
-			if tags[tagLower] {
-				tagPages[tagLower] = append(tagPages[tagLower], page)
-			}
-		}
-	}
+	// Rebuild the tag index (pages may have changed)
+	b.pagesByTag = buildTagIndex(pages)
 
 	tagsDir := filepath.Join(b.outputDir, "tags")
 
 	for tag := range tags {
 		tagDir := filepath.Join(tagsDir, tag)
-		pagesForTag := tagPages[tag]
+		pagesForTag := b.pagesByTag[tag]
 
 		if len(pagesForTag) == 0 {
 			// Tag no longer has any pages, remove it
@@ -672,19 +680,12 @@ func (b *Builder) rebuildTagPages(tags map[string]bool, pages []*content.Page) e
 		f.Close()
 	}
 
-	// Rebuild tag index
+	// Rebuild tag index using cached pagesByTag
 	var allTags []templates.TagInfo
-	allTagPages := make(map[string][]*content.Page)
-	for _, page := range pages {
-		for _, tag := range page.Tags {
-			tagLower := strings.ToLower(tag)
-			allTagPages[tagLower] = append(allTagPages[tagLower], page)
-		}
-	}
-	for tag, pages := range allTagPages {
+	for tag, taggedPages := range b.pagesByTag {
 		allTags = append(allTags, templates.TagInfo{
 			Name:  tag,
-			Count: len(pages),
+			Count: len(taggedPages),
 		})
 	}
 	sort.Slice(allTags, func(i, j int) bool {
@@ -751,7 +752,7 @@ func (b *Builder) renderPage(page *content.Page, siteData templates.SiteData) er
 // renderSectionIndex renders a section index page
 func (b *Builder) renderSectionIndex(indexPage *content.Page, allPages []*content.Page, siteData templates.SiteData) error {
 	// Get pages in this section
-	sectionPages := getSectionPages(indexPage.Slug, allPages)
+	sectionPages := b.getSectionPagesFromIndex(indexPage.Slug)
 
 	// Sort pages
 	sortPages(sectionPages, indexPage.SectionSort)
@@ -838,7 +839,7 @@ func (b *Builder) generateAutoIndexes(pages []*content.Page, siteData templates.
 		go func() {
 			defer wg.Done()
 			for dir := range dirChan {
-				sectionPages := getSectionPages(dir, pages)
+				sectionPages := b.getSectionPagesFromIndex(dir)
 				sortPages(sectionPages, "date")
 
 				outPath := filepath.Join(b.outputDir, dir, "index.html")
@@ -889,13 +890,11 @@ func (b *Builder) generateAutoIndexes(pages []*content.Page, siteData templates.
 
 // generateTagPages creates tag index and individual tag pages
 func (b *Builder) generateTagPages(pages []*content.Page, siteData templates.SiteData) error {
-	// Collect all tags
-	tagPages := make(map[string][]*content.Page)
-	for _, page := range pages {
-		for _, tag := range page.Tags {
-			tagLower := strings.ToLower(tag)
-			tagPages[tagLower] = append(tagPages[tagLower], page)
-		}
+	// Use cached tag index (already built during Build)
+	tagPages := b.pagesByTag
+	if tagPages == nil {
+		// Fallback: build tag index if not cached
+		tagPages = buildTagIndex(pages)
 	}
 
 	if len(tagPages) == 0 {
@@ -1088,7 +1087,6 @@ func (b *Builder) generateGraph(pages []*content.Page) error {
 		Edges []Edge `json:"edges"`
 	}
 
-	resolver := content.NewLinkResolver(pages)
 	graph := Graph{}
 
 	for _, page := range pages {
@@ -1101,7 +1099,7 @@ func (b *Builder) generateGraph(pages []*content.Page) error {
 		})
 
 		for _, target := range page.OutLinks {
-			result := resolver.Resolve(target)
+			result := b.linkResolver.Resolve(target)
 			if result.Page != nil {
 				graph.Edges = append(graph.Edges, Edge{
 					Source: page.Slug,
@@ -1134,6 +1132,35 @@ func filterDrafts(pages []*content.Page) []*content.Page {
 	return result
 }
 
+// buildSectionIndex creates a map of section -> pages for O(1) lookups
+func buildSectionIndex(pages []*content.Page) map[string][]*content.Page {
+	index := make(map[string][]*content.Page)
+	for _, page := range pages {
+		if page.IsIndex {
+			continue
+		}
+		section := filepath.Dir(page.Slug)
+		if section == "." {
+			section = ""
+		}
+		index[section] = append(index[section], page)
+	}
+	return index
+}
+
+// buildTagIndex creates a map of tag (lowercase) -> pages for O(1) lookups
+func buildTagIndex(pages []*content.Page) map[string][]*content.Page {
+	index := make(map[string][]*content.Page)
+	for _, page := range pages {
+		for _, tag := range page.Tags {
+			tagLower := strings.ToLower(tag)
+			index[tagLower] = append(index[tagLower], page)
+		}
+	}
+	return index
+}
+
+// getSectionPages returns pages in a section (falls back to linear scan if no index)
 func getSectionPages(section string, allPages []*content.Page) []*content.Page {
 	var result []*content.Page
 	for _, page := range allPages {
@@ -1149,6 +1176,15 @@ func getSectionPages(section string, allPages []*content.Page) []*content.Page {
 		}
 	}
 	return result
+}
+
+// getSectionPagesFromIndex returns pages using the pre-built section index (O(1) lookup)
+func (b *Builder) getSectionPagesFromIndex(section string) []*content.Page {
+	if b.pagesBySection != nil {
+		return b.pagesBySection[section]
+	}
+	// Fallback to linear scan if index not built
+	return getSectionPages(section, b.pages)
 }
 
 func sortPages(pages []*content.Page, sortBy string) {

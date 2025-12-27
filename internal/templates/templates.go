@@ -1,6 +1,7 @@
 package templates
 
 import (
+	"bufio"
 	"html"
 	"html/template"
 	"io"
@@ -151,22 +152,38 @@ func New() (*Templates, error) {
 
 // RenderPage renders a content page
 func (t *Templates) RenderPage(w io.Writer, data PageData) error {
-	return t.page.Execute(w, data)
+	bw := bufio.NewWriterSize(w, 8192)
+	if err := t.page.Execute(bw, data); err != nil {
+		return err
+	}
+	return bw.Flush()
 }
 
 // RenderIndex renders a section index page
 func (t *Templates) RenderIndex(w io.Writer, data IndexData) error {
-	return t.index.Execute(w, data)
+	bw := bufio.NewWriterSize(w, 8192)
+	if err := t.index.Execute(bw, data); err != nil {
+		return err
+	}
+	return bw.Flush()
 }
 
 // RenderTagIndex renders the tags index page
 func (t *Templates) RenderTagIndex(w io.Writer, data TagIndexData) error {
-	return t.tagIndex.Execute(w, data)
+	bw := bufio.NewWriterSize(w, 4096)
+	if err := t.tagIndex.Execute(bw, data); err != nil {
+		return err
+	}
+	return bw.Flush()
 }
 
 // RenderTagPage renders an individual tag page
 func (t *Templates) RenderTagPage(w io.Writer, data TagPageData) error {
-	return t.tagPage.Execute(w, data)
+	bw := bufio.NewWriterSize(w, 8192)
+	if err := t.tagPage.Execute(bw, data); err != nil {
+		return err
+	}
+	return bw.Flush()
 }
 
 func growthEmoji(growth string) string {

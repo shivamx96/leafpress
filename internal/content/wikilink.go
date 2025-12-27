@@ -98,8 +98,14 @@ func (r *LinkResolver) Resolve(target string) ResolveResult {
 }
 
 // BuildBacklinks populates the Backlinks field on all pages
-func BuildBacklinks(pages []*Page) {
-	resolver := NewLinkResolver(pages)
+// If resolver is nil, a new one will be created
+func BuildBacklinks(pages []*Page, resolver ...*LinkResolver) {
+	var r *LinkResolver
+	if len(resolver) > 0 && resolver[0] != nil {
+		r = resolver[0]
+	} else {
+		r = NewLinkResolver(pages)
+	}
 
 	// First, extract outlinks for all pages
 	for _, page := range pages {
@@ -118,7 +124,7 @@ func BuildBacklinks(pages []*Page) {
 	// Build reverse lookup (backlinks)
 	for _, page := range pages {
 		for _, target := range page.OutLinks {
-			result := resolver.Resolve(target)
+			result := r.Resolve(target)
 			if result.Page != nil && result.Page != page {
 				// Only add if not already a backlink (deduplicate)
 				if !backlinkSeen[result.Page][page] {
