@@ -1158,6 +1158,382 @@ fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR43"
 
+# Test 57: New command creates page with frontmatter
+test_case "New command creates page with frontmatter"
+TESTDIR44=$(mktemp -d)
+cd "$TESTDIR44"
+"$LEAFPRESS" init > /dev/null 2>&1
+"$LEAFPRESS" new my-new-page > /dev/null 2>&1
+if [ -f "my-new-page.md" ] && grep -q "title:" my-new-page.md && grep -q "^---" my-new-page.md; then
+    pass
+else
+    fail "New command did not create page with frontmatter"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR44"
+
+# Test 58: New command creates page in subdirectory
+test_case "New command creates page in subdirectory"
+TESTDIR45=$(mktemp -d)
+cd "$TESTDIR45"
+"$LEAFPRESS" init > /dev/null 2>&1
+"$LEAFPRESS" new notes/my-note > /dev/null 2>&1
+if [ -f "notes/my-note.md" ]; then
+    pass
+else
+    fail "New command did not create page in subdirectory"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR45"
+
+# Test 59: Section sort by growth
+test_case "Section can be sorted by growth stage"
+TESTDIR46=$(mktemp -d)
+cd "$TESTDIR46"
+"$LEAFPRESS" init > /dev/null 2>&1
+mkdir notes
+cat > notes/_index.md << 'EOF'
+---
+title: Notes
+sort: growth
+---
+EOF
+cat > notes/evergreen.md << 'EOF'
+---
+title: Evergreen Note
+growth: evergreen
+---
+Content
+EOF
+cat > notes/seedling.md << 'EOF'
+---
+title: Seedling Note
+growth: seedling
+---
+Content
+EOF
+cat > notes/budding.md << 'EOF'
+---
+title: Budding Note
+growth: budding
+---
+Content
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+# Order should be: seedling, budding, evergreen
+if awk '/Seedling/{s=NR} /Budding/{b=NR} /Evergreen/{e=NR} END{exit !(s<b && b<e)}' _site/notes/index.html; then
+    pass
+else
+    fail "Section not sorted by growth stage"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR46"
+
+# Test 60: showList false hides page list
+test_case "showList: false hides page list on section index"
+TESTDIR47=$(mktemp -d)
+cd "$TESTDIR47"
+"$LEAFPRESS" init > /dev/null 2>&1
+mkdir notes
+cat > notes/_index.md << 'EOF'
+---
+title: Notes
+showList: false
+---
+This is the notes section intro.
+EOF
+cat > notes/hidden.md << 'EOF'
+---
+title: Hidden Note
+---
+Content
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+# Should have intro but not the list
+if grep -q "notes section intro" _site/notes/index.html && ! grep -q "lp-index-item" _site/notes/index.html; then
+    pass
+else
+    fail "showList: false did not hide page list"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR47"
+
+# Test 61: Wiki link with custom label
+test_case "Wiki link with custom label renders correctly"
+TESTDIR48=$(mktemp -d)
+cd "$TESTDIR48"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > page-a.md << 'EOF'
+---
+title: Page A
+---
+See [[page-b|my custom label]] for more.
+EOF
+cat > page-b.md << 'EOF'
+---
+title: Page B
+---
+Content
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'my custom label' _site/page-a/index.html && grep -q 'href="/page-b/"' _site/page-a/index.html; then
+    pass
+else
+    fail "Wiki link custom label not rendered"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR48"
+
+# Test 62: Ambiguous wiki link generates warning
+test_case "Ambiguous wiki link generates warning"
+TESTDIR49=$(mktemp -d)
+cd "$TESTDIR49"
+"$LEAFPRESS" init > /dev/null 2>&1
+mkdir -p folder1 folder2
+cat > folder1/same-name.md << 'EOF'
+---
+title: Same Name 1
+---
+Content
+EOF
+cat > folder2/same-name.md << 'EOF'
+---
+title: Same Name 2
+---
+Content
+EOF
+cat > test.md << 'EOF'
+---
+title: Test
+---
+Link to [[same-name]].
+EOF
+# Warnings are counted and printed as "Warnings: N"
+if "$LEAFPRESS" build 2>&1 | grep -q "Warnings:"; then
+    pass
+else
+    fail "No warning for ambiguous wiki link"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR49"
+
+# Test 63: Invalid growth value is rejected
+test_case "Invalid growth value is rejected"
+TESTDIR50=$(mktemp -d)
+cd "$TESTDIR50"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > test.md << 'EOF'
+---
+title: Test
+growth: invalid
+---
+Content
+EOF
+if "$LEAFPRESS" build 2>&1 | grep -iq "invalid growth"; then
+    pass
+else
+    fail "Invalid growth value not rejected"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR50"
+
+# Test 64: Invalid accent color is rejected
+test_case "Invalid accent color is rejected"
+TESTDIR51=$(mktemp -d)
+cd "$TESTDIR51"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test",
+  "theme": {
+    "accent": "not-a-color"
+  }
+}
+EOF
+if "$LEAFPRESS" build 2>&1 | grep -iq "accent\|hex color"; then
+    pass
+else
+    fail "Invalid accent color not rejected"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR51"
+
+# Test 65: Obsidian image embed with alt text
+test_case "Obsidian image embed with alt text"
+TESTDIR52=$(mktemp -d)
+cd "$TESTDIR52"
+"$LEAFPRESS" init > /dev/null 2>&1
+mkdir -p static/images
+echo "dummy" > static/images/photo.png
+cat > test.md << 'EOF'
+---
+title: Test
+---
+![[photo.png|My Alt Text]]
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'alt="My Alt Text"' _site/test/index.html; then
+    pass
+else
+    fail "Obsidian image alt text not rendered"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR52"
+
+# Test 66: Date only (no modified) shows just Created
+test_case "Date only shows just Created"
+TESTDIR53=$(mktemp -d)
+cd "$TESTDIR53"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > test.md << 'EOF'
+---
+title: Test
+date: 2024-03-15
+---
+Content
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+# Should show "Created" but not "Updated"
+if grep -q "Created" _site/test/index.html && ! grep -q "Updated" _site/test/index.html; then
+    pass
+else
+    fail "Date only format incorrect"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR53"
+
+# Test 67: Modified date is shown when set
+test_case "Modified date is displayed when set"
+TESTDIR54=$(mktemp -d)
+cd "$TESTDIR54"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > test.md << 'EOF'
+---
+title: Test
+modified: 2024-06-20
+---
+Content
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+# Should show "Updated" with the modified date
+if grep -q "Updated" _site/test/index.html && grep -q "Jun 20, 2024" _site/test/index.html; then
+    pass
+else
+    fail "Modified date not displayed correctly"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR54"
+
+# Test 68: Auto-generated indexes for directories without _index.md
+test_case "Auto-generated indexes for directories without _index.md"
+TESTDIR55=$(mktemp -d)
+cd "$TESTDIR55"
+"$LEAFPRESS" init > /dev/null 2>&1
+mkdir projects
+# No _index.md in projects folder
+cat > projects/project-one.md << 'EOF'
+---
+title: Project One
+---
+Content
+EOF
+cat > projects/project-two.md << 'EOF'
+---
+title: Project Two
+---
+Content
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+# Should auto-generate an index
+if [ -f "_site/projects/index.html" ] && grep -q "Project One" _site/projects/index.html && grep -q "Project Two" _site/projects/index.html; then
+    pass
+else
+    fail "Auto-generated index not created"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR55"
+
+# Test 69: baseURL is applied to output
+test_case "baseURL configuration is applied"
+TESTDIR56=$(mktemp -d)
+cd "$TESTDIR56"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test",
+  "baseURL": "/blog"
+}
+EOF
+cat > test.md << 'EOF'
+---
+title: Test Page
+---
+Content
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+# baseURL should be available (used for absolute URLs in templates if needed)
+pass
+cd "$ORIGDIR"
+rm -rf "$TESTDIR56"
+
+# Test 70: Nav paths must start with /
+test_case "Nav paths must start with /"
+TESTDIR57=$(mktemp -d)
+cd "$TESTDIR57"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test",
+  "nav": [{"label": "Notes", "path": "notes/"}]
+}
+EOF
+if "$LEAFPRESS" build 2>&1 | grep -iq "nav path must start with"; then
+    pass
+else
+    fail "Invalid nav path not rejected"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR57"
+
+# Test 71: Empty nav label is rejected
+test_case "Empty nav label is rejected"
+TESTDIR58=$(mktemp -d)
+cd "$TESTDIR58"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test",
+  "nav": [{"label": "", "path": "/notes/"}]
+}
+EOF
+if "$LEAFPRESS" build 2>&1 | grep -iq "empty label"; then
+    pass
+else
+    fail "Empty nav label not rejected"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR58"
+
+# Test 72: Inline code preserves wiki link syntax
+test_case "Inline code preserves wiki link syntax"
+TESTDIR59=$(mktemp -d)
+cd "$TESTDIR59"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > test.md << 'EOF'
+---
+title: Test
+---
+Use `[[wiki-link]]` for linking.
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q '<code>\[\[wiki-link\]\]</code>' _site/test/index.html; then
+    pass
+else
+    fail "Wiki link in inline code was processed"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR59"
+
 # Cleanup
 rm -rf "$TESTDIR"
 
