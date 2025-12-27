@@ -20,6 +20,23 @@ var (
 	nonAlphaNumeric = regexp.MustCompile(`[^a-z0-9]+`)
 )
 
+// Cached templates singleton (parsed once at first use)
+var (
+	cachedTemplates *Templates
+	templateFuncs   template.FuncMap
+)
+
+func init() {
+	templateFuncs = template.FuncMap{
+		"growthEmoji": growthEmoji,
+		"lower":       strings.ToLower,
+		"safeHTML":    func(s string) template.HTML { return template.HTML(s) },
+		"safeCSS":     func(s string) template.CSS { return template.CSS(s) },
+		"fontURL":     fontURL,
+		"hasPrefix":   strings.HasPrefix,
+	}
+}
+
 // Templates holds all parsed templates
 type Templates struct {
 	base     *template.Template
@@ -87,19 +104,15 @@ type SiteData struct {
 	Graph   bool
 }
 
-// New creates a new Templates instance
+// New returns a cached Templates instance (parsed once, reused on subsequent calls)
 func New() (*Templates, error) {
-	funcs := template.FuncMap{
-		"growthEmoji": growthEmoji,
-		"lower":       strings.ToLower,
-		"safeHTML":    func(s string) template.HTML { return template.HTML(s) },
-		"safeCSS":     func(s string) template.CSS { return template.CSS(s) },
-		"fontURL":     fontURL,
-		"hasPrefix":   strings.HasPrefix,
+	// Return cached templates if already parsed
+	if cachedTemplates != nil {
+		return cachedTemplates, nil
 	}
 
 	// Parse base template
-	base, err := template.New("base").Funcs(funcs).Parse(baseTemplate)
+	base, err := template.New("base").Funcs(templateFuncs).Parse(baseTemplate)
 	if err != nil {
 		return nil, err
 	}
@@ -125,13 +138,15 @@ func New() (*Templates, error) {
 		return nil, err
 	}
 
-	return &Templates{
+	cachedTemplates = &Templates{
 		base:     base,
 		page:     page,
 		index:    index,
 		tagIndex: tagIndex,
 		tagPage:  tagPage,
-	}, nil
+	}
+
+	return cachedTemplates, nil
 }
 
 // RenderPage renders a content page
