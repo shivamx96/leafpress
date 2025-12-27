@@ -18,12 +18,13 @@ import (
 
 // Renderer converts markdown to HTML
 type Renderer struct {
-	md       goldmark.Markdown
-	resolver *LinkResolver
+	md              goldmark.Markdown
+	resolver        *LinkResolver
+	enableWikilinks bool
 }
 
 // NewRenderer creates a new markdown renderer
-func NewRenderer(resolver *LinkResolver) *Renderer {
+func NewRenderer(resolver *LinkResolver, enableWikilinks bool) *Renderer {
 	md := goldmark.New(
 		goldmark.WithExtensions(
 			extension.GFM, // GitHub Flavored Markdown
@@ -47,8 +48,9 @@ func NewRenderer(resolver *LinkResolver) *Renderer {
 	)
 
 	return &Renderer{
-		md:       md,
-		resolver: resolver,
+		md:              md,
+		resolver:        resolver,
+		enableWikilinks: enableWikilinks,
 	}
 }
 
@@ -59,8 +61,10 @@ func (r *Renderer) Render(content string) (string, []string) {
 	// First, process Obsidian image embeds (![[image.png]])
 	processed := r.processObsidianImages(content)
 
-	// Then, replace wiki-links with HTML anchors
-	processed = r.processWikiLinks(processed, &warnings)
+	// Then, replace wiki-links with HTML anchors (if enabled)
+	if r.enableWikilinks {
+		processed = r.processWikiLinks(processed, &warnings)
+	}
 
 	// Then render markdown to HTML
 	var buf bytes.Buffer
@@ -221,13 +225,13 @@ func (r *Renderer) processExternalLinks(html string) string {
 }
 
 // RenderPages renders HTML content for all pages in parallel
-func RenderPages(pages []*Page) []string {
+func RenderPages(pages []*Page, enableWikilinks bool) []string {
 	if len(pages) == 0 {
 		return nil
 	}
 
 	resolver := NewLinkResolver(pages)
-	renderer := NewRenderer(resolver)
+	renderer := NewRenderer(resolver, enableWikilinks)
 
 	numWorkers := runtime.NumCPU()
 	if numWorkers > len(pages) {
