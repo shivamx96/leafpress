@@ -459,7 +459,7 @@ html {
 }
 
 .lp-content img {
-  max-width: 100%;
+  max-width: min(100%, 600px);
   height: auto;
   border-radius: 4px;
 }
