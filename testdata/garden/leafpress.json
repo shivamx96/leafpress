@@ -23,6 +23,5 @@
     "navActiveStyle": "underlined"
   },
   "graph": true,
-  "graphOnHome": false,
   "toc": true
 }

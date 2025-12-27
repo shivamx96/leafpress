@@ -520,29 +520,6 @@ html {
 }
 
 /* Knowledge Graph */
-.lp-graph-container {
-  margin-top: 3rem;
-  padding-top: 2rem;
-  border-top: 1px solid var(--lp-border);
-}
-
-.lp-graph-title {
-  font-family: var(--lp-font-heading);
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--lp-text);
-  margin-bottom: 1.5rem;
-}
-
-#lp-graph {
-  width: 100%;
-  height: 500px;
-  border-radius: 6px;
-  background: linear-gradient(to bottom, var(--lp-bg), var(--lp-code-bg));
-  overflow: hidden;
-  position: relative;
-}
-
 .lp-graph-node {
   transition: all 0.2s ease;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
@@ -571,6 +548,146 @@ html {
 
 [data-theme="dark"] .lp-graph-node:hover {
   filter: drop-shadow(0 4px 8px rgba(255, 255, 255, 0.2));
+}
+
+/* Graph Overlay */
+.lp-graph-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2000;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.lp-graph-overlay.lp-graph-overlay--open {
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.lp-graph-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.lp-graph-overlay--open .lp-graph-backdrop {
+  opacity: 1;
+}
+
+[data-theme="dark"] .lp-graph-backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.lp-graph-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 75%;
+  max-width: 1000px;
+  background: var(--lp-bg);
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.lp-graph-overlay--open .lp-graph-panel {
+  transform: translateX(0);
+}
+
+.lp-graph-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--lp-border);
+  flex-shrink: 0;
+}
+
+.lp-graph-panel-title {
+  font-family: var(--lp-font-heading);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--lp-text);
+  margin: 0;
+}
+
+.lp-graph-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  color: var(--lp-text-muted);
+  border-radius: 6px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lp-graph-close:hover {
+  background: var(--lp-code-bg);
+  color: var(--lp-text);
+}
+
+.lp-graph-panel-body {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  background: linear-gradient(to bottom, var(--lp-bg), var(--lp-code-bg));
+}
+
+.lp-graph-panel-body svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Graph toggle button in nav */
+.lp-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.lp-graph-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  color: var(--lp-text);
+  transition: opacity 0.2s;
+}
+
+.lp-graph-toggle:hover {
+  opacity: 0.7;
+}
+
+/* Current node highlight in overlay graph */
+.lp-graph-node--current {
+  stroke: var(--lp-accent) !important;
+  stroke-width: 3px !important;
+}
+
+/* Mobile: full screen overlay */
+@media (max-width: 768px) {
+  .lp-graph-panel {
+    width: 100%;
+    max-width: none;
+  }
 }
 
 /* Backlinks */

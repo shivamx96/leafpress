@@ -69,13 +69,12 @@ type TagInfo struct {
 
 // SiteData contains site-wide information
 type SiteData struct {
-	Title       string
-	Author      string
-	Nav         []config.NavItem
-	Theme       config.Theme
-	BaseURL     string
-	TOC         bool
-	GraphOnHome bool
+	Title   string
+	Author  string
+	Nav     []config.NavItem
+	Theme   config.Theme
+	BaseURL string
+	TOC     bool
 }
 
 // New creates a new Templates instance
@@ -313,22 +312,34 @@ const baseTemplate = `<!DOCTYPE html>
     <div class="lp-nav-container">
       <div class="lp-nav-brand">
         <a class="lp-nav-title" href="/">{{.Site.Title}}</a>
-        <button class="lp-theme-toggle" aria-label="Toggle dark mode" title="Toggle theme">
-          <svg class="lp-theme-icon lp-theme-icon-light" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="5"></circle>
-            <line x1="12" y1="1" x2="12" y2="3"></line>
-            <line x1="12" y1="21" x2="12" y2="23"></line>
-            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-            <line x1="1" y1="12" x2="3" y2="12"></line>
-            <line x1="21" y1="12" x2="23" y2="12"></line>
-            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-          </svg>
-          <svg class="lp-theme-icon lp-theme-icon-dark" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-          </svg>
-        </button>
+        <div class="lp-nav-actions">
+          <button class="lp-graph-toggle" aria-label="Open knowledge graph" title="Explore graph">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="6" cy="6" r="3"></circle>
+              <circle cx="18" cy="6" r="3"></circle>
+              <circle cx="6" cy="18" r="3"></circle>
+              <circle cx="18" cy="18" r="3"></circle>
+              <line x1="8.5" y1="7.5" x2="15.5" y2="16.5"></line>
+              <line x1="8.5" y1="16.5" x2="15.5" y2="7.5"></line>
+            </svg>
+          </button>
+          <button class="lp-theme-toggle" aria-label="Toggle dark mode" title="Toggle theme">
+            <svg class="lp-theme-icon lp-theme-icon-light" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+            <svg class="lp-theme-icon lp-theme-icon-dark" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </button>
+        </div>
       </div>
       <div class="lp-nav-links">
         {{range .Site.Nav}}
@@ -344,6 +355,23 @@ const baseTemplate = `<!DOCTYPE html>
     {{if .Site.Author}}<span class="lp-footer-text">&copy; {{.Site.Author}}. All rights reserved.</span>{{end}}
     <span class="lp-footer-text">Grown with <a href="https://leafpress.in" target="_blank">leafpress</a></span>
   </footer>
+
+  <!-- Graph Overlay -->
+  <div class="lp-graph-overlay" id="lp-graph-overlay" aria-hidden="true">
+    <div class="lp-graph-backdrop"></div>
+    <div class="lp-graph-panel" role="dialog" aria-label="Knowledge Graph Explorer" data-current-slug="{{block "currentSlug" .}}{{end}}">
+      <div class="lp-graph-panel-header">
+        <h2 class="lp-graph-panel-title">Knowledge Graph</h2>
+        <button class="lp-graph-close" aria-label="Close graph">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="lp-graph-panel-body" id="lp-graph-panel-body"></div>
+    </div>
+  </div>
   <script>
     // Theme switching
     (function() {
@@ -410,282 +438,522 @@ const baseTemplate = `<!DOCTYPE html>
         pre.appendChild(button);
       });
 
-      // Knowledge Graph Visualization
-      var graphContainer = document.getElementById('lp-graph');
-      if (graphContainer) {
-        fetch('/graph.json')
-          .then(function(response) { return response.json(); })
-          .then(function(data) {
-            renderGraph(data);
-          });
-      }
+      // Graph Overlay
+      (function() {
+        var overlay = document.getElementById('lp-graph-overlay');
+        var panel = overlay.querySelector('.lp-graph-panel');
+        var graphBody = document.getElementById('lp-graph-panel-body');
+        var toggleBtn = document.querySelector('.lp-graph-toggle');
+        var closeBtn = overlay.querySelector('.lp-graph-close');
+        var backdrop = overlay.querySelector('.lp-graph-backdrop');
+        var currentSlug = panel.getAttribute('data-current-slug') || '';
+        var graphData = null;
+        var graphRendered = false;
 
-      function renderGraph(data) {
-        var width = graphContainer.offsetWidth;
-        var height = 500;
+        function openGraph() {
+          overlay.classList.add('lp-graph-overlay--open');
+          overlay.setAttribute('aria-hidden', 'false');
+          document.body.style.overflow = 'hidden';
 
-        var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        svg.setAttribute('width', width);
-        svg.setAttribute('height', height);
-        svg.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
-        graphContainer.appendChild(svg);
+          if (!graphRendered && graphData) {
+            renderGraph(graphData);
+            graphRendered = true;
+          } else if (!graphData) {
+            fetch('/graph.json')
+              .then(function(r) { return r.json(); })
+              .then(function(data) {
+                graphData = data;
+                renderGraph(data);
+                graphRendered = true;
+              });
+          }
+        }
 
-        // Simple force simulation without D3 - create nodes with positions first
-        var nodes = data.nodes.map(function(d) {
-          return {
-            id: d.id,
-            title: d.title,
-            growth: d.growth,
-            x: Math.random() * width,
-            y: Math.random() * height,
-            vx: 0,
-            vy: 0
-          };
-        });
+        function closeGraph() {
+          overlay.classList.remove('lp-graph-overlay--open');
+          overlay.setAttribute('aria-hidden', 'true');
+          document.body.style.overflow = '';
+        }
 
-        // Create node lookup from nodes with x/y coordinates
-        var nodeMap = {};
-        nodes.forEach(function(n) {
-          nodeMap[n.id] = n;
-        });
+        toggleBtn.addEventListener('click', openGraph);
+        closeBtn.addEventListener('click', closeGraph);
+        backdrop.addEventListener('click', closeGraph);
 
-        // Create links with proper node references
-        var links = [];
-        data.edges.forEach(function(edge) {
-          var source = nodeMap[edge.source];
-          var target = nodeMap[edge.target];
-          if (source && target) {
-            links.push({
-              source: source,
-              target: target,
-              sourceId: edge.source,
-              targetId: edge.target
-            });
+        document.addEventListener('keydown', function(e) {
+          if (e.key === 'Escape' && overlay.classList.contains('lp-graph-overlay--open')) {
+            closeGraph();
           }
         });
 
-        console.log('Graph data:', nodes.length, 'nodes,', links.length, 'links');
+        function renderGraph(data) {
+          var width = graphBody.offsetWidth;
+          var height = graphBody.offsetHeight;
 
-        // Create groups for proper layering
-        var linkGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-        linkGroup.setAttribute('class', 'lp-graph-links');
-        svg.appendChild(linkGroup);
+          var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+          svg.setAttribute('width', width);
+          svg.setAttribute('height', height);
+          svg.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
+          graphBody.appendChild(svg);
 
-        var nodeGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-        nodeGroup.setAttribute('class', 'lp-graph-nodes');
-        svg.appendChild(nodeGroup);
-
-        // Get theme colors
-        var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-        var linkColor = isDark ? '#444444' : '#d0d0d0';
-
-        // Draw links with initial positions
-        links.forEach(function(link) {
-          var line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-          line.setAttribute('class', 'lp-graph-link');
-          line.setAttribute('stroke', linkColor);
-          line.setAttribute('stroke-width', '1.5');
-          line.setAttribute('stroke-opacity', '0.5');
-          line.setAttribute('x1', link.source.x);
-          line.setAttribute('y1', link.source.y);
-          line.setAttribute('x2', link.target.x);
-          line.setAttribute('y2', link.target.y);
-          linkGroup.appendChild(line);
-          link.element = line;
-        });
-
-        console.log('Drew', links.length, 'links');
-
-        // Text labels group
-        var labelGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-        labelGroup.setAttribute('class', 'lp-graph-labels');
-        svg.appendChild(labelGroup);
-
-        // Draw nodes
-        nodes.forEach(function(node) {
-          var circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-          circle.setAttribute('class', 'lp-graph-node');
-          circle.setAttribute('r', '8');
-          circle.setAttribute('fill', getNodeColor(node.growth));
-          circle.setAttribute('stroke', '#fff');
-          circle.setAttribute('stroke-width', '2');
-          circle.style.cursor = 'pointer';
-
-          // Hover to highlight connections
-          circle.addEventListener('mouseenter', function() {
-            highlightConnections(node);
-          });
-
-          circle.addEventListener('mouseleave', function() {
-            clearHighlight();
-          });
-
-          circle.addEventListener('click', function(e) {
-            e.preventDefault();
-            if (node.id) {
-              window.location.href = '/' + node.id + '/';
+          // Pass 1: Group nodes by primary tag for initial placement
+          var tagGroups = {};
+          var untaggedNodes = [];
+          data.nodes.forEach(function(d) {
+            var primaryTag = (d.tags && d.tags.length > 0) ? d.tags[0] : null;
+            if (primaryTag) {
+              if (!tagGroups[primaryTag]) tagGroups[primaryTag] = [];
+              tagGroups[primaryTag].push(d);
             } else {
-              window.location.href = '/';
+              untaggedNodes.push(d);
             }
           });
 
-          nodeGroup.appendChild(circle);
-          node.element = circle;
+          // Assign positions by tag group (arrange in sectors around center)
+          var tagNames = Object.keys(tagGroups);
+          var numGroups = tagNames.length;
+          var centerX = width / 2;
+          var centerY = height / 2;
+          var radius = Math.min(width, height) * 0.3;
 
-          // Add text label
-          var text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-          text.setAttribute('class', 'lp-graph-label');
-          text.setAttribute('text-anchor', 'middle');
-          text.setAttribute('dy', '28');
-          text.setAttribute('font-size', '12');
-          text.setAttribute('font-weight', '500');
-          text.setAttribute('pointer-events', 'none');
-          text.textContent = node.title || 'Home';
-          text.style.opacity = '0';
-          text.style.fill = getComputedStyle(document.documentElement).getPropertyValue('--lp-text').trim();
-          labelGroup.appendChild(text);
-          node.label = text;
-        });
+          var nodes = [];
+          tagNames.forEach(function(tag, groupIndex) {
+            var angle = (2 * Math.PI * groupIndex) / numGroups;
+            var groupCenterX = centerX + radius * Math.cos(angle);
+            var groupCenterY = centerY + radius * Math.sin(angle);
+            var groupNodes = tagGroups[tag];
 
-        function highlightConnections(selectedNode) {
+            groupNodes.forEach(function(d, i) {
+              // Spread nodes within group
+              var spread = 50;
+              var offsetAngle = (2 * Math.PI * i) / groupNodes.length;
+              nodes.push({
+                id: d.id,
+                title: d.title,
+                url: d.url,
+                tags: d.tags || [],
+                x: groupCenterX + spread * Math.cos(offsetAngle) * (0.5 + Math.random() * 0.5),
+                y: groupCenterY + spread * Math.sin(offsetAngle) * (0.5 + Math.random() * 0.5),
+                vx: 0,
+                vy: 0
+              });
+            });
+          });
+
+          // Untagged nodes go near center with some randomness
+          untaggedNodes.forEach(function(d) {
+            nodes.push({
+              id: d.id,
+              title: d.title,
+              url: d.url,
+              tags: d.tags || [],
+              x: centerX + (Math.random() - 0.5) * 100,
+              y: centerY + (Math.random() - 0.5) * 100,
+              vx: 0,
+              vy: 0
+            });
+          });
+
+          var nodeMap = {};
+          nodes.forEach(function(n) { nodeMap[n.id] = n; });
+
+          var links = [];
+          data.edges.forEach(function(edge) {
+            var source = nodeMap[edge.source];
+            var target = nodeMap[edge.target];
+            if (source && target) {
+              links.push({ source: source, target: target, sourceId: edge.source, targetId: edge.target });
+            }
+          });
+
+          // Calculate node degrees and build adjacency list for clustering
+          nodes.forEach(function(n) {
+            n.degree = 0;
+            n.neighbors = [];
+          });
+          links.forEach(function(link) {
+            link.source.degree++;
+            link.target.degree++;
+            link.source.neighbors.push(link.target);
+            link.target.neighbors.push(link.source);
+          });
+          var maxDegree = Math.max.apply(null, nodes.map(function(n) { return n.degree; })) || 1;
+
+          // Check if two nodes share neighbors (for clustering)
+          function shareNeighbors(a, b) {
+            for (var i = 0; i < a.neighbors.length; i++) {
+              if (b.neighbors.indexOf(a.neighbors[i]) !== -1) return true;
+            }
+            return false;
+          }
+
+          // Check if two nodes are directly connected
+          function areConnected(a, b) {
+            return a.neighbors.indexOf(b) !== -1;
+          }
+
+          // Count shared tags between two nodes (for tag-based clustering)
+          function sharedTagCount(a, b) {
+            var count = 0;
+            for (var i = 0; i < a.tags.length; i++) {
+              if (b.tags.indexOf(a.tags[i]) !== -1) count++;
+            }
+            return count;
+          }
+
+          // Centrality score: normalized degree (0-1)
+          function getCentrality(node) {
+            return node.degree / maxDegree;
+          }
+
+          var linkGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+          svg.appendChild(linkGroup);
+
+          var nodeGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+          svg.appendChild(nodeGroup);
+
+          var labelGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+          svg.appendChild(labelGroup);
+
+          var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+          var linkColor = isDark ? '#444444' : '#d0d0d0';
           var accentColor = getComputedStyle(document.documentElement).getPropertyValue('--lp-accent').trim();
 
-          // Dim all
-          nodes.forEach(function(n) {
-            n.element.style.opacity = '0.15';
-            if (n.label) n.label.style.opacity = '0';
-          });
-          links.forEach(function(l) {
-            l.element.style.opacity = '0.05';
-          });
-
-          // Highlight selected
-          selectedNode.element.style.opacity = '1';
-          selectedNode.element.setAttribute('r', '10');
-          if (selectedNode.label) selectedNode.label.style.opacity = '1';
-
-          // Highlight connected
           links.forEach(function(link) {
-            if (link.sourceId === selectedNode.id || link.targetId === selectedNode.id) {
-              link.element.style.opacity = '0.8';
-              link.element.setAttribute('stroke', accentColor);
-              link.element.setAttribute('stroke-width', '2.5');
-
-              var connectedNode = link.sourceId === selectedNode.id ?
-                nodes.find(function(n) { return n.id === link.targetId; }) :
-                nodes.find(function(n) { return n.id === link.sourceId; });
-
-              if (connectedNode) {
-                connectedNode.element.style.opacity = '1';
-                connectedNode.element.setAttribute('r', '9');
-                if (connectedNode.label) connectedNode.label.style.opacity = '0.9';
-              }
-            }
+            var line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('class', 'lp-graph-link');
+            line.setAttribute('stroke', linkColor);
+            line.setAttribute('stroke-width', '1.5');
+            line.setAttribute('stroke-opacity', '0.5');
+            linkGroup.appendChild(line);
+            link.element = line;
           });
-        }
 
-        function clearHighlight() {
-          nodes.forEach(function(n) {
-            n.element.style.opacity = '1';
-            n.element.setAttribute('r', '8');
-            if (n.label) n.label.style.opacity = '0';
-          });
-          links.forEach(function(l) {
-            l.element.style.opacity = '0.5';
-            l.element.setAttribute('stroke', linkColor);
-            l.element.setAttribute('stroke-width', '1.5');
-          });
-        }
+          var selectedNode = null;
 
-        function getNodeColor(growth) {
-          var accent = getComputedStyle(document.documentElement).getPropertyValue('--lp-accent').trim();
-          if (growth === 'seedling') return '#a8e6a1';
-          if (growth === 'budding') return accent;
-          if (growth === 'evergreen') return '#2d8659';
-          return accent;
-        }
-
-        // Simple physics simulation
-        function simulate() {
-          var alpha = 0.3;
-          var iterations = 300;
-
-          for (var k = 0; k < iterations; k++) {
-            // Apply forces
-            nodes.forEach(function(node) {
-              node.vx = 0;
-              node.vy = 0;
-            });
-
-            // Repulsion between nodes
-            for (var i = 0; i < nodes.length; i++) {
-              for (var j = i + 1; j < nodes.length; j++) {
-                var dx = nodes[j].x - nodes[i].x;
-                var dy = nodes[j].y - nodes[i].y;
-                var dist = Math.sqrt(dx * dx + dy * dy) || 1;
-                var force = 100 / (dist * dist);
-
-                nodes[i].vx -= force * dx / dist;
-                nodes[i].vy -= force * dy / dist;
-                nodes[j].vx += force * dx / dist;
-                nodes[j].vy += force * dy / dist;
-              }
-            }
-
-            // Link attraction
-            links.forEach(function(link) {
-              var dx = link.target.x - link.source.x;
-              var dy = link.target.y - link.source.y;
-              var dist = Math.sqrt(dx * dx + dy * dy) || 1;
-              var force = (dist - 50) * 0.1;
-
-              link.source.vx += force * dx / dist;
-              link.source.vy += force * dy / dist;
-              link.target.vx -= force * dx / dist;
-              link.target.vy -= force * dy / dist;
-            });
-
-            // Center attraction
-            var centerX = width / 2;
-            var centerY = height / 2;
-            nodes.forEach(function(node) {
-              node.vx += (centerX - node.x) * 0.01;
-              node.vy += (centerY - node.y) * 0.01;
-            });
-
-            // Update positions
-            nodes.forEach(function(node) {
-              node.x += node.vx * alpha;
-              node.y += node.vy * alpha;
-
-              // Keep in bounds
-              node.x = Math.max(20, Math.min(width - 20, node.x));
-              node.y = Math.max(20, Math.min(height - 20, node.y));
-            });
-
-            alpha *= 0.99;
+          // Node opacity based on link density (degree)
+          function getNodeOpacity(degree) {
+            // More connections = more opaque (0.15 to 1.0 for better contrast)
+            return 0.15 + (degree / maxDegree) * 0.85;
           }
 
-          // Update DOM
           nodes.forEach(function(node) {
-            node.element.setAttribute('cx', node.x);
-            node.element.setAttribute('cy', node.y);
-            if (node.label) {
-              node.label.setAttribute('x', node.x);
-              node.label.setAttribute('y', node.y);
+            var circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('class', 'lp-graph-node');
+            circle.setAttribute('r', '6');
+            circle.setAttribute('fill', accentColor);
+            circle.setAttribute('fill-opacity', getNodeOpacity(node.degree));
+            circle.setAttribute('stroke', '#fff');
+            circle.setAttribute('stroke-width', '2');
+            circle.style.cursor = 'pointer';
+
+            // Mark current page node
+            if (node.id === currentSlug) {
+              circle.classList.add('lp-graph-node--current');
+            }
+
+            // Hover for preview highlight
+            circle.addEventListener('mouseenter', function() {
+              if (!selectedNode) {
+                highlightConnections(node);
+              }
+            });
+
+            circle.addEventListener('mouseleave', function() {
+              if (!selectedNode) {
+                clearHighlight();
+              }
+            });
+
+            // Click to lock selection, second click to navigate
+            circle.addEventListener('click', function(e) {
+              e.preventDefault();
+              if (selectedNode === node) {
+                // Second click - navigate
+                window.location.href = node.url || '/';
+              } else {
+                // First click - lock highlight
+                selectedNode = node;
+                highlightConnections(node);
+              }
+            });
+
+            nodeGroup.appendChild(circle);
+            node.element = circle;
+
+            var text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('class', 'lp-graph-label');
+            text.setAttribute('text-anchor', 'middle');
+            text.setAttribute('font-size', '10');
+            text.setAttribute('pointer-events', 'none');
+            text.style.opacity = '0';
+            text.style.fill = getComputedStyle(document.documentElement).getPropertyValue('--lp-text').trim();
+
+            // Split long titles into multiple lines
+            var title = node.title || 'Home';
+            var maxChars = 18;
+            var lines = [];
+
+            if (title.length <= maxChars) {
+              lines.push(title);
+            } else {
+              // Split into words and create lines
+              var words = title.split(/[\s-]+/);
+              var currentLine = '';
+
+              words.forEach(function(word) {
+                if ((currentLine + ' ' + word).trim().length <= maxChars) {
+                  currentLine = (currentLine + ' ' + word).trim();
+                } else {
+                  if (currentLine) lines.push(currentLine);
+                  currentLine = word;
+                }
+              });
+              if (currentLine) lines.push(currentLine);
+
+              // Limit to 2 lines max
+              if (lines.length > 2) {
+                lines = [lines[0], lines[1].substring(0, maxChars - 3) + '...'];
+              }
+            }
+
+            // Store lines for positioning after simulation
+            node.labelLines = lines;
+
+            labelGroup.appendChild(text);
+            node.label = text;
+          });
+
+          // Click on empty space clears selection
+          svg.addEventListener('click', function(e) {
+            if (e.target === svg) {
+              selectedNode = null;
+              clearHighlight();
             }
           });
 
-          links.forEach(function(link) {
-            link.element.setAttribute('x1', link.source.x);
-            link.element.setAttribute('y1', link.source.y);
-            link.element.setAttribute('x2', link.target.x);
-            link.element.setAttribute('y2', link.target.y);
-          });
-        }
+          function highlightConnections(selected) {
+            nodes.forEach(function(n) {
+              n.element.style.opacity = '0.15';
+              if (n.label) n.label.style.opacity = '0';
+            });
+            links.forEach(function(l) {
+              l.element.style.opacity = '0.05';
+            });
 
-        simulate();
-      }
+            selected.element.style.opacity = '1';
+            selected.element.setAttribute('r', '8');
+            if (selected.label) selected.label.style.opacity = '1';
+
+            links.forEach(function(link) {
+              if (link.sourceId === selected.id || link.targetId === selected.id) {
+                link.element.style.opacity = '0.8';
+                link.element.setAttribute('stroke', accentColor);
+                link.element.setAttribute('stroke-width', '2.5');
+
+                var connected = link.sourceId === selected.id ? nodeMap[link.targetId] : nodeMap[link.sourceId];
+                if (connected) {
+                  connected.element.style.opacity = '1';
+                  connected.element.setAttribute('r', '7');
+                  if (connected.label) connected.label.style.opacity = '0.9';
+                }
+              }
+            });
+          }
+
+          function clearHighlight() {
+            nodes.forEach(function(n) {
+              n.element.style.opacity = '1';
+              n.element.setAttribute('r', n.id === currentSlug ? '8' : '6');
+              if (n.label) n.label.style.opacity = n.id === currentSlug ? '1' : '0';
+            });
+            links.forEach(function(l) {
+              l.element.style.opacity = '0.5';
+              l.element.setAttribute('stroke', linkColor);
+              l.element.setAttribute('stroke-width', '1.5');
+            });
+          }
+
+          // Pass 2: Physics simulation with tag-based clustering and centrality
+          function simulate() {
+            var n = nodes.length;
+            if (n === 0) return;
+
+            var area = width * height;
+            var idealSpacing = Math.sqrt(area / n);
+
+            // Link distance: longer for better spread
+            var linkRestLength = Math.max(120, Math.min(280, idealSpacing * 0.75));
+            var tagRestLength = linkRestLength * 1.1;
+            var clusterRestLength = linkRestLength * 1.3;
+            var collisionRadius = 25;
+
+            // Stronger repulsion for better spread
+            var repulsionStrength = idealSpacing * idealSpacing * 1.2;
+
+            // Much weaker center force - let nodes spread naturally
+            var centerForce = 0.006;
+
+            var iterations = Math.min(350, 120 + n * 6);
+            var padding = 35;
+
+            var alpha = 0.3;
+            var alphaDecay = 0.995;
+
+            for (var k = 0; k < iterations; k++) {
+              // Reset velocities
+              nodes.forEach(function(node) { node.vx = 0; node.vy = 0; });
+
+              // Node-node forces
+              for (var i = 0; i < n; i++) {
+                for (var j = i + 1; j < n; j++) {
+                  var a = nodes[i];
+                  var b = nodes[j];
+                  var dx = b.x - a.x;
+                  var dy = b.y - a.y;
+                  var dist = Math.sqrt(dx * dx + dy * dy);
+
+                  // Prevent division by zero
+                  if (dist < 1) {
+                    dx = (Math.random() - 0.5) * 2;
+                    dy = (Math.random() - 0.5) * 2;
+                    dist = 1;
+                  }
+
+                  var force = 0;
+                  var connected = areConnected(a, b);
+                  var sharedTags = sharedTagCount(a, b);
+                  var clustered = !connected && shareNeighbors(a, b);
+
+                  // Centrality weighting: high-degree nodes exert more influence
+                  var centralityMult = 1 + (getCentrality(a) + getCentrality(b)) * 0.5;
+
+                  if (connected) {
+                    // Connected nodes: strong spring attraction (link force = 1.0 in Obsidian)
+                    // Higher centrality = stronger pull
+                    var displacement = dist - linkRestLength;
+                    force = displacement * 0.1 * centralityMult;
+                  } else if (sharedTags > 0) {
+                    // Nodes with shared tags: attraction based on tag overlap
+                    var displacement = dist - tagRestLength;
+                    var tagStrength = 0.08 * Math.min(sharedTags, 3); // Cap at 3 shared tags
+                    if (displacement > 0) {
+                      force = displacement * tagStrength;
+                    } else {
+                      // Still repel if too close
+                      force = -repulsionStrength * 0.2 / (dist * dist);
+                    }
+                  } else if (clustered) {
+                    // Nodes sharing neighbors: weaker attraction
+                    var displacement = dist - clusterRestLength;
+                    if (displacement > 0) {
+                      force = displacement * 0.04;
+                    } else {
+                      force = -repulsionStrength * 0.3 / (dist * dist);
+                    }
+                  } else {
+                    // Unrelated nodes: repulsion with distance falloff
+                    force = -repulsionStrength / (dist * dist);
+
+                    // Reduced repulsion at large distances (allows clusters)
+                    if (dist > idealSpacing * 2) {
+                      force *= 0.25;
+                    }
+                  }
+
+                  // Collision avoidance
+                  if (dist < collisionRadius * 2) {
+                    force -= (collisionRadius * 2 - dist) * 3;
+                  }
+
+                  var fx = (force * dx) / dist;
+                  var fy = (force * dy) / dist;
+                  a.vx += fx;
+                  a.vy += fy;
+                  b.vx -= fx;
+                  b.vy -= fy;
+                }
+              }
+
+              // Center gravity (0.52 in Obsidian = strong pull toward center)
+              var cx = width / 2;
+              var cy = height / 2;
+              nodes.forEach(function(node) {
+                var dx = cx - node.x;
+                var dy = cy - node.y;
+                node.vx += dx * centerForce;
+                node.vy += dy * centerForce;
+              });
+
+              // Apply velocities with damping
+              nodes.forEach(function(node) {
+                // Velocity damping
+                node.vx *= 0.85;
+                node.vy *= 0.85;
+
+                node.x += node.vx * alpha;
+                node.y += node.vy * alpha;
+
+                // Keep within bounds with padding
+                node.x = Math.max(padding, Math.min(width - padding, node.x));
+                node.y = Math.max(padding, Math.min(height - padding, node.y));
+              });
+
+              alpha *= alphaDecay;
+
+              // Early termination if simulation has settled
+              if (alpha < 0.005) break;
+            }
+
+            // Update DOM positions
+            var centerY = height / 2;
+            nodes.forEach(function(node) {
+              node.element.setAttribute('cx', node.x);
+              node.element.setAttribute('cy', node.y);
+              if (node.label && node.labelLines) {
+                // Clear existing tspans
+                while (node.label.firstChild) {
+                  node.label.removeChild(node.label.firstChild);
+                }
+
+                // Position label above or below based on node position
+                // Nodes in top half -> label below, nodes in bottom half -> label above
+                var labelBelow = node.y < centerY;
+                var lineHeight = 12;
+                var offset = labelBelow ? 16 : -(8 + (node.labelLines.length - 1) * lineHeight);
+
+                node.label.setAttribute('x', node.x);
+                node.label.setAttribute('y', node.y);
+
+                node.labelLines.forEach(function(line, idx) {
+                  var tspan = document.createElementNS('http://www.w3.org/2000/svg', 'tspan');
+                  tspan.setAttribute('x', node.x);
+                  tspan.setAttribute('dy', idx === 0 ? offset : lineHeight);
+                  tspan.textContent = line;
+                  node.label.appendChild(tspan);
+                });
+              }
+            });
+
+            links.forEach(function(link) {
+              link.element.setAttribute('x1', link.source.x);
+              link.element.setAttribute('y1', link.source.y);
+              link.element.setAttribute('x2', link.target.x);
+              link.element.setAttribute('y2', link.target.y);
+            });
+
+            // Highlight current node after simulation
+            if (currentSlug) {
+              var current = nodeMap[currentSlug];
+              if (current) {
+                current.element.setAttribute('r', '8');
+                if (current.label) current.label.style.opacity = '1';
+              }
+            }
+          }
+
+          simulate();
+        }
+      })();
     });
   </script>
 </body>
@@ -694,6 +962,7 @@ const baseTemplate = `<!DOCTYPE html>
 
 const pageTemplate = `
 {{define "title"}}{{if eq .Page.Slug ""}}{{.Site.Title}}{{else}}{{.Page.Title}} | {{.Site.Title}}{{end}}{{end}}
+{{define "currentSlug"}}{{.Page.Slug}}{{end}}
 {{define "content"}}
 <div class="lp-page-container">
   {{if and .Site.TOC .TOC}}
@@ -738,13 +1007,6 @@ const pageTemplate = `
       {{.Content}}
     </div>
 
-    {{if and .Site.GraphOnHome (eq .Page.Slug "")}}
-    <div class="lp-graph-container">
-      <h2 class="lp-graph-title">Knowledge Graph</h2>
-      <div id="lp-graph"></div>
-    </div>
-    {{end}}
-
     {{if .Page.Backlinks}}
     <aside class="lp-backlinks">
       <h2 class="lp-backlinks-title">Referenced from</h2>
@@ -762,6 +1024,7 @@ const pageTemplate = `
 
 const indexTemplate = `
 {{define "title"}}{{.Title}} | {{.Site.Title}}{{end}}
+{{define "currentSlug"}}{{end}}
 {{define "content"}}
 <div class="lp-section">
   <h1 class="lp-section-title">{{.Title}}</h1>
@@ -796,6 +1059,7 @@ const indexTemplate = `
 
 const tagIndexTemplate = `
 {{define "title"}}Tags | {{.Site.Title}}{{end}}
+{{define "currentSlug"}}tags{{end}}
 {{define "content"}}
 <div class="lp-section">
   <h1 class="lp-section-title">Tags</h1>
@@ -813,6 +1077,7 @@ const tagIndexTemplate = `
 
 const tagPageTemplate = `
 {{define "title"}}#{{.Tag}} | {{.Site.Title}}{{end}}
+{{define "currentSlug"}}tags/{{.Tag}}{{end}}
 {{define "content"}}
 <div class="lp-section">
   <h1 class="lp-section-title">#{{.Tag}}</h1>

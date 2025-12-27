@@ -95,13 +95,12 @@ func (b *Builder) Build() (*Stats, error) {
 
 	// Generate site data
 	siteData := templates.SiteData{
-		Title:       b.cfg.Title,
-		Author:      b.cfg.Author,
-		Nav:         b.cfg.Nav,
-		Theme:       b.cfg.Theme,
-		BaseURL:     b.cfg.BaseURL,
-		TOC:         b.cfg.TOC,
-		GraphOnHome: b.cfg.GraphOnHome,
+		Title:   b.cfg.Title,
+		Author:  b.cfg.Author,
+		Nav:     b.cfg.Nav,
+		Theme:   b.cfg.Theme,
+		BaseURL: b.cfg.BaseURL,
+		TOC:     b.cfg.TOC,
 	}
 
 	// Render pages
@@ -436,9 +435,11 @@ func (b *Builder) generateCSS() error {
 func (b *Builder) generateGraph(pages []*content.Page) error {
 	// Build nodes and edges
 	type Node struct {
-		ID     string `json:"id"`
-		Title  string `json:"title"`
-		Growth string `json:"growth,omitempty"`
+		ID     string   `json:"id"`
+		Title  string   `json:"title"`
+		URL    string   `json:"url"`
+		Growth string   `json:"growth,omitempty"`
+		Tags   []string `json:"tags,omitempty"`
 	}
 	type Edge struct {
 		Source string `json:"source"`
@@ -456,7 +457,9 @@ func (b *Builder) generateGraph(pages []*content.Page) error {
 		graph.Nodes = append(graph.Nodes, Node{
 			ID:     page.Slug,
 			Title:  page.Title,
+			URL:    page.Permalink,
 			Growth: page.Growth,
+			Tags:   page.Tags,
 		})
 
 		for _, target := range page.OutLinks {
