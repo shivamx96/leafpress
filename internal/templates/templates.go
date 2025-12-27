@@ -681,7 +681,7 @@ const baseTemplate = `<!DOCTYPE html>
             var text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
             text.setAttribute('class', 'lp-graph-label');
             text.setAttribute('text-anchor', 'middle');
-            text.setAttribute('font-size', '10');
+            text.setAttribute('font-size', '0.5em');
             text.setAttribute('pointer-events', 'none');
             text.style.opacity = '0';
             text.style.fill = getComputedStyle(document.documentElement).getPropertyValue('--lp-text').trim();
