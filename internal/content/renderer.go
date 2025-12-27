@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"regexp"
+	"runtime"
 	"strings"
+	"sync"
 
 	chromahtml "github.com/alecthomas/chroma/v2/formatters/html"
 	"github.com/yuin/goldmark"
@@ -218,17 +220,50 @@ func (r *Renderer) processExternalLinks(html string) string {
 	})
 }
 
-// RenderPages renders HTML content for all pages
+// RenderPages renders HTML content for all pages in parallel
 func RenderPages(pages []*Page) []string {
+	if len(pages) == 0 {
+		return nil
+	}
+
 	resolver := NewLinkResolver(pages)
 	renderer := NewRenderer(resolver)
 
-	var allWarnings []string
-	for _, page := range pages {
-		html, warnings := renderer.Render(page.RawContent)
-		page.HTMLContent = html
-		allWarnings = append(allWarnings, warnings...)
+	numWorkers := runtime.NumCPU()
+	if numWorkers > len(pages) {
+		numWorkers = len(pages)
 	}
+
+	pageChan := make(chan *Page, len(pages))
+	var wg sync.WaitGroup
+	var warningsMu sync.Mutex
+	var allWarnings []string
+
+	// Start workers
+	for i := 0; i < numWorkers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for page := range pageChan {
+				html, warnings := renderer.Render(page.RawContent)
+				page.HTMLContent = html
+				if len(warnings) > 0 {
+					warningsMu.Lock()
+					allWarnings = append(allWarnings, warnings...)
+					warningsMu.Unlock()
+				}
+			}
+		}()
+	}
+
+	// Send pages to workers
+	for _, page := range pages {
+		pageChan <- page
+	}
+	close(pageChan)
+
+	// Wait for all workers
+	wg.Wait()
 
 	return allWarnings
 }
