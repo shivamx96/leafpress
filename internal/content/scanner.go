@@ -39,7 +39,7 @@ func NewScanner(rootDir string, ignore []string) *Scanner {
 func (s *Scanner) Scan() ([]*Page, error) {
 	var pages []*Page
 
-	err := filepath.Walk(s.rootDir, func(path string, info os.FileInfo, err error) error {
+	err := filepath.WalkDir(s.rootDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -58,7 +58,7 @@ func (s *Scanner) Scan() ([]*Page, error) {
 		// Check if this is a reserved path
 		topLevel := strings.Split(relPath, string(filepath.Separator))[0]
 		if ReservedPaths[topLevel] {
-			if info.IsDir() {
+			if d.IsDir() {
 				return filepath.SkipDir
 			}
 			return nil
@@ -66,23 +66,29 @@ func (s *Scanner) Scan() ([]*Page, error) {
 
 		// Check if this path should be ignored (from config)
 		if s.ignorePaths[topLevel] {
-			if info.IsDir() {
+			if d.IsDir() {
 				return filepath.SkipDir
 			}
 			return nil
 		}
 
 		// Skip hidden files and directories
-		if strings.HasPrefix(info.Name(), ".") {
-			if info.IsDir() {
+		if strings.HasPrefix(d.Name(), ".") {
+			if d.IsDir() {
 				return filepath.SkipDir
 			}
 			return nil
 		}
 
 		// Only process markdown files
-		if info.IsDir() || filepath.Ext(path) != ".md" {
+		if d.IsDir() || filepath.Ext(path) != ".md" {
 			return nil
+		}
+
+		// Get file info only for markdown files
+		info, err := d.Info()
+		if err != nil {
+			return err
 		}
 
 		// Read and parse the file
