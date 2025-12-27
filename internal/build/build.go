@@ -321,39 +321,80 @@ func (b *Builder) generateAutoIndexes(pages []*content.Page, siteData templates.
 		}
 	}
 
-	// Generate indexes for directories without _index.md
+	// Collect directories that need auto-indexes
+	var dirsToIndex []string
 	for dir := range dirs {
-		if indexedDirs[dir] {
-			continue
+		if !indexedDirs[dir] {
+			dirsToIndex = append(dirsToIndex, dir)
 		}
+	}
 
-		sectionPages := getSectionPages(dir, pages)
-		sortPages(sectionPages, "date")
+	if len(dirsToIndex) == 0 {
+		return nil
+	}
 
-		outPath := filepath.Join(b.outputDir, dir, "index.html")
-		if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
-			return err
-		}
+	// Generate indexes in parallel
+	numWorkers := runtime.NumCPU()
+	if numWorkers > len(dirsToIndex) {
+		numWorkers = len(dirsToIndex)
+	}
+	if numWorkers < 1 {
+		numWorkers = 1
+	}
 
-		f, err := os.Create(outPath)
-		if err != nil {
-			return err
-		}
+	dirChan := make(chan string, len(dirsToIndex))
+	errChan := make(chan error, len(dirsToIndex))
+	var wg sync.WaitGroup
 
-		title := cases.Title(language.English).String(filepath.Base(dir))
-		data := templates.IndexData{
-			Site:        siteData,
-			Title:       title,
-			Pages:       sectionPages,
-			ShowList:    true,
-			CurrentPath: "/" + dir + "/",
-		}
+	for i := 0; i < numWorkers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for dir := range dirChan {
+				sectionPages := getSectionPages(dir, pages)
+				sortPages(sectionPages, "date")
 
-		if err := b.templates.RenderIndex(f, data); err != nil {
-			f.Close()
-			return err
-		}
-		f.Close()
+				outPath := filepath.Join(b.outputDir, dir, "index.html")
+				if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
+					errChan <- err
+					continue
+				}
+
+				f, err := os.Create(outPath)
+				if err != nil {
+					errChan <- err
+					continue
+				}
+
+				title := cases.Title(language.English).String(filepath.Base(dir))
+				data := templates.IndexData{
+					Site:        siteData,
+					Title:       title,
+					Pages:       sectionPages,
+					ShowList:    true,
+					CurrentPath: "/" + dir + "/",
+				}
+
+				if err := b.templates.RenderIndex(f, data); err != nil {
+					f.Close()
+					errChan <- err
+					continue
+				}
+				f.Close()
+			}
+		}()
+	}
+
+	for _, dir := range dirsToIndex {
+		dirChan <- dir
+	}
+	close(dirChan)
+
+	wg.Wait()
+	close(errChan)
+
+	for err := range errChan {
+		return err
 	}
 
 	return nil
