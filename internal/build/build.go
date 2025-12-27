@@ -408,31 +408,73 @@ func (b *Builder) generateTagPages(pages []*content.Page, siteData templates.Sit
 	}
 	f.Close()
 
-	// Generate individual tag pages
+	// Generate individual tag pages in parallel
+	type tagJob struct {
+		tag   string
+		pages []*content.Page
+	}
+
+	numWorkers := runtime.NumCPU()
+	if numWorkers > len(tagPages) {
+		numWorkers = len(tagPages)
+	}
+	if numWorkers < 1 {
+		numWorkers = 1
+	}
+
+	jobChan := make(chan tagJob, len(tagPages))
+	errChan := make(chan error, len(tagPages))
+	var wg sync.WaitGroup
+
+	// Start workers
+	for i := 0; i < numWorkers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for job := range jobChan {
+				sortPages(job.pages, "date")
+
+				tagDir := filepath.Join(tagsDir, job.tag)
+				if err := os.MkdirAll(tagDir, 0755); err != nil {
+					errChan <- err
+					continue
+				}
+
+				tagPath := filepath.Join(tagDir, "index.html")
+				f, err := os.Create(tagPath)
+				if err != nil {
+					errChan <- err
+					continue
+				}
+
+				if err := b.templates.RenderTagPage(f, templates.TagPageData{
+					Site:        siteData,
+					Tag:         job.tag,
+					Pages:       job.pages,
+					CurrentPath: "/tags/" + job.tag + "/",
+				}); err != nil {
+					f.Close()
+					errChan <- err
+					continue
+				}
+				f.Close()
+			}
+		}()
+	}
+
+	// Send jobs
 	for tag, pages := range tagPages {
-		sortPages(pages, "date")
+		jobChan <- tagJob{tag: tag, pages: pages}
+	}
+	close(jobChan)
 
-		tagDir := filepath.Join(tagsDir, tag)
-		if err := os.MkdirAll(tagDir, 0755); err != nil {
-			return err
-		}
+	// Wait for workers
+	wg.Wait()
+	close(errChan)
 
-		tagPath := filepath.Join(tagDir, "index.html")
-		f, err := os.Create(tagPath)
-		if err != nil {
-			return err
-		}
-
-		if err := b.templates.RenderTagPage(f, templates.TagPageData{
-			Site:        siteData,
-			Tag:         tag,
-			Pages:       pages,
-			CurrentPath: "/tags/" + tag + "/",
-		}); err != nil {
-			f.Close()
-			return err
-		}
-		f.Close()
+	// Check for errors
+	for err := range errChan {
+		return err
 	}
 
 	return nil
