@@ -6,8 +6,10 @@ import (
 	"html/template"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/shivamx96/leafpress/internal/assets"
 	"github.com/shivamx96/leafpress/internal/config"
@@ -104,20 +106,52 @@ func (b *Builder) Build() (*Stats, error) {
 		Graph:   b.cfg.Graph,
 	}
 
-	// Render pages
+	// Render pages in parallel
+	stats.PageCount = len(pages)
+	numWorkers := runtime.NumCPU()
+	if numWorkers > len(pages) {
+		numWorkers = len(pages)
+	}
+	if numWorkers < 1 {
+		numWorkers = 1
+	}
+
+	pageChan := make(chan *content.Page, len(pages))
+	errChan := make(chan error, len(pages))
+	var wg sync.WaitGroup
+
+	// Start workers
+	for i := 0; i < numWorkers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for page := range pageChan {
+				var err error
+				if page.IsIndex {
+					err = b.renderSectionIndex(page, pages, siteData)
+				} else {
+					err = b.renderPage(page, siteData)
+				}
+				if err != nil {
+					errChan <- fmt.Errorf("failed to render %s: %w", page.SourcePath, err)
+				}
+			}
+		}()
+	}
+
+	// Send pages to workers
 	for _, page := range pages {
-		if page.IsIndex {
-			// Section index - render as index page
-			if err := b.renderSectionIndex(page, pages, siteData); err != nil {
-				return nil, fmt.Errorf("failed to render section index %s: %w", page.SourcePath, err)
-			}
-		} else {
-			// Regular page
-			if err := b.renderPage(page, siteData); err != nil {
-				return nil, fmt.Errorf("failed to render page %s: %w", page.SourcePath, err)
-			}
-		}
-		stats.PageCount++
+		pageChan <- page
+	}
+	close(pageChan)
+
+	// Wait for workers to finish
+	wg.Wait()
+	close(errChan)
+
+	// Check for errors
+	for err := range errChan {
+		return nil, err
 	}
 
 	// Generate auto-indexes for directories without _index.md
