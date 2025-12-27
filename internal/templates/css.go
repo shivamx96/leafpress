@@ -590,51 +590,44 @@ html {
 
 .lp-graph-panel {
   position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 75%;
-  max-width: 1000px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.9);
+  width: 90%;
+  height: 85%;
+  max-width: 1200px;
+  max-height: 800px;
   background: var(--lp-bg);
-  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
-  transform: translateX(100%);
-  transition: transform 0.3s ease;
+  border-radius: 12px;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  transition: transform 0.3s ease, opacity 0.3s ease;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .lp-graph-overlay--open .lp-graph-panel {
-  transform: translateX(0);
-}
-
-.lp-graph-panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid var(--lp-border);
-  flex-shrink: 0;
-}
-
-.lp-graph-panel-title {
-  font-family: var(--lp-font-heading);
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--lp-text);
-  margin: 0;
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
 }
 
 .lp-graph-close {
-  background: none;
-  border: none;
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 10;
+  background: var(--lp-bg);
+  border: 1px solid var(--lp-border);
   cursor: pointer;
   padding: 0.5rem;
   color: var(--lp-text-muted);
-  border-radius: 6px;
+  border-radius: 8px;
   transition: all 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .lp-graph-close:hover {
@@ -646,7 +639,7 @@ html {
   flex: 1;
   overflow: hidden;
   position: relative;
-  background: linear-gradient(to bottom, var(--lp-bg), var(--lp-code-bg));
+  background: var(--lp-bg);
 }
 
 .lp-graph-panel-body svg {
@@ -682,11 +675,14 @@ html {
   stroke-width: 3px !important;
 }
 
-/* Mobile: full screen overlay */
+/* Mobile: larger overlay */
 @media (max-width: 768px) {
   .lp-graph-panel {
-    width: 100%;
+    width: 95%;
+    height: 90%;
     max-width: none;
+    max-height: none;
+    border-radius: 8px;
   }
 }
 

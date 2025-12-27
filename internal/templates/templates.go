@@ -359,16 +359,13 @@ const baseTemplate = `<!DOCTYPE html>
   <!-- Graph Overlay -->
   <div class="lp-graph-overlay" id="lp-graph-overlay" aria-hidden="true">
     <div class="lp-graph-backdrop"></div>
-    <div class="lp-graph-panel" role="dialog" aria-label="Knowledge Graph Explorer" data-current-slug="{{block "currentSlug" .}}{{end}}">
-      <div class="lp-graph-panel-header">
-        <h2 class="lp-graph-panel-title">Knowledge Graph</h2>
-        <button class="lp-graph-close" aria-label="Close graph">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
-      </div>
+    <div class="lp-graph-panel" role="dialog" aria-label="Knowledge Graph" data-current-slug="{{block "currentSlug" .}}{{end}}">
+      <button class="lp-graph-close" aria-label="Close graph">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
       <div class="lp-graph-panel-body" id="lp-graph-panel-body"></div>
     </div>
   </div>
