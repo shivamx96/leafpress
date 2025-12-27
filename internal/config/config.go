@@ -17,16 +17,15 @@ type Background struct {
 
 // Config represents the leafpress.json configuration
 type Config struct {
-	Title       string    `json:"title"`
-	Author      string    `json:"author"`
-	BaseURL     string    `json:"baseURL"`
-	OutputDir   string    `json:"outputDir"`
-	Port        int       `json:"port"`
-	Nav         []NavItem `json:"nav"`
-	Theme       Theme     `json:"theme"`
-	Graph       bool      `json:"graph"`
-	GraphOnHome bool      `json:"graphOnHome"`
-	TOC         bool      `json:"toc"`
+	Title     string    `json:"title"`
+	Author    string    `json:"author"`
+	BaseURL   string    `json:"baseURL"`
+	OutputDir string    `json:"outputDir"`
+	Port      int       `json:"port"`
+	Nav       []NavItem `json:"nav"`
+	Theme     Theme     `json:"theme"`
+	Graph     bool      `json:"graph"`
+	TOC       bool      `json:"toc"`
 }
 
 // NavItem represents a navigation link
@@ -149,9 +148,8 @@ func Default() *Config {
 			NavStyle:       "glassy",
 			NavActiveStyle: "base",
 		},
-		Graph:       false,
-		GraphOnHome: false,
-		TOC:         true,
+		Graph: false,
+		TOC:   true,
 	}
 }
 
