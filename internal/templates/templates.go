@@ -11,6 +11,15 @@ import (
 	"github.com/shivamx96/leafpress/internal/content"
 )
 
+// Pre-compiled regexes for ExtractTOC and generateHeadingID (compiled once at startup)
+var (
+	headingRegex    = regexp.MustCompile(`<h([2-3])([^>]*)>(.*?)</h[2-3]>`)
+	htmlTagRegex    = regexp.MustCompile(`<[^>]*>`)
+	idAttrRegex     = regexp.MustCompile(`id\s*=`)
+	nonASCIIRegex   = regexp.MustCompile(`[^\x00-\x7F]+`)
+	nonAlphaNumeric = regexp.MustCompile(`[^a-z0-9]+`)
+)
+
 // Templates holds all parsed templates
 type Templates struct {
 	base     *template.Template
@@ -166,7 +175,6 @@ func fontURL(font string) template.URL {
 
 // ExtractTOC extracts headings from HTML content and adds IDs to them
 func ExtractTOC(htmlContent string) (string, []TOCItem) {
-	headingRegex := regexp.MustCompile(`<h([2-3])([^>]*)>(.*?)</h[2-3]>`)
 	var toc []TOCItem
 	idCounter := make(map[string]int)
 
@@ -182,7 +190,7 @@ func ExtractTOC(htmlContent string) (string, []TOCItem) {
 		text := matches[3]
 
 		// Strip HTML tags from text for TOC display
-		plainText := regexp.MustCompile(`<[^>]*>`).ReplaceAllString(text, "")
+		plainText := htmlTagRegex.ReplaceAllString(text, "")
 		// Unescape HTML entities (e.g., &amp; -> &, &#39; -> ')
 		plainText = html.UnescapeString(plainText)
 
@@ -209,7 +217,7 @@ func ExtractTOC(htmlContent string) (string, []TOCItem) {
 		})
 
 		// Return heading with ID (preserve existing attributes if any)
-		if attrs != "" && !regexp.MustCompile(`id\s*=`).MatchString(attrs) {
+		if attrs != "" && !idAttrRegex.MatchString(attrs) {
 			return "<h" + level + attrs + " id=\"" + id + "\">" + text + "</h" + level + ">"
 		} else if attrs == "" {
 			return "<h" + level + " id=\"" + id + "\">" + text + "</h" + level + ">"
@@ -224,7 +232,7 @@ func ExtractTOC(htmlContent string) (string, []TOCItem) {
 // generateHeadingID creates a URL-safe ID from heading text
 func generateHeadingID(text string) string {
 	// Remove emojis and other non-ASCII characters first
-	id := regexp.MustCompile(`[^\x00-\x7F]+`).ReplaceAllString(text, "")
+	id := nonASCIIRegex.ReplaceAllString(text, "")
 
 	// Trim spaces that may be left after emoji removal
 	id = strings.TrimSpace(id)
@@ -233,7 +241,7 @@ func generateHeadingID(text string) string {
 	id = strings.ToLower(id)
 
 	// Replace spaces and special characters with hyphens
-	id = regexp.MustCompile(`[^a-z0-9]+`).ReplaceAllString(id, "-")
+	id = nonAlphaNumeric.ReplaceAllString(id, "-")
 
 	// Remove leading/trailing hyphens
 	id = strings.Trim(id, "-")

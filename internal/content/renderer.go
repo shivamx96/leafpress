@@ -79,8 +79,13 @@ func (r *Renderer) Render(content string) (string, []string) {
 	return html, warnings
 }
 
-// obsidianImageRegex matches ![[image.png]] or ![[image.png|alt text]]
-var obsidianImageRegex = regexp.MustCompile(`!\[\[([^\]|]+?)(?:\|([^\]]+))?\]\]`)
+// Pre-compiled regexes (compiled once at startup)
+var (
+	obsidianImageRegex = regexp.MustCompile(`!\[\[([^\]|]+?)(?:\|([^\]]+))?\]\]`)
+	codeBlockRegex     = regexp.MustCompile("(?s)```[^`]*```")
+	inlineCodeRegex    = regexp.MustCompile("`[^`]+`")
+	externalLinkRegex  = regexp.MustCompile(`<a\s+href="(https?://[^"]+)"([^>]*)>([^<]+)</a>`)
+)
 
 // processObsidianImages converts Obsidian image embeds to standard markdown
 func (r *Renderer) processObsidianImages(content string) string {
@@ -177,11 +182,9 @@ func extractCodeBlocks(content string) []string {
 	var blocks []string
 
 	// Extract fenced code blocks (```...```)
-	codeBlockRegex := regexp.MustCompile("(?s)```[^`]*```")
 	blocks = append(blocks, codeBlockRegex.FindAllString(content, -1)...)
 
 	// Extract inline code (`...`)
-	inlineCodeRegex := regexp.MustCompile("`[^`]+`")
 	blocks = append(blocks, inlineCodeRegex.FindAllString(content, -1)...)
 
 	return blocks
@@ -204,9 +207,6 @@ func indexOf(s, substr string) int {
 	}
 	return -1
 }
-
-// externalLinkRegex matches http/https links
-var externalLinkRegex = regexp.MustCompile(`<a\s+href="(https?://[^"]+)"([^>]*)>([^<]+)</a>`)
 
 // processExternalLinks adds target="_blank" and class to external links
 func (r *Renderer) processExternalLinks(html string) string {
