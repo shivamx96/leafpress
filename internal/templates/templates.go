@@ -75,6 +75,7 @@ type SiteData struct {
 	Theme   config.Theme
 	BaseURL string
 	TOC     bool
+	Graph   bool
 }
 
 // New creates a new Templates instance
@@ -313,7 +314,7 @@ const baseTemplate = `<!DOCTYPE html>
       <div class="lp-nav-brand">
         <a class="lp-nav-title" href="/">{{.Site.Title}}</a>
         <div class="lp-nav-actions">
-          <button class="lp-graph-toggle" aria-label="Open knowledge graph" title="Explore graph">
+          {{if .Site.Graph}}<button class="lp-graph-toggle" aria-label="Open knowledge graph" title="Explore graph">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="6" cy="6" r="3"></circle>
               <circle cx="18" cy="6" r="3"></circle>
@@ -322,7 +323,7 @@ const baseTemplate = `<!DOCTYPE html>
               <line x1="8.5" y1="7.5" x2="15.5" y2="16.5"></line>
               <line x1="8.5" y1="16.5" x2="15.5" y2="7.5"></line>
             </svg>
-          </button>
+          </button>{{end}}
           <button class="lp-theme-toggle" aria-label="Toggle dark mode" title="Toggle theme">
             <svg class="lp-theme-icon lp-theme-icon-light" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="5"></circle>
@@ -356,7 +357,7 @@ const baseTemplate = `<!DOCTYPE html>
     <span class="lp-footer-text">Grown with <a href="https://leafpress.in" target="_blank">leafpress</a></span>
   </footer>
 
-  <!-- Graph Overlay -->
+  {{if .Site.Graph}}<!-- Graph Overlay -->
   <div class="lp-graph-overlay" id="lp-graph-overlay" aria-hidden="true">
     <div class="lp-graph-backdrop"></div>
     <div class="lp-graph-panel" role="dialog" aria-label="Knowledge Graph" data-current-slug="{{block "currentSlug" .}}{{end}}">
@@ -368,7 +369,7 @@ const baseTemplate = `<!DOCTYPE html>
       </button>
       <div class="lp-graph-panel-body" id="lp-graph-panel-body"></div>
     </div>
-  </div>
+  </div>{{end}}
   <script>
     // Theme switching
     (function() {
@@ -434,7 +435,7 @@ const baseTemplate = `<!DOCTYPE html>
         pre.style.position = 'relative';
         pre.appendChild(button);
       });
-
+      {{if .Site.Graph}}
       // Graph Overlay
       (function() {
         var overlay = document.getElementById('lp-graph-overlay');
@@ -951,6 +952,7 @@ const baseTemplate = `<!DOCTYPE html>
           simulate();
         }
       })();
+      {{end}}
     });
   </script>
 </body>

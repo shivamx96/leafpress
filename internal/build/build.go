@@ -101,6 +101,7 @@ func (b *Builder) Build() (*Stats, error) {
 		Theme:   b.cfg.Theme,
 		BaseURL: b.cfg.BaseURL,
 		TOC:     b.cfg.TOC,
+		Graph:   b.cfg.Graph,
 	}
 
 	// Render pages

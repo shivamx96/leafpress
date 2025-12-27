@@ -942,6 +942,222 @@ fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR34"
 
+# Test 48: Graph JSON is generated when enabled
+test_case "graph.json is generated when graph: true"
+TESTDIR35=$(mktemp -d)
+cd "$TESTDIR35"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test",
+  "graph": true
+}
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if [ -f "_site/graph.json" ]; then
+    pass
+else
+    fail "graph.json not generated"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR35"
+
+# Test 49: Graph JSON is NOT generated when disabled
+test_case "graph.json is NOT generated when graph: false"
+TESTDIR36=$(mktemp -d)
+cd "$TESTDIR36"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test",
+  "graph": false
+}
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if [ ! -f "_site/graph.json" ]; then
+    pass
+else
+    fail "graph.json should not be generated when graph: false"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR36"
+
+# Test 50: Graph UI is included when enabled
+test_case "Graph toggle button is shown when graph: true"
+TESTDIR37=$(mktemp -d)
+cd "$TESTDIR37"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test",
+  "graph": true
+}
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'lp-graph-toggle' _site/index.html && grep -q 'lp-graph-overlay' _site/index.html; then
+    pass
+else
+    fail "Graph UI not included when graph: true"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR37"
+
+# Test 51: Graph UI is excluded when disabled
+test_case "Graph toggle button is hidden when graph: false"
+TESTDIR38=$(mktemp -d)
+cd "$TESTDIR38"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test",
+  "graph": false
+}
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if ! grep -q 'lp-graph-toggle' _site/index.html && ! grep -q 'lp-graph-overlay' _site/index.html; then
+    pass
+else
+    fail "Graph UI should not be included when graph: false"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR38"
+
+# Test 52: Graph JSON contains nodes
+test_case "graph.json contains nodes with correct structure"
+TESTDIR39=$(mktemp -d)
+cd "$TESTDIR39"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test",
+  "graph": true
+}
+EOF
+cat > test.md << 'EOF'
+---
+title: Test Page
+tags: [testing]
+---
+Content
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+# Check graph.json has nodes array with id, title, url fields
+if grep -q '"nodes"' _site/graph.json && grep -q '"id"' _site/graph.json && grep -q '"title"' _site/graph.json && grep -q '"url"' _site/graph.json; then
+    pass
+else
+    fail "graph.json missing required node fields"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR39"
+
+# Test 53: Graph JSON contains edges for wiki links
+test_case "graph.json contains edges for wiki links"
+TESTDIR40=$(mktemp -d)
+cd "$TESTDIR40"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test",
+  "graph": true
+}
+EOF
+cat > page-a.md << 'EOF'
+---
+title: Page A
+---
+Link to [[page-b]].
+EOF
+cat > page-b.md << 'EOF'
+---
+title: Page B
+---
+Content
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+# Check graph.json has edges with source and target
+if grep -q '"edges"' _site/graph.json && grep -q '"source"' _site/graph.json && grep -q '"target"' _site/graph.json; then
+    pass
+else
+    fail "graph.json missing edges for wiki links"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR40"
+
+# Test 54: Graph nodes include tags
+test_case "graph.json nodes include tags"
+TESTDIR41=$(mktemp -d)
+cd "$TESTDIR41"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test",
+  "graph": true
+}
+EOF
+cat > test.md << 'EOF'
+---
+title: Test Page
+tags: [golang, testing]
+---
+Content
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q '"tags"' _site/graph.json && grep -q 'golang' _site/graph.json; then
+    pass
+else
+    fail "graph.json nodes missing tags"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR41"
+
+# Test 55: Graph nodes include growth stage
+test_case "graph.json nodes include growth stage"
+TESTDIR42=$(mktemp -d)
+cd "$TESTDIR42"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test",
+  "graph": true
+}
+EOF
+cat > test.md << 'EOF'
+---
+title: Test Page
+growth: seedling
+---
+Content
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q '"growth"' _site/graph.json && grep -q 'seedling' _site/graph.json; then
+    pass
+else
+    fail "graph.json nodes missing growth stage"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR42"
+
+# Test 56: Graph JavaScript not included when disabled
+test_case "Graph JavaScript is excluded when graph: false"
+TESTDIR43=$(mktemp -d)
+cd "$TESTDIR43"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test",
+  "graph": false
+}
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+# Should not contain graph rendering code
+if ! grep -q 'renderGraph' _site/index.html && ! grep -q 'graph.json' _site/index.html; then
+    pass
+else
+    fail "Graph JavaScript should not be included when graph: false"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR43"
+
 # Cleanup
 rm -rf "$TESTDIR"
 
