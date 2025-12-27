@@ -747,7 +747,7 @@ const pageTemplate = `
 
     {{if .Page.Backlinks}}
     <aside class="lp-backlinks">
-      <h2 class="lp-backlinks-title">Linked from</h2>
+      <h2 class="lp-backlinks-title">Referenced from</h2>
       <ul class="lp-backlinks-list">
         {{range .Page.Backlinks}}
         <li><a class="lp-backlink" href="{{.Permalink}}">{{.Title}}</a></li>
