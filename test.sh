@@ -53,7 +53,7 @@ test_case "Init creates required files"
 TESTDIR=$(mktemp -d)
 cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
-if [ -f "leafpress.json" ] && [ -f "style.css" ] && [ -f "index.md" ]; then
+if [ -f "leafpress.json" ] && [ -f "style.css" ] && [ -f "index.md" ] && [ -f "DOES_NOT_EXIST.txt" ]; then
     pass
 else
     fail "Missing files after init"
