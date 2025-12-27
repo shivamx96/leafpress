@@ -58,11 +58,19 @@ Mobile-first design that works everywhere:
 - Touch-friendly controls
 - Optimized for all screen sizes
 
+## Graph Visualization
+
+Interactive graph to explore your knowledge base:
+- Visual map of all pages and their connections
+- Click to navigate between notes
+- See how ideas are interconnected
+- Filter by tags or growth stage
+
 ## Tags & Organization
 
 Organize content with tags:
 - Automatic tag pages
-- Tag cloud visualization
+- Tag index page
 - Cross-section categorization
 
 ## Growth Stages

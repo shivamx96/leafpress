@@ -41,10 +41,14 @@ Your content here...
 ### Optional Fields
 
 - **date**: Publication date (YYYY-MM-DD)
+- **created** / **createdAt**: Creation date (aliases for date, Obsidian-compatible)
+- **modified** / **updated** / **updatedAt**: Last modified date (Obsidian-compatible)
 - **tags**: Array of tags for categorization
 - **growth**: Page maturity (`"seedling"`, `"budding"`, `"evergreen"`)
 - **draft**: Set to `true` to exclude from build
 - **toc**: Override site-wide TOC setting (`true` or `false`)
+- **showList**: For `_index.md` files, show/hide automatic page list (`true` or `false`)
+- **sort**: For `_index.md` files, sort pages by `"date"`, `"title"`, or `"growth"`
 
 ## Markdown Features
 
@@ -111,20 +115,21 @@ Place images in `static/images/` directory.
 
 ### Sections
 
-Create directories for different content sections:
+Create directories for different content sections in your site root:
 
 ```
-content/
+my-site/
 ├── notes/
-│   ├── index.md
+│   ├── _index.md
 │   └── my-note.md
 ├── projects/
-│   ├── index.md
+│   ├── _index.md
 │   └── project-1.md
-└── index.md
+├── index.md
+└── leafpress.json
 ```
 
-Each directory should have an `index.md` that lists its pages.
+Use `_index.md` for section index pages. These automatically list child pages unless `showList: false` is set.
 
 ### Tags
 

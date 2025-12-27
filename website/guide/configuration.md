@@ -10,6 +10,7 @@ leafpress is configured through `leafpress.json` in your site's root directory.
 ```json
 {
   "title": "My Digital Garden",
+  "author": "Your Name",
   "baseURL": "https://example.com",
   "outputDir": "_site",
   "port": 3000
@@ -23,6 +24,7 @@ leafpress is configured through `leafpress.json` in your site's root directory.
 - **baseURL**: Your site's URL (used for canonical links)
 - **outputDir**: Where to output built files (default: `_site`)
 - **port**: Dev server port (default: `3000`)
+- **ignore**: Array of directories to ignore during content scanning (e.g., `["drafts", "archive"]`)
 
 ## Navigation
 
@@ -144,6 +146,38 @@ You can also disable TOC for specific pages in frontmatter:
 title: "My Page"
 toc: false
 ---
+```
+
+### Graph Visualization
+
+Enable the interactive graph visualization to see connections between your notes:
+
+```json
+{
+  "graph": true
+}
+```
+
+When enabled, a graph icon appears on pages showing how notes are interconnected via wiki-links.
+
+### Wiki-Links
+
+Wiki-links (`[[page-name]]`) are enabled by default. To disable:
+
+```json
+{
+  "wikilinks": false
+}
+```
+
+### Backlinks
+
+Backlinks show which pages link to the current page. Enabled by default. To disable:
+
+```json
+{
+  "backlinks": false
+}
 ```
 
 ### Section Index Lists
