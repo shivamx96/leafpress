@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/shivamx96/leafpress/internal/build"
 	"github.com/shivamx96/leafpress/internal/config"
@@ -45,9 +46,13 @@ func runServe(cmd *cobra.Command, args []string) error {
 
 	// Initial build
 	fmt.Println("Building site...")
-	if _, err := builder.Build(); err != nil {
+	start := time.Now()
+	stats, err := builder.Build()
+	if err != nil {
 		return fmt.Errorf("initial build failed: %w", err)
 	}
+	elapsed := time.Since(start)
+	fmt.Printf("Built %d pages in %s\n", stats.PageCount, elapsed.Round(time.Millisecond))
 
 	// Start server
 	srv := server.New(cfg, builder, server.Options{

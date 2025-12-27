@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/shivamx96/leafpress/internal/assets"
 	"github.com/shivamx96/leafpress/internal/config"
@@ -51,31 +52,45 @@ func New(cfg *config.Config, opts Options) *Builder {
 	}
 }
 
+// logTiming prints timing info in verbose mode with aligned formatting
+func (b *Builder) logTiming(label string, d time.Duration) {
+	if b.opts.Verbose {
+		fmt.Printf("  %-16s %v\n", label, d.Round(time.Microsecond))
+	}
+}
+
 // Build generates the static site
 func (b *Builder) Build() (*Stats, error) {
 	stats := &Stats{}
+	var t0 time.Time
 
 	// Initialize templates
+	t0 = time.Now()
 	var err error
 	b.templates, err = templates.New()
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize templates: %w", err)
 	}
+	b.logTiming("templates", time.Since(t0))
 
 	// Clean output directory
+	t0 = time.Now()
 	if err := os.RemoveAll(b.outputDir); err != nil {
 		return nil, fmt.Errorf("failed to clean output directory: %w", err)
 	}
 	if err := os.MkdirAll(b.outputDir, 0755); err != nil {
 		return nil, fmt.Errorf("failed to create output directory: %w", err)
 	}
+	b.logTiming("clean", time.Since(t0))
 
 	// Scan content
+	t0 = time.Now()
 	scanner := content.NewScanner(b.rootDir, b.cfg.Ignore)
 	pages, err := scanner.Scan()
 	if err != nil {
 		return nil, fmt.Errorf("failed to scan content: %w", err)
 	}
+	b.logTiming("scan", time.Since(t0))
 
 	// Filter drafts
 	if !b.opts.IncludeDrafts {
@@ -83,15 +98,19 @@ func (b *Builder) Build() (*Stats, error) {
 	}
 
 	// Build backlinks
+	t0 = time.Now()
 	content.BuildBacklinks(pages)
+	b.logTiming("backlinks", time.Since(t0))
 
 	// Render markdown to HTML
+	t0 = time.Now()
 	warnings := content.RenderPages(pages)
+	b.logTiming("markdown", time.Since(t0))
 	stats.WarningCount = len(warnings)
 
 	if b.opts.Verbose {
 		for _, w := range warnings {
-			fmt.Printf("Warning: %s\n", w)
+			fmt.Printf("  warning: %s\n", w)
 		}
 	}
 
@@ -107,6 +126,7 @@ func (b *Builder) Build() (*Stats, error) {
 	}
 
 	// Render pages in parallel
+	t0 = time.Now()
 	stats.PageCount = len(pages)
 	numWorkers := runtime.NumCPU()
 	if numWorkers > len(pages) {
@@ -153,37 +173,50 @@ func (b *Builder) Build() (*Stats, error) {
 	for err := range errChan {
 		return nil, err
 	}
+	b.logTiming("render", time.Since(t0))
 
 	// Generate auto-indexes for directories without _index.md
+	t0 = time.Now()
 	if err := b.generateAutoIndexes(pages, siteData); err != nil {
 		return nil, fmt.Errorf("failed to generate auto indexes: %w", err)
 	}
+	b.logTiming("auto-indexes", time.Since(t0))
 
 	// Generate tag pages
+	t0 = time.Now()
 	if err := b.generateTagPages(pages, siteData); err != nil {
 		return nil, fmt.Errorf("failed to generate tag pages: %w", err)
 	}
+	b.logTiming("tags", time.Since(t0))
 
 	// Copy static files
+	t0 = time.Now()
 	if err := b.copyStatic(); err != nil {
 		return nil, fmt.Errorf("failed to copy static files: %w", err)
 	}
+	b.logTiming("static", time.Since(t0))
 
 	// Generate CSS
+	t0 = time.Now()
 	if err := b.generateCSS(); err != nil {
 		return nil, fmt.Errorf("failed to generate CSS: %w", err)
 	}
+	b.logTiming("css", time.Since(t0))
 
 	// Copy favicons
+	t0 = time.Now()
 	if err := b.copyFavicons(); err != nil {
 		return nil, fmt.Errorf("failed to copy favicons: %w", err)
 	}
+	b.logTiming("favicons", time.Since(t0))
 
 	// Generate graph.json if enabled
 	if b.cfg.Graph {
+		t0 = time.Now()
 		if err := b.generateGraph(pages); err != nil {
 			return nil, fmt.Errorf("failed to generate graph: %w", err)
 		}
+		b.logTiming("graph", time.Since(t0))
 	}
 
 	return stats, nil
