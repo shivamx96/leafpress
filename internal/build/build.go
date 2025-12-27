@@ -24,6 +24,7 @@ import (
 type Options struct {
 	IncludeDrafts bool
 	Verbose       bool
+	SkipClean     bool // Skip cleaning output directory (for hot reload)
 }
 
 // Stats contains build statistics
@@ -52,6 +53,11 @@ func New(cfg *config.Config, opts Options) *Builder {
 	}
 }
 
+// SetSkipClean enables or disables cleaning the output directory
+func (b *Builder) SetSkipClean(skip bool) {
+	b.opts.SkipClean = skip
+}
+
 // logTiming prints timing info in verbose mode with aligned formatting
 func (b *Builder) logTiming(label string, d time.Duration) {
 	if b.opts.Verbose {
@@ -73,10 +79,12 @@ func (b *Builder) Build() (*Stats, error) {
 	}
 	b.logTiming("templates", time.Since(t0))
 
-	// Clean output directory
+	// Clean output directory (skip for hot reload)
 	t0 = time.Now()
-	if err := os.RemoveAll(b.outputDir); err != nil {
-		return nil, fmt.Errorf("failed to clean output directory: %w", err)
+	if !b.opts.SkipClean {
+		if err := os.RemoveAll(b.outputDir); err != nil {
+			return nil, fmt.Errorf("failed to clean output directory: %w", err)
+		}
 	}
 	if err := os.MkdirAll(b.outputDir, 0755); err != nil {
 		return nil, fmt.Errorf("failed to create output directory: %w", err)
