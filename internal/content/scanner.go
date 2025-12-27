@@ -169,6 +169,18 @@ func (s *Scanner) parsePage(absPath, relPath string, info os.FileInfo) (*Page, e
 	return page, nil
 }
 
+// ParseSingleFile parses a single markdown file and returns a Page
+func ParseSingleFile(rootDir, relPath string) (*Page, error) {
+	absPath := filepath.Join(rootDir, relPath)
+	info, err := os.Stat(absPath)
+	if err != nil {
+		return nil, err
+	}
+
+	scanner := &Scanner{rootDir: rootDir}
+	return scanner.parsePage(absPath, relPath, info)
+}
+
 // generateSlug creates a URL slug from a file path
 func generateSlug(relPath string) string {
 	// Remove .md extension

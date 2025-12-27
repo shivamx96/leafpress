@@ -251,9 +251,11 @@ func (s *Server) notifyClients() {
 
 // watchFiles watches for file changes and triggers rebuilds
 func (s *Server) watchFiles() {
-	// Debounce timer
+	// Debounce timer and pending changes
 	var timer *time.Timer
 	var mu sync.Mutex
+	var pendingPath string
+	var pendingChangeType build.ChangeType
 
 	for {
 		select {
@@ -262,24 +264,38 @@ func (s *Server) watchFiles() {
 				return
 			}
 
-			// Only care about write and create events
-			if event.Op&(fsnotify.Write|fsnotify.Create) == 0 {
+			// Determine change type
+			var changeType build.ChangeType
+			if event.Op&fsnotify.Remove != 0 {
+				changeType = build.ChangeDelete
+			} else if event.Op&fsnotify.Create != 0 {
+				changeType = build.ChangeCreate
+			} else if event.Op&fsnotify.Write != 0 {
+				changeType = build.ChangeModify
+			} else {
 				continue
 			}
 
 			// Check if it's a file we care about
 			ext := filepath.Ext(event.Name)
-			if ext != ".md" && ext != ".css" {
+			base := filepath.Base(event.Name)
+			if ext != ".md" && ext != ".css" && base != "leafpress.json" && !strings.HasPrefix(event.Name, "static/") {
 				continue
 			}
 
 			// Debounce
 			mu.Lock()
+			pendingPath = event.Name
+			pendingChangeType = changeType
 			if timer != nil {
 				timer.Stop()
 			}
 			timer = time.AfterFunc(100*time.Millisecond, func() {
-				s.rebuild()
+				mu.Lock()
+				path := pendingPath
+				ct := pendingChangeType
+				mu.Unlock()
+				s.rebuildIncremental(path, ct)
 			})
 			mu.Unlock()
 
@@ -307,6 +323,26 @@ func (s *Server) rebuild() {
 
 	elapsed := time.Since(start)
 	fmt.Printf("Built %d pages in %s\n", stats.PageCount, elapsed.Round(time.Millisecond))
+
+	s.notifyClients()
+}
+
+func (s *Server) rebuildIncremental(changedPath string, changeType build.ChangeType) {
+	fmt.Println("Rebuilding...")
+	start := time.Now()
+
+	stats, err := s.builder.RebuildIncremental(changedPath, changeType)
+	if err != nil {
+		fmt.Printf("Build error: %v\n", err)
+		return
+	}
+
+	elapsed := time.Since(start)
+	if stats.FullRebuild {
+		fmt.Printf("Full rebuild in %s\n", elapsed.Round(time.Millisecond))
+	} else {
+		fmt.Printf("Rebuilt %d pages in %s\n", stats.PagesRebuilt, elapsed.Round(time.Millisecond))
+	}
 
 	s.notifyClients()
 }

@@ -1559,6 +1559,113 @@ fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR60"
 
+# Test 74: Multiple builds without clean preserves content
+test_case "Multiple builds without clean work correctly"
+TESTDIR61=$(mktemp -d)
+cd "$TESTDIR61"
+"$LEAFPRESS" init > /dev/null 2>&1
+echo -e "---\ntitle: Page One\n---\nFirst content" > page1.md
+"$LEAFPRESS" build > /dev/null 2>&1
+# Add second page and rebuild
+echo -e "---\ntitle: Page Two\n---\nSecond content" > page2.md
+"$LEAFPRESS" build > /dev/null 2>&1
+# Both pages should exist
+if [ -f "_site/page1/index.html" ] && [ -f "_site/page2/index.html" ]; then
+    pass
+else
+    fail "Multiple builds did not preserve content"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR61"
+
+# Test 75: Backlinks update correctly after content change
+test_case "Backlinks are correctly built"
+TESTDIR62=$(mktemp -d)
+cd "$TESTDIR62"
+"$LEAFPRESS" init > /dev/null 2>&1
+echo -e "---\ntitle: Page A\n---\nLinks to [[page-b]]" > page-a.md
+echo -e "---\ntitle: Page B\n---\nContent of B" > page-b.md
+"$LEAFPRESS" build > /dev/null 2>&1
+# Page B should have backlink from Page A
+if grep -q "Page A" _site/page-b/index.html; then
+    pass
+else
+    fail "Backlinks not built correctly"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR62"
+
+# Test 76: Tag pages are generated correctly
+test_case "Tag pages list all tagged content"
+TESTDIR63=$(mktemp -d)
+cd "$TESTDIR63"
+"$LEAFPRESS" init > /dev/null 2>&1
+echo -e "---\ntitle: Post One\ntags: [golang]\n---\nContent" > post1.md
+echo -e "---\ntitle: Post Two\ntags: [golang, rust]\n---\nContent" > post2.md
+echo -e "---\ntitle: Post Three\ntags: [rust]\n---\nContent" > post3.md
+"$LEAFPRESS" build > /dev/null 2>&1
+# Check tag index exists and tag pages have correct posts
+if [ -f "_site/tags/index.html" ] && \
+   grep -q "Post One" _site/tags/golang/index.html && \
+   grep -q "Post Two" _site/tags/golang/index.html && \
+   grep -q "Post Two" _site/tags/rust/index.html && \
+   grep -q "Post Three" _site/tags/rust/index.html; then
+    pass
+else
+    fail "Tag pages not generated correctly"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR63"
+
+# Test 77: Graph JSON generated when enabled
+test_case "Graph JSON contains nodes and links"
+TESTDIR64=$(mktemp -d)
+cd "$TESTDIR64"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test",
+  "graph": true
+}
+EOF
+echo -e "---\ntitle: Node A\n---\nLinks to [[node-b]]" > node-a.md
+echo -e "---\ntitle: Node B\n---\nContent" > node-b.md
+"$LEAFPRESS" build > /dev/null 2>&1
+# Check graph.json exists and has correct structure
+if [ -f "_site/graph.json" ] && \
+   grep -q '"nodes"' _site/graph.json && \
+   grep -q '"edges"' _site/graph.json && \
+   grep -q 'node-a' _site/graph.json && \
+   grep -q 'node-b' _site/graph.json; then
+    pass
+else
+    fail "Graph JSON not generated correctly"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR64"
+
+# Test 78: Parallel rendering produces correct output
+test_case "Large site builds correctly with parallel rendering"
+TESTDIR65=$(mktemp -d)
+cd "$TESTDIR65"
+"$LEAFPRESS" init > /dev/null 2>&1
+# Create 20 interconnected pages
+for i in $(seq 1 20); do
+    next=$((i + 1))
+    if [ $next -gt 20 ]; then next=1; fi
+    echo -e "---\ntitle: Page $i\ntags: [test]\n---\nLinks to [[page-$next]]" > "page-$i.md"
+done
+"$LEAFPRESS" build > /dev/null 2>&1
+# All pages should exist
+count=$(ls -1 _site/page-*/index.html 2>/dev/null | wc -l)
+if [ "$count" -eq 20 ]; then
+    pass
+else
+    fail "Expected 20 pages, got $count"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR65"
+
 # Cleanup
 rm -rf "$TESTDIR"
 

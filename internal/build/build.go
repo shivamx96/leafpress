@@ -40,6 +40,12 @@ type Builder struct {
 	rootDir   string
 	outputDir string
 	templates *templates.Templates
+
+	// Cached state for incremental builds
+	pages       []*content.Page
+	pagesByPath map[string]*content.Page // SourcePath -> Page
+	pagesBySlug map[string]*content.Page // Slug -> Page
+	siteData    templates.SiteData
 }
 
 // New creates a new Builder
@@ -131,6 +137,16 @@ func (b *Builder) Build() (*Stats, error) {
 		BaseURL: b.cfg.BaseURL,
 		TOC:     b.cfg.TOC,
 		Graph:   b.cfg.Graph,
+	}
+
+	// Cache state for incremental builds
+	b.pages = pages
+	b.siteData = siteData
+	b.pagesByPath = make(map[string]*content.Page)
+	b.pagesBySlug = make(map[string]*content.Page)
+	for _, page := range pages {
+		b.pagesByPath[page.SourcePath] = page
+		b.pagesBySlug[page.Slug] = page
 	}
 
 	// Render pages in parallel
@@ -228,6 +244,465 @@ func (b *Builder) Build() (*Stats, error) {
 	}
 
 	return stats, nil
+}
+
+// ChangeType represents the type of file change
+type ChangeType int
+
+const (
+	ChangeModify ChangeType = iota
+	ChangeCreate
+	ChangeDelete
+)
+
+// IncrementalStats contains incremental build statistics
+type IncrementalStats struct {
+	PagesRebuilt int
+	TagsRebuilt  int
+	FullRebuild  bool
+}
+
+// RebuildIncremental performs an incremental rebuild based on changed file
+func (b *Builder) RebuildIncremental(changedPath string, changeType ChangeType) (*IncrementalStats, error) {
+	stats := &IncrementalStats{}
+	var t0 time.Time
+
+	// If no cached state, do full rebuild
+	if b.pages == nil {
+		if _, err := b.Build(); err != nil {
+			return nil, err
+		}
+		stats.FullRebuild = true
+		return stats, nil
+	}
+
+	// Get relative path
+	relPath, err := filepath.Rel(b.rootDir, changedPath)
+	if err != nil {
+		relPath = changedPath
+	}
+
+	// Check if it's a config change - requires full rebuild
+	if filepath.Base(relPath) == "leafpress.json" {
+		b.opts.SkipClean = false // Full clean for config changes
+		if _, err := b.Build(); err != nil {
+			return nil, err
+		}
+		stats.FullRebuild = true
+		return stats, nil
+	}
+
+	// Check if it's a static file
+	if strings.HasPrefix(relPath, "static/") {
+		t0 = time.Now()
+		if err := b.copyStatic(); err != nil {
+			return nil, err
+		}
+		b.logTiming("static", time.Since(t0))
+		return stats, nil
+	}
+
+	// Check if it's a CSS file
+	if relPath == "style.css" {
+		t0 = time.Now()
+		if err := b.generateCSS(); err != nil {
+			return nil, err
+		}
+		b.logTiming("css", time.Since(t0))
+		return stats, nil
+	}
+
+	// Handle markdown file changes
+	if filepath.Ext(relPath) == ".md" {
+		return b.rebuildMarkdownFile(relPath, changeType)
+	}
+
+	return stats, nil
+}
+
+// rebuildMarkdownFile handles incremental rebuild for a markdown file change
+func (b *Builder) rebuildMarkdownFile(relPath string, changeType ChangeType) (*IncrementalStats, error) {
+	stats := &IncrementalStats{}
+	var t0 time.Time
+
+	// For deletions, remove the output file and rebuild affected pages
+	if changeType == ChangeDelete {
+		return b.handleDeletedFile(relPath)
+	}
+
+	// Check if file is in an ignored folder
+	topLevel := strings.Split(relPath, string(filepath.Separator))[0]
+	for _, ignored := range b.cfg.Ignore {
+		if topLevel == ignored {
+			return stats, nil // File is in ignored folder, skip
+		}
+	}
+
+	// Parse only the changed file (not full scan)
+	t0 = time.Now()
+	changedPage, err := content.ParseSingleFile(b.rootDir, relPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse %s: %w", relPath, err)
+	}
+
+	// Skip drafts if needed
+	if !b.opts.IncludeDrafts && changedPage.Draft {
+		// If it was previously not a draft but now is, treat as deletion
+		if oldPage := b.pagesByPath[relPath]; oldPage != nil {
+			return b.handleDeletedFile(relPath)
+		}
+		return stats, nil
+	}
+	b.logTiming("parse", time.Since(t0))
+
+	// Get the old page if it existed
+	oldPage := b.pagesByPath[relPath]
+
+	// Update the pages cache with the new/changed page
+	if oldPage != nil {
+		// Remove old slug mapping if slug changed
+		if oldPage.Slug != changedPage.Slug {
+			delete(b.pagesBySlug, oldPage.Slug)
+		}
+		// Replace old page with new one in the slice
+		for i, p := range b.pages {
+			if p.SourcePath == relPath {
+				b.pages[i] = changedPage
+				break
+			}
+		}
+	} else {
+		// Add new page to the slice
+		b.pages = append(b.pages, changedPage)
+	}
+	b.pagesByPath[relPath] = changedPage
+	b.pagesBySlug[changedPage.Slug] = changedPage
+
+	// Determine what needs rebuilding
+	pagesToRebuild := make(map[string]*content.Page)
+	tagsToRebuild := make(map[string]bool)
+	rebuildSectionIndex := false
+	var sectionSlug string
+
+	pagesToRebuild[changedPage.SourcePath] = changedPage
+
+	// Get section for this page
+	sectionSlug = filepath.Dir(changedPage.Slug)
+	if sectionSlug == "." {
+		sectionSlug = ""
+	}
+
+	// If old page existed, check what changed
+	if oldPage != nil {
+		// Rebuild pages that had backlinks to this page (their backlinks section changed)
+		for _, backlinker := range oldPage.Backlinks {
+			pagesToRebuild[backlinker.SourcePath] = backlinker
+		}
+
+		// If tags changed, rebuild affected tag pages
+		oldTags := make(map[string]bool)
+		for _, t := range oldPage.Tags {
+			oldTags[strings.ToLower(t)] = true
+		}
+		for _, t := range changedPage.Tags {
+			tLower := strings.ToLower(t)
+			if !oldTags[tLower] {
+				tagsToRebuild[tLower] = true // New tag
+			}
+			delete(oldTags, tLower)
+		}
+		for t := range oldTags {
+			tagsToRebuild[t] = true // Removed tag
+		}
+	} else {
+		// New file - rebuild section index
+		rebuildSectionIndex = true
+		// All tags are new
+		for _, t := range changedPage.Tags {
+			tagsToRebuild[strings.ToLower(t)] = true
+		}
+	}
+
+	// Rebuild backlinks with updated page set
+	t0 = time.Now()
+	content.BuildBacklinks(b.pages)
+	b.logTiming("backlinks", time.Since(t0))
+
+	// If the changed page has new outlinks, rebuild pages it now links to
+	resolver := content.NewLinkResolver(b.pages)
+	for _, target := range changedPage.OutLinks {
+		result := resolver.Resolve(target)
+		if result.Page != nil {
+			pagesToRebuild[result.Page.SourcePath] = result.Page
+		}
+	}
+
+	// Render markdown for pages that need rebuilding
+	t0 = time.Now()
+	var pagesToRender []*content.Page
+	for _, p := range pagesToRebuild {
+		// Find the updated version from b.pages
+		for _, np := range b.pages {
+			if np.SourcePath == p.SourcePath {
+				pagesToRender = append(pagesToRender, np)
+				break
+			}
+		}
+	}
+	content.RenderPages(pagesToRender)
+	b.logTiming("markdown", time.Since(t0))
+
+	// Render the affected pages
+	t0 = time.Now()
+	for _, page := range pagesToRender {
+		if page.IsIndex {
+			if err := b.renderSectionIndex(page, b.pages, b.siteData); err != nil {
+				return nil, err
+			}
+		} else {
+			if err := b.renderPage(page, b.siteData); err != nil {
+				return nil, err
+			}
+		}
+		stats.PagesRebuilt++
+	}
+	b.logTiming("render", time.Since(t0))
+
+	// Rebuild section index if needed
+	if rebuildSectionIndex && sectionSlug != "" {
+		t0 = time.Now()
+		// Check if there's a manual _index.md
+		hasManualIndex := false
+		for _, p := range b.pages {
+			if p.IsIndex && p.Slug == sectionSlug {
+				hasManualIndex = true
+				break
+			}
+		}
+		if !hasManualIndex {
+			if err := b.rebuildAutoIndex(sectionSlug, b.pages); err != nil {
+				return nil, err
+			}
+		}
+		b.logTiming("auto-index", time.Since(t0))
+	}
+
+	// Rebuild affected tag pages
+	if len(tagsToRebuild) > 0 {
+		t0 = time.Now()
+		if err := b.rebuildTagPages(tagsToRebuild, b.pages); err != nil {
+			return nil, err
+		}
+		stats.TagsRebuilt = len(tagsToRebuild)
+		b.logTiming("tags", time.Since(t0))
+	}
+
+	// Regenerate graph if enabled
+	if b.cfg.Graph {
+		t0 = time.Now()
+		if err := b.generateGraph(b.pages); err != nil {
+			return nil, err
+		}
+		b.logTiming("graph", time.Since(t0))
+	}
+
+	return stats, nil
+}
+
+// handleDeletedFile handles removal of a markdown file
+func (b *Builder) handleDeletedFile(relPath string) (*IncrementalStats, error) {
+	stats := &IncrementalStats{}
+
+	oldPage := b.pagesByPath[relPath]
+	if oldPage == nil {
+		return stats, nil // File wasn't tracked
+	}
+
+	// Remove the output HTML file
+	outPath := filepath.Join(b.outputDir, oldPage.OutputPath)
+	os.Remove(outPath)
+	// Also try to remove the parent directory if empty
+	os.Remove(filepath.Dir(outPath))
+
+	// Rebuild pages that had backlinks to this page
+	pagesToRebuild := make([]*content.Page, 0)
+	for _, backlinker := range oldPage.Backlinks {
+		pagesToRebuild = append(pagesToRebuild, backlinker)
+	}
+
+	// Remove from cached state
+	delete(b.pagesByPath, relPath)
+	delete(b.pagesBySlug, oldPage.Slug)
+
+	// Filter out the deleted page from pages slice
+	newPages := make([]*content.Page, 0, len(b.pages)-1)
+	for _, p := range b.pages {
+		if p.SourcePath != relPath {
+			newPages = append(newPages, p)
+		}
+	}
+	b.pages = newPages
+
+	// Rebuild backlinks
+	content.BuildBacklinks(b.pages)
+
+	// Re-render affected pages
+	content.RenderPages(pagesToRebuild)
+	for _, page := range pagesToRebuild {
+		if page.IsIndex {
+			if err := b.renderSectionIndex(page, b.pages, b.siteData); err != nil {
+				return nil, err
+			}
+		} else {
+			if err := b.renderPage(page, b.siteData); err != nil {
+				return nil, err
+			}
+		}
+		stats.PagesRebuilt++
+	}
+
+	// Rebuild tag pages that contained this page
+	tagsToRebuild := make(map[string]bool)
+	for _, t := range oldPage.Tags {
+		tagsToRebuild[strings.ToLower(t)] = true
+	}
+	if len(tagsToRebuild) > 0 {
+		if err := b.rebuildTagPages(tagsToRebuild, b.pages); err != nil {
+			return nil, err
+		}
+		stats.TagsRebuilt = len(tagsToRebuild)
+	}
+
+	// Rebuild section index
+	sectionSlug := filepath.Dir(oldPage.Slug)
+	if sectionSlug != "." && sectionSlug != "" {
+		if err := b.rebuildAutoIndex(sectionSlug, b.pages); err != nil {
+			return nil, err
+		}
+	}
+
+	// Regenerate graph
+	if b.cfg.Graph {
+		if err := b.generateGraph(b.pages); err != nil {
+			return nil, err
+		}
+	}
+
+	return stats, nil
+}
+
+// rebuildAutoIndex rebuilds a single auto-generated index
+func (b *Builder) rebuildAutoIndex(sectionSlug string, pages []*content.Page) error {
+	sectionPages := getSectionPages(sectionSlug, pages)
+	sortPages(sectionPages, "date")
+
+	outPath := filepath.Join(b.outputDir, sectionSlug, "index.html")
+	if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
+		return err
+	}
+
+	f, err := os.Create(outPath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	title := cases.Title(language.English).String(filepath.Base(sectionSlug))
+	data := templates.IndexData{
+		Site:        b.siteData,
+		Title:       title,
+		Pages:       sectionPages,
+		ShowList:    true,
+		CurrentPath: "/" + sectionSlug + "/",
+	}
+
+	return b.templates.RenderIndex(f, data)
+}
+
+// rebuildTagPages rebuilds specific tag pages
+func (b *Builder) rebuildTagPages(tags map[string]bool, pages []*content.Page) error {
+	// Collect pages for each tag
+	tagPages := make(map[string][]*content.Page)
+	for _, page := range pages {
+		for _, tag := range page.Tags {
+			tagLower := strings.ToLower(tag)
+			if tags[tagLower] {
+				tagPages[tagLower] = append(tagPages[tagLower], page)
+			}
+		}
+	}
+
+	tagsDir := filepath.Join(b.outputDir, "tags")
+
+	for tag := range tags {
+		tagDir := filepath.Join(tagsDir, tag)
+		pagesForTag := tagPages[tag]
+
+		if len(pagesForTag) == 0 {
+			// Tag no longer has any pages, remove it
+			os.RemoveAll(tagDir)
+			continue
+		}
+
+		sortPages(pagesForTag, "date")
+
+		if err := os.MkdirAll(tagDir, 0755); err != nil {
+			return err
+		}
+
+		tagPath := filepath.Join(tagDir, "index.html")
+		f, err := os.Create(tagPath)
+		if err != nil {
+			return err
+		}
+
+		if err := b.templates.RenderTagPage(f, templates.TagPageData{
+			Site:        b.siteData,
+			Tag:         tag,
+			Pages:       pagesForTag,
+			CurrentPath: "/tags/" + tag + "/",
+		}); err != nil {
+			f.Close()
+			return err
+		}
+		f.Close()
+	}
+
+	// Rebuild tag index
+	var allTags []templates.TagInfo
+	allTagPages := make(map[string][]*content.Page)
+	for _, page := range pages {
+		for _, tag := range page.Tags {
+			tagLower := strings.ToLower(tag)
+			allTagPages[tagLower] = append(allTagPages[tagLower], page)
+		}
+	}
+	for tag, pages := range allTagPages {
+		allTags = append(allTags, templates.TagInfo{
+			Name:  tag,
+			Count: len(pages),
+		})
+	}
+	sort.Slice(allTags, func(i, j int) bool {
+		return allTags[i].Name < allTags[j].Name
+	})
+
+	if err := os.MkdirAll(tagsDir, 0755); err != nil {
+		return err
+	}
+
+	indexPath := filepath.Join(tagsDir, "index.html")
+	f, err := os.Create(indexPath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	return b.templates.RenderTagIndex(f, templates.TagIndexData{
+		Site:        b.siteData,
+		Tags:        allTags,
+		CurrentPath: "/tags/",
+	})
 }
 
 // renderPage renders a single content page
