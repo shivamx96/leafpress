@@ -1534,6 +1534,31 @@ fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR59"
 
+# Test 73: Ignore folders from config
+test_case "Ignore folders excludes content from build"
+TESTDIR60=$(mktemp -d)
+cd "$TESTDIR60"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test",
+  "ignore": ["drafts", "private"]
+}
+EOF
+mkdir -p drafts private notes
+echo -e "---\ntitle: Draft Post\n---\nDraft content" > drafts/post.md
+echo -e "---\ntitle: Private Note\n---\nPrivate content" > private/secret.md
+echo -e "---\ntitle: Public Note\n---\nPublic content" > notes/public.md
+"$LEAFPRESS" build > /dev/null 2>&1
+# drafts and private should not exist in output, notes should
+if [ ! -d "_site/drafts" ] && [ ! -d "_site/private" ] && [ -f "_site/notes/public/index.html" ]; then
+    pass
+else
+    fail "Ignored folders were not excluded or public content missing"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR60"
+
 # Cleanup
 rm -rf "$TESTDIR"
 

@@ -69,7 +69,7 @@ func (b *Builder) Build() (*Stats, error) {
 	}
 
 	// Scan content
-	scanner := content.NewScanner(b.rootDir)
+	scanner := content.NewScanner(b.rootDir, b.cfg.Ignore)
 	pages, err := scanner.Scan()
 	if err != nil {
 		return nil, fmt.Errorf("failed to scan content: %w", err)

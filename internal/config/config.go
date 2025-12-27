@@ -26,6 +26,7 @@ type Config struct {
 	Theme     Theme     `json:"theme"`
 	Graph     bool      `json:"graph"`
 	TOC       bool      `json:"toc"`
+	Ignore    []string  `json:"ignore"`
 }
 
 // NavItem represents a navigation link

@@ -22,12 +22,17 @@ var ReservedPaths = map[string]bool{
 
 // Scanner scans the content directory for markdown files
 type Scanner struct {
-	rootDir string
+	rootDir     string
+	ignorePaths map[string]bool
 }
 
 // NewScanner creates a new content scanner
-func NewScanner(rootDir string) *Scanner {
-	return &Scanner{rootDir: rootDir}
+func NewScanner(rootDir string, ignore []string) *Scanner {
+	ignorePaths := make(map[string]bool)
+	for _, path := range ignore {
+		ignorePaths[path] = true
+	}
+	return &Scanner{rootDir: rootDir, ignorePaths: ignorePaths}
 }
 
 // Scan walks the directory tree and returns all markdown files
@@ -53,6 +58,14 @@ func (s *Scanner) Scan() ([]*Page, error) {
 		// Check if this is a reserved path
 		topLevel := strings.Split(relPath, string(filepath.Separator))[0]
 		if ReservedPaths[topLevel] {
+			if info.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+
+		// Check if this path should be ignored (from config)
+		if s.ignorePaths[topLevel] {
 			if info.IsDir() {
 				return filepath.SkipDir
 			}
