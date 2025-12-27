@@ -111,14 +111,16 @@ func (b *Builder) Build() (*Stats, error) {
 		pages = filterDrafts(pages)
 	}
 
-	// Build backlinks
+	// Build backlinks (if enabled)
 	t0 = time.Now()
-	content.BuildBacklinks(pages)
+	if b.cfg.Backlinks {
+		content.BuildBacklinks(pages)
+	}
 	b.logTiming("backlinks", time.Since(t0))
 
 	// Render markdown to HTML
 	t0 = time.Now()
-	warnings := content.RenderPages(pages)
+	warnings := content.RenderPages(pages, b.cfg.Wikilinks)
 	b.logTiming("markdown", time.Since(t0))
 	stats.WarningCount = len(warnings)
 
@@ -449,7 +451,7 @@ func (b *Builder) rebuildMarkdownFile(relPath string, changeType ChangeType) (*I
 			}
 		}
 	}
-	content.RenderPages(pagesToRender)
+	content.RenderPages(pagesToRender, b.cfg.Wikilinks)
 	b.logTiming("markdown", time.Since(t0))
 
 	// Render the affected pages
@@ -544,10 +546,12 @@ func (b *Builder) handleDeletedFile(relPath string) (*IncrementalStats, error) {
 	b.pages = newPages
 
 	// Rebuild backlinks
-	content.BuildBacklinks(b.pages)
+	if b.cfg.Backlinks {
+		content.BuildBacklinks(b.pages)
+	}
 
 	// Re-render affected pages
-	content.RenderPages(pagesToRebuild)
+	content.RenderPages(pagesToRebuild, b.cfg.Wikilinks)
 	for _, page := range pagesToRebuild {
 		if page.IsIndex {
 			if err := b.renderSectionIndex(page, b.pages, b.siteData); err != nil {

@@ -26,6 +26,8 @@ type Config struct {
 	Theme     Theme     `json:"theme"`
 	Graph     bool      `json:"graph"`
 	TOC       bool      `json:"toc"`
+	Backlinks bool      `json:"backlinks"`
+	Wikilinks bool      `json:"wikilinks"`
 	Ignore    []string  `json:"ignore"`
 }
 
@@ -149,8 +151,10 @@ func Default() *Config {
 			NavStyle:       "glassy",
 			NavActiveStyle: "base",
 		},
-		Graph: false,
-		TOC:   true,
+		Graph:     false,
+		TOC:       true,
+		Backlinks: true,
+		Wikilinks: true,
 	}
 }
 
