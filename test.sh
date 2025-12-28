@@ -2044,6 +2044,69 @@ fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR78"
 
+# Test 92: Broken wikilinks render with lp-broken-link class
+test_case "Broken wikilinks have lp-broken-link class"
+TESTDIR79=$(mktemp -d)
+cd "$TESTDIR79"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > page.md << 'EOF'
+---
+title: Test Page
+---
+Link to [[nonexistent-page]]
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'class="lp-broken-link"' _site/page/index.html && grep -q 'nonexistent-page' _site/page/index.html; then
+    pass
+else
+    fail "Broken wikilink not rendered with lp-broken-link class"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR79"
+
+# Test 93: Broken wikilinks CSS has tooltip styles
+test_case "Broken wikilinks CSS includes tooltip"
+TESTDIR80=$(mktemp -d)
+cd "$TESTDIR80"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > page.md << 'EOF'
+---
+title: Test
+---
+Content
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+# Check CSS has broken link styling with tooltip
+if grep -q 'lp-broken-link' _site/style.css && \
+   grep -q "Page doesn't exist yet" _site/style.css && \
+   grep -q 'dashed' _site/style.css; then
+    pass
+else
+    fail "Broken wikilink CSS missing tooltip styles"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR80"
+
+# Test 94: Broken wikilink shows label text not target
+test_case "Broken wikilinks display label correctly"
+TESTDIR81=$(mktemp -d)
+cd "$TESTDIR81"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > page.md << 'EOF'
+---
+title: Test Page
+---
+Link to [[nonexistent|Custom Label]]
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'lp-broken-link">Custom Label</span>' _site/page/index.html; then
+    pass
+else
+    fail "Broken wikilink label not rendered correctly"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR81"
+
 # Cleanup
 rm -rf "$TESTDIR"
 

@@ -511,8 +511,40 @@ html {
 }
 
 .lp-broken-link {
-  color: #dc3545;
-  text-decoration: line-through;
+  color: var(--lp-text-muted);
+  text-decoration: underline;
+  text-decoration-style: dashed;
+  text-underline-offset: 2px;
+  cursor: help;
+  position: relative;
+}
+
+.lp-broken-link:hover {
+  color: var(--lp-text);
+}
+
+.lp-broken-link::after {
+  content: "Page doesn't exist yet";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--lp-text);
+  color: var(--lp-bg);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s, visibility 0.2s;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.lp-broken-link:hover::after {
+  opacity: 1;
+  visibility: visible;
 }
 
 .lp-external::after {
