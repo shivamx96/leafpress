@@ -113,7 +113,21 @@ get_cpu_info() {
     if [ "$(uname -s)" == "Darwin" ]; then
         sysctl -n machdep.cpu.brand_string 2>/dev/null || echo "Unknown"
     else
-        grep -m1 "model name" /proc/cpuinfo 2>/dev/null | cut -d: -f2 | xargs || echo "Unknown"
+        # Try model name first, then fall back to other methods
+        cpu=$(grep -m1 "model name" /proc/cpuinfo 2>/dev/null | cut -d: -f2 | xargs)
+        if [ -z "$cpu" ]; then
+            # ARM/Docker fallback - try lscpu
+            cpu=$(lscpu 2>/dev/null | grep "Model name" | cut -d: -f2 | xargs)
+        fi
+        if [ -z "$cpu" ]; then
+            # Last resort - check if running in Docker
+            if [ -f /.dockerenv ]; then
+                cpu="Docker container ($(uname -m))"
+            else
+                cpu="Unknown"
+            fi
+        fi
+        echo "$cpu"
     fi
 }
 
