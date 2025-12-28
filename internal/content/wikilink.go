@@ -107,6 +107,12 @@ func BuildBacklinks(pages []*Page, resolver ...*LinkResolver) {
 		r = NewLinkResolver(pages)
 	}
 
+	// Clear existing backlinks and outlinks to avoid duplicates on rebuild
+	for _, page := range pages {
+		page.Backlinks = nil
+		page.OutLinks = nil
+	}
+
 	// First, extract outlinks for all pages
 	for _, page := range pages {
 		links := ExtractWikiLinks(page.RawContent)

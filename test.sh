@@ -1956,6 +1956,94 @@ fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR76"
 
+# Test 90: Backlinks persist after multiple rebuilds (no disappearing)
+test_case "Backlinks persist after multiple rebuilds"
+TESTDIR77=$(mktemp -d)
+cd "$TESTDIR77"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test",
+  "backlinks": true
+}
+EOF
+cat > page1.md << 'EOF'
+---
+title: Page One
+---
+Content here
+EOF
+cat > page2.md << 'EOF'
+---
+title: Page Two
+---
+Link to [[page1]]
+EOF
+# First build
+"$LEAFPRESS" build > /dev/null 2>&1
+# Check backlink exists
+if ! grep -q 'Page Two' _site/page1/index.html; then
+    fail "Backlink missing after first build"
+else
+    # Modify page2 and rebuild
+    echo "More content" >> page2.md
+    "$LEAFPRESS" build > /dev/null 2>&1
+    # Backlink should still exist
+    if grep -q 'Page Two' _site/page1/index.html; then
+        # Rebuild again
+        echo "Even more" >> page2.md
+        "$LEAFPRESS" build > /dev/null 2>&1
+        if grep -q 'Page Two' _site/page1/index.html; then
+            pass
+        else
+            fail "Backlink disappeared after third build"
+        fi
+    else
+        fail "Backlink disappeared after second build"
+    fi
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR77"
+
+# Test 91: Backlinks don't duplicate after multiple rebuilds
+test_case "Backlinks don't duplicate after rebuilds"
+TESTDIR78=$(mktemp -d)
+cd "$TESTDIR78"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test",
+  "backlinks": true
+}
+EOF
+cat > target.md << 'EOF'
+---
+title: Target Page
+---
+This is the target
+EOF
+cat > linker.md << 'EOF'
+---
+title: Linker Page
+---
+Link to [[target]]
+EOF
+# Build multiple times
+"$LEAFPRESS" build > /dev/null 2>&1
+echo "update 1" >> linker.md
+"$LEAFPRESS" build > /dev/null 2>&1
+echo "update 2" >> linker.md
+"$LEAFPRESS" build > /dev/null 2>&1
+# Count occurrences of the backlink - should be exactly 1
+COUNT=$(grep -o 'Linker Page' _site/target/index.html | wc -l | tr -d ' ')
+if [ "$COUNT" -eq "1" ]; then
+    pass
+else
+    fail "Backlink duplicated: found $COUNT occurrences instead of 1"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR78"
+
 # Cleanup
 rm -rf "$TESTDIR"
 

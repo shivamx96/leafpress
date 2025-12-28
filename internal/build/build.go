@@ -438,7 +438,10 @@ func (b *Builder) rebuildMarkdownFile(relPath string, changeType ChangeType) (*I
 		}
 	}
 
-	// Rebuild backlinks with updated page set
+	// Update the cached resolver with current pages
+	b.linkResolver = content.NewLinkResolver(b.pages)
+
+	// Rebuild backlinks with updated page set and fresh resolver
 	t0 = time.Now()
 	if b.cfg.Backlinks {
 		content.BuildBacklinks(b.pages, b.linkResolver)
@@ -446,8 +449,6 @@ func (b *Builder) rebuildMarkdownFile(relPath string, changeType ChangeType) (*I
 	b.logTiming("backlinks", time.Since(t0))
 
 	// If the changed page has new outlinks, rebuild pages it now links to
-	// Update the cached resolver with current pages
-	b.linkResolver = content.NewLinkResolver(b.pages)
 	for _, target := range changedPage.OutLinks {
 		result := b.linkResolver.Resolve(target)
 		if result.Page != nil {
