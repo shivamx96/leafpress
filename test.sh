@@ -1918,6 +1918,44 @@ fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR75"
 
+# Test 89: Incremental rebuild doesn't panic with stale resolver references
+test_case "Incremental rebuild handles stale resolver gracefully"
+TESTDIR76=$(mktemp -d)
+cd "$TESTDIR76"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test",
+  "backlinks": true
+}
+EOF
+# Create two pages that link to each other
+cat > page1.md << 'EOF'
+---
+title: Page One
+---
+Link to [[Page Two]]
+EOF
+cat > page2.md << 'EOF'
+---
+title: Page Two
+---
+Link to [[Page One]]
+EOF
+# Initial build
+"$LEAFPRESS" build > /dev/null 2>&1
+# Simulate incremental rebuild by modifying a file and rebuilding
+# This tests that BuildBacklinks doesn't panic with stale resolver
+echo "Updated content with [[Page Two]]" >> page1.md
+"$LEAFPRESS" build > /dev/null 2>&1
+if [ -f "_site/page1/index.html" ] && [ -f "_site/page2/index.html" ]; then
+    pass
+else
+    fail "Incremental rebuild failed"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR76"
+
 # Cleanup
 rm -rf "$TESTDIR"
 

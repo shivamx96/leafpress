@@ -126,6 +126,10 @@ func BuildBacklinks(pages []*Page, resolver ...*LinkResolver) {
 		for _, target := range page.OutLinks {
 			result := r.Resolve(target)
 			if result.Page != nil && result.Page != page {
+				// Skip if target page isn't in our pages slice (resolver may have stale references)
+				if backlinkSeen[result.Page] == nil {
+					continue
+				}
 				// Only add if not already a backlink (deduplicate)
 				if !backlinkSeen[result.Page][page] {
 					backlinkSeen[result.Page][page] = true
