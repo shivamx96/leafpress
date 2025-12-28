@@ -1,8 +1,12 @@
 package content
 
 import (
+	"regexp"
+	"strings"
 	"time"
 )
+
+var htmlTagRegex = regexp.MustCompile(`<[^>]*>`)
 
 // Page represents a content page
 type Page struct {
@@ -125,4 +129,16 @@ func (p *Page) DisplayDateISO() string {
 		return ""
 	}
 	return p.Date.Format("2006-01-02")
+}
+
+// PlainContent returns content with HTML tags stripped for search indexing
+func (p *Page) PlainContent() string {
+	plain := htmlTagRegex.ReplaceAllString(p.HTMLContent, " ")
+	// Normalize whitespace
+	plain = strings.Join(strings.Fields(plain), " ")
+	// Limit to ~5000 chars for search index size
+	if len(plain) > 5000 {
+		plain = plain[:5000]
+	}
+	return plain
 }

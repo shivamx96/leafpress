@@ -1666,6 +1666,258 @@ fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR65"
 
+# Test 79: Search index is generated when enabled
+test_case "search-index.json is generated when search: true"
+TESTDIR66=$(mktemp -d)
+cd "$TESTDIR66"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test",
+  "search": true
+}
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if [ -f "_site/search-index.json" ]; then
+    pass
+else
+    fail "search-index.json not generated"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR66"
+
+# Test 80: Search index is NOT generated when disabled
+test_case "search-index.json is NOT generated when search: false"
+TESTDIR67=$(mktemp -d)
+cd "$TESTDIR67"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test",
+  "search": false
+}
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if [ ! -f "_site/search-index.json" ]; then
+    pass
+else
+    fail "search-index.json should not be generated when search: false"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR67"
+
+# Test 81: Search index contains correct fields
+test_case "search-index.json contains title, url, content, tags"
+TESTDIR68=$(mktemp -d)
+cd "$TESTDIR68"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test",
+  "search": true
+}
+EOF
+cat > test.md << 'EOF'
+---
+title: Test Page
+tags: [golang, testing]
+---
+This is the content of the test page.
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q '"title"' _site/search-index.json && \
+   grep -q '"url"' _site/search-index.json && \
+   grep -q '"content"' _site/search-index.json && \
+   grep -q '"tags"' _site/search-index.json && \
+   grep -q 'Test Page' _site/search-index.json; then
+    pass
+else
+    fail "search-index.json missing required fields"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR68"
+
+# Test 82: Search index content is HTML-stripped
+test_case "search-index.json content has HTML stripped"
+TESTDIR69=$(mktemp -d)
+cd "$TESTDIR69"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test",
+  "search": true
+}
+EOF
+cat > test.md << 'EOF'
+---
+title: Test
+---
+**Bold text** and *italic text* here.
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+# Content should not contain HTML tags like <strong> or <em>
+if ! grep -q '<strong>' _site/search-index.json && ! grep -q '<em>' _site/search-index.json; then
+    pass
+else
+    fail "search-index.json content contains HTML tags"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR69"
+
+# Test 83: Search index excludes index pages
+test_case "search-index.json excludes section index pages"
+TESTDIR70=$(mktemp -d)
+cd "$TESTDIR70"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test",
+  "search": true
+}
+EOF
+mkdir notes
+cat > notes/_index.md << 'EOF'
+---
+title: Notes Section
+---
+Section intro
+EOF
+cat > notes/page.md << 'EOF'
+---
+title: Regular Page
+---
+Content
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+# Should contain Regular Page but not Notes Section
+if grep -q 'Regular Page' _site/search-index.json && ! grep -q 'Notes Section' _site/search-index.json; then
+    pass
+else
+    fail "search-index.json should exclude index pages"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR70"
+
+# Test 84: Search UI is included when enabled
+test_case "Search toggle button is shown when search: true"
+TESTDIR71=$(mktemp -d)
+cd "$TESTDIR71"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test",
+  "search": true
+}
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'lp-search-toggle' _site/index.html && grep -q 'lp-search-overlay' _site/index.html; then
+    pass
+else
+    fail "Search UI not included when search: true"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR71"
+
+# Test 85: Search UI is excluded when disabled
+test_case "Search toggle button is hidden when search: false"
+TESTDIR72=$(mktemp -d)
+cd "$TESTDIR72"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test",
+  "search": false
+}
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if ! grep -q 'lp-search-toggle' _site/index.html && ! grep -q 'lp-search-overlay' _site/index.html; then
+    pass
+else
+    fail "Search UI should not be included when search: false"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR72"
+
+# Test 86: Search JavaScript not included when disabled
+test_case "Search JavaScript is excluded when search: false"
+TESTDIR73=$(mktemp -d)
+cd "$TESTDIR73"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test",
+  "search": false
+}
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if ! grep -q 'search-index.json' _site/index.html && ! grep -q 'openSearch' _site/index.html; then
+    pass
+else
+    fail "Search JavaScript should not be included when search: false"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR73"
+
+# Test 87: Both graph and search can be enabled together
+test_case "Graph and search can both be enabled"
+TESTDIR74=$(mktemp -d)
+cd "$TESTDIR74"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test",
+  "graph": true,
+  "search": true
+}
+EOF
+cat > test.md << 'EOF'
+---
+title: Test Page
+---
+Content
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if [ -f "_site/graph.json" ] && [ -f "_site/search-index.json" ] && \
+   grep -q 'lp-graph-toggle' _site/index.html && grep -q 'lp-search-toggle' _site/index.html; then
+    pass
+else
+    fail "Graph and search not both working when enabled"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR74"
+
+# Test 88: Search index content is truncated for large pages
+test_case "search-index.json content is truncated for large pages"
+TESTDIR75=$(mktemp -d)
+cd "$TESTDIR75"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test",
+  "search": true
+}
+EOF
+# Create a page with more than 5000 chars of content
+cat > test.md << 'EOF'
+---
+title: Large Page
+---
+EOF
+# Append lots of content
+for i in $(seq 1 200); do
+    echo "This is paragraph $i with some content to make this page very large. " >> test.md
+done
+"$LEAFPRESS" build > /dev/null 2>&1
+# Content field should be present but limited in size (rough check: file shouldn't be huge)
+SIZE=$(wc -c < _site/search-index.json)
+if [ "$SIZE" -lt 10000 ]; then
+    pass
+else
+    fail "search-index.json content not truncated (size: $SIZE bytes)"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR75"
+
 # Cleanup
 rm -rf "$TESTDIR"
 

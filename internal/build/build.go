@@ -151,6 +151,7 @@ func (b *Builder) Build() (*Stats, error) {
 		BaseURL: b.cfg.BaseURL,
 		TOC:     b.cfg.TOC,
 		Graph:   b.cfg.Graph,
+		Search:  b.cfg.Search,
 	}
 
 	// Cache state for incremental builds
@@ -248,13 +249,13 @@ func (b *Builder) Build() (*Stats, error) {
 	}
 	b.logTiming("favicons", time.Since(t0))
 
-	// Generate graph.json if enabled
-	if b.cfg.Graph {
+	// Generate graph.json and search-index.json if enabled
+	if b.cfg.Graph || b.cfg.Search {
 		t0 = time.Now()
-		if err := b.generateGraph(pages); err != nil {
-			return nil, fmt.Errorf("failed to generate graph: %w", err)
+		if err := b.generateJSONFiles(pages, b.cfg.Graph, b.cfg.Search); err != nil {
+			return nil, fmt.Errorf("failed to generate JSON files: %w", err)
 		}
-		b.logTiming("graph", time.Since(t0))
+		b.logTiming("json", time.Since(t0))
 	}
 
 	return stats, nil
@@ -514,13 +515,13 @@ func (b *Builder) rebuildMarkdownFile(relPath string, changeType ChangeType) (*I
 		b.logTiming("tags", time.Since(t0))
 	}
 
-	// Regenerate graph if enabled
-	if b.cfg.Graph {
+	// Regenerate JSON files if enabled
+	if b.cfg.Graph || b.cfg.Search {
 		t0 = time.Now()
-		if err := b.generateGraph(b.pages); err != nil {
+		if err := b.generateJSONFiles(b.pages, b.cfg.Graph, b.cfg.Search); err != nil {
 			return nil, err
 		}
-		b.logTiming("graph", time.Since(t0))
+		b.logTiming("json", time.Since(t0))
 	}
 
 	return stats, nil
@@ -601,9 +602,9 @@ func (b *Builder) handleDeletedFile(relPath string) (*IncrementalStats, error) {
 		}
 	}
 
-	// Regenerate graph
-	if b.cfg.Graph {
-		if err := b.generateGraph(b.pages); err != nil {
+	// Regenerate JSON files
+	if b.cfg.Graph || b.cfg.Search {
+		if err := b.generateJSONFiles(b.pages, b.cfg.Graph, b.cfg.Search); err != nil {
 			return nil, err
 		}
 	}
@@ -1068,56 +1069,101 @@ func (b *Builder) generateCSS() error {
 	return os.WriteFile(outPath, []byte(css), 0644)
 }
 
-// generateGraph creates graph.json for visualization
-func (b *Builder) generateGraph(pages []*content.Page) error {
-	// Build nodes and edges
-	type Node struct {
+// generateJSONFiles creates graph.json and search-index.json in a single pass
+func (b *Builder) generateJSONFiles(pages []*content.Page, genGraph, genSearch bool) error {
+	if !genGraph && !genSearch {
+		return nil
+	}
+
+	// Graph types
+	type GraphNode struct {
 		ID     string   `json:"id"`
 		Title  string   `json:"title"`
 		URL    string   `json:"url"`
 		Growth string   `json:"growth,omitempty"`
 		Tags   []string `json:"tags,omitempty"`
 	}
-	type Edge struct {
+	type GraphEdge struct {
 		Source string `json:"source"`
 		Target string `json:"target"`
 	}
 	type Graph struct {
-		Nodes []Node `json:"nodes"`
-		Edges []Edge `json:"edges"`
+		Nodes []GraphNode `json:"nodes"`
+		Edges []GraphEdge `json:"edges"`
 	}
 
-	graph := Graph{}
+	// Search index type
+	type SearchEntry struct {
+		Title   string   `json:"title"`
+		URL     string   `json:"url"`
+		Content string   `json:"content"`
+		Tags    []string `json:"tags,omitempty"`
+	}
 
+	var graph Graph
+	var searchIndex []SearchEntry
+
+	// Single loop over all pages
 	for _, page := range pages {
-		graph.Nodes = append(graph.Nodes, Node{
-			ID:     page.Slug,
-			Title:  page.Title,
-			URL:    page.Permalink,
-			Growth: page.Growth,
-			Tags:   page.Tags,
-		})
+		if genGraph {
+			graph.Nodes = append(graph.Nodes, GraphNode{
+				ID:     page.Slug,
+				Title:  page.Title,
+				URL:    page.Permalink,
+				Growth: page.Growth,
+				Tags:   page.Tags,
+			})
 
-		for _, target := range page.OutLinks {
-			result := b.linkResolver.Resolve(target)
-			if result.Page != nil {
-				graph.Edges = append(graph.Edges, Edge{
-					Source: page.Slug,
-					Target: result.Page.Slug,
-				})
+			for _, target := range page.OutLinks {
+				result := b.linkResolver.Resolve(target)
+				if result.Page != nil {
+					graph.Edges = append(graph.Edges, GraphEdge{
+						Source: page.Slug,
+						Target: result.Page.Slug,
+					})
+				}
 			}
+		}
+
+		if genSearch && !page.IsIndex {
+			searchIndex = append(searchIndex, SearchEntry{
+				Title:   page.Title,
+				URL:     page.Permalink,
+				Content: page.PlainContent(),
+				Tags:    page.Tags,
+			})
 		}
 	}
 
-	// Write JSON
-	outPath := filepath.Join(b.outputDir, "graph.json")
-	f, err := os.Create(outPath)
-	if err != nil {
-		return err
+	// Write graph.json
+	if genGraph {
+		outPath := filepath.Join(b.outputDir, "graph.json")
+		f, err := os.Create(outPath)
+		if err != nil {
+			return err
+		}
+		if err := encodeJSON(f, graph); err != nil {
+			f.Close()
+			return err
+		}
+		f.Close()
 	}
-	defer f.Close()
 
-	return encodeJSON(f, graph)
+	// Write search-index.json
+	if genSearch {
+		outPath := filepath.Join(b.outputDir, "search-index.json")
+		f, err := os.Create(outPath)
+		if err != nil {
+			return err
+		}
+		if err := encodeJSON(f, searchIndex); err != nil {
+			f.Close()
+			return err
+		}
+		f.Close()
+	}
+
+	return nil
 }
 
 // Helper functions

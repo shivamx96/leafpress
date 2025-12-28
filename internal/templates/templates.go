@@ -103,6 +103,7 @@ type SiteData struct {
 	BaseURL string
 	TOC     bool
 	Graph   bool
+	Search  bool
 }
 
 // New returns a cached Templates instance (parsed once, reused on subsequent calls)
@@ -355,13 +356,19 @@ const baseTemplate = `<!DOCTYPE html>
         <a class="lp-nav-title" href="/">{{.Site.Title}}</a>
         <div class="lp-nav-actions">
           {{if .Site.Graph}}<button class="lp-graph-toggle" aria-label="Open knowledge graph" title="Explore graph">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="6" cy="6" r="3"></circle>
               <circle cx="18" cy="6" r="3"></circle>
               <circle cx="6" cy="18" r="3"></circle>
               <circle cx="18" cy="18" r="3"></circle>
               <line x1="8.5" y1="7.5" x2="15.5" y2="16.5"></line>
               <line x1="8.5" y1="16.5" x2="15.5" y2="7.5"></line>
+            </svg>
+          </button>{{end}}
+          {{if .Site.Search}}<button class="lp-search-toggle" aria-label="Search" title="Search (⌘K)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="6"></circle>
+              <line x1="21" y1="21" x2="15.5" y2="15.5"></line>
             </svg>
           </button>{{end}}
           <button class="lp-theme-toggle" aria-label="Toggle dark mode" title="Toggle theme">
@@ -410,6 +417,29 @@ const baseTemplate = `<!DOCTYPE html>
       <div class="lp-graph-panel-body" id="lp-graph-panel-body"></div>
     </div>
   </div>{{end}}
+
+  {{if .Site.Search}}<!-- Search Overlay -->
+  <div class="lp-search-overlay" id="lp-search-overlay" aria-hidden="true">
+    <div class="lp-search-backdrop"></div>
+    <div class="lp-search-panel" role="dialog" aria-label="Search">
+      <div class="lp-search-header">
+        <svg class="lp-search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="6"></circle>
+          <line x1="21" y1="21" x2="15.5" y2="15.5"></line>
+        </svg>
+        <input type="text" class="lp-search-input" id="lp-search-input" placeholder="Search pages..." autocomplete="off" autofocus>
+        <kbd class="lp-search-kbd">ESC</kbd>
+        <button class="lp-search-close" aria-label="Close search">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="lp-search-results" id="lp-search-results"></div>
+    </div>
+  </div>{{end}}
+
   <script>
     // Theme switching
     (function() {
@@ -991,6 +1021,168 @@ const baseTemplate = `<!DOCTYPE html>
 
           simulate();
         }
+      })();
+      {{end}}
+      {{if .Site.Search}}
+      // Search functionality
+      (function() {
+        var overlay = document.getElementById('lp-search-overlay');
+        var input = document.getElementById('lp-search-input');
+        var results = document.getElementById('lp-search-results');
+        var toggleBtn = document.querySelector('.lp-search-toggle');
+        var backdrop = overlay.querySelector('.lp-search-backdrop');
+        var searchIndex = null;
+        var selectedIndex = -1;
+
+        function openSearch() {
+          overlay.classList.add('lp-search-overlay--open');
+          overlay.setAttribute('aria-hidden', 'false');
+          document.body.style.overflow = 'hidden';
+          input.value = '';
+          results.innerHTML = '';
+          selectedIndex = -1;
+
+          // Focus input - immediate focus for mobile touch events
+          input.focus();
+          // Backup focus after transition completes
+          setTimeout(function() { input.focus(); }, 200);
+
+          if (!searchIndex) {
+            fetch('/search-index.json')
+              .then(function(r) { return r.json(); })
+              .then(function(data) { searchIndex = data; });
+          }
+        }
+
+        function closeSearch() {
+          overlay.classList.remove('lp-search-overlay--open');
+          overlay.setAttribute('aria-hidden', 'true');
+          document.body.style.overflow = '';
+        }
+
+        function search(query) {
+          if (!searchIndex || !query.trim()) {
+            results.innerHTML = '';
+            selectedIndex = -1;
+            return;
+          }
+
+          var q = query.toLowerCase();
+          var scored = [];
+          searchIndex.forEach(function(item) {
+            var titleLower = item.title.toLowerCase();
+            var contentLower = item.content.toLowerCase();
+            var score = 0;
+
+            // Title matches (highest priority)
+            if (titleLower === q) {
+              score = 100; // Exact title match
+            } else if (titleLower.indexOf(q) === 0) {
+              score = 80; // Title starts with query
+            } else if (titleLower.indexOf(q) !== -1) {
+              score = 60; // Title contains query
+            }
+
+            // Tag matches
+            if (item.tags && item.tags.some(function(t) { return t.toLowerCase().indexOf(q) !== -1; })) {
+              score = Math.max(score, 40);
+            }
+
+            // Content matches (lowest priority)
+            if (contentLower.indexOf(q) !== -1) {
+              score = Math.max(score, 20);
+            }
+
+            if (score > 0) {
+              scored.push({ item: item, score: score });
+            }
+          });
+
+          // Sort by score descending
+          scored.sort(function(a, b) { return b.score - a.score; });
+          var matches = scored.slice(0, 10).map(function(s) { return s.item; });
+
+          if (matches.length === 0) {
+            results.innerHTML = '<div class="lp-search-empty">No results found</div>';
+            selectedIndex = -1;
+            return;
+          }
+
+          results.innerHTML = matches.map(function(item, i) {
+            var snippet = getSnippet(item.content, q);
+            return '<a class="lp-search-result" href="' + item.url + '" data-index="' + i + '">' +
+              '<span class="lp-search-result-title">' + highlightMatch(item.title, q) + '</span>' +
+              (snippet ? '<span class="lp-search-result-snippet">' + highlightMatch(snippet, q) + '</span>' : '') +
+              '</a>';
+          }).join('');
+          selectedIndex = -1;
+        }
+
+        function getSnippet(content, query) {
+          var idx = content.toLowerCase().indexOf(query);
+          if (idx === -1) return '';
+          var start = Math.max(0, idx - 40);
+          var end = Math.min(content.length, idx + query.length + 60);
+          var snippet = content.substring(start, end);
+          if (start > 0) snippet = '...' + snippet;
+          if (end < content.length) snippet = snippet + '...';
+          return snippet;
+        }
+
+        function highlightMatch(text, query) {
+          var regex = new RegExp('(' + query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+          return text.replace(regex, '<mark>$1</mark>');
+        }
+
+        function updateSelection() {
+          var items = results.querySelectorAll('.lp-search-result');
+          items.forEach(function(item, i) {
+            item.classList.toggle('lp-search-result--selected', i === selectedIndex);
+          });
+          if (selectedIndex >= 0 && items[selectedIndex]) {
+            items[selectedIndex].scrollIntoView({ block: 'nearest' });
+          }
+        }
+
+        var closeBtn = overlay.querySelector('.lp-search-close');
+
+        if (toggleBtn) toggleBtn.addEventListener('click', openSearch);
+        backdrop.addEventListener('click', closeSearch);
+        if (closeBtn) closeBtn.addEventListener('click', closeSearch);
+
+        input.addEventListener('input', function() {
+          search(input.value);
+        });
+
+        input.addEventListener('keydown', function(e) {
+          var items = results.querySelectorAll('.lp-search-result');
+          if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+            updateSelection();
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            selectedIndex = Math.max(selectedIndex - 1, -1);
+            updateSelection();
+          } else if (e.key === 'Enter' && selectedIndex >= 0 && items[selectedIndex]) {
+            e.preventDefault();
+            window.location.href = items[selectedIndex].getAttribute('href');
+          }
+        });
+
+        document.addEventListener('keydown', function(e) {
+          if (e.key === 'Escape' && overlay.classList.contains('lp-search-overlay--open')) {
+            closeSearch();
+          }
+          if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+            e.preventDefault();
+            if (overlay.classList.contains('lp-search-overlay--open')) {
+              closeSearch();
+            } else {
+              openSearch();
+            }
+          }
+        });
       })();
       {{end}}
     });

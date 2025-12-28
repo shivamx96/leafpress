@@ -25,6 +25,7 @@ type Config struct {
 	Nav       []NavItem `json:"nav"`
 	Theme     Theme     `json:"theme"`
 	Graph     bool      `json:"graph"`
+	Search    bool      `json:"search"`
 	TOC       bool      `json:"toc"`
 	Backlinks bool      `json:"backlinks"`
 	Wikilinks bool      `json:"wikilinks"`
