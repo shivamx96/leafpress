@@ -3,8 +3,15 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LEAFPRESS="${SCRIPT_DIR}/../../leafpress"
 cd "$1"
-rm -rf _site
+[ "$2" != "warm" ] && rm -rf _site
 if [ ! -f "$LEAFPRESS" ]; then
     LEAFPRESS="/benchmark/leafpress"
 fi
-"$LEAFPRESS" build 2>&1 | grep -oE '[0-9]+ms' | head -1 | tr -d 'ms'
+
+# Cross-platform milliseconds (macOS date doesn't support %N)
+now_ms() { python3 -c "import time; print(int(time.time() * 1000))"; }
+
+start=$(now_ms)
+"$LEAFPRESS" build 2>&1 >/dev/null
+end=$(now_ms)
+echo $((end - start))

@@ -8,9 +8,9 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 OUTPUT_FILE="${SCRIPT_DIR}/results/BENCHMARK_${TIMESTAMP}.md"
-RUNS=5
+RUNS=10
 PAGE_COUNTS=(100 1000 2000)
-SSGS=(zola hugo leafpress-minimal leafpress leafpress-full eleventy jekyll astro)
+SSGS=(zola hugo leafpress-minimal leafpress leafpress-full eleventy jekyll)
 
 # Colors
 GREEN='\033[0;32m'
@@ -35,30 +35,63 @@ echo "Runs per test: $RUNS"
 echo "Output: $OUTPUT_FILE"
 echo ""
 
-# Function to calculate stats (avg min max)
+# Function to calculate stats (mean, stddev, p50/median, min, max)
 calc_stats() {
     local -a times=("$@")
-    local sum=0
-    local min=${times[0]}
-    local max=${times[0]}
+    local -a valid_times=()
 
+    # Filter valid numeric values
     for t in "${times[@]}"; do
-        # Skip empty or non-numeric values
-        if [[ -z "$t" || ! "$t" =~ ^[0-9]+$ ]]; then
-            continue
+        if [[ -n "$t" && "$t" =~ ^[0-9]+$ ]]; then
+            valid_times+=($t)
         fi
+    done
+
+    local count=${#valid_times[@]}
+    if [ $count -eq 0 ]; then
+        echo "0 0 0 0 0"
+        return
+    fi
+
+    # Calculate sum, min, max
+    local sum=0
+    local min=${valid_times[0]}
+    local max=${valid_times[0]}
+    for t in "${valid_times[@]}"; do
         sum=$((sum + t))
         if [ "$t" -lt "$min" ]; then min=$t; fi
         if [ "$t" -gt "$max" ]; then max=$t; fi
     done
 
-    local count=${#times[@]}
-    if [ $count -eq 0 ]; then
-        echo "0 0 0"
-    else
-        local avg=$((sum / count))
-        echo "$avg $min $max"
+    # Calculate mean
+    local mean=$((sum / count))
+
+    # Calculate standard deviation
+    local sum_sq_diff=0
+    for t in "${valid_times[@]}"; do
+        local diff=$((t - mean))
+        sum_sq_diff=$((sum_sq_diff + diff * diff))
+    done
+    local variance=$((sum_sq_diff / count))
+    # Integer square root approximation
+    local stddev=0
+    if [ $variance -gt 0 ]; then
+        stddev=$(awk "BEGIN {printf \"%.0f\", sqrt($variance)}")
     fi
+
+    # Calculate P50 (median) - sort and pick middle value
+    IFS=$'\n' sorted=($(sort -n <<< "${valid_times[*]}")); unset IFS
+    local mid=$((count / 2))
+    local p50
+    if [ $((count % 2)) -eq 0 ]; then
+        # Even count: average of two middle values
+        p50=$(( (sorted[mid-1] + sorted[mid]) / 2 ))
+    else
+        # Odd count: middle value
+        p50=${sorted[mid]}
+    fi
+
+    echo "$mean $stddev $p50 $min $max"
 }
 
 # Check if SSG is available
@@ -72,7 +105,6 @@ check_ssg() {
         zola) command -v zola &>/dev/null ;;
         eleventy) command -v eleventy &>/dev/null || command -v npx &>/dev/null ;;
         jekyll) command -v jekyll &>/dev/null ;;
-        astro) command -v npm &>/dev/null ;;
     esac
 }
 
@@ -84,13 +116,14 @@ cat > "$OUTPUT_FILE" << EOF
 **System**: $(uname -s) $(uname -m)
 **Runs per test**: $RUNS
 
-## Results (Clean Build Times in ms)
+## Build Times (ms)
+
+*Format: P50 (mean ± stddev)*
 
 | SSG | 100 pages | 1000 pages | 2000 pages |
 |-----|-----------|------------|------------|
 EOF
 
-# Run benchmarks and write results directly
 for ssg in "${SSGS[@]}"; do
     echo -e "${YELLOW}Testing $ssg...${NC}"
 
@@ -134,9 +167,9 @@ for ssg in "${SSGS[@]}"; do
 
         # Calculate stats
         if [ ${#times[@]} -gt 0 ]; then
-            read avg min max <<< $(calc_stats "${times[@]}")
-            ssg_results="${ssg_results} ${avg}ms |"
-            echo -e "${GREEN}    Average: ${avg}ms (${min}-${max}ms)${NC}"
+            read mean stddev p50 min max <<< $(calc_stats "${times[@]}")
+            ssg_results="${ssg_results} ${p50} (${mean}±${stddev}) |"
+            echo -e "${GREEN}    P50: ${p50}ms, Mean: ${mean}ms ± ${stddev}ms (range: ${min}-${max}ms)${NC}"
         else
             ssg_results="${ssg_results} N/A |"
         fi
@@ -158,10 +191,12 @@ cat >> "$OUTPUT_FILE" << 'EOF'
 
 ## Methodology
 
-- **Clean Build**: Removes output directory before each build
+- **Clean Build**: Output directory removed before each build
+- **Runs**: 10 iterations, reporting P50 (median), mean, and standard deviation
 - **Content**: Each page has frontmatter, markdown content, code block, and internal links
 - **Tags**: 20 unique tags distributed across pages
 - **Links**: Each page links to 2 other pages
+- **Timing**: External timing via `date +%s%3N` for consistency across all SSGs
 
 ## SSG Versions
 

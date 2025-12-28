@@ -1,10 +1,12 @@
 #!/bin/bash
 # Build Jekyll site
 cd "$1"
-rm -rf _site
-jekyll build --quiet 2>&1
-# Jekyll doesn't output time by default, use time command
-start=$(date +%s%3N)
+[ "$2" != "warm" ] && rm -rf _site
+
+# Cross-platform milliseconds (macOS date doesn't support %N)
+now_ms() { python3 -c "import time; print(int(time.time() * 1000))"; }
+
+start=$(now_ms)
 jekyll build --quiet 2>/dev/null
-end=$(date +%s%3N)
+end=$(now_ms)
 echo $((end - start))
