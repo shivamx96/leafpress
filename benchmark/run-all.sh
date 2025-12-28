@@ -108,12 +108,36 @@ check_ssg() {
     esac
 }
 
+# Gather system info
+get_cpu_info() {
+    if [ "$(uname -s)" == "Darwin" ]; then
+        sysctl -n machdep.cpu.brand_string 2>/dev/null || echo "Unknown"
+    else
+        grep -m1 "model name" /proc/cpuinfo 2>/dev/null | cut -d: -f2 | xargs || echo "Unknown"
+    fi
+}
+
+get_memory_info() {
+    if [ "$(uname -s)" == "Darwin" ]; then
+        mem_bytes=$(sysctl -n hw.memsize 2>/dev/null)
+        echo "$((mem_bytes / 1024 / 1024 / 1024))GB"
+    else
+        mem_kb=$(grep MemTotal /proc/meminfo 2>/dev/null | awk '{print $2}')
+        echo "$((mem_kb / 1024 / 1024))GB"
+    fi
+}
+
+CPU_INFO=$(get_cpu_info)
+MEM_INFO=$(get_memory_info)
+
 # Initialize results file
 cat > "$OUTPUT_FILE" << EOF
 # SSG Benchmark Results
 
 **Date**: $(date)
 **System**: $(uname -s) $(uname -m)
+**CPU**: ${CPU_INFO}
+**Memory**: ${MEM_INFO}
 **Runs per test**: $RUNS
 
 ## Build Times (ms)
