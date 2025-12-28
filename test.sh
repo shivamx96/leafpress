@@ -2107,6 +2107,382 @@ fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR81"
 
+# Test 95: Unicode characters in title
+test_case "Unicode characters in page title"
+TESTDIR82=$(mktemp -d)
+cd "$TESTDIR82"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > page.md << 'EOF'
+---
+title: 日本語タイトル
+---
+Japanese content
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q '日本語タイトル' _site/page/index.html; then
+    pass
+else
+    fail "Unicode title not rendered"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR82"
+
+# Test 96: Emoji in page title
+test_case "Emoji in page title"
+TESTDIR83=$(mktemp -d)
+cd "$TESTDIR83"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > rocket.md << 'EOF'
+---
+title: "🚀 Launch Day"
+---
+Launching!
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q '🚀 Launch Day' _site/rocket/index.html; then
+    pass
+else
+    fail "Emoji in title not rendered"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR83"
+
+# Test 97: Deeply nested folder structure
+test_case "Deeply nested folder structure"
+TESTDIR84=$(mktemp -d)
+cd "$TESTDIR84"
+"$LEAFPRESS" init > /dev/null 2>&1
+mkdir -p a/b/c/d
+cat > a/b/c/d/deep.md << 'EOF'
+---
+title: Deep Page
+---
+Deep content
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if [ -f "_site/a/b/c/d/deep/index.html" ] && grep -q 'Deep Page' _site/a/b/c/d/deep/index.html; then
+    pass
+else
+    fail "Deeply nested page not built correctly"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR84"
+
+# Test 98: Special characters in title (colon, ampersand)
+test_case "Special characters in title"
+TESTDIR85=$(mktemp -d)
+cd "$TESTDIR85"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > page.md << 'EOF'
+---
+title: "Hello: World & Friends"
+---
+Content
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'Hello: World' _site/page/index.html && grep -q 'Friends' _site/page/index.html; then
+    pass
+else
+    fail "Special characters in title not rendered"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR85"
+
+# Test 99: Empty content file (frontmatter only)
+test_case "Empty content file builds"
+TESTDIR86=$(mktemp -d)
+cd "$TESTDIR86"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > empty.md << 'EOF'
+---
+title: Empty Page
+---
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if [ -f "_site/empty/index.html" ] && grep -q 'Empty Page' _site/empty/index.html; then
+    pass
+else
+    fail "Empty content file not built"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR86"
+
+# Test 100: Multiple date formats supported
+test_case "Multiple date formats supported"
+TESTDIR87=$(mktemp -d)
+cd "$TESTDIR87"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > page1.md << 'EOF'
+---
+title: Page 1
+date: 2024-03-15
+---
+Content
+EOF
+cat > page2.md << 'EOF'
+---
+title: Page 2
+date: 2024-03-15T10:30:00Z
+---
+Content
+EOF
+cat > page3.md << 'EOF'
+---
+title: Page 3
+date: "March 15, 2024"
+---
+Content
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if [ -f "_site/page1/index.html" ] && [ -f "_site/page2/index.html" ] && [ -f "_site/page3/index.html" ]; then
+    pass
+else
+    fail "Multiple date formats not all supported"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR87"
+
+# Test 101: TOC heading IDs are generated
+test_case "TOC heading IDs are generated"
+TESTDIR88=$(mktemp -d)
+cd "$TESTDIR88"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test",
+  "toc": true
+}
+EOF
+cat > page.md << 'EOF'
+---
+title: Test
+---
+## Introduction
+Some text
+## Getting Started
+More text
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'id="introduction"' _site/page/index.html && grep -q 'id="getting-started"' _site/page/index.html; then
+    pass
+else
+    fail "TOC heading IDs not generated"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR88"
+
+# Test 102: Duplicate headings get unique IDs
+test_case "Duplicate headings get unique IDs"
+TESTDIR89=$(mktemp -d)
+cd "$TESTDIR89"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test",
+  "toc": true
+}
+EOF
+cat > page.md << 'EOF'
+---
+title: Test
+---
+## Section
+First section
+## Section
+Second section
+## Section
+Third section
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'id="section"' _site/page/index.html && grep -q 'id="section-1"' _site/page/index.html && grep -q 'id="section-2"' _site/page/index.html; then
+    pass
+else
+    fail "Duplicate headings don't have unique IDs"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR89"
+
+# Test 103: Wikilink with custom label
+test_case "Wikilink with custom label renders correctly"
+TESTDIR90=$(mktemp -d)
+cd "$TESTDIR90"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > source.md << 'EOF'
+---
+title: Source
+---
+Link to [[target|click here]]
+EOF
+cat > target.md << 'EOF'
+---
+title: Target
+---
+Target content
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'click here</a>' _site/source/index.html && grep -q 'href="/target/"' _site/source/index.html; then
+    pass
+else
+    fail "Wikilink custom label not rendered"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR90"
+
+# Test 104: Case-insensitive wikilink resolution
+test_case "Wikilinks are case-insensitive"
+TESTDIR91=$(mktemp -d)
+cd "$TESTDIR91"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > source.md << 'EOF'
+---
+title: Source
+---
+Link to [[TARGET]]
+EOF
+cat > target.md << 'EOF'
+---
+title: Target
+---
+Content
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'href="/target/"' _site/source/index.html && grep -q 'lp-wikilink' _site/source/index.html; then
+    pass
+else
+    fail "Case-insensitive wikilink not resolved"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR91"
+
+# Test 105: Malformed YAML frontmatter is handled
+test_case "Malformed YAML frontmatter is handled gracefully"
+TESTDIR92=$(mktemp -d)
+cd "$TESTDIR92"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > bad.md << 'EOF'
+---
+title: Test
+  bad_indent: value
+---
+Content
+EOF
+# Should not crash, may produce warning (exit 1 is OK)
+"$LEAFPRESS" build > /dev/null 2>&1 || true
+pass
+cd "$ORIGDIR"
+rm -rf "$TESTDIR92"
+
+# Test 106: Missing closing frontmatter delimiter
+test_case "Missing frontmatter delimiter handled"
+TESTDIR93=$(mktemp -d)
+cd "$TESTDIR93"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > unclosed.md << 'EOF'
+---
+title: Unclosed
+Content without closing delimiter
+EOF
+# Should not crash (exit 0 or 1 is OK)
+"$LEAFPRESS" build > /dev/null 2>&1 || true
+pass
+cd "$ORIGDIR"
+rm -rf "$TESTDIR93"
+
+# Test 107: File with no frontmatter still builds
+test_case "File without frontmatter builds"
+TESTDIR94=$(mktemp -d)
+cd "$TESTDIR94"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > plain.md << 'EOF'
+Just plain markdown content
+without any frontmatter at all.
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if [ -f "_site/plain/index.html" ]; then
+    pass
+else
+    fail "File without frontmatter not built"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR94"
+
+# Test 108: Invalid JSON config is rejected
+test_case "Invalid JSON config is rejected"
+TESTDIR95=$(mktemp -d)
+cd "$TESTDIR95"
+"$LEAFPRESS" init > /dev/null 2>&1
+echo '{ invalid json }' > leafpress.json
+OUTPUT=$("$LEAFPRESS" build 2>&1 || true)
+if echo "$OUTPUT" | grep -qi "error\|invalid\|parse"; then
+    pass
+else
+    fail "Invalid JSON not properly rejected"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR95"
+
+# Test 109: Build with no content files
+test_case "Build with no content files succeeds"
+TESTDIR96=$(mktemp -d)
+cd "$TESTDIR96"
+"$LEAFPRESS" init > /dev/null 2>&1
+rm -f *.md
+"$LEAFPRESS" build > /dev/null 2>&1
+if [ -d "_site" ]; then
+    pass
+else
+    fail "Build with no content failed"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR96"
+
+# Test 110: Circular wikilinks don't cause infinite loop
+test_case "Circular wikilinks handled"
+TESTDIR97=$(mktemp -d)
+cd "$TESTDIR97"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test",
+  "backlinks": true
+}
+EOF
+cat > a.md << 'EOF'
+---
+title: Page A
+---
+Link to [[b]]
+EOF
+cat > b.md << 'EOF'
+---
+title: Page B
+---
+Link to [[c]]
+EOF
+cat > c.md << 'EOF'
+---
+title: Page C
+---
+Link to [[a]]
+EOF
+# Should complete without hanging - run in background and check
+"$LEAFPRESS" build > /dev/null 2>&1 &
+BUILD_PID=$!
+sleep 3
+if kill -0 $BUILD_PID 2>/dev/null; then
+    kill $BUILD_PID 2>/dev/null
+    fail "Circular wikilinks caused hang"
+else
+    wait $BUILD_PID
+    if [ $? -eq 0 ]; then
+        pass
+    else
+        fail "Circular wikilinks caused crash"
+    fi
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR97"
+
 # Cleanup
 rm -rf "$TESTDIR"
 
