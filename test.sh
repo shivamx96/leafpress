@@ -2436,7 +2436,30 @@ fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR96"
 
-# Test 110: Circular wikilinks don't cause infinite loop
+# Test 110: Growth emoji has tooltip on hover
+test_case "Growth emoji has tooltip on hover"
+TESTDIR98=$(mktemp -d)
+cd "$TESTDIR98"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > page.md << 'EOF'
+---
+title: Test
+growth: seedling
+---
+Content
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+# Check for CSS tooltip (no title attribute, uses ::after)
+if grep -q 'lp-growth--seedling' _site/page/index.html && \
+   grep -q 'lp-growth--seedling::after' _site/style.css; then
+    pass
+else
+    fail "Growth emoji tooltip not present"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR98"
+
+# Test 111: Circular wikilinks don't cause infinite loop
 test_case "Circular wikilinks handled"
 TESTDIR97=$(mktemp -d)
 cd "$TESTDIR97"

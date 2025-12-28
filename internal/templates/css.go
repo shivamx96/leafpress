@@ -327,6 +327,44 @@ html {
 
 .lp-growth {
   font-size: 1rem;
+  position: relative;
+}
+
+.lp-growth::after {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--lp-code-bg);
+  color: var(--lp-text);
+  border: 1px solid var(--lp-border);
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s, visibility 0.2s;
+  pointer-events: none;
+  z-index: 10;
+  margin-bottom: 4px;
+}
+
+.lp-growth--seedling::after {
+  content: "Seedling: Early idea, still developing";
+}
+
+.lp-growth--budding::after {
+  content: "Budding: Growing, but not yet complete";
+}
+
+.lp-growth--evergreen::after {
+  content: "Evergreen: Fully grown and refined";
+}
+
+.lp-growth:hover::after {
+  opacity: 1;
+  visibility: visible;
 }
 
 .lp-tags {
@@ -515,7 +553,6 @@ html {
   text-decoration: underline;
   text-decoration-style: dashed;
   text-underline-offset: 2px;
-  cursor: help;
   position: relative;
 }
 
@@ -529,8 +566,9 @@ html {
   bottom: 100%;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--lp-text);
-  color: var(--lp-bg);
+  background: var(--lp-code-bg);
+  color: var(--lp-text);
+  border: 1px solid var(--lp-border);
   padding: 4px 8px;
   border-radius: 4px;
   font-size: 0.75rem;

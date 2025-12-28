@@ -29,12 +29,13 @@ var (
 
 func init() {
 	templateFuncs = template.FuncMap{
-		"growthEmoji": growthEmoji,
-		"lower":       strings.ToLower,
-		"safeHTML":    func(s string) template.HTML { return template.HTML(s) },
-		"safeCSS":     func(s string) template.CSS { return template.CSS(s) },
-		"fontURL":     fontURL,
-		"hasPrefix":   strings.HasPrefix,
+		"growthEmoji":       growthEmoji,
+		"growthDescription": growthDescription,
+		"lower":             strings.ToLower,
+		"safeHTML":          func(s string) template.HTML { return template.HTML(s) },
+		"safeCSS":           func(s string) template.CSS { return template.CSS(s) },
+		"fontURL":           fontURL,
+		"hasPrefix":         strings.HasPrefix,
 	}
 }
 
@@ -195,6 +196,19 @@ func growthEmoji(growth string) string {
 		return "🌿"
 	case "evergreen":
 		return "🌳"
+	default:
+		return ""
+	}
+}
+
+func growthDescription(growth string) string {
+	switch growth {
+	case "seedling":
+		return "Seedling: Early idea, still developing"
+	case "budding":
+		return "Budding: Growing, but not yet complete"
+	case "evergreen":
+		return "Evergreen: Fully grown and refined"
 	default:
 		return ""
 	}
@@ -1215,7 +1229,7 @@ const pageTemplate = `
       <h1 class="lp-title">{{.Page.Title}}</h1>
       <div class="lp-meta">
         {{if .Page.Growth}}
-        <span class="lp-growth lp-growth--{{.Page.Growth}}">{{growthEmoji .Page.Growth}}</span>
+        <span class="lp-growth lp-growth--{{.Page.Growth}}" data-growth="{{.Page.Growth}}">{{growthEmoji .Page.Growth}}</span>
         {{end}}
         {{if and .Page.HasModified (not .Page.Date.IsZero)}}
         <span class="lp-date-info">Updated <time class="lp-modified" datetime="{{.Page.ISOModified}}">{{.Page.FormattedModified}}</time> · Created <time class="lp-date" datetime="{{.Page.ISODate}}">{{.Page.FormattedDate}}</time></span>
