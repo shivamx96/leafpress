@@ -87,6 +87,9 @@ var (
 	externalLinkRegex  = regexp.MustCompile(`<a\s+href="(https?://[^"]+)"([^>]*)>([^<]+)</a>`)
 )
 
+// Placeholder format for protecting code blocks during wikilink processing
+const codeBlockPlaceholder = "___CODE_BLOCK_%d___"
+
 // processObsidianImages converts Obsidian image embeds to standard markdown
 func (r *Renderer) processObsidianImages(content string) string {
 	// Extract code blocks to protect them
@@ -95,7 +98,7 @@ func (r *Renderer) processObsidianImages(content string) string {
 
 	// Replace code blocks with placeholders
 	for i, block := range codeBlocks {
-		placeholder := fmt.Sprintf("___CODE_BLOCK_%d___", i)
+		placeholder := fmt.Sprintf(codeBlockPlaceholder, i)
 		protectedContent = strings.Replace(protectedContent, block, placeholder, 1)
 	}
 
@@ -121,7 +124,7 @@ func (r *Renderer) processObsidianImages(content string) string {
 
 	// Restore code blocks
 	for i, block := range codeBlocks {
-		placeholder := fmt.Sprintf("___CODE_BLOCK_%d___", i)
+		placeholder := fmt.Sprintf(codeBlockPlaceholder, i)
 		result = strings.Replace(result, placeholder, block, 1)
 	}
 
@@ -136,7 +139,7 @@ func (r *Renderer) processWikiLinks(content string, warnings *[]string) string {
 
 	// Replace code blocks with placeholders
 	for i, block := range codeBlocks {
-		placeholder := fmt.Sprintf("___CODE_BLOCK_%d___", i)
+		placeholder := fmt.Sprintf(codeBlockPlaceholder, i)
 		protectedContent = strings.Replace(protectedContent, block, placeholder, 1)
 	}
 
@@ -170,7 +173,7 @@ func (r *Renderer) processWikiLinks(content string, warnings *[]string) string {
 
 	// Restore code blocks
 	for i, block := range codeBlocks {
-		placeholder := fmt.Sprintf("___CODE_BLOCK_%d___", i)
+		placeholder := fmt.Sprintf(codeBlockPlaceholder, i)
 		result = strings.Replace(result, placeholder, block, 1)
 	}
 
@@ -190,22 +193,13 @@ func extractCodeBlocks(content string) []string {
 	return blocks
 }
 
-// replaceFirst replaces only the first occurrence
+// replaceFirst replaces only the first occurrence (uses optimized strings.Index)
 func replaceFirst(s, old, new string) string {
-	i := indexOf(s, old)
+	i := strings.Index(s, old)
 	if i < 0 {
 		return s
 	}
 	return s[:i] + new + s[i+len(old):]
-}
-
-func indexOf(s, substr string) int {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return i
-		}
-	}
-	return -1
 }
 
 // processExternalLinks adds target="_blank" and class to external links

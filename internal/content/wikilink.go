@@ -121,11 +121,14 @@ func BuildBacklinks(pages []*Page, resolver ...*LinkResolver) {
 		}
 	}
 
-	// Track which pages have already been added as backlinks to avoid duplicates
-	backlinkSeen := make(map[*Page]map[*Page]bool)
+	// Build set of valid pages for O(1) membership check
+	validPages := make(map[*Page]struct{}, len(pages))
 	for _, page := range pages {
-		backlinkSeen[page] = make(map[*Page]bool)
+		validPages[page] = struct{}{}
 	}
+
+	// Track backlinks seen using lazy-initialized inner maps (O(e) instead of O(k²))
+	backlinkSeen := make(map[*Page]map[*Page]struct{})
 
 	// Build reverse lookup (backlinks)
 	for _, page := range pages {
@@ -133,12 +136,16 @@ func BuildBacklinks(pages []*Page, resolver ...*LinkResolver) {
 			result := r.Resolve(target)
 			if result.Page != nil && result.Page != page {
 				// Skip if target page isn't in our pages slice (resolver may have stale references)
-				if backlinkSeen[result.Page] == nil {
+				if _, valid := validPages[result.Page]; !valid {
 					continue
 				}
+				// Lazy-initialize the inner map only when needed
+				if backlinkSeen[result.Page] == nil {
+					backlinkSeen[result.Page] = make(map[*Page]struct{})
+				}
 				// Only add if not already a backlink (deduplicate)
-				if !backlinkSeen[result.Page][page] {
-					backlinkSeen[result.Page][page] = true
+				if _, seen := backlinkSeen[result.Page][page]; !seen {
+					backlinkSeen[result.Page][page] = struct{}{}
 					result.Page.Backlinks = append(result.Page.Backlinks, page)
 				}
 			}
