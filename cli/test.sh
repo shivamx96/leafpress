@@ -3391,6 +3391,26 @@ fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR"
 
+# Test 151: headExtra is injected in head
+test_case "headExtra is injected in head"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test",
+  "headExtra": "<script defer data-domain=\"example.com\" src=\"https://plausible.io/js/script.js\"></script>"
+}
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'plausible.io/js/script.js' _site/index.html; then
+    pass
+else
+    fail "headExtra not injected in head"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
 # Cleanup
 rm -rf "$TESTDIR"
 

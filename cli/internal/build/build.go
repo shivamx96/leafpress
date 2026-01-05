@@ -154,6 +154,7 @@ func (b *Builder) Build() (*Stats, error) {
 		TOC:         b.cfg.TOC,
 		Graph:       b.cfg.Graph,
 		Search:      b.cfg.Search,
+		HeadExtra:   b.cfg.HeadExtra,
 	}
 
 	// Cache state for incremental builds

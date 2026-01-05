@@ -32,6 +32,7 @@ type Config struct {
 	Backlinks   bool      `json:"backlinks"`
 	Wikilinks   bool      `json:"wikilinks"`
 	Ignore      []string  `json:"ignore"`
+	HeadExtra   string    `json:"headExtra"` // Custom HTML to inject in <head>
 }
 
 // NavItem represents a navigation link

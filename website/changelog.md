@@ -26,3 +26,4 @@ Initial release.
 - Custom 404 page
 - Image lazy loading
 - Live reload dev server
+- Custom HTML into <head> for analytics, etc

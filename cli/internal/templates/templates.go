@@ -114,6 +114,7 @@ type SiteData struct {
 	TOC         bool
 	Graph       bool
 	Search      bool
+	HeadExtra   string // Custom HTML to inject in <head>
 }
 
 // New returns a cached Templates instance (parsed once, reused on subsequent calls)
@@ -387,6 +388,7 @@ const baseTemplate = `<!DOCTYPE html>
   <link href="{{.Site.Theme.FontHeading | fontURL}}" rel="stylesheet">
   <link href="{{.Site.Theme.FontBody | fontURL}}" rel="stylesheet">
   <link href="{{.Site.Theme.FontMono | fontURL}}" rel="stylesheet">
+  {{if .Site.HeadExtra}}{{.Site.HeadExtra | safeHTML}}{{end}}
 </head>
 <body class="lp-body">
   {{if eq .Site.Theme.NavStyle "glassy"}}<div class="lp-nav-placeholder"></div>{{end}}

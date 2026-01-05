@@ -49,7 +49,9 @@ That's it. Everything else has sensible defaults.
   "graph": true,
   "toc": true,
   "search": true,
-  "wikilinks": true
+  "wikilinks": true,
+  
+  "headExtra": "<script defer data-domain=\"example.com\" src=\"https://plausible.io/js/script.js\"></script>"
 }
 ```
 
@@ -71,6 +73,7 @@ That's it. Everything else has sensible defaults.
 |--------|---------|-------------|
 | `outputDir` | `"_site"` | Build output directory |
 | `port` | `3000` | Dev server port |
+| `headExtra` | `""` | Custom HTML to inject in `<head>` |
 
 ### Navigation
 
@@ -113,6 +116,29 @@ Gradients work too:
 | `toc` | `true` | Show table of contents on pages |
 | `search` | `true` | Enable full-text search |
 | `wikilinks` | `true` | Enable wiki-link processing |
+
+## Custom Head Content
+
+Use `headExtra` to inject custom HTML into `<head>`. Useful for analytics, verification tags, or additional scripts.
+
+```json
+{
+  "headExtra": "<script defer data-domain=\"example.com\" src=\"https://plausible.io/js/script.js\"></script>"
+}
+```
+
+**Examples:**
+
+```json
+// Plausible Analytics
+"headExtra": "<script defer data-domain=\"example.com\" src=\"https://plausible.io/js/script.js\"></script>"
+
+// Umami Analytics
+"headExtra": "<script defer src=\"https://analytics.example.com/script.js\" data-website-id=\"xxx\"></script>"
+
+// Google Site Verification
+"headExtra": "<meta name=\"google-site-verification\" content=\"xxx\" />"
+```
 
 ## Per-Page Overrides
 
