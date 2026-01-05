@@ -141,8 +141,8 @@ fi
 
 # Test 5: Code blocks protect wiki links
 test_case "Wiki links in code blocks are preserved"
-TESTDIR2=$(mktemp -d)
-cd "$TESTDIR2"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > test.md << 'EOF'
 ---
@@ -162,7 +162,7 @@ else
     fail "Wiki links in code were processed"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR2"
+rm -rf "$TESTDIR"
 
 # Test 6: TOC generation
 test_case "Table of contents is generated"
@@ -233,8 +233,8 @@ rm -rf "$GARDEN"
 
 # Test 14: Broken link detection
 test_case "Broken links generate warnings"
-TESTDIR3=$(mktemp -d)
-cd "$TESTDIR3"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > broken.md << 'EOF'
 ---
@@ -249,12 +249,12 @@ else
     fail "No warning for broken link"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR3"
+rm -rf "$TESTDIR"
 
 # Test 15: Draft pages
 test_case "Draft pages are excluded"
-TESTDIR4=$(mktemp -d)
-cd "$TESTDIR4"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > draft.md << 'EOF'
 ---
@@ -271,12 +271,12 @@ else
     fail "Draft page was built"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR4"
+rm -rf "$TESTDIR"
 
 # Test 16: Obsidian date aliases
 test_case "Obsidian date aliases are supported"
-TESTDIR5=$(mktemp -d)
-cd "$TESTDIR5"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > obsidian-dates.md << 'EOF'
 ---
@@ -295,12 +295,12 @@ else
     fail "Obsidian date aliases not rendered"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR5"
+rm -rf "$TESTDIR"
 
 # Test 17: Custom styles
 test_case "Custom style.css is used"
-TESTDIR_CSS=$(mktemp -d)
-cd "$TESTDIR_CSS"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 echo ".my-custom { color: blue; }" >> style.css
 "$LEAFPRESS" build > /dev/null 2>&1
@@ -310,12 +310,12 @@ else
     fail "Custom style.css not used"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR_CSS"
+rm -rf "$TESTDIR"
 
 # Test 18: Dark mode toggle
 test_case "Dark mode toggle script is included"
-TESTDIR_DARK=$(mktemp -d)
-cd "$TESTDIR_DARK"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 "$LEAFPRESS" build > /dev/null 2>&1
 if grep -q 'data-theme="dark"' _site/index.html; then
@@ -324,12 +324,12 @@ else
     fail "Dark mode script not found"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR_DARK"
+rm -rf "$TESTDIR"
 
 # Test 19: navStyle modes
 test_case "navStyle glassy adds pill scroll behavior"
-TESTDIR6=$(mktemp -d)
-cd "$TESTDIR6"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -344,12 +344,12 @@ else
     fail "Glassy nav style not applied"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR6"
+rm -rf "$TESTDIR"
 
 # Test 20: navStyle sticky
 test_case "navStyle sticky applies sticky positioning"
-TESTDIR7=$(mktemp -d)
-cd "$TESTDIR7"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -364,12 +364,12 @@ else
     fail "Sticky nav style not applied"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR7"
+rm -rf "$TESTDIR"
 
 # Test 21: navActiveStyle base
 test_case "navActiveStyle base colors active link"
-TESTDIR8=$(mktemp -d)
-cd "$TESTDIR8"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 mkdir notes
 cat > notes/_index.md << 'EOF'
@@ -392,12 +392,12 @@ else
     fail "Active nav base style not applied"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR8"
+rm -rf "$TESTDIR"
 
 # Test 22: navActiveStyle box
 test_case "navActiveStyle box applies box style"
-TESTDIR9=$(mktemp -d)
-cd "$TESTDIR9"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 mkdir notes
 cat > notes/_index.md << 'EOF'
@@ -420,12 +420,12 @@ else
     fail "Active nav box style not applied"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR9"
+rm -rf "$TESTDIR"
 
 # Test 23: navActiveStyle underlined
 test_case "navActiveStyle underlined applies underline style"
-TESTDIR10=$(mktemp -d)
-cd "$TESTDIR10"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 mkdir notes
 cat > notes/_index.md << 'EOF'
@@ -448,12 +448,12 @@ else
     fail "Active nav underlined style not applied"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR10"
+rm -rf "$TESTDIR"
 
 # Test 24: Growth emoji before title in list pages
 test_case "Growth emoji appears before title in list pages"
-TESTDIR11=$(mktemp -d)
-cd "$TESTDIR11"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 mkdir notes
 cat > notes/_index.md << 'EOF'
@@ -478,12 +478,12 @@ else
     fail "Growth emoji not before title"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR11"
+rm -rf "$TESTDIR"
 
 # Test 25: Homepage title format
 test_case "Homepage uses site title only"
-TESTDIR12=$(mktemp -d)
-cd "$TESTDIR12"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -498,12 +498,12 @@ else
     fail "Homepage title not formatted correctly"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR12"
+rm -rf "$TESTDIR"
 
 # Test 26: Date format shows both Updated and Created
 test_case "Date format shows Updated and Created"
-TESTDIR13=$(mktemp -d)
-cd "$TESTDIR13"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > test.md << 'EOF'
 ---
@@ -520,12 +520,12 @@ else
     fail "Date format not showing both dates"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR13"
+rm -rf "$TESTDIR"
 
 # Test 27: Obsidian-style image embeds
 test_case "Obsidian image embeds are converted"
-TESTDIR14=$(mktemp -d)
-cd "$TESTDIR14"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 mkdir -p static/images
 echo "dummy" > static/images/test.png
@@ -542,12 +542,12 @@ else
     fail "Obsidian image embed not converted"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR14"
+rm -rf "$TESTDIR"
 
 # Test 28: List page reverse chronological sorting
 test_case "List pages sort in reverse chronological order"
-TESTDIR15=$(mktemp -d)
-cd "$TESTDIR15"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 mkdir notes
 cat > notes/_index.md << 'EOF'
@@ -578,12 +578,12 @@ else
     fail "Posts not in reverse chronological order"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR15"
+rm -rf "$TESTDIR"
 
 # Test 29: TOC disabled per-page
 test_case "TOC can be disabled per-page"
-TESTDIR16=$(mktemp -d)
-cd "$TESTDIR16"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -609,12 +609,12 @@ else
     fail "TOC not disabled per-page"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR16"
+rm -rf "$TESTDIR"
 
 # Test 30: navStyle base (no sticky)
 test_case "navStyle base does not stick nav"
-TESTDIR17=$(mktemp -d)
-cd "$TESTDIR17"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -630,12 +630,12 @@ else
     fail "Base nav style should not be sticky"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR17"
+rm -rf "$TESTDIR"
 
 # Test 31: Invalid navStyle rejected
 test_case "Invalid navStyle is rejected"
-TESTDIR18=$(mktemp -d)
-cd "$TESTDIR18"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -649,12 +649,12 @@ else
     fail "Invalid navStyle not rejected"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR18"
+rm -rf "$TESTDIR"
 
 # Test 32: Invalid navActiveStyle rejected
 test_case "Invalid navActiveStyle is rejected"
-TESTDIR19=$(mktemp -d)
-cd "$TESTDIR19"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -668,12 +668,12 @@ else
     fail "Invalid navActiveStyle not rejected"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR19"
+rm -rf "$TESTDIR"
 
 # Test 33: External links have correct class
 test_case "External links are marked correctly"
-TESTDIR20=$(mktemp -d)
-cd "$TESTDIR20"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > test.md << 'EOF'
 ---
@@ -688,12 +688,12 @@ else
     fail "External link not marked correctly"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR20"
+rm -rf "$TESTDIR"
 
 # Test 34: Broken wiki links have correct class
 test_case "Broken wiki links are styled"
-TESTDIR21=$(mktemp -d)
-cd "$TESTDIR21"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > test.md << 'EOF'
 ---
@@ -708,12 +708,12 @@ else
     fail "Broken wiki link not styled"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR21"
+rm -rf "$TESTDIR"
 
 # Test 35: Section sorting by title
 test_case "Section can be sorted alphabetically by title"
-TESTDIR22=$(mktemp -d)
-cd "$TESTDIR22"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 mkdir notes
 cat > notes/_index.md << 'EOF'
@@ -744,12 +744,12 @@ else
     fail "Section not sorted alphabetically"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR22"
+rm -rf "$TESTDIR"
 
 # Test 36: Tags on pages are rendered
 test_case "Tags are rendered on pages"
-TESTDIR23=$(mktemp -d)
-cd "$TESTDIR23"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > test.md << 'EOF'
 ---
@@ -765,12 +765,12 @@ else
     fail "Tags not rendered on page"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR23"
+rm -rf "$TESTDIR"
 
 # Test 37: Tag cloud page is generated
 test_case "Tag cloud page is generated"
-TESTDIR24=$(mktemp -d)
-cd "$TESTDIR24"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > test.md << 'EOF'
 ---
@@ -786,12 +786,12 @@ else
     fail "Tag cloud page not generated"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR24"
+rm -rf "$TESTDIR"
 
 # Test 38: Individual tag pages are generated
 test_case "Individual tag pages are generated"
-TESTDIR25=$(mktemp -d)
-cd "$TESTDIR25"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > test.md << 'EOF'
 ---
@@ -807,12 +807,12 @@ else
     fail "Individual tag page not generated"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR25"
+rm -rf "$TESTDIR"
 
 # Test 39: Backlinks section is shown
 test_case "Backlinks section is shown"
-TESTDIR26=$(mktemp -d)
-cd "$TESTDIR26"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > page-a.md << 'EOF'
 ---
@@ -833,12 +833,12 @@ else
     fail "Backlinks section not shown"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR26"
+rm -rf "$TESTDIR"
 
 # Test 40: Code syntax highlighting
 test_case "Code blocks have syntax highlighting"
-TESTDIR27=$(mktemp -d)
-cd "$TESTDIR27"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > test.md << 'EOF'
 ---
@@ -855,12 +855,12 @@ else
     fail "Syntax highlighting not applied"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR27"
+rm -rf "$TESTDIR"
 
 # Test 41: Copy button script included
 test_case "Copy button script is included"
-TESTDIR28=$(mktemp -d)
-cd "$TESTDIR28"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 "$LEAFPRESS" build > /dev/null 2>&1
 if grep -q 'lp-copy-button' _site/index.html; then
@@ -869,12 +869,12 @@ else
     fail "Copy button script not included"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR28"
+rm -rf "$TESTDIR"
 
 # Test 42: Custom fonts are loaded
 test_case "Custom fonts are loaded from Google Fonts"
-TESTDIR29=$(mktemp -d)
-cd "$TESTDIR29"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -892,12 +892,12 @@ else
     fail "Custom fonts not loaded"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR29"
+rm -rf "$TESTDIR"
 
 # Test 43: All favicon formats are copied
 test_case "All favicon formats are present"
-TESTDIR30=$(mktemp -d)
-cd "$TESTDIR30"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 "$LEAFPRESS" build > /dev/null 2>&1
 if [ -f "_site/favicon.svg" ] && [ -f "_site/favicon.ico" ] && [ -f "_site/favicon-96x96.png" ]; then
@@ -906,12 +906,12 @@ else
     fail "Not all favicon formats present"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR30"
+rm -rf "$TESTDIR"
 
 # Test 44: Author copyright in footer
 test_case "Author field adds copyright in footer"
-TESTDIR31=$(mktemp -d)
-cd "$TESTDIR31"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -926,12 +926,12 @@ else
     fail "Author copyright not in footer"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR31"
+rm -rf "$TESTDIR"
 
 # Test 45: Backlinks are deduplicated
 test_case "Backlinks are deduplicated"
-TESTDIR32=$(mktemp -d)
-cd "$TESTDIR32"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > page-a.md << 'EOF'
 ---
@@ -956,12 +956,12 @@ else
     fail "Backlinks not deduplicated (found $COUNT occurrences)"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR32"
+rm -rf "$TESTDIR"
 
 # Test 46: Leafpress footer link opens in new tab
 test_case "Footer link opens in new tab"
-TESTDIR33=$(mktemp -d)
-cd "$TESTDIR33"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 "$LEAFPRESS" build > /dev/null 2>&1
 if grep -q 'href="https://leafpress.in" target="_blank"' _site/index.html; then
@@ -970,12 +970,12 @@ else
     fail "Footer link missing target=_blank"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR33"
+rm -rf "$TESTDIR"
 
 # Test 47: Section page shows item count
 test_case "Section page shows item count"
-TESTDIR34=$(mktemp -d)
-cd "$TESTDIR34"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 mkdir notes
 cat > notes/_index.md << 'EOF'
@@ -1008,12 +1008,12 @@ else
     fail "Section item count not shown"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR34"
+rm -rf "$TESTDIR"
 
 # Test 48: Graph JSON is generated when enabled
 test_case "graph.json is generated when graph: true"
-TESTDIR35=$(mktemp -d)
-cd "$TESTDIR35"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -1028,12 +1028,12 @@ else
     fail "graph.json not generated"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR35"
+rm -rf "$TESTDIR"
 
 # Test 49: Graph JSON is NOT generated when disabled
 test_case "graph.json is NOT generated when graph: false"
-TESTDIR36=$(mktemp -d)
-cd "$TESTDIR36"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -1048,12 +1048,12 @@ else
     fail "graph.json should not be generated when graph: false"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR36"
+rm -rf "$TESTDIR"
 
 # Test 50: Graph UI is included when enabled
 test_case "Graph toggle button is shown when graph: true"
-TESTDIR37=$(mktemp -d)
-cd "$TESTDIR37"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -1068,12 +1068,12 @@ else
     fail "Graph UI not included when graph: true"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR37"
+rm -rf "$TESTDIR"
 
 # Test 51: Graph UI is excluded when disabled
 test_case "Graph toggle button is hidden when graph: false"
-TESTDIR38=$(mktemp -d)
-cd "$TESTDIR38"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -1088,12 +1088,12 @@ else
     fail "Graph UI should not be included when graph: false"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR38"
+rm -rf "$TESTDIR"
 
 # Test 52: Graph JSON contains nodes
 test_case "graph.json contains nodes with correct structure"
-TESTDIR39=$(mktemp -d)
-cd "$TESTDIR39"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -1116,12 +1116,12 @@ else
     fail "graph.json missing required node fields"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR39"
+rm -rf "$TESTDIR"
 
 # Test 53: Graph JSON contains edges for wiki links
 test_case "graph.json contains edges for wiki links"
-TESTDIR40=$(mktemp -d)
-cd "$TESTDIR40"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -1149,12 +1149,12 @@ else
     fail "graph.json missing edges for wiki links"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR40"
+rm -rf "$TESTDIR"
 
 # Test 54: Graph nodes include tags
 test_case "graph.json nodes include tags"
-TESTDIR41=$(mktemp -d)
-cd "$TESTDIR41"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -1176,12 +1176,12 @@ else
     fail "graph.json nodes missing tags"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR41"
+rm -rf "$TESTDIR"
 
 # Test 55: Graph nodes include growth stage
 test_case "graph.json nodes include growth stage"
-TESTDIR42=$(mktemp -d)
-cd "$TESTDIR42"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -1203,12 +1203,12 @@ else
     fail "graph.json nodes missing growth stage"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR42"
+rm -rf "$TESTDIR"
 
 # Test 56: Graph JavaScript not included when disabled
 test_case "Graph JavaScript is excluded when graph: false"
-TESTDIR43=$(mktemp -d)
-cd "$TESTDIR43"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -1224,12 +1224,12 @@ else
     fail "Graph JavaScript should not be included when graph: false"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR43"
+rm -rf "$TESTDIR"
 
 # Test 57: New command creates page with frontmatter
 test_case "New command creates page with frontmatter"
-TESTDIR44=$(mktemp -d)
-cd "$TESTDIR44"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 "$LEAFPRESS" new my-new-page > /dev/null 2>&1
 if [ -f "my-new-page.md" ] && grep -q "title:" my-new-page.md && grep -q "^---" my-new-page.md; then
@@ -1238,12 +1238,12 @@ else
     fail "New command did not create page with frontmatter"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR44"
+rm -rf "$TESTDIR"
 
 # Test 58: New command creates page in subdirectory
 test_case "New command creates page in subdirectory"
-TESTDIR45=$(mktemp -d)
-cd "$TESTDIR45"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 "$LEAFPRESS" new notes/my-note > /dev/null 2>&1
 if [ -f "notes/my-note.md" ]; then
@@ -1252,12 +1252,12 @@ else
     fail "New command did not create page in subdirectory"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR45"
+rm -rf "$TESTDIR"
 
 # Test 59: Section sort by growth
 test_case "Section can be sorted by growth stage"
-TESTDIR46=$(mktemp -d)
-cd "$TESTDIR46"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 mkdir notes
 cat > notes/_index.md << 'EOF'
@@ -1295,12 +1295,12 @@ else
     fail "Section not sorted by growth stage"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR46"
+rm -rf "$TESTDIR"
 
 # Test 60: showList false hides page list
 test_case "showList: false hides page list on section index"
-TESTDIR47=$(mktemp -d)
-cd "$TESTDIR47"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 mkdir notes
 cat > notes/_index.md << 'EOF'
@@ -1324,12 +1324,12 @@ else
     fail "showList: false did not hide page list"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR47"
+rm -rf "$TESTDIR"
 
 # Test 61: Wiki link with custom label
 test_case "Wiki link with custom label renders correctly"
-TESTDIR48=$(mktemp -d)
-cd "$TESTDIR48"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > page-a.md << 'EOF'
 ---
@@ -1350,12 +1350,12 @@ else
     fail "Wiki link custom label not rendered"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR48"
+rm -rf "$TESTDIR"
 
 # Test 62: Ambiguous wiki link generates warning
 test_case "Ambiguous wiki link generates warning"
-TESTDIR49=$(mktemp -d)
-cd "$TESTDIR49"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 mkdir -p folder1 folder2
 cat > folder1/same-name.md << 'EOF'
@@ -1383,12 +1383,12 @@ else
     fail "No warning for ambiguous wiki link"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR49"
+rm -rf "$TESTDIR"
 
 # Test 63: Invalid growth value is rejected
 test_case "Invalid growth value is rejected"
-TESTDIR50=$(mktemp -d)
-cd "$TESTDIR50"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > test.md << 'EOF'
 ---
@@ -1403,12 +1403,12 @@ else
     fail "Invalid growth value not rejected"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR50"
+rm -rf "$TESTDIR"
 
 # Test 64: Invalid accent color is rejected
 test_case "Invalid accent color is rejected"
-TESTDIR51=$(mktemp -d)
-cd "$TESTDIR51"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -1424,12 +1424,12 @@ else
     fail "Invalid accent color not rejected"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR51"
+rm -rf "$TESTDIR"
 
 # Test 65: Obsidian image embed with alt text
 test_case "Obsidian image embed with alt text"
-TESTDIR52=$(mktemp -d)
-cd "$TESTDIR52"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 mkdir -p static/images
 echo "dummy" > static/images/photo.png
@@ -1446,12 +1446,12 @@ else
     fail "Obsidian image alt text not rendered"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR52"
+rm -rf "$TESTDIR"
 
 # Test 66: Date only (no modified) shows just Created
 test_case "Date only shows just Created"
-TESTDIR53=$(mktemp -d)
-cd "$TESTDIR53"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > test.md << 'EOF'
 ---
@@ -1468,12 +1468,12 @@ else
     fail "Date only format incorrect"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR53"
+rm -rf "$TESTDIR"
 
 # Test 67: Modified date is shown when set
 test_case "Modified date is displayed when set"
-TESTDIR54=$(mktemp -d)
-cd "$TESTDIR54"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > test.md << 'EOF'
 ---
@@ -1490,12 +1490,12 @@ else
     fail "Modified date not displayed correctly"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR54"
+rm -rf "$TESTDIR"
 
 # Test 68: Auto-generated indexes for directories without _index.md
 test_case "Auto-generated indexes for directories without _index.md"
-TESTDIR55=$(mktemp -d)
-cd "$TESTDIR55"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 mkdir projects
 # No _index.md in projects folder
@@ -1519,12 +1519,12 @@ else
     fail "Auto-generated index not created"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR55"
+rm -rf "$TESTDIR"
 
 # Test 69: baseURL is applied to output
 test_case "baseURL configuration is applied"
-TESTDIR56=$(mktemp -d)
-cd "$TESTDIR56"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -1542,12 +1542,12 @@ EOF
 # baseURL should be available (used for absolute URLs in templates if needed)
 pass
 cd "$ORIGDIR"
-rm -rf "$TESTDIR56"
+rm -rf "$TESTDIR"
 
 # Test 70: Nav paths must start with /
 test_case "Nav paths must start with /"
-TESTDIR57=$(mktemp -d)
-cd "$TESTDIR57"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -1561,12 +1561,12 @@ else
     fail "Invalid nav path not rejected"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR57"
+rm -rf "$TESTDIR"
 
 # Test 71: Empty nav label is rejected
 test_case "Empty nav label is rejected"
-TESTDIR58=$(mktemp -d)
-cd "$TESTDIR58"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -1580,12 +1580,12 @@ else
     fail "Empty nav label not rejected"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR58"
+rm -rf "$TESTDIR"
 
 # Test 72: Inline code preserves wiki link syntax
 test_case "Inline code preserves wiki link syntax"
-TESTDIR59=$(mktemp -d)
-cd "$TESTDIR59"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > test.md << 'EOF'
 ---
@@ -1600,12 +1600,12 @@ else
     fail "Wiki link in inline code was processed"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR59"
+rm -rf "$TESTDIR"
 
 # Test 73: Ignore folders from config
 test_case "Ignore folders excludes content from build"
-TESTDIR60=$(mktemp -d)
-cd "$TESTDIR60"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -1625,12 +1625,12 @@ else
     fail "Ignored folders were not excluded or public content missing"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR60"
+rm -rf "$TESTDIR"
 
 # Test 74: Multiple builds without clean preserves content
 test_case "Multiple builds without clean work correctly"
-TESTDIR61=$(mktemp -d)
-cd "$TESTDIR61"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 echo -e "---\ntitle: Page One\n---\nFirst content" > page1.md
 "$LEAFPRESS" build > /dev/null 2>&1
@@ -1644,12 +1644,12 @@ else
     fail "Multiple builds did not preserve content"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR61"
+rm -rf "$TESTDIR"
 
 # Test 75: Backlinks update correctly after content change
 test_case "Backlinks are correctly built"
-TESTDIR62=$(mktemp -d)
-cd "$TESTDIR62"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 echo -e "---\ntitle: Page A\n---\nLinks to [[page-b]]" > page-a.md
 echo -e "---\ntitle: Page B\n---\nContent of B" > page-b.md
@@ -1661,12 +1661,12 @@ else
     fail "Backlinks not built correctly"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR62"
+rm -rf "$TESTDIR"
 
 # Test 76: Tag pages are generated correctly
 test_case "Tag pages list all tagged content"
-TESTDIR63=$(mktemp -d)
-cd "$TESTDIR63"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 echo -e "---\ntitle: Post One\ntags: [golang]\n---\nContent" > post1.md
 echo -e "---\ntitle: Post Two\ntags: [golang, rust]\n---\nContent" > post2.md
@@ -1683,12 +1683,12 @@ else
     fail "Tag pages not generated correctly"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR63"
+rm -rf "$TESTDIR"
 
 # Test 77: Graph JSON generated when enabled
 test_case "Graph JSON contains nodes and links"
-TESTDIR64=$(mktemp -d)
-cd "$TESTDIR64"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -1710,12 +1710,12 @@ else
     fail "Graph JSON not generated correctly"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR64"
+rm -rf "$TESTDIR"
 
 # Test 78: Parallel rendering produces correct output
 test_case "Large site builds correctly with parallel rendering"
-TESTDIR65=$(mktemp -d)
-cd "$TESTDIR65"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 # Create 20 interconnected pages
 for i in $(seq 1 20); do
@@ -1732,12 +1732,12 @@ else
     fail "Expected 20 pages, got $count"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR65"
+rm -rf "$TESTDIR"
 
 # Test 79: Search index is generated when enabled
 test_case "search-index.json is generated when search: true"
-TESTDIR66=$(mktemp -d)
-cd "$TESTDIR66"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -1752,12 +1752,12 @@ else
     fail "search-index.json not generated"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR66"
+rm -rf "$TESTDIR"
 
 # Test 80: Search index is NOT generated when disabled
 test_case "search-index.json is NOT generated when search: false"
-TESTDIR67=$(mktemp -d)
-cd "$TESTDIR67"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -1772,12 +1772,12 @@ else
     fail "search-index.json should not be generated when search: false"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR67"
+rm -rf "$TESTDIR"
 
 # Test 81: Search index contains correct fields
 test_case "search-index.json contains title, url, content, tags"
-TESTDIR68=$(mktemp -d)
-cd "$TESTDIR68"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -1803,12 +1803,12 @@ else
     fail "search-index.json missing required fields"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR68"
+rm -rf "$TESTDIR"
 
 # Test 82: Search index content is HTML-stripped
 test_case "search-index.json content has HTML stripped"
-TESTDIR69=$(mktemp -d)
-cd "$TESTDIR69"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -1830,12 +1830,12 @@ else
     fail "search-index.json content contains HTML tags"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR69"
+rm -rf "$TESTDIR"
 
 # Test 83: Search index excludes index pages
 test_case "search-index.json excludes section index pages"
-TESTDIR70=$(mktemp -d)
-cd "$TESTDIR70"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -1864,12 +1864,12 @@ else
     fail "search-index.json should exclude index pages"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR70"
+rm -rf "$TESTDIR"
 
 # Test 84: Search UI is included when enabled
 test_case "Search toggle button is shown when search: true"
-TESTDIR71=$(mktemp -d)
-cd "$TESTDIR71"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -1884,12 +1884,12 @@ else
     fail "Search UI not included when search: true"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR71"
+rm -rf "$TESTDIR"
 
 # Test 85: Search UI is excluded when disabled
 test_case "Search toggle button is hidden when search: false"
-TESTDIR72=$(mktemp -d)
-cd "$TESTDIR72"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -1904,12 +1904,12 @@ else
     fail "Search UI should not be included when search: false"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR72"
+rm -rf "$TESTDIR"
 
 # Test 86: Search JavaScript not included when disabled
 test_case "Search JavaScript is excluded when search: false"
-TESTDIR73=$(mktemp -d)
-cd "$TESTDIR73"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -1924,12 +1924,12 @@ else
     fail "Search JavaScript should not be included when search: false"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR73"
+rm -rf "$TESTDIR"
 
 # Test 87: Both graph and search can be enabled together
 test_case "Graph and search can both be enabled"
-TESTDIR74=$(mktemp -d)
-cd "$TESTDIR74"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -1952,12 +1952,12 @@ else
     fail "Graph and search not both working when enabled"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR74"
+rm -rf "$TESTDIR"
 
 # Test 88: Search index content is truncated for large pages
 test_case "search-index.json content is truncated for large pages"
-TESTDIR75=$(mktemp -d)
-cd "$TESTDIR75"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -1984,12 +1984,12 @@ else
     fail "search-index.json content not truncated (size: $SIZE bytes)"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR75"
+rm -rf "$TESTDIR"
 
 # Test 89: Incremental rebuild doesn't panic with stale resolver references
 test_case "Incremental rebuild handles stale resolver gracefully"
-TESTDIR76=$(mktemp -d)
-cd "$TESTDIR76"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -2022,12 +2022,12 @@ else
     fail "Incremental rebuild failed"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR76"
+rm -rf "$TESTDIR"
 
 # Test 90: Backlinks persist after multiple rebuilds (no disappearing)
 test_case "Backlinks persist after multiple rebuilds"
-TESTDIR77=$(mktemp -d)
-cd "$TESTDIR77"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -2071,12 +2071,12 @@ else
     fi
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR77"
+rm -rf "$TESTDIR"
 
 # Test 91: Backlinks don't duplicate after multiple rebuilds
 test_case "Backlinks don't duplicate after rebuilds"
-TESTDIR78=$(mktemp -d)
-cd "$TESTDIR78"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -2110,12 +2110,12 @@ else
     fail "Backlink duplicated: found $COUNT occurrences instead of 1"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR78"
+rm -rf "$TESTDIR"
 
 # Test 92: Broken wikilinks render with lp-broken-link class
 test_case "Broken wikilinks have lp-broken-link class"
-TESTDIR79=$(mktemp -d)
-cd "$TESTDIR79"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > page.md << 'EOF'
 ---
@@ -2130,12 +2130,12 @@ else
     fail "Broken wikilink not rendered with lp-broken-link class"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR79"
+rm -rf "$TESTDIR"
 
 # Test 93: Broken wikilinks CSS has tooltip styles
 test_case "Broken wikilinks CSS includes tooltip"
-TESTDIR80=$(mktemp -d)
-cd "$TESTDIR80"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > page.md << 'EOF'
 ---
@@ -2153,12 +2153,12 @@ else
     fail "Broken wikilink CSS missing tooltip styles"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR80"
+rm -rf "$TESTDIR"
 
 # Test 94: Broken wikilink shows label text not target
 test_case "Broken wikilinks display label correctly"
-TESTDIR81=$(mktemp -d)
-cd "$TESTDIR81"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > page.md << 'EOF'
 ---
@@ -2173,12 +2173,12 @@ else
     fail "Broken wikilink label not rendered correctly"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR81"
+rm -rf "$TESTDIR"
 
 # Test 95: Unicode characters in title
 test_case "Unicode characters in page title"
-TESTDIR82=$(mktemp -d)
-cd "$TESTDIR82"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > page.md << 'EOF'
 ---
@@ -2193,12 +2193,12 @@ else
     fail "Unicode title not rendered"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR82"
+rm -rf "$TESTDIR"
 
 # Test 96: Emoji in page title
 test_case "Emoji in page title"
-TESTDIR83=$(mktemp -d)
-cd "$TESTDIR83"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > rocket.md << 'EOF'
 ---
@@ -2213,12 +2213,12 @@ else
     fail "Emoji in title not rendered"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR83"
+rm -rf "$TESTDIR"
 
 # Test 97: Deeply nested folder structure
 test_case "Deeply nested folder structure"
-TESTDIR84=$(mktemp -d)
-cd "$TESTDIR84"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 mkdir -p a/b/c/d
 cat > a/b/c/d/deep.md << 'EOF'
@@ -2234,12 +2234,12 @@ else
     fail "Deeply nested page not built correctly"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR84"
+rm -rf "$TESTDIR"
 
 # Test 98: Special characters in title (colon, ampersand)
 test_case "Special characters in title"
-TESTDIR85=$(mktemp -d)
-cd "$TESTDIR85"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > page.md << 'EOF'
 ---
@@ -2254,12 +2254,12 @@ else
     fail "Special characters in title not rendered"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR85"
+rm -rf "$TESTDIR"
 
 # Test 99: Empty content file (frontmatter only)
 test_case "Empty content file builds"
-TESTDIR86=$(mktemp -d)
-cd "$TESTDIR86"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > empty.md << 'EOF'
 ---
@@ -2273,12 +2273,12 @@ else
     fail "Empty content file not built"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR86"
+rm -rf "$TESTDIR"
 
 # Test 100: Multiple date formats supported
 test_case "Multiple date formats supported"
-TESTDIR87=$(mktemp -d)
-cd "$TESTDIR87"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > page1.md << 'EOF'
 ---
@@ -2308,12 +2308,12 @@ else
     fail "Multiple date formats not all supported"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR87"
+rm -rf "$TESTDIR"
 
 # Test 101: TOC heading IDs are generated
 test_case "TOC heading IDs are generated"
-TESTDIR88=$(mktemp -d)
-cd "$TESTDIR88"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -2337,12 +2337,12 @@ else
     fail "TOC heading IDs not generated"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR88"
+rm -rf "$TESTDIR"
 
 # Test 102: Duplicate headings get unique IDs
 test_case "Duplicate headings get unique IDs"
-TESTDIR89=$(mktemp -d)
-cd "$TESTDIR89"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -2368,12 +2368,12 @@ else
     fail "Duplicate headings don't have unique IDs"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR89"
+rm -rf "$TESTDIR"
 
 # Test 103: Wikilink with custom label
 test_case "Wikilink with custom label renders correctly"
-TESTDIR90=$(mktemp -d)
-cd "$TESTDIR90"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > source.md << 'EOF'
 ---
@@ -2394,12 +2394,12 @@ else
     fail "Wikilink custom label not rendered"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR90"
+rm -rf "$TESTDIR"
 
 # Test 104: Case-insensitive wikilink resolution
 test_case "Wikilinks are case-insensitive"
-TESTDIR91=$(mktemp -d)
-cd "$TESTDIR91"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > source.md << 'EOF'
 ---
@@ -2420,12 +2420,12 @@ else
     fail "Case-insensitive wikilink not resolved"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR91"
+rm -rf "$TESTDIR"
 
 # Test 105: Malformed YAML frontmatter is handled
 test_case "Malformed YAML frontmatter is handled gracefully"
-TESTDIR92=$(mktemp -d)
-cd "$TESTDIR92"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > bad.md << 'EOF'
 ---
@@ -2438,12 +2438,12 @@ EOF
 "$LEAFPRESS" build > /dev/null 2>&1 || true
 pass
 cd "$ORIGDIR"
-rm -rf "$TESTDIR92"
+rm -rf "$TESTDIR"
 
 # Test 106: Missing closing frontmatter delimiter
 test_case "Missing frontmatter delimiter handled"
-TESTDIR93=$(mktemp -d)
-cd "$TESTDIR93"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > unclosed.md << 'EOF'
 ---
@@ -2454,12 +2454,12 @@ EOF
 "$LEAFPRESS" build > /dev/null 2>&1 || true
 pass
 cd "$ORIGDIR"
-rm -rf "$TESTDIR93"
+rm -rf "$TESTDIR"
 
 # Test 107: File with no frontmatter still builds
 test_case "File without frontmatter builds"
-TESTDIR94=$(mktemp -d)
-cd "$TESTDIR94"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > plain.md << 'EOF'
 Just plain markdown content
@@ -2472,12 +2472,12 @@ else
     fail "File without frontmatter not built"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR94"
+rm -rf "$TESTDIR"
 
 # Test 108: Invalid JSON config is rejected
 test_case "Invalid JSON config is rejected"
-TESTDIR95=$(mktemp -d)
-cd "$TESTDIR95"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 echo '{ invalid json }' > leafpress.json
 OUTPUT=$("$LEAFPRESS" build 2>&1 || true)
@@ -2487,12 +2487,12 @@ else
     fail "Invalid JSON not properly rejected"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR95"
+rm -rf "$TESTDIR"
 
 # Test 109: Build with no content files
 test_case "Build with no content files succeeds"
-TESTDIR96=$(mktemp -d)
-cd "$TESTDIR96"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 rm -f *.md
 "$LEAFPRESS" build > /dev/null 2>&1
@@ -2502,12 +2502,12 @@ else
     fail "Build with no content failed"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR96"
+rm -rf "$TESTDIR"
 
 # Test 110: Growth emoji has tooltip on hover
 test_case "Growth emoji has tooltip on hover"
-TESTDIR98=$(mktemp -d)
-cd "$TESTDIR98"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > page.md << 'EOF'
 ---
@@ -2525,12 +2525,12 @@ else
     fail "Growth emoji tooltip not present"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR98"
+rm -rf "$TESTDIR"
 
 # Test 111: Circular wikilinks don't cause infinite loop
 test_case "Circular wikilinks handled"
-TESTDIR97=$(mktemp -d)
-cd "$TESTDIR97"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -2572,12 +2572,12 @@ else
     fi
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR97"
+rm -rf "$TESTDIR"
 
 # Test 112: Reading time is calculated and displayed
 test_case "Reading time is calculated and displayed"
-TESTDIR99=$(mktemp -d)
-cd "$TESTDIR99"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > test.md << 'EOF'
 ---
@@ -2592,12 +2592,12 @@ else
     fail "Reading time not displayed"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR99"
+rm -rf "$TESTDIR"
 
 # Test 113: Reading time accounts for images
 test_case "Reading time accounts for images"
-TESTDIR100=$(mktemp -d)
-cd "$TESTDIR100"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 mkdir -p static/images
 echo "dummy" > static/images/img1.png
@@ -2622,12 +2622,12 @@ else
     fail "Reading time not accounting for images"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR100"
+rm -rf "$TESTDIR"
 
 # Test 114: Reading time frontmatter override
 test_case "Reading time can be overridden in frontmatter"
-TESTDIR101=$(mktemp -d)
-cd "$TESTDIR101"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > test.md << 'EOF'
 ---
@@ -2643,12 +2643,12 @@ else
     fail "Reading time override not applied"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR101"
+rm -rf "$TESTDIR"
 
 # Test 115: Reading time minimum is 1 minute
 test_case "Reading time minimum is 1 minute"
-TESTDIR102=$(mktemp -d)
-cd "$TESTDIR102"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > test.md << 'EOF'
 ---
@@ -2663,12 +2663,12 @@ else
     fail "Reading time minimum not 1 minute"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR102"
+rm -rf "$TESTDIR"
 
 # Test 116: Reading time separator on desktop (CSS class present)
 test_case "Reading time has proper CSS classes"
-TESTDIR103=$(mktemp -d)
-cd "$TESTDIR103"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > test.md << 'EOF'
 ---
@@ -2685,12 +2685,12 @@ else
     fail "Reading time CSS classes not present"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR103"
+rm -rf "$TESTDIR"
 
 # Test 117: Site-wide TOC disable
 test_case "Site-wide toc: false disables TOC globally"
-TESTDIR104=$(mktemp -d)
-cd "$TESTDIR104"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -2717,12 +2717,12 @@ else
     fail "TOC should be disabled globally"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR104"
+rm -rf "$TESTDIR"
 
 # Test 118: Tags are case-sensitive
 test_case "Tags are case-sensitive"
-TESTDIR105=$(mktemp -d)
-cd "$TESTDIR105"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > post1.md << 'EOF'
 ---
@@ -2753,12 +2753,12 @@ else
     fi
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR105"
+rm -rf "$TESTDIR"
 
 # Test 119: Emojis in headings generate valid IDs
 test_case "Emojis in headings generate valid IDs"
-TESTDIR106=$(mktemp -d)
-cd "$TESTDIR106"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -2787,12 +2787,12 @@ else
     fail "Emoji headings don't generate valid IDs"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR106"
+rm -rf "$TESTDIR"
 
 # Test 120: Special characters in headings
 test_case "Special characters in headings generate valid IDs"
-TESTDIR107=$(mktemp -d)
-cd "$TESTDIR107"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -2821,12 +2821,12 @@ else
     fail "Special characters in headings not handled"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR107"
+rm -rf "$TESTDIR"
 
 # Test 121: Solid background colors work
 test_case "Solid background colors are applied"
-TESTDIR108=$(mktemp -d)
-cd "$TESTDIR108"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -2847,12 +2847,12 @@ else
     fail "Solid background colors not applied"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR108"
+rm -rf "$TESTDIR"
 
 # Test 122: Static images are copied and accessible
 test_case "Static images are copied to output"
-TESTDIR109=$(mktemp -d)
-cd "$TESTDIR109"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 mkdir -p static/images
 echo "PNG_DUMMY_DATA" > static/images/test-image.png
@@ -2869,12 +2869,12 @@ else
     fail "Static images not copied"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR109"
+rm -rf "$TESTDIR"
 
 # Test 123: Per-page TOC enable overrides global disable
 test_case "Per-page toc: true overrides global toc: false"
-TESTDIR110=$(mktemp -d)
-cd "$TESTDIR110"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
@@ -2900,7 +2900,7 @@ else
     fail "Per-page TOC enable not working"
 fi
 cd "$ORIGDIR"
-rm -rf "$TESTDIR110"
+rm -rf "$TESTDIR"
 
 # Cleanup
 rm -rf "$TESTDIR"
