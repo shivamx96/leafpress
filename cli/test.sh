@@ -3349,6 +3349,48 @@ fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR"
 
+# Test 149: Images have lazy loading attribute
+test_case "Images have lazy loading attribute"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+mkdir -p content
+cat > content/test.md << 'EOF'
+---
+title: Test
+---
+![Test image](/static/images/test.png)
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'loading="lazy"' _site/content/test/index.html; then
+    pass
+else
+    fail "Image missing lazy loading attribute"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
+# Test 150: Images have async decoding attribute
+test_case "Images have async decoding attribute"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+mkdir -p content
+cat > content/test.md << 'EOF'
+---
+title: Test
+---
+![Test image](/static/images/test.png)
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'decoding="async"' _site/content/test/index.html; then
+    pass
+else
+    fail "Image missing async decoding attribute"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
 # Cleanup
 rm -rf "$TESTDIR"
 

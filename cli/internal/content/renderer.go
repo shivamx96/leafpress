@@ -79,6 +79,9 @@ func (r *Renderer) Render(content string) (string, []string) {
 	// Process external links
 	html := r.processExternalLinks(buf.String())
 
+	// Add lazy loading to images
+	html = processLazyImages(html)
+
 	return html, warnings
 }
 
@@ -90,6 +93,8 @@ var (
 	externalLinkRegex  = regexp.MustCompile(`<a\s+href="(https?://[^"]+)"([^>]*)>([^<]+)</a>`)
 	// Callout regex: matches > [!type] or > [!type] title followed by content lines
 	calloutStartRegex = regexp.MustCompile(`(?m)^>\s*\[!(\w+)\](?:\s+(.*))?$`)
+	// Image regex for lazy loading (captures attributes, handles self-closing)
+	imgTagFullRegex = regexp.MustCompile(`<img\s+([^>]*?)\s*/?\s*>`)
 )
 
 // calloutTypes maps callout type to display title and icon
@@ -358,6 +363,22 @@ func (r *Renderer) processExternalLinks(html string) string {
 		text := submatches[3]
 
 		return `<a class="lp-external" href="` + href + `" target="_blank" rel="noopener"` + attrs + `>` + text + ` ↗</a>`
+	})
+}
+
+// processLazyImages adds lazy loading attributes to all images
+func processLazyImages(html string) string {
+	return imgTagFullRegex.ReplaceAllStringFunc(html, func(match string) string {
+		// Don't add if already has loading attribute
+		if strings.Contains(match, "loading=") {
+			return match
+		}
+		// Insert loading="lazy" decoding="async" before the closing >
+		attrs := imgTagFullRegex.FindStringSubmatch(match)
+		if len(attrs) < 2 {
+			return match
+		}
+		return `<img ` + attrs[1] + ` loading="lazy" decoding="async">`
 	})
 }
 
