@@ -2719,8 +2719,8 @@ fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR"
 
-# Test 118: Tags are case-sensitive
-test_case "Tags are case-sensitive"
+# Test 118: Tags are case-insensitive
+test_case "Tags are case-insensitive"
 TESTDIR=$(mktemp -d)
 cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
@@ -2739,18 +2739,13 @@ tags: [golang]
 Content
 EOF
 "$LEAFPRESS" build > /dev/null 2>&1
-# Should have separate tag pages for GoLang and golang
-if [ -d "_site/tags/golang" ] && [ -d "_site/tags/GoLang" ] 2>/dev/null || \
-   ([ -f "_site/tags/golang/index.html" ] && ! grep -q "Post One" _site/tags/golang/index.html); then
-    # Either separate dirs OR golang page doesn't have Post One (case preserved)
+# Both should map to same lowercase tag page containing both posts
+if [ -f "_site/tags/golang/index.html" ] && \
+   grep -q "Post One" _site/tags/golang/index.html && \
+   grep -q "Post Two" _site/tags/golang/index.html; then
     pass
 else
-    # Check if tags index shows both variants
-    if grep -q 'golang' _site/tags/index.html && grep -q 'GoLang' _site/tags/index.html; then
-        pass
-    else
-        fail "Tags not case-sensitive"
-    fi
+    fail "Tags not case-insensitive"
 fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR"
