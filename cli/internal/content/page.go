@@ -2,6 +2,7 @@ package content
 
 import (
 	"fmt"
+	"html"
 	"regexp"
 	"strings"
 	"time"
@@ -143,6 +144,8 @@ func (p *Page) DisplayDateISO() string {
 // PlainContent returns content with HTML tags stripped for search indexing
 func (p *Page) PlainContent() string {
 	plain := htmlTagRegex.ReplaceAllString(p.HTMLContent, " ")
+	// Decode HTML entities (e.g., &amp; -> &, &#34; -> ")
+	plain = html.UnescapeString(plain)
 	// Normalize whitespace
 	plain = strings.Join(strings.Fields(plain), " ")
 	// Limit to ~5000 chars for search index size

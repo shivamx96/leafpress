@@ -1225,6 +1225,114 @@ const baseTemplate = `<!DOCTYPE html>
         });
       })();
       {{end}}
+
+      // Link preview on hover
+      (function() {
+        var previewEl = null;
+        var previewIndex = null;
+        var hideTimeout = null;
+        var currentLink = null;
+
+        function createPreview() {
+          if (previewEl) return;
+          previewEl = document.createElement('div');
+          previewEl.className = 'lp-link-preview';
+          previewEl.innerHTML = '<div class="lp-link-preview-title"></div><div class="lp-link-preview-content"></div>';
+          document.body.appendChild(previewEl);
+
+          previewEl.addEventListener('mouseenter', function() {
+            clearTimeout(hideTimeout);
+          });
+          previewEl.addEventListener('mouseleave', function() {
+            hidePreview();
+          });
+        }
+
+        function showPreview(link, item) {
+          createPreview();
+          clearTimeout(hideTimeout);
+          currentLink = link;
+
+          var title = previewEl.querySelector('.lp-link-preview-title');
+          var content = previewEl.querySelector('.lp-link-preview-content');
+          title.textContent = item.title;
+          content.textContent = item.content.substring(0, 200) + (item.content.length > 200 ? '...' : '');
+
+          var rect = link.getBoundingClientRect();
+          var scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+          var scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+
+          previewEl.style.display = 'block';
+          previewEl.style.opacity = '0';
+
+          // Position below link by default
+          var top = rect.bottom + scrollTop + 8;
+          var left = rect.left + scrollLeft;
+
+          // Check if preview would go off-screen bottom
+          var previewHeight = previewEl.offsetHeight;
+          if (rect.bottom + previewHeight + 20 > window.innerHeight) {
+            top = rect.top + scrollTop - previewHeight - 8;
+          }
+
+          // Check if preview would go off-screen right
+          var previewWidth = previewEl.offsetWidth;
+          if (left + previewWidth > window.innerWidth - 20) {
+            left = window.innerWidth - previewWidth - 20;
+          }
+
+          previewEl.style.top = top + 'px';
+          previewEl.style.left = left + 'px';
+          previewEl.style.opacity = '1';
+        }
+
+        function hidePreview() {
+          hideTimeout = setTimeout(function() {
+            if (previewEl) {
+              previewEl.style.display = 'none';
+            }
+            currentLink = null;
+          }, 100);
+        }
+
+        function loadPreviewIndex(callback) {
+          if (previewIndex) {
+            callback(previewIndex);
+            return;
+          }
+          fetch('/search-index.json')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+              previewIndex = {};
+              data.forEach(function(item) {
+                previewIndex[item.url] = item;
+              });
+              callback(previewIndex);
+            })
+            .catch(function() {
+              previewIndex = {};
+              callback(previewIndex);
+            });
+        }
+
+        // Attach to all wikilinks and backlinks
+        document.querySelectorAll('.lp-wikilink, .lp-backlink').forEach(function(link) {
+          var url = link.getAttribute('href');
+
+          link.addEventListener('mouseenter', function() {
+            loadPreviewIndex(function(index) {
+              var item = index[url];
+              if (item) {
+                showPreview(link, item);
+              }
+            });
+          });
+
+          link.addEventListener('mouseleave', function() {
+            hidePreview();
+          });
+        });
+      })();
     });
   </script>
 </body>

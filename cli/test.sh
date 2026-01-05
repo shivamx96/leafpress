@@ -1918,7 +1918,8 @@ cat > leafpress.json << 'EOF'
 }
 EOF
 "$LEAFPRESS" build > /dev/null 2>&1
-if ! grep -q 'search-index.json' _site/index.html && ! grep -q 'openSearch' _site/index.html; then
+# Check for search UI specific functions, not search-index.json (used by link previews too)
+if ! grep -q 'openSearch' _site/index.html && ! grep -q 'lp-search-overlay' _site/index.html; then
     pass
 else
     fail "Search JavaScript should not be included when search: false"
@@ -3183,6 +3184,62 @@ if grep -q 'name="robots" content="noindex"' _site/404.html; then
     pass
 else
     fail "404 page missing noindex"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
+# Test 140: Link preview JavaScript is included
+test_case "Link preview JavaScript is included"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'lp-link-preview' _site/index.html; then
+    pass
+else
+    fail "Link preview JavaScript missing"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
+# Test 141: Link preview CSS is included
+test_case "Link preview CSS is included"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'lp-link-preview' _site/style.css; then
+    pass
+else
+    fail "Link preview CSS missing"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
+# Test 142: Link preview targets wikilinks
+test_case "Link preview targets wikilinks"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q '\.lp-wikilink' _site/index.html; then
+    pass
+else
+    fail "Link preview should target .lp-wikilink"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
+# Test 143: Link preview targets backlinks
+test_case "Link preview targets backlinks"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q '\.lp-backlink' _site/index.html; then
+    pass
+else
+    fail "Link preview should target .lp-backlink"
 fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR"

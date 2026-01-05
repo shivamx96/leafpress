@@ -1351,4 +1351,35 @@ html {
 .lp-not-found-link:hover {
   opacity: 0.9;
 }
+
+/* Link Preview */
+.lp-link-preview {
+  position: absolute;
+  z-index: 1000;
+  max-width: 320px;
+  padding: 0.75rem 1rem;
+  background: var(--lp-bg);
+  border: 1px solid var(--lp-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: none;
+  transition: opacity 0.15s ease;
+}
+
+[data-theme="dark"] .lp-link-preview {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.lp-link-preview-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--lp-text);
+  margin-bottom: 0.4rem;
+}
+
+.lp-link-preview-content {
+  font-size: 0.85rem;
+  color: var(--lp-text-muted);
+  line-height: 1.5;
+}
 `
