@@ -3244,6 +3244,111 @@ fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR"
 
+# Test 144: Basic callout is rendered
+test_case "Basic callout is rendered"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+mkdir -p content
+cat > content/test.md << 'EOF'
+---
+title: Test
+---
+> [!note]
+> This is a note callout
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'lp-callout-note' _site/content/test/index.html && grep -q 'lp-callout-title' _site/content/test/index.html; then
+    pass
+else
+    fail "Callout not rendered correctly"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
+# Test 145: Callout with custom title
+test_case "Callout with custom title"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+mkdir -p content
+cat > content/test.md << 'EOF'
+---
+title: Test
+---
+> [!warning] Be Careful!
+> This is important
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'lp-callout-warning' _site/content/test/index.html && grep -q 'Be Careful!' _site/content/test/index.html; then
+    pass
+else
+    fail "Callout custom title not rendered"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
+# Test 146: Multiple callout types
+test_case "Multiple callout types render correctly"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+mkdir -p content
+cat > content/test.md << 'EOF'
+---
+title: Test
+---
+> [!tip]
+> A tip
+
+> [!danger]
+> Danger zone
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'lp-callout-tip' _site/content/test/index.html && grep -q 'lp-callout-danger' _site/content/test/index.html; then
+    pass
+else
+    fail "Multiple callout types not rendered"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
+# Test 147: Callout CSS is included
+test_case "Callout CSS is included"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'lp-callout' _site/style.css && grep -q 'lp-callout-note' _site/style.css; then
+    pass
+else
+    fail "Callout CSS missing"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
+# Test 148: Callout content is rendered as markdown
+test_case "Callout content is rendered as markdown"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+mkdir -p content
+cat > content/test.md << 'EOF'
+---
+title: Test
+---
+> [!note]
+> This has **bold** text
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q '<strong>bold</strong>' _site/content/test/index.html; then
+    pass
+else
+    fail "Callout content markdown not rendered"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
 # Cleanup
 rm -rf "$TESTDIR"
 

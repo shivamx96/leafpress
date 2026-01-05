@@ -61,6 +61,9 @@ func (r *Renderer) Render(content string) (string, []string) {
 	// First, process Obsidian image embeds (![[image.png]])
 	processed := r.processObsidianImages(content)
 
+	// Process callouts before markdown conversion
+	processed = r.processCallouts(processed)
+
 	// Then, replace wiki-links with HTML anchors (if enabled)
 	if r.enableWikilinks {
 		processed = r.processWikiLinks(processed, &warnings)
@@ -85,7 +88,141 @@ var (
 	codeBlockRegex     = regexp.MustCompile("(?s)```[^`]*```")
 	inlineCodeRegex    = regexp.MustCompile("`[^`]+`")
 	externalLinkRegex  = regexp.MustCompile(`<a\s+href="(https?://[^"]+)"([^>]*)>([^<]+)</a>`)
+	// Callout regex: matches > [!type] or > [!type] title followed by content lines
+	calloutStartRegex = regexp.MustCompile(`(?m)^>\s*\[!(\w+)\](?:\s+(.*))?$`)
 )
+
+// calloutTypes maps callout type to display title and icon
+var calloutTypes = map[string]struct {
+	title string
+	icon  string
+}{
+	"note":      {"Note", "📝"},
+	"tip":       {"Tip", "💡"},
+	"hint":      {"Hint", "💡"},
+	"important": {"Important", "❗"},
+	"warning":   {"Warning", "⚠️"},
+	"caution":   {"Caution", "⚠️"},
+	"danger":    {"Danger", "🔴"},
+	"error":     {"Error", "🔴"},
+	"info":      {"Info", "ℹ️"},
+	"todo":      {"Todo", "☑️"},
+	"example":   {"Example", "📋"},
+	"quote":     {"Quote", "💬"},
+	"question":  {"Question", "❓"},
+	"faq":       {"FAQ", "❓"},
+	"success":   {"Success", "✅"},
+	"check":     {"Check", "✅"},
+	"done":      {"Done", "✅"},
+	"fail":      {"Fail", "❌"},
+	"failure":   {"Failure", "❌"},
+	"bug":       {"Bug", "🐛"},
+	"abstract":  {"Abstract", "📄"},
+	"summary":   {"Summary", "📄"},
+	"tldr":      {"TL;DR", "📄"},
+}
+
+// processCallouts converts Obsidian-style callouts to HTML
+// Input: > [!note] Optional title
+//
+//	> Content here
+//
+// Output: <div class="lp-callout lp-callout-note">...</div>
+func (r *Renderer) processCallouts(content string) string {
+	// Extract code blocks to protect them
+	codeBlocks := extractCodeBlocks(content)
+	protectedContent := content
+
+	// Replace code blocks with placeholders
+	for i, block := range codeBlocks {
+		placeholder := fmt.Sprintf("___CODE_BLOCK_%d___", i)
+		protectedContent = strings.Replace(protectedContent, block, placeholder, 1)
+	}
+
+	lines := strings.Split(protectedContent, "\n")
+	var result []string
+	i := 0
+
+	for i < len(lines) {
+		line := lines[i]
+
+		// Check if this line starts a callout
+		matches := calloutStartRegex.FindStringSubmatch(line)
+		if matches != nil {
+			calloutType := strings.ToLower(matches[1])
+			customTitle := ""
+			if len(matches) > 2 {
+				customTitle = strings.TrimSpace(matches[2])
+			}
+
+			// Get callout info or use defaults
+			info, ok := calloutTypes[calloutType]
+			if !ok {
+				info = struct {
+					title string
+					icon  string
+				}{strings.Title(calloutType), "📌"}
+			}
+
+			// Use custom title if provided
+			title := info.title
+			if customTitle != "" {
+				title = customTitle
+			}
+
+			// Collect all content lines (lines starting with >)
+			var contentLines []string
+			i++
+			for i < len(lines) {
+				if strings.HasPrefix(lines[i], ">") {
+					// Check if this line starts a new callout
+					if calloutStartRegex.MatchString(lines[i]) {
+						break
+					}
+					// Remove the leading > and optional space
+					contentLine := strings.TrimPrefix(lines[i], ">")
+					contentLine = strings.TrimPrefix(contentLine, " ")
+					contentLines = append(contentLines, contentLine)
+					i++
+				} else if strings.TrimSpace(lines[i]) == "" {
+					// Empty line might continue the callout if next line has > but is not a new callout
+					if i+1 < len(lines) && strings.HasPrefix(lines[i+1], ">") && !calloutStartRegex.MatchString(lines[i+1]) {
+						contentLines = append(contentLines, "")
+						i++
+					} else {
+						break
+					}
+				} else {
+					break
+				}
+			}
+
+			// Build the callout HTML
+			calloutContent := strings.Join(contentLines, "\n")
+			calloutHTML := fmt.Sprintf(
+				"<div class=\"lp-callout lp-callout-%s\">\n<div class=\"lp-callout-title\"><span class=\"lp-callout-icon\">%s</span> %s</div>\n<div class=\"lp-callout-content\">\n\n%s\n\n</div>\n</div>",
+				calloutType,
+				info.icon,
+				title,
+				calloutContent,
+			)
+			result = append(result, calloutHTML)
+		} else {
+			result = append(result, line)
+			i++
+		}
+	}
+
+	processed := strings.Join(result, "\n")
+
+	// Restore code blocks
+	for i, block := range codeBlocks {
+		placeholder := fmt.Sprintf("___CODE_BLOCK_%d___", i)
+		processed = strings.Replace(processed, placeholder, block, 1)
+	}
+
+	return processed
+}
 
 // processObsidianImages converts Obsidian image embeds to standard markdown
 func (r *Renderer) processObsidianImages(content string) string {

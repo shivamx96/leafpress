@@ -1382,4 +1382,119 @@ html {
   color: var(--lp-text-muted);
   line-height: 1.5;
 }
+
+/* Callouts / Admonitions */
+.lp-callout {
+  margin: 1.5rem 0;
+  padding: 1rem 1.25rem;
+  border-radius: 8px;
+  border-left: 4px solid var(--lp-callout-border);
+  background: var(--lp-callout-bg);
+}
+
+.lp-callout-title {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--lp-callout-title);
+}
+
+.lp-callout-icon {
+  font-size: 1.1rem;
+}
+
+.lp-callout-content {
+  color: var(--lp-text);
+}
+
+.lp-callout-content p:last-child {
+  margin-bottom: 0;
+}
+
+/* Callout type colors */
+.lp-callout-note {
+  --lp-callout-border: #3b82f6;
+  --lp-callout-bg: rgba(59, 130, 246, 0.1);
+  --lp-callout-title: #3b82f6;
+}
+
+.lp-callout-info {
+  --lp-callout-border: #3b82f6;
+  --lp-callout-bg: rgba(59, 130, 246, 0.1);
+  --lp-callout-title: #3b82f6;
+}
+
+.lp-callout-tip, .lp-callout-hint {
+  --lp-callout-border: #10b981;
+  --lp-callout-bg: rgba(16, 185, 129, 0.1);
+  --lp-callout-title: #10b981;
+}
+
+.lp-callout-success, .lp-callout-check, .lp-callout-done {
+  --lp-callout-border: #10b981;
+  --lp-callout-bg: rgba(16, 185, 129, 0.1);
+  --lp-callout-title: #10b981;
+}
+
+.lp-callout-warning, .lp-callout-caution {
+  --lp-callout-border: #f59e0b;
+  --lp-callout-bg: rgba(245, 158, 11, 0.1);
+  --lp-callout-title: #f59e0b;
+}
+
+.lp-callout-danger, .lp-callout-error {
+  --lp-callout-border: #ef4444;
+  --lp-callout-bg: rgba(239, 68, 68, 0.1);
+  --lp-callout-title: #ef4444;
+}
+
+.lp-callout-fail, .lp-callout-failure {
+  --lp-callout-border: #ef4444;
+  --lp-callout-bg: rgba(239, 68, 68, 0.1);
+  --lp-callout-title: #ef4444;
+}
+
+.lp-callout-important {
+  --lp-callout-border: #a855f7;
+  --lp-callout-bg: rgba(168, 85, 247, 0.1);
+  --lp-callout-title: #a855f7;
+}
+
+.lp-callout-question, .lp-callout-faq {
+  --lp-callout-border: #f59e0b;
+  --lp-callout-bg: rgba(245, 158, 11, 0.1);
+  --lp-callout-title: #f59e0b;
+}
+
+.lp-callout-quote {
+  --lp-callout-border: #6b7280;
+  --lp-callout-bg: rgba(107, 114, 128, 0.1);
+  --lp-callout-title: #6b7280;
+}
+
+.lp-callout-example {
+  --lp-callout-border: #8b5cf6;
+  --lp-callout-bg: rgba(139, 92, 246, 0.1);
+  --lp-callout-title: #8b5cf6;
+}
+
+.lp-callout-todo {
+  --lp-callout-border: #3b82f6;
+  --lp-callout-bg: rgba(59, 130, 246, 0.1);
+  --lp-callout-title: #3b82f6;
+}
+
+.lp-callout-bug {
+  --lp-callout-border: #ef4444;
+  --lp-callout-bg: rgba(239, 68, 68, 0.1);
+  --lp-callout-title: #ef4444;
+}
+
+.lp-callout-abstract, .lp-callout-summary, .lp-callout-tldr {
+  --lp-callout-border: #06b6d4;
+  --lp-callout-bg: rgba(6, 182, 212, 0.1);
+  --lp-callout-title: #06b6d4;
+}
 `
