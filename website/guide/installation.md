@@ -13,7 +13,7 @@ Get leafpress running in under a minute.
 go install github.com/shivamx96/leafpress/cli/cmd/leafpress@latest
 ```
 
-Requires Go 1.21+. The binary is added to your `$GOPATH/bin`.
+Requires Go 1.25+. The binary is added to your `$GOPATH/bin`.
 
 ### Download Binary
 
