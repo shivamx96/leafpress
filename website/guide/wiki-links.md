@@ -3,99 +3,59 @@ title: "Wiki Links"
 date: 2025-12-21
 ---
 
-Wiki-style links are the heart of leafpress, enabling you to create interconnected digital gardens.
+Wiki-style links are the heart of a digital garden. Connect ideas, build a web of knowledge.
 
-## Basic Syntax
+## Syntax
 
-Link to other pages using double brackets:
+Link to any page using double brackets:
 
 ```markdown
 [[page-slug]]
 ```
 
-The page slug is the filename without `.md`:
+The slug is the filename without `.md`:
 - `my-note.md` → `[[my-note]]`
 - `projects/website.md` → `[[projects/website]]`
 
-## Custom Display Text
-
-Override the link text:
+### Custom Display Text
 
 ```markdown
-[[page-slug|Custom Text]]
+[[page-slug|Display text]]
 ```
 
-Example:
-```markdown
-Learn more about [[guide/configuration|configuration options]].
-```
+Example: `[[installation|Get started]]` renders as "Get started" but links to the installation page.
 
-## How It Works
+### Case Insensitive
 
-When you use `[[page-name]]`:
+Links are case-insensitive:
+- `[[My Note]]` finds `my-note.md`
+- `[[MY-NOTE]]` finds `my-note.md`
 
-1. leafpress finds the matching `.md` file
-2. Creates an internal link to that page
-3. Uses the page's title as link text (if not specified)
-4. Tracks the connection for backlinks
+### Ambiguous Links
 
-## Broken Links
-
-If a linked page doesn't exist, leafpress will:
-- Show a warning during build
-- Style the link differently (strikethrough)
-- List broken links in build output
+If multiple pages match (e.g., `note.md` and `folder/note.md`), leafpress warns during build but links to the first match. Use the full path to be explicit: `[[folder/note]]`.
 
 ## Backlinks
 
-Every page automatically shows backlinks - other pages that link to it.
+Every page automatically shows "Referenced from" at the bottom—a list of all pages that link to it. No configuration needed.
 
-This creates a bidirectional network of your content, making it easy to discover related pages.
+Backlinks make your garden bidirectional. When you link A → B, readers of B can discover A.
 
-## Best Practices
+## Broken Links
 
-### Use Descriptive Slugs
+During build, leafpress warns about broken links:
 
-Good:
-```markdown
-[[react-hooks-guide|React Hooks Guide]]
+```
+Warning: broken link: [[nonexistent-page]]
 ```
 
-Less good:
-```markdown
-[[page1|Guide]]
-```
+Broken links render as plain text with a visual indicator, so readers know something's missing.
 
-### Link Often
+## Link Previews
 
-Don't be afraid to link frequently. Over-linking is better than under-linking in a digital garden.
+Hover over any wiki-link to see a preview card with the target page's title and excerpt. Works on backlinks too.
 
-### Create Index Pages
+## Graph View
 
-For sections, create index pages that link to related content:
+Enable `"graph": true` in config to visualize all connections between pages. The current page is highlighted, and you can click any node to navigate.
 
-```markdown
----
-title: "JavaScript Notes"
----
-
-# JavaScript Notes
-
-- [[js/async-await]]
-- [[js/promises]]
-- [[js/event-loop]]
-```
-
-## External Links
-
-Use standard Markdown for external links:
-
-```markdown
-[GitHub](https://github.com)
-```
-
-## Next Steps
-
-- [[guide/writing|Writing Content]]
-- [[guide/custom-styles|Customize Your Site]]
-- [[features|Explore Features]]

@@ -2,12 +2,13 @@
   "title": "leafpress",
   "author": "Shivam Shekhar",
   "baseURL": "https://leafpress.in",
+  "description": "A fast, opinionated static site generator for digital gardens",
   "outputDir": "_site",
   "port": 3000,
   "nav": [
     { "label": "Guide", "path": "/guide/" },
     { "label": "Features", "path": "/features" },
-    { "label": "Examples", "path": "/examples" }
+    { "label": "Changelog", "path": "/changelog" }
   ],
   "theme": {
     "fontHeading": "Geist",
@@ -22,5 +23,6 @@
     "navActiveStyle": "underlined"
   },
   "graph": false,
-  "toc": true
+  "toc": true,
+  "search": true
 }

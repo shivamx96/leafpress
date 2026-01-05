@@ -1,44 +1,39 @@
 ---
-title: "hi!"
+title: "leafpress"
 date: 2025-12-21
 ---
 
-**A fast, minimal, opinionated (mildly configurable) static site generator for digital gardens and personal websites.**
+A fast, opinionated static site generator for digital gardens.
 
-leafpress helps you build beautiful, interconnected websites from Markdown files. Perfect for digital gardens, knowledge bases, documentation, and blogs.
+```bash
+go install github.com/shivamx96/leafpress/cli/cmd/leafpress@latest
+leafpress init my-garden
+cd my-garden && leafpress serve
+```
 
-## Key Features
+## Why leafpress?
 
-- 🌿 **Wiki-style linking** - Connect your thoughts with `[[wiki-links]]`
-- 🎨 **Beautiful themes** - Customizable fonts, colors, and backgrounds
-- 📑 **Table of contents** - Auto-generated TOC for long-form content
-- 🚀 **Fast builds** - Written in Go for maximum performance
-- 🌓 **Dark mode** - Built-in theme switching
-- 📱 **Responsive** - Mobile-first design
+Most static site generators make you choose: simple but limited, or powerful but complex. leafpress is different.
+
+**Write in Obsidian, publish anywhere.** Your `[[wiki-links]]` just work. Backlinks are automatic. No plugins, no configuration, no friction.
+
+**Fast by default.** Single binary, no dependencies. Builds hundreds of pages in milliseconds. Live reload that actually feels instant.
+
+**Looks good out of the box.** Beautiful typography, dark mode, responsive design. Customize with a few lines of JSON, or go deeper with CSS.
+
+## Features
+
+- **[[guide/wiki-links|Wiki-style linking]]** with automatic backlinks
+- **Full-text search** built-in, no external services
+- **Graph visualization** of your knowledge connections
+- **Table of contents** auto-generated from headings
+- **SEO ready** with sitemap, RSS, Open Graph, and meta tags
+- **Callouts** for notes, warnings, tips (`> [!note]`)
+- **Syntax highlighting** for code blocks
+- **Dark mode** with system preference detection
+- **Link previews** on hover
 
 ## Quick Start
 
-```bash
-# Initialize a new site
-leafpress init
+[[guide/installation|Get started in 5 minutes →]]
 
-# Create a new page
-leafpress new "My First Note"
-
-# Start the dev server
-leafpress serve
-
-# Build for production
-leafpress build
-```
-
-## Learn More
-
-- [[guide/installation|Installation Guide]]
-- [[guide/configuration|Configuration]]
-- [[features|Features Overview]]
-- [[examples|Example Sites]]
-
----
-
-**Open Source** • Built with ❤️ in Go • [GitHub](https://github.com/shivamx96/leafpress)

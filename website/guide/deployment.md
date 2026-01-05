@@ -3,67 +3,66 @@ title: "Deployment"
 date: 2025-12-21
 ---
 
-Deploy your leafpress site to various hosting platforms.
+Deploy your leafpress site to any static hosting platform.
 
-## Build for Production
-
-First, build your site:
+## Build
 
 ```bash
 leafpress build
 ```
 
-This generates static HTML files in the `_site` directory (or your configured `outputDir`).
+This generates static files in `_site/` (or your configured `outputDir`). Upload this folder to any web host.
 
 ## Netlify
 
-### Deploy via Git
+### Git Integration
 
-1. Push your site to a Git repository
-2. Connect your repo to Netlify
-3. Configure build settings:
+1. Push your site to GitHub/GitLab
+2. Connect repo in Netlify dashboard
+3. Set build settings:
    - **Build command**: `leafpress build`
    - **Publish directory**: `_site`
 
-### Deploy via CLI
+### netlify.toml
 
-```bash
-# Install Netlify CLI
-npm install -g netlify-cli
+```toml
+[build]
+  command = "leafpress build"
+  publish = "_site"
 
-# Build your site
-leafpress build
-
-# Deploy
-netlify deploy --prod --dir=_site
+[[redirects]]
+  from = "/*"
+  to = "/404.html"
+  status = 404
 ```
 
 ## Vercel
 
-### Deploy via Git
+### Git Integration
 
-1. Import your Git repository in Vercel
-2. Configure build settings:
-   - **Build command**: `leafpress build`
-   - **Output directory**: `_site`
+1. Push to GitHub/GitLab
+2. Import in Vercel dashboard
+3. Set framework preset to "Other"
+4. Build command: `leafpress build`
+5. Output directory: `_site`
 
-### Deploy via CLI
+### vercel.json
 
-```bash
-# Install Vercel CLI
-npm install -g vercel
-
-# Build and deploy
-leafpress build
-vercel --prod
+```json
+{
+  "buildCommand": "leafpress build",
+  "outputDirectory": "_site"
+}
 ```
 
 ## GitHub Pages
 
-Add a GitHub Actions workflow (`.github/workflows/deploy.yml`):
+### Using GitHub Actions
+
+Create `.github/workflows/deploy.yml`:
 
 ```yaml
-name: Deploy to GitHub Pages
+name: Deploy
 
 on:
   push:
@@ -73,65 +72,88 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
-      - name: Download leafpress
-        run: |
-          curl -L https://github.com/shivamx96/leafpress/releases/latest/download/leafpress-linux-amd64.tar.gz | tar xz
-          chmod +x leafpress
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+      
+      - name: Install leafpress
+        run: go install github.com/shivamx96/leafpress/cli/cmd/leafpress@latest
       
       - name: Build
-        run: ./leafpress build
+        run: leafpress build
       
-      - name: Deploy to GitHub Pages
+      - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./_site
 ```
 
-Configure GitHub Pages to use the `gh-pages` branch.
+Enable GitHub Pages in repo settings, set source to `gh-pages` branch.
 
 ## Cloudflare Pages
 
-1. Connect your Git repository to Cloudflare Pages
-2. Configure build settings:
-   - **Build command**: `leafpress build`
+1. Connect your Git repository
+2. Set build configuration:
+   - **Build command**: `go install github.com/shivamx96/leafpress/cli/cmd/leafpress@latest && leafpress build`
    - **Build output directory**: `_site`
 
-## Custom Server
+## AWS S3 + CloudFront
 
-Deploy to any static file hosting:
+### Upload to S3
 
 ```bash
-# Build the site
 leafpress build
-
-# Copy _site directory to your web server
-rsync -avz _site/ user@server:/var/www/html/
+aws s3 sync _site/ s3://your-bucket-name --delete
 ```
 
-Or use any web server (nginx, Apache, etc.) to serve the `_site` directory.
+### CloudFront 404 Handling
 
-### 404 Page Configuration
+Set custom error response:
+- HTTP error code: 404
+- Response page path: `/404.html`
+- HTTP response code: 404
 
-Leafpress generates a `404.html` file automatically. Most platforms serve this for missing routes out of the box. For custom servers:
+## Docker / Nginx
 
-**nginx:**
+### Dockerfile
+
+```dockerfile
+FROM golang:1.21-alpine AS builder
+RUN go install github.com/shivamx96/leafpress/cli/cmd/leafpress@latest
+WORKDIR /site
+COPY . .
+RUN leafpress build
+
+FROM nginx:alpine
+COPY --from=builder /site/_site /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+```
+
+### nginx.conf
+
 ```nginx
-error_page 404 /404.html;
-```
+server {
+    listen 80;
+    root /usr/share/nginx/html;
+    index index.html;
 
-**Apache (.htaccess):**
-```apache
-ErrorDocument 404 /404.html
-```
+    location / {
+        try_files $uri $uri/ =404;
+    }
 
-**AWS S3/CloudFront:** Set the error document to `404.html` in bucket settings.
+    error_page 404 /404.html;
+    location = /404.html {
+        internal;
+    }
+}
+```
 
 ## Custom Domain
 
-After deploying, configure your custom domain in your hosting platform's settings. Update the `baseURL` in `leafpress.json`:
+Set `baseURL` in `leafpress.json` for correct sitemap and canonical URLs:
 
 ```json
 {
@@ -139,8 +161,3 @@ After deploying, configure your custom domain in your hosting platform's setting
 }
 ```
 
-## Next Steps
-
-- [[guide/configuration|Configure your site]]
-- [[guide/writing|Write content]]
-- [[features|Explore features]]

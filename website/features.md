@@ -3,101 +3,62 @@ title: "Features"
 date: 2025-12-21
 ---
 
-leafpress is packed with features to help you build beautiful, interconnected websites.
+Everything you need to build a digital garden, nothing you don't.
 
-## Wiki-Style Linking
+## Content
 
-Connect your thoughts with simple `[[wiki-links]]` syntax. leafpress automatically:
-- Resolves links between pages
-- Generates backlinks
-- Warns about broken links
-- Tracks connections for visualization
+**Wiki Links** — Connect pages with `[[page-name]]` or `[[page-name|custom text]]`. Links resolve automatically, broken links get flagged during build.
 
-[[guide/wiki-links|Learn more about wiki links]]
+**Backlinks** — Every page shows what links to it. No configuration needed.
 
-## Beautiful Theming
+**Tags** — Add `tags: [idea, project]` to frontmatter. Get tag pages automatically.
 
-Customize your site's appearance:
-- **Custom fonts** - Choose from Google Fonts
-- **Accent colors** - Set your brand color
-- **Backgrounds** - Solid colors or gradients
-- **Separate light/dark themes** - Full control over both modes
-- **Dark mode** - Built-in theme switcher
+**Callouts** — Obsidian-compatible admonitions for notes, warnings, tips, and more.
 
-[[guide/configuration#theme-configuration|Theme configuration guide]]
+> [!tip] Like this
+> Use `> [!note]`, `> [!warning]`, `> [!tip]`, or `> [!danger]`
 
-## Table of Contents
+**Table of Contents** — Auto-generated from your headings. Toggle globally or per-page.
 
-Automatically generated table of contents for long-form content:
-- Extracts h2 and h3 headings
-- Sticky sidebar on desktop
-- Hidden on mobile
-- Per-page override support
+**Growth Stages** — Track note maturity with `growth: seedling`, `budding`, or `evergreen`.
 
-## Fast Performance
+## Discovery
 
-Built with Go for maximum speed:
-- Blazing fast builds
-- Instant dev server refresh
-- Minimal JavaScript
-- Optimized output
+**Full-Text Search** — Fast client-side search. Works offline, no external services.
 
-## Dark Mode
+**Graph View** — Visualize connections between your notes. Interactive, zoomable.
 
-Beautiful dark mode included:
-- Automatic theme detection
-- Manual toggle
-- Separate theme customization
-- Smooth transitions
+**Link Previews** — Hover over any wiki-link to preview the target page.
 
-## Mobile Responsive
+## Publishing
 
-Mobile-first design that works everywhere:
-- Responsive navigation
-- Adaptive layouts
-- Touch-friendly controls
-- Optimized for all screen sizes
+**SEO Ready** — Automatic sitemap.xml, robots.txt, RSS feed, Open Graph tags, Twitter cards.
 
-## Graph Visualization
+**Custom 404** — Styled error page, ready for any hosting platform.
 
-Interactive graph to explore your knowledge base:
-- Visual map of all pages and their connections
-- Click to navigate between notes
-- See how ideas are interconnected
-- Filter by tags or growth stage
+**Fast Builds** — Hundreds of pages in milliseconds. Parallel processing, minimal allocations.
 
-## Tags & Organization
+**Live Reload** — Changes appear instantly during development.
 
-Organize content with tags:
-- Automatic tag pages
-- Tag index page
-- Cross-section categorization
+## Theming
 
-## Growth Stages
+**Typography** — Choose from Google Fonts for headings, body, and code.
 
-Mark pages with growth stages:
-- 🌱 Seedling - Early ideas
-- 🌿 Budding - Work in progress  
-- 🌳 Evergreen - Polished content
+**Colors** — Set your accent color. Light and dark backgrounds with gradient support.
 
-## Live Development Server
+**Dark Mode** — Built-in toggle with system preference detection.
 
-Built-in dev server with:
-- Auto-rebuild on changes
-- Live browser refresh
-- Fast iteration cycle
+**Navigation** — Sticky or pill-style nav. Box, underlined, or accent active states.
 
-## Markdown-First
+**Custom CSS** — Drop in a `style.css` to override anything.
 
-Write in standard Markdown with extensions:
-- Frontmatter support
-- Syntax highlighting
-- Code blocks with copy button
-- Tables, lists, blockquotes
-- Images and media
+## What's Not Included
 
-## Next Steps
+leafpress is intentionally minimal. These are out of scope:
 
-- [[guide/installation|Get Started]]
-- [[guide/configuration|Configure Your Site]]
-- [[examples|See Examples]]
+- **Comments** — Use Giscus, Utterances, or similar
+- **Analytics** — Use Plausible, Fathom, or similar
+- **CMS** — Edit markdown files directly
+- **Image optimization** — Use a CDN or external tool for advanced needs (lazy loading is built-in)
+- **Pagination** — Digital gardens are relational, not chronological
+

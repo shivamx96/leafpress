@@ -3,198 +3,132 @@ title: "Configuration"
 date: 2025-12-21
 ---
 
-leafpress is configured through `leafpress.json` in your site's root directory.
+Configure leafpress through `leafpress.json` in your site root.
 
-## Basic Configuration
+## Minimal Config
+
+```json
+{
+  "title": "My Garden"
+}
+```
+
+That's it. Everything else has sensible defaults.
+
+## Full Reference
 
 ```json
 {
   "title": "My Digital Garden",
   "author": "Your Name",
   "baseURL": "https://example.com",
+  "description": "A collection of thoughts and ideas",
+  "image": "/static/images/og-image.png",
   "outputDir": "_site",
-  "port": 3000
-}
-```
-
-### Options
-
-- **title**: Site title shown in navigation and page titles
-- **author**: Your name, displayed in footer copyright notice
-- **baseURL**: Your site's URL (used for canonical links)
-- **outputDir**: Where to output built files (default: `_site`)
-- **port**: Dev server port (default: `3000`)
-- **ignore**: Array of directories to ignore during content scanning (e.g., `["drafts", "archive"]`)
-
-## Navigation
-
-Add links to your site's navigation bar:
-
-```json
-{
+  "port": 3000,
+  
   "nav": [
-    { "label": "Home", "path": "/" },
-    { "label": "Notes", "path": "/notes/" },
-    { "label": "About", "path": "/about/" }
-  ]
-}
-```
-
-## Theme Configuration
-
-### Fonts
-
-Choose from Google Fonts:
-
-```json
-{
+    { "label": "About", "path": "/about" },
+    { "label": "Projects", "path": "/projects/" },
+    { "label": "GitHub", "path": "https://github.com/you", "external": true }
+  ],
+  
   "theme": {
     "fontHeading": "Crimson Pro",
     "fontBody": "Inter",
-    "fontMono": "JetBrains Mono"
-  }
-}
-```
-
-### Colors
-
-Set your accent color:
-
-```json
-{
-  "theme": {
-    "accent": "#50ac00"
-  }
-}
-```
-
-### Background
-
-Use solid colors or gradients:
-
-```json
-{
-  "theme": {
-    "background": "#ffffff"
-  }
-}
-```
-
-Or separate backgrounds for light and dark mode:
-
-```json
-{
-  "theme": {
+    "fontMono": "JetBrains Mono",
+    "accent": "#50ac00",
     "background": {
-      "light": "linear-gradient(135deg, #e8f5e9 0%, #ffffff 100%)",
-      "dark": "linear-gradient(135deg, #0d1f12 0%, #1a1a1a 100%)"
-    }
-  }
+      "light": "#ffffff",
+      "dark": "#1a1a1a"
+    },
+    "navStyle": "sticky",
+    "navActiveStyle": "underlined"
+  },
+  
+  "graph": true,
+  "toc": true,
+  "search": true,
+  "wikilinks": true
 }
 ```
 
-### Navigation Style
+## Options
 
-Control how the navigation bar behaves:
+### Site Metadata
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `title` | `"My Garden"` | Site title, shown in nav and browser tab |
+| `author` | `""` | Author name for RSS feed |
+| `baseURL` | `""` | Production URL for sitemap and canonical links |
+| `description` | `""` | Site description for SEO |
+| `image` | `""` | Default OG image for social sharing |
+
+### Build Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `outputDir` | `"_site"` | Build output directory |
+| `port` | `3000` | Dev server port |
+
+### Navigation
 
 ```json
-{
-  "theme": {
-    "navStyle": "glassy"
-  }
-}
+"nav": [
+  { "label": "Home", "path": "/" },
+  { "label": "Docs", "path": "/docs/" },
+  { "label": "GitHub", "path": "https://github.com/...", "external": true }
+]
 ```
 
-Options:
-- **base**: Navigation scrolls with content
-- **sticky**: Navigation sticks to the top
-- **glassy**: Navigation transforms into a floating pill on scroll (default)
+External links open in a new tab with `rel="noopener"`.
 
-### Active Navigation Indicator
+### Theme
 
-Highlight the current page in navigation:
+| Option | Default | Description |
+|--------|---------|-------------|
+| `fontHeading` | `"Crimson Pro"` | Google Font for headings |
+| `fontBody` | `"Inter"` | Google Font for body text |
+| `fontMono` | `"JetBrains Mono"` | Google Font for code |
+| `accent` | `"#50ac00"` | Accent color for links and highlights |
+| `background.light` | `"#ffffff"` | Light mode background (color or gradient) |
+| `background.dark` | `"#1a1a1a"` | Dark mode background (color or gradient) |
+| `navStyle` | `"sticky"` | `"sticky"` or `"pill"` |
+| `navActiveStyle` | `"underlined"` | `"box"`, `"underlined"`, or `"accent"` |
 
+Gradients work too:
 ```json
-{
-  "theme": {
-    "navActiveStyle": "base"
-  }
+"background": {
+  "light": "linear-gradient(180deg, #ffffff 0%, #f5f5f5 100%)",
+  "dark": "linear-gradient(180deg, #0a0a0a 0%, #171717 100%)"
 }
 ```
 
-Options:
-- **base**: Active link colored with accent color (default)
-- **box**: Active link in an accent-colored box
-- **underlined**: Active link with accent-colored underline
+### Features
 
-## Features
+| Option | Default | Description |
+|--------|---------|-------------|
+| `graph` | `false` | Show interactive graph visualization |
+| `toc` | `true` | Show table of contents on pages |
+| `search` | `true` | Enable full-text search |
+| `wikilinks` | `true` | Enable wiki-link processing |
 
-### Table of Contents
+## Per-Page Overrides
 
-Enable/disable automatic table of contents:
-
-```json
-{
-  "toc": true
-}
-```
-
-You can also disable TOC for specific pages in frontmatter:
+Override global settings in frontmatter:
 
 ```yaml
 ---
-title: "My Page"
+title: "Long Article"
+toc: true
+---
+```
+
+```yaml
+---
+title: "Short Note"  
 toc: false
 ---
 ```
 
-### Graph Visualization
-
-Enable the interactive graph visualization to see connections between your notes:
-
-```json
-{
-  "graph": true
-}
-```
-
-When enabled, a graph icon appears on pages showing how notes are interconnected via wiki-links.
-
-### Wiki-Links
-
-Wiki-links (`[[page-name]]`) are enabled by default. To disable:
-
-```json
-{
-  "wikilinks": false
-}
-```
-
-### Backlinks
-
-Backlinks show which pages link to the current page. Enabled by default. To disable:
-
-```json
-{
-  "backlinks": false
-}
-```
-
-### Section Index Lists
-
-For section index pages (`_index.md`), control whether to show the automatic list of pages:
-
-```yaml
----
-title: "My Section"
-showList: false  # Hide automatic page list (default: true)
----
-```
-
-This is useful when you want full control over your section index content.
-
-## Next Steps
-
-- [[guide/writing|Writing Content]]
-- [[guide/custom-styles|Custom Styles]]
-- [[guide/wiki-links|Using Wiki Links]]

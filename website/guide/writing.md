@@ -3,7 +3,7 @@ title: "Writing Content"
 date: 2025-12-21
 ---
 
-Create pages using Markdown files in your site's root directory.
+Create pages using Markdown files with YAML frontmatter.
 
 ## Creating Pages
 
@@ -13,138 +13,115 @@ Create pages using Markdown files in your site's root directory.
 leafpress new "My First Note"
 ```
 
-This creates `my-first-note.md` with frontmatter.
+Creates `content/my-first-note.md` with frontmatter.
 
-### Manual Creation
+### Manually
 
-Create a `.md` file with YAML frontmatter:
+Create any `.md` file in your content directory:
 
 ```markdown
 ---
-title: "My Note"
-date: 2025-12-21
-tags: [personal, ideas]
-growth: "budding"
+title: "My First Note"
+date: 2025-01-06
+tags: [ideas, projects]
 ---
 
-# My Note
-
-Your content here...
+Your content here.
 ```
 
 ## Frontmatter
 
-### Required Fields
+Required:
+- `title` — Page title
 
-- **title**: Page title
-
-### Optional Fields
-
-- **date**: Publication date (YYYY-MM-DD)
-- **created** / **createdAt**: Creation date (aliases for date, Obsidian-compatible)
-- **modified** / **updated** / **updatedAt**: Last modified date (Obsidian-compatible)
-- **tags**: Array of tags for categorization
-- **growth**: Page maturity (`"seedling"`, `"budding"`, `"evergreen"`)
-- **draft**: Set to `true` to exclude from build
-- **toc**: Override site-wide TOC setting (`true` or `false`)
-- **showList**: For `_index.md` files, show/hide automatic page list (`true` or `false`)
-- **sort**: For `_index.md` files, sort pages by `"date"`, `"title"`, or `"growth"`
+Optional:
+- `date` — Publication date (YYYY-MM-DD)
+- `modified` — Last modified date
+- `tags` — List of tags: `[tag1, tag2]`
+- `growth` — Note maturity: `seedling`, `budding`, or `evergreen`
+- `toc` — Override global TOC setting: `true` or `false`
+- `description` — SEO meta description (auto-generated if omitted)
+- `image` — OG image path for social sharing
+- `draft` — Set `true` to exclude from build
+- `readingTime` — Override calculated reading time (minutes)
 
 ## Markdown Features
 
-leafpress supports standard Markdown plus:
+### Standard Markdown
+
+All CommonMark syntax works: headings, bold, italic, lists, links, images, code blocks.
 
 ### Wiki Links
 
-Link to other pages using double brackets:
+Connect pages with double brackets:
 
 ```markdown
-[[page-name|Display Text]]
-[[page-name]]  // Uses page title as text
+[[other-page]]
+[[other-page|Custom text]]
+[[folder/nested-page]]
 ```
 
-Learn more in [[guide/wiki-links|Wiki Links Guide]].
+See [[guide/wiki-links|Wiki Links]] for details.
 
-### Headings
+### Callouts
+
+Obsidian-compatible admonitions:
 
 ```markdown
-# Heading 1
-## Heading 2
-### Heading 3
+> [!note]
+> This is a note callout.
+
+> [!warning] Custom Title
+> Warning with a custom title.
 ```
 
-Headings automatically get anchor IDs for linking.
-
-### Code Blocks
-
-````markdown
-```javascript
-console.log("Hello, world!");
-```
-````
-
-Supports syntax highlighting with automatic language detection.
-
-### Lists
-
-```markdown
-- Unordered list
-- Another item
-  - Nested item
-
-1. Ordered list
-2. Second item
-```
-
-### Blockquotes
-
-```markdown
-> This is a quote
-> Multiple lines
-```
+Available types: `note`, `tip`, `warning`, `danger`, `info`, `example`, `quote`, `question`, `bug`, `success`, `failure`, `abstract`, `todo`
 
 ### Images
+
+Standard markdown images:
 
 ```markdown
 ![Alt text](/static/images/photo.jpg)
 ```
 
-Place images in `static/images/` directory.
+Obsidian-style embeds also work:
 
-## Organization
+```markdown
+![[photo.jpg]]
+![[photo.jpg|Alt text]]
+```
 
-### Sections
+Images in `static/images/` are copied to the output.
 
-Create directories for different content sections in your site root:
+### Code Blocks
+
+Fenced code blocks with syntax highlighting:
+
+````markdown
+```javascript
+function hello() {
+  console.log("Hello, world!");
+}
+```
+````
+
+Copy button appears on hover.
+
+## Folders
+
+Organize content in folders. Create `folder/_index.md` for section pages:
 
 ```
-my-site/
-├── notes/
-│   ├── _index.md
-│   └── my-note.md
-├── projects/
-│   ├── _index.md
-│   └── project-1.md
+content/
 ├── index.md
-└── leafpress.json
+├── projects/
+│   ├── _index.md      # /projects/
+│   ├── website.md     # /projects/website/
+│   └── cli.md         # /projects/cli/
+└── notes/
+    └── ideas.md       # /notes/ideas/
 ```
 
-Use `_index.md` for section index pages. These automatically list child pages unless `showList: false` is set.
+Link to nested pages: `[[projects/website]]`
 
-### Tags
-
-Use tags to categorize content across sections:
-
-```yaml
----
-tags: [go, programming, web]
----
-```
-
-Tags automatically create listing pages at `/tags/`.
-
-## Next Steps
-
-- [[guide/wiki-links|Master Wiki Links]]
-- [[guide/deployment|Deploy Your Site]]
-- [[guide/custom-styles|Customize Your Site]]

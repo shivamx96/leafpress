@@ -3,44 +3,74 @@ title: "Installation"
 date: 2025-12-21
 ---
 
-Get leafpress up and running in minutes.
+Get leafpress running in under a minute.
 
-## Download Binary
+## Install
 
-Download the latest release from [GitHub Releases](https://github.com/shivamx96/leafpress/releases).
+### Using Go (recommended)
 
 ```bash
-# Extract and move to PATH
-tar -xzf leafpress-*.tar.gz
+go install github.com/shivamx96/leafpress/cli/cmd/leafpress@latest
+```
+
+Requires Go 1.21+. The binary is added to your `$GOPATH/bin`.
+
+### Download Binary
+
+Grab the latest release from [GitHub Releases](https://github.com/shivamx96/leafpress/releases):
+
+```bash
+# macOS / Linux
+curl -L https://github.com/shivamx96/leafpress/releases/latest/download/leafpress-$(uname -s)-$(uname -m).tar.gz | tar xz
 sudo mv leafpress /usr/local/bin/
 ```
 
-## Build from Source
-
-Requires Go 1.21 or higher.
+### Build from Source
 
 ```bash
-# Clone the repository
 git clone https://github.com/shivamx96/leafpress.git
-cd leafpress
-
-# Build
+cd leafpress/cli
 go build -o leafpress ./cmd/leafpress
-
-# Move to PATH (optional)
 sudo mv leafpress /usr/local/bin/
 ```
 
-## Verify Installation
+## Create Your First Site
 
 ```bash
-leafpress --version
+leafpress init my-garden
+cd my-garden
 ```
+
+This creates:
+
+```
+my-garden/
+├── content/
+│   └── index.md          # Your homepage
+├── static/
+│   └── images/           # Put images here
+├── leafpress.json        # Configuration
+└── style.css             # Custom styles (optional)
+```
+
+## Start Writing
+
+```bash
+leafpress serve
+```
+
+Open [http://localhost:3000](http://localhost:3000). Edit any markdown file—changes appear instantly.
+
+## Build for Production
+
+```bash
+leafpress build
+```
+
+Static files are generated in `_site/`. Upload this folder to any web host.
 
 ## Next Steps
 
-Now that leafpress is installed:
+- [[guide/writing|Writing Content]] — Learn the markdown features
+- [[guide/configuration|Configuration]] — Customize your site
 
-1. [[guide/configuration|Configure your site]]
-2. [[guide/writing|Start writing content]]
-3. Learn about [[guide/wiki-links|wiki-style linking]]
