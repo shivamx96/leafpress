@@ -1,9 +1,9 @@
 # SSG Benchmark Results
 
-**Date**: Mon Jan  5 21:48:40 IST 2026
-**System**: Darwin arm64
-**CPU**: Apple M3
-**Memory**: 24GB
+**Date**: Mon Jan  5 16:39:15 UTC 2026
+**System**: Linux aarch64
+**CPU**: Docker container (aarch64)
+**Memory**: 11GB
 **Runs per test**: 10
 
 ## Build Times (ms)
@@ -12,15 +12,13 @@
 
 | SSG | 100 pages | 1000 pages | 2000 pages |
 |-----|-----------|------------|------------|
-| zola | 55 (64±23) | 171 (167±11) | 286 (284±15) |
-| hugo | 149 (172±70) | 313 (317±18) | 499 (498±11) |
-| leafpress-minimal | 51 (162±334) | 187 (187±5) | 339 (360±84) |
-| leafpress | 51 (52±4) | 191 (192±8) | 353 (350±9) |
-| leafpress-full | 51 (51±1) | 201 (202±14) | 347 (347±12) |
-| eleventy | 255 (274±39) | 519 (523±14) | 822 (832±26) |
-| jekyll | 279 (315±113) | 561 (592±118) | 783 (863±227) |
+| zola | 25 (25±3) | 76 (76±3) | 131 (130±2) |
+| hugo | 39 (40±3) | 125 (125±4) | 222 (220±6) |
+| leafpress | 28 (28±2) | 113 (112±3) | 207 (206±6) |
+| eleventy | 241 (241±9) | 450 (453±10) | 674 (672±11) |
+| jekyll | 159 (176±44) | 309 (348±115) | 481 (546±201) |
 
-*leafpress-minimal: basic rendering only. leafpress: +wikilinks +backlinks. leafpress-full: +wikilinks +backlinks +graph +TOC.*
+*leafpress: full features including wikilinks, backlinks, graph, and TOC.*
 
 ## Methodology
 
@@ -35,7 +33,8 @@
 
 | SSG | Version |
 |-----|---------|
-| Hugo | v0.153.3 |
+| Hugo | v0.121.1 |
 | Zola | 0.21.0 |
 | Eleventy | 3.1.2 |
 | Jekyll | 4.4.1 |
+| Leafpress | (local build) |

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Generate Leafpress test site
+# Generate Leafpress test site (full features)
 
 COUNT=$1
 DIR=$2
@@ -7,12 +7,12 @@ DIR=$2
 mkdir -p "$DIR"
 cd "$DIR"
 
-# Create config
+# Create config with all features enabled
 cat > leafpress.json << 'EOF'
 {
   "title": "Benchmark Test",
-  "graph": false,
-  "toc": false
+  "graph": true,
+  "toc": true
 }
 EOF
 

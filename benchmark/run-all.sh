@@ -10,7 +10,7 @@ TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 OUTPUT_FILE="${SCRIPT_DIR}/results/BENCHMARK_${TIMESTAMP}.md"
 RUNS=10
 PAGE_COUNTS=(100 1000 2000)
-SSGS=(zola hugo leafpress-minimal leafpress leafpress-full eleventy jekyll)
+SSGS=(zola hugo leafpress eleventy jekyll)
 
 # Colors
 GREEN='\033[0;32m'
@@ -99,8 +99,6 @@ check_ssg() {
     local ssg=$1
     case $ssg in
         leafpress) [ -f "${SCRIPT_DIR}/leafpress" ] || [ -f /benchmark/leafpress ] ;;
-        leafpress-minimal) [ -f "${SCRIPT_DIR}/leafpress" ] || [ -f /benchmark/leafpress ] ;;
-        leafpress-full) [ -f "${SCRIPT_DIR}/leafpress" ] || [ -f /benchmark/leafpress ] ;;
         hugo) command -v hugo &>/dev/null ;;
         zola) command -v zola &>/dev/null ;;
         eleventy) command -v eleventy &>/dev/null || command -v npx &>/dev/null ;;
@@ -222,7 +220,7 @@ done
 
 # Add note about leafpress features
 echo "" >> "$OUTPUT_FILE"
-echo "*leafpress-minimal: basic rendering only. leafpress: +wikilinks +backlinks. leafpress-full: +wikilinks +backlinks +graph +TOC.*" >> "$OUTPUT_FILE"
+echo "*leafpress: full features including wikilinks, backlinks, graph, and TOC.*" >> "$OUTPUT_FILE"
 
 # Add methodology section
 cat >> "$OUTPUT_FILE" << 'EOF'
