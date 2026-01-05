@@ -1,5 +1,5 @@
 # Binaries (only at root level)
-/leafpress
+/cli/leafpress
 /benchmark/leafpress
 *.exe
 *.exe~
