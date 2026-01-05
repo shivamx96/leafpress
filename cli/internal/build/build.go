@@ -258,6 +258,13 @@ func (b *Builder) Build() (*Stats, error) {
 		b.logTiming("json", time.Since(t0))
 	}
 
+	// Generate robots.txt
+	t0 = time.Now()
+	if err := b.generateRobotsTxt(); err != nil {
+		return nil, fmt.Errorf("failed to generate robots.txt: %w", err)
+	}
+	b.logTiming("robots.txt", time.Since(t0))
+
 	return stats, nil
 }
 
@@ -1068,6 +1075,18 @@ func (b *Builder) generateCSS() error {
 	// Write combined CSS
 	outPath := filepath.Join(b.outputDir, "style.css")
 	return os.WriteFile(outPath, []byte(css), 0644)
+}
+
+// generateRobotsTxt writes the robots.txt file
+func (b *Builder) generateRobotsTxt() error {
+	var content string
+	if b.cfg.BaseURL != "" {
+		content = fmt.Sprintf("User-agent: *\nAllow: /\n\nSitemap: %s/sitemap.xml\n", strings.TrimSuffix(b.cfg.BaseURL, "/"))
+	} else {
+		content = "User-agent: *\nAllow: /\n"
+	}
+	outPath := filepath.Join(b.outputDir, "robots.txt")
+	return os.WriteFile(outPath, []byte(content), 0644)
 }
 
 // generateJSONFiles creates graph.json and search-index.json in a single pass

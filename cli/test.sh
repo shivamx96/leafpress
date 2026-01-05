@@ -2897,6 +2897,40 @@ fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR"
 
+# Test 124: robots.txt is generated
+test_case "robots.txt is generated"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+"$LEAFPRESS" build > /dev/null 2>&1
+if [ -f "_site/robots.txt" ] && grep -q 'User-agent: \*' _site/robots.txt && grep -q 'Allow: /' _site/robots.txt; then
+    pass
+else
+    fail "robots.txt not generated correctly"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
+# Test 125: robots.txt includes sitemap when baseURL is set
+test_case "robots.txt includes sitemap with baseURL"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test",
+  "baseURL": "https://example.com"
+}
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'Sitemap: https://example.com/sitemap.xml' _site/robots.txt; then
+    pass
+else
+    fail "robots.txt missing sitemap URL"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
 # Cleanup
 rm -rf "$TESTDIR"
 
