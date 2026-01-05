@@ -20,7 +20,7 @@ A CLI-driven static site generator for digital gardens. Transform a folder of Ma
 
 ```bash
 git clone https://github.com/shivamx96/leafpress.git
-cd leafpress
+cd leafpress/cli
 go build -o leafpress ./cmd/leafpress
 ```
 
@@ -222,7 +222,7 @@ my-garden/
 ```bash
 # Clone the repository
 git clone https://github.com/shivamx96/leafpress.git
-cd leafpress
+cd leafpress/cli
 
 # Install dependencies
 go mod download
@@ -247,7 +247,8 @@ go test ./...
 ### Running Tests with Test Garden
 
 ```bash
-# Build the binary
+# Build the binary (from cli/ directory)
+cd cli
 go build -o leafpress ./cmd/leafpress
 
 # Create a test garden
@@ -273,14 +274,22 @@ cd /tmp/test-garden
 
 ### Project Structure
 
-- `cmd/leafpress/` - CLI entry point
-- `internal/cli/` - CLI command implementations
-- `internal/content/` - Markdown parsing, rendering, wiki links
-- `internal/build/` - Site generation logic
-- `internal/config/` - Configuration management
-- `internal/templates/` - HTML templates and CSS
-- `internal/server/` - Development server with live reload
-- `testdata/garden/` - Example garden for testing
+```
+leafpress/
+├── cli/                    # Leafpress CLI (Go module)
+│   ├── cmd/leafpress/      # CLI entry point
+│   ├── internal/           # Implementation
+│   │   ├── cli/            # Command implementations
+│   │   ├── content/        # Markdown, wiki links
+│   │   ├── build/          # Site generation
+│   │   ├── config/         # Configuration
+│   │   ├── templates/      # HTML templates & CSS
+│   │   └── server/         # Dev server with live reload
+│   └── test.sh             # Test suite
+├── website/                # Leafpress website
+├── docs/                   # Documentation
+└── benchmark/              # Benchmarking utilities
+```
 
 ## License
 

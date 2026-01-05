@@ -18,7 +18,7 @@ if [ "$MODE" == "docker" ]; then
 
     # Build Leafpress first and copy to benchmark dir
     echo "Building Leafpress..."
-    cd "${SCRIPT_DIR}/.."
+    cd "${SCRIPT_DIR}/../cli"
     go build -o "${SCRIPT_DIR}/leafpress" ./cmd/leafpress
 
     # Build and run Docker
@@ -39,7 +39,7 @@ elif [ "$MODE" == "local" ]; then
 
     # Build Leafpress
     echo "Building Leafpress..."
-    cd "${SCRIPT_DIR}/.."
+    cd "${SCRIPT_DIR}/../cli"
     go build -o "${SCRIPT_DIR}/leafpress" ./cmd/leafpress
 
     # Run benchmark
