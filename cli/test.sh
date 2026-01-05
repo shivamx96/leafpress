@@ -3063,6 +3063,130 @@ fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR"
 
+# Test 134: SEO meta description is generated
+test_case "SEO meta description is auto-generated"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > test.md << 'EOF'
+---
+title: Test Page
+---
+This is test content for SEO description generation.
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q '<meta name="description" content="This is test content' _site/test/index.html; then
+    pass
+else
+    fail "Meta description not auto-generated"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
+# Test 135: SEO meta description from frontmatter
+test_case "SEO meta description from frontmatter"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > test.md << 'EOF'
+---
+title: Test Page
+description: Custom SEO description here
+---
+This is the page content.
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q '<meta name="description" content="Custom SEO description here">' _site/test/index.html; then
+    pass
+else
+    fail "Meta description not using frontmatter"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
+# Test 136: Open Graph tags are present
+test_case "Open Graph tags are generated"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > test.md << 'EOF'
+---
+title: OG Test
+---
+Content here.
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'property="og:title"' _site/test/index.html && \
+   grep -q 'property="og:description"' _site/test/index.html && \
+   grep -q 'property="og:type"' _site/test/index.html; then
+    pass
+else
+    fail "Open Graph tags missing"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
+# Test 137: Canonical URL with baseURL
+test_case "Canonical URL is generated with baseURL"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test",
+  "baseURL": "https://example.com"
+}
+EOF
+cat > test.md << 'EOF'
+---
+title: Test
+---
+Content.
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q '<link rel="canonical" href="https://example.com/test/">' _site/test/index.html; then
+    pass
+else
+    fail "Canonical URL not generated"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
+# Test 138: Twitter card tags are present
+test_case "Twitter card tags are generated"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > test.md << 'EOF'
+---
+title: Twitter Test
+---
+Content.
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'name="twitter:card"' _site/test/index.html && \
+   grep -q 'name="twitter:title"' _site/test/index.html; then
+    pass
+else
+    fail "Twitter card tags missing"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
+# Test 139: 404 page has noindex
+test_case "404 page has noindex meta tag"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'name="robots" content="noindex"' _site/404.html; then
+    pass
+else
+    fail "404 page missing noindex"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
 # Cleanup
 rm -rf "$TESTDIR"
 

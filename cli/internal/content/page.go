@@ -12,15 +12,17 @@ var htmlTagRegex = regexp.MustCompile(`<[^>]*>`)
 // Page represents a content page
 type Page struct {
 	// Metadata from frontmatter
-	Title    string
-	Date     time.Time // Primary display date (from date, created, or createdAt)
-	Created  time.Time // Creation date (from created, createdAt, or date)
-	Modified time.Time // Last modified date (from modified, updated, or updatedAt)
-	Tags     []string
-	Draft    bool
-	Growth   string // seedling | budding | evergreen
-	TOC      *bool  // Override site-wide TOC setting (nil = use site default)
-	ShowList *bool  // Show page list on section index (nil = true)
+	Title       string
+	Description string    // SEO meta description (from frontmatter or auto-generated)
+	Date        time.Time // Primary display date (from date, created, or createdAt)
+	Created     time.Time // Creation date (from created, createdAt, or date)
+	Modified    time.Time // Last modified date (from modified, updated, or updatedAt)
+	Tags        []string
+	Draft       bool
+	Growth      string // seedling | budding | evergreen
+	TOC         *bool  // Override site-wide TOC setting (nil = use site default)
+	ShowList    *bool  // Show page list on section index (nil = true)
+	Image       string // OG image for this page (from frontmatter)
 
 	// Paths
 	SourcePath string // Relative path to .md file (e.g., "projects/leafpress.md")
@@ -159,4 +161,23 @@ func (p *Page) ReadingTimeDisplay() string {
 		return "1 min read"
 	}
 	return fmt.Sprintf("%d min read", p.ReadingTime)
+}
+
+// SEODescription returns the description for meta tags
+// Uses frontmatter description if set, otherwise auto-generates from content
+func (p *Page) SEODescription() string {
+	if p.Description != "" {
+		return p.Description
+	}
+	// Auto-generate from content (first ~155 chars)
+	plain := p.PlainContent()
+	if len(plain) > 155 {
+		// Try to break at word boundary
+		plain = plain[:155]
+		if lastSpace := strings.LastIndex(plain, " "); lastSpace > 100 {
+			plain = plain[:lastSpace]
+		}
+		plain += "..."
+	}
+	return plain
 }

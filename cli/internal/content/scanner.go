@@ -155,6 +155,7 @@ func (s *Scanner) parsePage(absPath, relPath string, info os.FileInfo) (*Page, e
 
 	page := &Page{
 		Title:               title,
+		Description:         fm.Description,
 		Date:                date,
 		Created:             created,
 		Modified:            modified,
@@ -163,6 +164,7 @@ func (s *Scanner) parsePage(absPath, relPath string, info os.FileInfo) (*Page, e
 		Growth:              fm.Growth,
 		TOC:                 fm.TOC,
 		ShowList:            fm.ShowList,
+		Image:               fm.Image,
 		SourcePath:          relPath,
 		Slug:                slug,
 		OutputPath:          outputPath,

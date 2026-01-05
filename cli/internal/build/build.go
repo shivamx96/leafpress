@@ -144,14 +144,16 @@ func (b *Builder) Build() (*Stats, error) {
 
 	// Generate site data
 	siteData := templates.SiteData{
-		Title:   b.cfg.Title,
-		Author:  b.cfg.Author,
-		Nav:     b.cfg.Nav,
-		Theme:   b.cfg.Theme,
-		BaseURL: b.cfg.BaseURL,
-		TOC:     b.cfg.TOC,
-		Graph:   b.cfg.Graph,
-		Search:  b.cfg.Search,
+		Title:       b.cfg.Title,
+		Description: b.cfg.Description,
+		Author:      b.cfg.Author,
+		Nav:         b.cfg.Nav,
+		Theme:       b.cfg.Theme,
+		BaseURL:     b.cfg.BaseURL,
+		Image:       b.cfg.Image,
+		TOC:         b.cfg.TOC,
+		Graph:       b.cfg.Graph,
+		Search:      b.cfg.Search,
 	}
 
 	// Cache state for incremental builds

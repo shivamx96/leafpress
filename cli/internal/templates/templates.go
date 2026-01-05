@@ -104,14 +104,16 @@ type NotFoundData struct {
 
 // SiteData contains site-wide information
 type SiteData struct {
-	Title   string
-	Author  string
-	Nav     []config.NavItem
-	Theme   config.Theme
-	BaseURL string
-	TOC     bool
-	Graph   bool
-	Search  bool
+	Title       string
+	Description string // Site-wide meta description
+	Author      string
+	Nav         []config.NavItem
+	Theme       config.Theme
+	BaseURL     string
+	Image       string // Default OG image path
+	TOC         bool
+	Graph       bool
+	Search      bool
 }
 
 // New returns a cached Templates instance (parsed once, reused on subsequent calls)
@@ -325,6 +327,7 @@ const baseTemplate = `<!DOCTYPE html>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{block "title" .}}{{.Site.Title}}{{end}}</title>
+  {{block "seo" .}}{{end}}
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
@@ -1231,6 +1234,20 @@ const baseTemplate = `<!DOCTYPE html>
 const pageTemplate = `
 {{define "title"}}{{if eq .Page.Slug ""}}{{.Site.Title}}{{else}}{{.Page.Title}} | {{.Site.Title}}{{end}}{{end}}
 {{define "currentSlug"}}{{.Page.Slug}}{{end}}
+{{define "seo"}}
+  <meta name="description" content="{{.Page.SEODescription}}">
+  {{if .Site.BaseURL}}<link rel="canonical" href="{{.Site.BaseURL}}{{.Page.Permalink}}">{{end}}
+  <meta property="og:title" content="{{.Page.Title}}">
+  <meta property="og:description" content="{{.Page.SEODescription}}">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="{{.Site.Title}}">
+  {{if .Site.BaseURL}}<meta property="og:url" content="{{.Site.BaseURL}}{{.Page.Permalink}}">{{end}}
+  {{if .Page.Image}}<meta property="og:image" content="{{if .Site.BaseURL}}{{.Site.BaseURL}}{{end}}{{.Page.Image}}">
+  {{else if .Site.Image}}<meta property="og:image" content="{{if .Site.BaseURL}}{{.Site.BaseURL}}{{end}}{{.Site.Image}}">{{end}}
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="{{.Page.Title}}">
+  <meta name="twitter:description" content="{{.Page.SEODescription}}">
+{{end}}
 {{define "content"}}
 <div class="lp-page-container">
   {{if .TOC}}
@@ -1296,6 +1313,19 @@ const pageTemplate = `
 const indexTemplate = `
 {{define "title"}}{{.Title}} | {{.Site.Title}}{{end}}
 {{define "currentSlug"}}{{end}}
+{{define "seo"}}
+  <meta name="description" content="{{.Title}} - {{.Site.Title}}">
+  {{if .Site.BaseURL}}<link rel="canonical" href="{{.Site.BaseURL}}{{.CurrentPath}}">{{end}}
+  <meta property="og:title" content="{{.Title}}">
+  <meta property="og:description" content="{{.Title}} - {{.Site.Title}}">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="{{.Site.Title}}">
+  {{if .Site.BaseURL}}<meta property="og:url" content="{{.Site.BaseURL}}{{.CurrentPath}}">{{end}}
+  {{if .Site.Image}}<meta property="og:image" content="{{if .Site.BaseURL}}{{.Site.BaseURL}}{{end}}{{.Site.Image}}">{{end}}
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="{{.Title}}">
+  <meta name="twitter:description" content="{{.Title}} - {{.Site.Title}}">
+{{end}}
 {{define "content"}}
 <div class="lp-section">
   <h1 class="lp-section-title">{{.Title}}</h1>
@@ -1331,6 +1361,18 @@ const indexTemplate = `
 const tagIndexTemplate = `
 {{define "title"}}Tags | {{.Site.Title}}{{end}}
 {{define "currentSlug"}}tags{{end}}
+{{define "seo"}}
+  <meta name="description" content="Browse all tags - {{.Site.Title}}">
+  {{if .Site.BaseURL}}<link rel="canonical" href="{{.Site.BaseURL}}/tags/">{{end}}
+  <meta property="og:title" content="Tags">
+  <meta property="og:description" content="Browse all tags - {{.Site.Title}}">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="{{.Site.Title}}">
+  {{if .Site.BaseURL}}<meta property="og:url" content="{{.Site.BaseURL}}/tags/">{{end}}
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Tags">
+  <meta name="twitter:description" content="Browse all tags - {{.Site.Title}}">
+{{end}}
 {{define "content"}}
 <div class="lp-section">
   <h1 class="lp-section-title">Tags</h1>
@@ -1349,6 +1391,18 @@ const tagIndexTemplate = `
 const tagPageTemplate = `
 {{define "title"}}#{{.Tag}} | {{.Site.Title}}{{end}}
 {{define "currentSlug"}}tags/{{.Tag}}{{end}}
+{{define "seo"}}
+  <meta name="description" content="Pages tagged with #{{.Tag}} - {{.Site.Title}}">
+  {{if .Site.BaseURL}}<link rel="canonical" href="{{.Site.BaseURL}}/tags/{{.Tag}}/">{{end}}
+  <meta property="og:title" content="#{{.Tag}}">
+  <meta property="og:description" content="Pages tagged with #{{.Tag}} - {{.Site.Title}}">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="{{.Site.Title}}">
+  {{if .Site.BaseURL}}<meta property="og:url" content="{{.Site.BaseURL}}/tags/{{.Tag}}/">{{end}}
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="#{{.Tag}}">
+  <meta name="twitter:description" content="Pages tagged with #{{.Tag}} - {{.Site.Title}}">
+{{end}}
 {{define "content"}}
 <div class="lp-section">
   <h1 class="lp-section-title">#{{.Tag}}</h1>
@@ -1375,6 +1429,9 @@ const tagPageTemplate = `
 const notFoundTemplate = `
 {{define "title"}}Page Not Found | {{.Site.Title}}{{end}}
 {{define "currentSlug"}}{{end}}
+{{define "seo"}}
+  <meta name="robots" content="noindex">
+{{end}}
 {{define "content"}}
 <div class="lp-not-found">
   <h1 class="lp-not-found-title">404</h1>
