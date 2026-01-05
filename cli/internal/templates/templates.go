@@ -328,6 +328,7 @@ const baseTemplate = `<!DOCTYPE html>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="alternate" type="application/rss+xml" title="{{.Site.Title}}" href="/feed.xml">
   <link rel="stylesheet" href="/style.css">
   <style>
     :root {

@@ -279,6 +279,13 @@ func (b *Builder) Build() (*Stats, error) {
 	}
 	b.logTiming("404", time.Since(t0))
 
+	// Generate RSS feed
+	t0 = time.Now()
+	if err := b.generateRSS(pages, siteData); err != nil {
+		return nil, fmt.Errorf("failed to generate RSS feed: %w", err)
+	}
+	b.logTiming("rss", time.Since(t0))
+
 	return stats, nil
 }
 
@@ -1153,6 +1160,116 @@ func (b *Builder) generate404(siteData templates.SiteData) error {
 	return b.templates.RenderNotFound(f, templates.NotFoundData{
 		Site: siteData,
 	})
+}
+
+// generateRSS writes the feed.xml file
+func (b *Builder) generateRSS(pages []*content.Page, siteData templates.SiteData) error {
+	baseURL := strings.TrimSuffix(b.cfg.BaseURL, "/")
+
+	// Sort pages by date (newest first) and filter out index pages
+	var feedPages []*content.Page
+	for _, p := range pages {
+		if !p.IsIndex {
+			feedPages = append(feedPages, p)
+		}
+	}
+	sort.Slice(feedPages, func(i, j int) bool {
+		dateI := feedPages[i].Date
+		if feedPages[i].HasModified() {
+			dateI = feedPages[i].Modified
+		}
+		dateJ := feedPages[j].Date
+		if feedPages[j].HasModified() {
+			dateJ = feedPages[j].Modified
+		}
+		return dateI.After(dateJ)
+	})
+
+	// Limit to 20 most recent items
+	if len(feedPages) > 20 {
+		feedPages = feedPages[:20]
+	}
+
+	// Build date for the feed (most recent item date)
+	var lastBuildDate string
+	if len(feedPages) > 0 {
+		p := feedPages[0]
+		if p.HasModified() {
+			lastBuildDate = p.Modified.Format(time.RFC1123Z)
+		} else if !p.Date.IsZero() {
+			lastBuildDate = p.Date.Format(time.RFC1123Z)
+		} else {
+			lastBuildDate = time.Now().Format(time.RFC1123Z)
+		}
+	} else {
+		lastBuildDate = time.Now().Format(time.RFC1123Z)
+	}
+
+	var sb strings.Builder
+	sb.WriteString(`<?xml version="1.0" encoding="UTF-8"?>`)
+	sb.WriteString("\n")
+	sb.WriteString(`<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">`)
+	sb.WriteString("\n")
+	sb.WriteString("  <channel>\n")
+	sb.WriteString(fmt.Sprintf("    <title>%s</title>\n", escapeXML(siteData.Title)))
+	if baseURL != "" {
+		sb.WriteString(fmt.Sprintf("    <link>%s</link>\n", baseURL))
+		sb.WriteString(fmt.Sprintf("    <atom:link href=\"%s/feed.xml\" rel=\"self\" type=\"application/rss+xml\"/>\n", baseURL))
+	}
+	if siteData.Author != "" {
+		sb.WriteString(fmt.Sprintf("    <description>%s's digital garden</description>\n", escapeXML(siteData.Author)))
+	} else {
+		sb.WriteString(fmt.Sprintf("    <description>%s</description>\n", escapeXML(siteData.Title)))
+	}
+	sb.WriteString(fmt.Sprintf("    <lastBuildDate>%s</lastBuildDate>\n", lastBuildDate))
+	sb.WriteString("    <generator>leafpress</generator>\n")
+
+	for _, page := range feedPages {
+		link := page.Permalink
+		if baseURL != "" {
+			link = baseURL + page.Permalink
+		}
+
+		var pubDate string
+		if page.HasModified() {
+			pubDate = page.Modified.Format(time.RFC1123Z)
+		} else if !page.Date.IsZero() {
+			pubDate = page.Date.Format(time.RFC1123Z)
+		}
+
+		sb.WriteString("    <item>\n")
+		sb.WriteString(fmt.Sprintf("      <title>%s</title>\n", escapeXML(page.Title)))
+		sb.WriteString(fmt.Sprintf("      <link>%s</link>\n", link))
+		sb.WriteString(fmt.Sprintf("      <guid>%s</guid>\n", link))
+		if pubDate != "" {
+			sb.WriteString(fmt.Sprintf("      <pubDate>%s</pubDate>\n", pubDate))
+		}
+		// Use plain text content as description (truncated)
+		desc := page.PlainContent()
+		if len(desc) > 300 {
+			desc = desc[:300] + "..."
+		}
+		if desc != "" {
+			sb.WriteString(fmt.Sprintf("      <description>%s</description>\n", escapeXML(desc)))
+		}
+		sb.WriteString("    </item>\n")
+	}
+
+	sb.WriteString("  </channel>\n")
+	sb.WriteString("</rss>\n")
+
+	outPath := filepath.Join(b.outputDir, "feed.xml")
+	return os.WriteFile(outPath, []byte(sb.String()), 0644)
+}
+
+// escapeXML escapes special characters for XML
+func escapeXML(s string) string {
+	s = strings.ReplaceAll(s, "&", "&amp;")
+	s = strings.ReplaceAll(s, "<", "&lt;")
+	s = strings.ReplaceAll(s, ">", "&gt;")
+	s = strings.ReplaceAll(s, "\"", "&quot;")
+	s = strings.ReplaceAll(s, "'", "&apos;")
+	return s
 }
 
 // generateJSONFiles creates graph.json and search-index.json in a single pass

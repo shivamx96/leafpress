@@ -3014,6 +3014,55 @@ fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR"
 
+# Test 131: RSS feed is generated
+test_case "RSS feed.xml is generated"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+"$LEAFPRESS" build > /dev/null 2>&1
+if [ -f "_site/feed.xml" ] && grep -q '<rss version="2.0"' _site/feed.xml; then
+    pass
+else
+    fail "feed.xml not generated"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
+# Test 132: RSS feed includes items
+test_case "RSS feed includes page items"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > test.md << 'EOF'
+---
+title: Test Page
+date: 2025-06-15
+---
+This is test content.
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q '<item>' _site/feed.xml && grep -q '<title>Test Page</title>' _site/feed.xml; then
+    pass
+else
+    fail "RSS feed missing items"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
+# Test 133: RSS autodiscovery link in HTML
+test_case "RSS autodiscovery link in HTML head"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'rel="alternate" type="application/rss+xml"' _site/index.html; then
+    pass
+else
+    fail "RSS autodiscovery link missing"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
 # Cleanup
 rm -rf "$TESTDIR"
 
