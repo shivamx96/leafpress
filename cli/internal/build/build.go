@@ -272,6 +272,13 @@ func (b *Builder) Build() (*Stats, error) {
 	}
 	b.logTiming("sitemap", time.Since(t0))
 
+	// Generate 404.html
+	t0 = time.Now()
+	if err := b.generate404(siteData); err != nil {
+		return nil, fmt.Errorf("failed to generate 404.html: %w", err)
+	}
+	b.logTiming("404", time.Since(t0))
+
 	return stats, nil
 }
 
@@ -1132,6 +1139,20 @@ func (b *Builder) generateSitemap(pages []*content.Page) error {
 
 	outPath := filepath.Join(b.outputDir, "sitemap.xml")
 	return os.WriteFile(outPath, []byte(sb.String()), 0644)
+}
+
+// generate404 writes the 404.html file
+func (b *Builder) generate404(siteData templates.SiteData) error {
+	outPath := filepath.Join(b.outputDir, "404.html")
+	f, err := os.Create(outPath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	return b.templates.RenderNotFound(f, templates.NotFoundData{
+		Site: siteData,
+	})
 }
 
 // generateJSONFiles creates graph.json and search-index.json in a single pass

@@ -142,6 +142,14 @@ func (s *Server) handleStatic(root string) http.HandlerFunc {
 		}
 
 		if err != nil || info.IsDir() {
+			// Serve custom 404.html if it exists
+			notFoundPath := filepath.Join(root, "404.html")
+			if content, readErr := os.ReadFile(notFoundPath); readErr == nil {
+				w.Header().Set("Content-Type", "text/html; charset=utf-8")
+				w.WriteHeader(http.StatusNotFound)
+				w.Write(s.injectLiveReload(content))
+				return
+			}
 			http.NotFound(w, r)
 			return
 		}

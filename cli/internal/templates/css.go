@@ -1313,4 +1313,42 @@ html {
     display: flex;
   }
 }
+
+/* 404 Page */
+.lp-not-found {
+  text-align: center;
+  padding: 4rem 1rem;
+  max-width: var(--lp-max-width);
+  margin: 0 auto;
+}
+
+.lp-not-found-title {
+  font-family: var(--lp-font-heading);
+  font-size: 6rem;
+  font-weight: 700;
+  color: var(--lp-accent);
+  line-height: 1;
+  margin-bottom: 1rem;
+}
+
+.lp-not-found-message {
+  font-size: 1.25rem;
+  color: var(--lp-text-muted);
+  margin-bottom: 2rem;
+}
+
+.lp-not-found-link {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  background: var(--lp-accent);
+  color: white;
+  text-decoration: none;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: opacity 0.2s;
+}
+
+.lp-not-found-link:hover {
+  opacity: 0.9;
+}
 `

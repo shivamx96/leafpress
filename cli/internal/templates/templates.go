@@ -46,6 +46,7 @@ type Templates struct {
 	index    *template.Template
 	tagIndex *template.Template
 	tagPage  *template.Template
+	notFound *template.Template
 }
 
 // PageData is the data passed to page templates
@@ -95,6 +96,12 @@ type TagInfo struct {
 	Count int
 }
 
+// NotFoundData is the data passed to the 404 template
+type NotFoundData struct {
+	Site        SiteData
+	CurrentPath string
+}
+
 // SiteData contains site-wide information
 type SiteData struct {
 	Title   string
@@ -141,12 +148,18 @@ func New() (*Templates, error) {
 		return nil, err
 	}
 
+	notFound, err := template.Must(base.Clone()).Parse(notFoundTemplate)
+	if err != nil {
+		return nil, err
+	}
+
 	cachedTemplates = &Templates{
 		base:     base,
 		page:     page,
 		index:    index,
 		tagIndex: tagIndex,
 		tagPage:  tagPage,
+		notFound: notFound,
 	}
 
 	return cachedTemplates, nil
@@ -183,6 +196,15 @@ func (t *Templates) RenderTagIndex(w io.Writer, data TagIndexData) error {
 func (t *Templates) RenderTagPage(w io.Writer, data TagPageData) error {
 	bw := bufio.NewWriterSize(w, 8192)
 	if err := t.tagPage.Execute(bw, data); err != nil {
+		return err
+	}
+	return bw.Flush()
+}
+
+// RenderNotFound renders the 404 page
+func (t *Templates) RenderNotFound(w io.Writer, data NotFoundData) error {
+	bw := bufio.NewWriterSize(w, 4096)
+	if err := t.notFound.Execute(bw, data); err != nil {
 		return err
 	}
 	return bw.Flush()
@@ -1345,6 +1367,18 @@ const tagPageTemplate = `
     </li>
     {{end}}
   </ul>
+</div>
+{{end}}
+`
+
+const notFoundTemplate = `
+{{define "title"}}Page Not Found | {{.Site.Title}}{{end}}
+{{define "currentSlug"}}{{end}}
+{{define "content"}}
+<div class="lp-not-found">
+  <h1 class="lp-not-found-title">404</h1>
+  <p class="lp-not-found-message">This page doesn't exist yet.</p>
+  <a class="lp-not-found-link" href="/">Return home</a>
 </div>
 {{end}}
 `

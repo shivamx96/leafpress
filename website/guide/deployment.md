@@ -113,6 +113,22 @@ rsync -avz _site/ user@server:/var/www/html/
 
 Or use any web server (nginx, Apache, etc.) to serve the `_site` directory.
 
+### 404 Page Configuration
+
+Leafpress generates a `404.html` file automatically. Most platforms serve this for missing routes out of the box. For custom servers:
+
+**nginx:**
+```nginx
+error_page 404 /404.html;
+```
+
+**Apache (.htaccess):**
+```apache
+ErrorDocument 404 /404.html
+```
+
+**AWS S3/CloudFront:** Set the error document to `404.html` in bucket settings.
+
 ## Custom Domain
 
 After deploying, configure your custom domain in your hosting platform's settings. Update the `baseURL` in `leafpress.json`:

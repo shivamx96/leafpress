@@ -2986,6 +2986,34 @@ fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR"
 
+# Test 129: 404.html is generated
+test_case "404.html is generated"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+"$LEAFPRESS" build > /dev/null 2>&1
+if [ -f "_site/404.html" ] && grep -q 'lp-not-found' _site/404.html; then
+    pass
+else
+    fail "404.html not generated"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
+# Test 130: 404.html has correct title
+test_case "404.html has correct title"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q '<title>Page Not Found' _site/404.html; then
+    pass
+else
+    fail "404.html missing correct title"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
 # Cleanup
 rm -rf "$TESTDIR"
 
