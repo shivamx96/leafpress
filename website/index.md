@@ -33,6 +33,28 @@ Most static site generators make you choose: simple but limited, or powerful but
 - **Dark mode** with system preference detection
 - **Link previews** on hover
 
+## Performance
+
+Build times in milliseconds (median of 10 runs):
+
+**Apple M3, 24GB RAM**
+
+| pages | zola | leafpress | hugo | eleventy | jekyll |
+|-------|------|-----------|------|----------|--------|
+| 100   | 55   | 51        | 142  | 246      | 268    |
+| 1000  | 172  | 199       | 307  | 508      | 513    |
+| 2000  | 330  | 347       | 494  | 816      | 776    |
+
+**AMD Ryzen 7 9800X3D, 64GB RAM (Linux)**
+
+| pages | zola | leafpress | hugo | eleventy | jekyll |
+|-------|------|-----------|------|----------|--------|
+| 100   | 22   | 22        | 38   | 206      | 157    |
+| 1000  | 50   | 62        | 116  | 337      | 306    |
+| 2000  | 81   | 97        | 203  | 487      | 469    |
+
+leafpress runs with all features enabled (wikilinks, backlinks, graph, TOC). Closer to zola, faster than hugo, eleventy, and jekyll.
+
 ## Quick Start
 
 [[guide/installation|Get started in 5 minutes →]]
