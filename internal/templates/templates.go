@@ -1210,7 +1210,7 @@ const pageTemplate = `
 {{define "currentSlug"}}{{.Page.Slug}}{{end}}
 {{define "content"}}
 <div class="lp-page-container">
-  {{if and .Site.TOC .TOC}}
+  {{if .TOC}}
   <aside class="lp-toc">
     <nav class="lp-toc-nav">
       <ul class="lp-toc-list">

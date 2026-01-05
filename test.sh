@@ -59,16 +59,73 @@ else
     fail "Missing files after init"
 fi
 cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
+# Create a comprehensive test garden at runtime for tests 2-13
+GARDEN=$(mktemp -d)
+cd "$GARDEN"
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test Garden",
+  "author": "Test Author",
+  "toc": true,
+  "graph": true,
+  "search": true,
+  "backlinks": true,
+  "nav": [{"label": "Notes", "path": "/notes/"}],
+  "theme": {
+    "accent": "#6366f1",
+    "background": {
+      "light": "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
+      "dark": "#1a1a1a"
+    }
+  }
+}
+EOF
+cat > index.md << 'EOF'
+---
+title: Welcome
+---
+Welcome to my garden. Check out my [[notes/systems-thinking|systems thinking notes]].
+EOF
+mkdir -p notes
+cat > notes/_index.md << 'EOF'
+---
+title: Notes
+---
+My notes collection.
+EOF
+cat > notes/systems-thinking.md << 'EOF'
+---
+title: Systems Thinking
+tags: [thinking, systems]
+growth: budding
+date: 2024-06-15
+---
+## Introduction
+Systems thinking is a holistic approach.
+
+## Key Concepts
+Feedback loops and emergence.
+EOF
+cat > style.css << 'EOF'
+/* Custom test styles */
+.custom-class { color: red; }
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+cd "$ORIGDIR"
 
 # Test 2: Build command
 test_case "Build completes successfully"
-cd "$ORIGDIR/testdata/garden"
-"$LEAFPRESS" build > /dev/null 2>&1 && pass || fail
-cd "$ORIGDIR"
+if [ -d "$GARDEN/_site" ]; then
+    pass
+else
+    fail "Build did not create _site"
+fi
 
 # Test 3: Check output files
 test_case "Output files are generated"
-if [ -f "testdata/garden/_site/index.html" ] && [ -f "testdata/garden/_site/style.css" ]; then
+if [ -f "$GARDEN/_site/index.html" ] && [ -f "$GARDEN/_site/style.css" ]; then
     pass
 else
     fail "Missing output files"
@@ -76,7 +133,7 @@ fi
 
 # Test 4: Wiki links are processed
 test_case "Wiki links are converted to HTML"
-if grep -q 'class="lp-wikilink"' testdata/garden/_site/index.html; then
+if grep -q 'class="lp-wikilink"' "$GARDEN/_site/index.html"; then
     pass
 else
     fail "No wiki links found in output"
@@ -109,35 +166,31 @@ rm -rf "$TESTDIR2"
 
 # Test 6: TOC generation
 test_case "Table of contents is generated"
-if grep -q 'class="lp-toc"' testdata/garden/_site/notes/systems-thinking/index.html; then
+if grep -q 'class="lp-toc"' "$GARDEN/_site/notes/systems-thinking/index.html"; then
     pass
 else
-    # TOC may not be present if page has no headings or TOC is disabled
-    warn "TOC not found (may be expected if disabled)"
-    PASSED=$((PASSED + 1))
+    fail "TOC not found"
 fi
 
 # Test 7: Heading IDs
 test_case "Heading IDs are generated correctly"
-# Check any page for heading IDs
-if grep -rq 'id="' testdata/garden/_site/notes/; then
+if grep -rq 'id="' "$GARDEN/_site/notes/"; then
     pass
 else
-    fail "Heading ID not found or incorrect"
+    fail "Heading ID not found"
 fi
 
 # Test 8: Backlinks
 test_case "Backlinks are generated"
-if grep -rq 'class="lp-backlinks"' testdata/garden/_site/; then
+if grep -q 'class="lp-backlinks"' "$GARDEN/_site/notes/systems-thinking/index.html"; then
     pass
 else
-    warn "No backlinks found (may be expected)"
-    PASSED=$((PASSED + 1))
+    fail "Backlinks not found"
 fi
 
 # Test 9: Theme configuration
 test_case "Theme variables are applied"
-if grep -q 'var(--lp-accent)' testdata/garden/_site/style.css; then
+if grep -q 'var(--lp-accent)' "$GARDEN/_site/style.css"; then
     pass
 else
     fail "Theme variables not found"
@@ -145,7 +198,7 @@ fi
 
 # Test 10: Background gradients
 test_case "Background gradients are applied"
-if grep -q 'linear-gradient' testdata/garden/_site/index.html; then
+if grep -q 'linear-gradient' "$GARDEN/_site/index.html"; then
     pass
 else
     fail "Background gradient not found"
@@ -153,7 +206,7 @@ fi
 
 # Test 11: Section indexes
 test_case "Section index pages are generated"
-if [ -f "testdata/garden/_site/notes/index.html" ]; then
+if [ -f "$GARDEN/_site/notes/index.html" ]; then
     pass
 else
     fail "Notes index not generated"
@@ -161,20 +214,22 @@ fi
 
 # Test 12: Tag pages
 test_case "Tag pages are generated"
-if [ -d "testdata/garden/_site/tags" ]; then
+if [ -d "$GARDEN/_site/tags" ]; then
     pass
 else
-    warn "No tag pages (may be expected if no tags)"
-    PASSED=$((PASSED + 1))
+    fail "Tag pages not generated"
 fi
 
 # Test 13: Static files
 test_case "Static files are copied"
-if [ -f "testdata/garden/_site/favicon.svg" ]; then
+if [ -f "$GARDEN/_site/favicon.svg" ]; then
     pass
 else
     fail "Favicon not copied"
 fi
+
+# Cleanup test garden
+rm -rf "$GARDEN"
 
 # Test 14: Broken link detection
 test_case "Broken links generate warnings"
@@ -244,19 +299,32 @@ rm -rf "$TESTDIR5"
 
 # Test 17: Custom styles
 test_case "Custom style.css is used"
-if [ -f "testdata/garden/_site/style.css" ]; then
+TESTDIR_CSS=$(mktemp -d)
+cd "$TESTDIR_CSS"
+"$LEAFPRESS" init > /dev/null 2>&1
+echo ".my-custom { color: blue; }" >> style.css
+"$LEAFPRESS" build > /dev/null 2>&1
+if [ -f "_site/style.css" ] && grep -q "my-custom" _site/style.css; then
     pass
 else
-    fail "style.css not found"
+    fail "Custom style.css not used"
 fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR_CSS"
 
 # Test 18: Dark mode toggle
 test_case "Dark mode toggle script is included"
-if grep -q 'data-theme="dark"' testdata/garden/_site/index.html; then
+TESTDIR_DARK=$(mktemp -d)
+cd "$TESTDIR_DARK"
+"$LEAFPRESS" init > /dev/null 2>&1
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'data-theme="dark"' _site/index.html; then
     pass
 else
     fail "Dark mode script not found"
 fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR_DARK"
 
 # Test 19: navStyle modes
 test_case "navStyle glassy adds pill scroll behavior"
@@ -2618,6 +2686,221 @@ else
 fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR103"
+
+# Test 117: Site-wide TOC disable
+test_case "Site-wide toc: false disables TOC globally"
+TESTDIR104=$(mktemp -d)
+cd "$TESTDIR104"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test",
+  "toc": false
+}
+EOF
+cat > test.md << 'EOF'
+---
+title: Test Page
+---
+## Heading One
+Content here.
+## Heading Two
+More content.
+## Heading Three
+Even more content.
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+# TOC should NOT be present when globally disabled
+if ! grep -q 'class="lp-toc"' _site/test/index.html; then
+    pass
+else
+    fail "TOC should be disabled globally"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR104"
+
+# Test 118: Tags are case-sensitive
+test_case "Tags are case-sensitive"
+TESTDIR105=$(mktemp -d)
+cd "$TESTDIR105"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > post1.md << 'EOF'
+---
+title: Post One
+tags: [GoLang]
+---
+Content
+EOF
+cat > post2.md << 'EOF'
+---
+title: Post Two
+tags: [golang]
+---
+Content
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+# Should have separate tag pages for GoLang and golang
+if [ -d "_site/tags/golang" ] && [ -d "_site/tags/GoLang" ] 2>/dev/null || \
+   ([ -f "_site/tags/golang/index.html" ] && ! grep -q "Post One" _site/tags/golang/index.html); then
+    # Either separate dirs OR golang page doesn't have Post One (case preserved)
+    pass
+else
+    # Check if tags index shows both variants
+    if grep -q 'golang' _site/tags/index.html && grep -q 'GoLang' _site/tags/index.html; then
+        pass
+    else
+        fail "Tags not case-sensitive"
+    fi
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR105"
+
+# Test 119: Emojis in headings generate valid IDs
+test_case "Emojis in headings generate valid IDs"
+TESTDIR106=$(mktemp -d)
+cd "$TESTDIR106"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test",
+  "toc": true
+}
+EOF
+cat > test.md << 'EOF'
+---
+title: Test
+---
+## 🚀 Getting Started
+Content here.
+## Hello 👋 World
+More content.
+## Pure Text Heading
+Even more.
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+# Should have valid IDs (emojis stripped, text preserved - may have leading hyphen)
+if grep -q 'id=".*getting-started"' _site/test/index.html && \
+   grep -q 'id="hello-.*world"' _site/test/index.html && \
+   grep -q 'id="pure-text-heading"' _site/test/index.html; then
+    pass
+else
+    fail "Emoji headings don't generate valid IDs"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR106"
+
+# Test 120: Special characters in headings
+test_case "Special characters in headings generate valid IDs"
+TESTDIR107=$(mktemp -d)
+cd "$TESTDIR107"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test",
+  "toc": true
+}
+EOF
+cat > test.md << 'EOF'
+---
+title: Test
+---
+## What's New?
+Content.
+## C++ & Rust
+More content.
+## Section (Part 1)
+Even more.
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+# Should have valid IDs with special chars converted
+if grep -q 'id="what' _site/test/index.html && \
+   grep -q 'id="c-' _site/test/index.html && \
+   grep -q 'id="section' _site/test/index.html; then
+    pass
+else
+    fail "Special characters in headings not handled"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR107"
+
+# Test 121: Solid background colors work
+test_case "Solid background colors are applied"
+TESTDIR108=$(mktemp -d)
+cd "$TESTDIR108"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test",
+  "theme": {
+    "background": {
+      "light": "#f5f5f5",
+      "dark": "#1a1a1a"
+    }
+  }
+}
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+# Should have solid background colors in inline styles
+if grep -q '#f5f5f5' _site/index.html && grep -q '#1a1a1a' _site/index.html; then
+    pass
+else
+    fail "Solid background colors not applied"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR108"
+
+# Test 122: Static images are copied and accessible
+test_case "Static images are copied to output"
+TESTDIR109=$(mktemp -d)
+cd "$TESTDIR109"
+"$LEAFPRESS" init > /dev/null 2>&1
+mkdir -p static/images
+echo "PNG_DUMMY_DATA" > static/images/test-image.png
+echo "JPG_DUMMY_DATA" > static/images/photo.jpg
+mkdir -p static/assets
+echo "SVG_DATA" > static/assets/icon.svg
+"$LEAFPRESS" build > /dev/null 2>&1
+# All static files should be copied
+if [ -f "_site/static/images/test-image.png" ] && \
+   [ -f "_site/static/images/photo.jpg" ] && \
+   [ -f "_site/static/assets/icon.svg" ]; then
+    pass
+else
+    fail "Static images not copied"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR109"
+
+# Test 123: Per-page TOC enable overrides global disable
+test_case "Per-page toc: true overrides global toc: false"
+TESTDIR110=$(mktemp -d)
+cd "$TESTDIR110"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test",
+  "toc": false
+}
+EOF
+cat > test.md << 'EOF'
+---
+title: Test
+toc: true
+---
+## Heading One
+Content.
+## Heading Two
+More content.
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+# TOC should be present because page enables it
+if grep -q 'class="lp-toc"' _site/test/index.html; then
+    pass
+else
+    fail "Per-page TOC enable not working"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR110"
 
 # Cleanup
 rm -rf "$TESTDIR"
