@@ -265,6 +265,13 @@ func (b *Builder) Build() (*Stats, error) {
 	}
 	b.logTiming("robots.txt", time.Since(t0))
 
+	// Generate sitemap.xml
+	t0 = time.Now()
+	if err := b.generateSitemap(pages); err != nil {
+		return nil, fmt.Errorf("failed to generate sitemap.xml: %w", err)
+	}
+	b.logTiming("sitemap", time.Since(t0))
+
 	return stats, nil
 }
 
@@ -1087,6 +1094,44 @@ func (b *Builder) generateRobotsTxt() error {
 	}
 	outPath := filepath.Join(b.outputDir, "robots.txt")
 	return os.WriteFile(outPath, []byte(content), 0644)
+}
+
+// generateSitemap writes the sitemap.xml file
+func (b *Builder) generateSitemap(pages []*content.Page) error {
+	baseURL := strings.TrimSuffix(b.cfg.BaseURL, "/")
+
+	var sb strings.Builder
+	sb.WriteString(`<?xml version="1.0" encoding="UTF-8"?>`)
+	sb.WriteString("\n")
+	sb.WriteString(`<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`)
+	sb.WriteString("\n")
+
+	for _, page := range pages {
+		loc := page.Permalink
+		if baseURL != "" {
+			loc = baseURL + page.Permalink
+		}
+
+		// Use modified date if available, otherwise use created date
+		var lastmod string
+		if page.HasModified() {
+			lastmod = page.Modified.Format("2006-01-02")
+		} else if !page.Date.IsZero() {
+			lastmod = page.Date.Format("2006-01-02")
+		}
+
+		sb.WriteString("  <url>\n")
+		sb.WriteString(fmt.Sprintf("    <loc>%s</loc>\n", loc))
+		if lastmod != "" {
+			sb.WriteString(fmt.Sprintf("    <lastmod>%s</lastmod>\n", lastmod))
+		}
+		sb.WriteString("  </url>\n")
+	}
+
+	sb.WriteString("</urlset>\n")
+
+	outPath := filepath.Join(b.outputDir, "sitemap.xml")
+	return os.WriteFile(outPath, []byte(sb.String()), 0644)
 }
 
 // generateJSONFiles creates graph.json and search-index.json in a single pass

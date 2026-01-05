@@ -2931,6 +2931,61 @@ fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR"
 
+# Test 126: sitemap.xml is generated
+test_case "sitemap.xml is generated"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+"$LEAFPRESS" build > /dev/null 2>&1
+if [ -f "_site/sitemap.xml" ] && grep -q '<urlset' _site/sitemap.xml && grep -q '<loc>' _site/sitemap.xml; then
+    pass
+else
+    fail "sitemap.xml not generated correctly"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
+# Test 127: sitemap.xml includes full URLs with baseURL
+test_case "sitemap.xml uses full URLs with baseURL"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "title": "Test",
+  "baseURL": "https://example.com"
+}
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q '<loc>https://example.com/' _site/sitemap.xml; then
+    pass
+else
+    fail "sitemap.xml not using full URLs"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
+# Test 128: sitemap.xml includes lastmod from page dates
+test_case "sitemap.xml includes lastmod dates"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > test.md << 'EOF'
+---
+title: Test
+date: 2025-06-15
+---
+Content
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q '<lastmod>2025-06-15</lastmod>' _site/sitemap.xml; then
+    pass
+else
+    fail "sitemap.xml missing lastmod"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
 # Cleanup
 rm -rf "$TESTDIR"
 
