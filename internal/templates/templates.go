@@ -1231,6 +1231,9 @@ const pageTemplate = `
         {{if .Page.Growth}}
         <span class="lp-growth lp-growth--{{.Page.Growth}}" data-growth="{{.Page.Growth}}">{{growthEmoji .Page.Growth}}</span>
         {{end}}
+        {{if .Page.ReadingTime}}
+        <span class="lp-reading-time">{{.Page.ReadingTimeDisplay}}</span>
+        {{end}}
         {{if and .Page.HasModified (not .Page.Date.IsZero)}}
         <span class="lp-date-info">Updated <time class="lp-modified" datetime="{{.Page.ISOModified}}">{{.Page.FormattedModified}}</time> · Created <time class="lp-date" datetime="{{.Page.ISODate}}">{{.Page.FormattedDate}}</time></span>
         {{else if .Page.HasModified}}

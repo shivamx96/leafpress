@@ -310,14 +310,23 @@ html {
 .lp-meta {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
   color: var(--lp-text-muted);
   font-size: 0.9rem;
 }
 
+.lp-reading-time {
+  color: var(--lp-text-muted);
+}
+
 .lp-date-info {
   color: var(--lp-text-muted);
-  font-size: 0.9rem;
+}
+
+.lp-reading-time + .lp-date-info::before {
+  content: "·";
+  margin-right: 0.5rem;
 }
 
 .lp-date,
@@ -953,6 +962,14 @@ html {
 
   .lp-title {
     font-size: 1.5rem;
+  }
+
+  .lp-meta {
+    font-size: 0.85rem;
+  }
+
+  .lp-reading-time + .lp-date-info::before {
+    content: none;
   }
 
   .lp-content pre {

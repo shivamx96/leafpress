@@ -26,6 +26,9 @@ type Frontmatter struct {
 	Modified  string `yaml:"modified"`  // Last modified date
 	Updated   string `yaml:"updated"`   // Alias for modified
 	UpdatedAt string `yaml:"updatedAt"` // Alias for modified
+
+	// Reading time override
+	ReadingTime *int `yaml:"readingTime"` // Manual override for reading time in minutes
 }
 
 // ParseFrontmatter extracts frontmatter and content from markdown

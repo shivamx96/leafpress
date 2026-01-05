@@ -1,6 +1,7 @@
 package content
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 	"time"
@@ -34,6 +35,12 @@ type Page struct {
 	// Relationships
 	Backlinks []*Page  // Pages that link to this page
 	OutLinks  []string // Wiki-link targets (slugs)
+
+	// Reading time
+	WordCount           int  // Total word count
+	ImageCount          int  // Number of images
+	ReadingTime         int  // Estimated reading time in minutes
+	ReadingTimeOverride *int // Manual override from frontmatter
 
 	// Section
 	IsIndex     bool   // Is this a section index (_index.md)?
@@ -141,4 +148,15 @@ func (p *Page) PlainContent() string {
 		plain = plain[:5000]
 	}
 	return plain
+}
+
+// ReadingTimeDisplay returns a human-readable reading time string
+func (p *Page) ReadingTimeDisplay() string {
+	if p.ReadingTime <= 0 {
+		return ""
+	}
+	if p.ReadingTime == 1 {
+		return "1 min read"
+	}
+	return fmt.Sprintf("%d min read", p.ReadingTime)
 }

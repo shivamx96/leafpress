@@ -254,6 +254,16 @@ func RenderPages(pages []*Page, enableWikilinks bool, resolver *LinkResolver) []
 			for page := range pageChan {
 				html, warnings := renderer.Render(page.RawContent)
 				page.HTMLContent = html
+
+				// Calculate reading time
+				page.WordCount = CountWords(html)
+				page.ImageCount = CountImages(html)
+				if page.ReadingTimeOverride != nil {
+					page.ReadingTime = *page.ReadingTimeOverride
+				} else {
+					page.ReadingTime = CalculateReadingTime(page.WordCount, page.ImageCount)
+				}
+
 				if len(warnings) > 0 {
 					warningsMu.Lock()
 					allWarnings = append(allWarnings, warnings...)

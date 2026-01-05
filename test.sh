@@ -2506,6 +2506,119 @@ fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR97"
 
+# Test 112: Reading time is calculated and displayed
+test_case "Reading time is calculated and displayed"
+TESTDIR99=$(mktemp -d)
+cd "$TESTDIR99"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > test.md << 'EOF'
+---
+title: Test Article
+---
+This is a test article with enough words to generate a reading time estimate. We need to write several sentences to ensure we have enough content. The reading time calculation uses 150 words per minute for dense technical content. This accounts for re-reading complex sentences, processing technical concepts, and following wiki-links mentally. Let us continue writing more content to make this a longer article. Here is some additional text to pad out the word count. More words follow here. And more words here too. The reading time should appear in the page metadata section.
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'lp-reading-time' _site/test/index.html && grep -q 'min read' _site/test/index.html; then
+    pass
+else
+    fail "Reading time not displayed"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR99"
+
+# Test 113: Reading time accounts for images
+test_case "Reading time accounts for images"
+TESTDIR100=$(mktemp -d)
+cd "$TESTDIR100"
+"$LEAFPRESS" init > /dev/null 2>&1
+mkdir -p static/images
+echo "dummy" > static/images/img1.png
+echo "dummy" > static/images/img2.png
+cat > test.md << 'EOF'
+---
+title: Test with Images
+---
+Short text with images.
+
+![[img1.png]]
+
+More text here.
+
+![[img2.png]]
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+# Should have reading time (even with few words, images add time)
+if grep -q 'min read' _site/test/index.html; then
+    pass
+else
+    fail "Reading time not accounting for images"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR100"
+
+# Test 114: Reading time frontmatter override
+test_case "Reading time can be overridden in frontmatter"
+TESTDIR101=$(mktemp -d)
+cd "$TESTDIR101"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > test.md << 'EOF'
+---
+title: Test Override
+readingTime: 42
+---
+Short content that would normally be 1 min.
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q '42 min read' _site/test/index.html; then
+    pass
+else
+    fail "Reading time override not applied"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR101"
+
+# Test 115: Reading time minimum is 1 minute
+test_case "Reading time minimum is 1 minute"
+TESTDIR102=$(mktemp -d)
+cd "$TESTDIR102"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > test.md << 'EOF'
+---
+title: Tiny
+---
+Hi.
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q '1 min read' _site/test/index.html; then
+    pass
+else
+    fail "Reading time minimum not 1 minute"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR102"
+
+# Test 116: Reading time separator on desktop (CSS class present)
+test_case "Reading time has proper CSS classes"
+TESTDIR103=$(mktemp -d)
+cd "$TESTDIR103"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > test.md << 'EOF'
+---
+title: Test
+date: 2024-01-15
+---
+Some content here to generate reading time. Adding more words to ensure we have enough for the estimate.
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+# Check both reading time and date info classes are present
+if grep -q 'class="lp-reading-time"' _site/test/index.html && grep -q 'class="lp-date-info"' _site/test/index.html; then
+    pass
+else
+    fail "Reading time CSS classes not present"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR103"
+
 # Cleanup
 rm -rf "$TESTDIR"
 
