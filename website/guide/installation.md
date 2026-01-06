@@ -21,7 +21,7 @@ Works on macOS (Intel/Apple Silicon), Ubuntu, Fedora, and Arch Linux.
 go install github.com/shivamx96/leafpress/cli/cmd/leafpress@latest
 ```
 
-Requires Go 1.23+. The binary is added to your `$GOPATH/bin`.
+Requires Go 1.25+. The binary is added to your `$GOPATH/bin`.
 
 ### Download Binary
 
