@@ -31,6 +31,7 @@ Your garden folder IS the product. leafpress is invisible infrastructure.`,
 	rootCmd.AddCommand(buildCmd())
 	rootCmd.AddCommand(serveCmd())
 	rootCmd.AddCommand(newCmd())
+	rootCmd.AddCommand(versionCmd(version))
 
 	// Custom version template
 	rootCmd.SetVersionTemplate(fmt.Sprintf("leafpress %s\n", version))
