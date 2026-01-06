@@ -13,6 +13,8 @@ html {
   background: var(--lp-bg);
   background-attachment: fixed;
   min-height: 100%;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 .lp-body {
@@ -459,9 +461,9 @@ html {
 
 .lp-content pre code {
   display: block;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
+  white-space: pre;
+  overflow-x: auto;
+  font-size: 0.875rem;
 }
 
 .lp-copy-button {
