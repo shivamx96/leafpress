@@ -7,23 +7,31 @@ Get leafpress running in under a minute.
 
 ## Install
 
-### Using Go (recommended)
+### Quick Install (recommended)
+
+```bash
+curl -fsSL https://leafpress.in/install.sh | sh
+```
+
+Works on macOS (Intel/Apple Silicon), Ubuntu, Fedora, and Arch Linux.
+
+### Using Go
 
 ```bash
 go install github.com/shivamx96/leafpress/cli/cmd/leafpress@latest
 ```
 
-Requires Go 1.25+. The binary is added to your `$GOPATH/bin`.
+Requires Go 1.23+. The binary is added to your `$GOPATH/bin`.
 
 ### Download Binary
 
-Grab the latest release from [GitHub Releases](https://github.com/shivamx96/leafpress/releases):
+Grab the latest release from [GitHub Releases](https://github.com/shivamx96/leafpress/releases).
 
-```bash
-# macOS / Linux
-curl -L https://github.com/shivamx96/leafpress/releases/latest/download/leafpress-$(uname -s)-$(uname -m).tar.gz | tar xz
-sudo mv leafpress /usr/local/bin/
-```
+Available binaries:
+- `leafpress-vX.X.X-darwin-amd64.tar.gz` (macOS Intel)
+- `leafpress-vX.X.X-darwin-arm64.tar.gz` (macOS Apple Silicon)
+- `leafpress-vX.X.X-linux-amd64.tar.gz` (Linux x86_64)
+- `leafpress-vX.X.X-linux-arm64.tar.gz` (Linux ARM64)
 
 ### Build from Source
 
