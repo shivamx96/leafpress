@@ -16,8 +16,8 @@
     "fontMono": "JetBrains Mono",
     "accent": "#16a34a",
     "background": {
-      "light": "linear-gradient(180deg, #ffffff 0%, #f5f5f5 100%)",
-      "dark": "linear-gradient(180deg, #0a0a0a 0%, #171717 100%)"
+      "light": "linear-gradient(135deg, #ffffff 0%, #dcfce7 100%)",
+      "dark": "linear-gradient(135deg, #0a0a0a 0%, #14532d 100%)"
     },
     "navStyle": "sticky",
     "navActiveStyle": "underlined"

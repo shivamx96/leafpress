@@ -3,10 +3,10 @@ title: "leafpress"
 date: 2025-12-21
 ---
 
-A fast, opinionated static site generator for digital gardens.
+A fast, opinionated static site generator for digital gardens. [GitHub](https://github.com/shivamx96/leafpress)
 
 ```bash
-go install github.com/shivamx96/leafpress/cli/cmd/leafpress@latest
+curl -fsSL https://leafpress.in/install.sh | sh
 leafpress init my-garden
 cd my-garden && leafpress serve
 ```
