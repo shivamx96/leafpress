@@ -23,6 +23,13 @@ type Renderer struct {
 	enableWikilinks bool
 }
 
+// Buffer pool for markdown rendering (reduces allocations)
+var bufferPool = sync.Pool{
+	New: func() interface{} {
+		return new(bytes.Buffer)
+	},
+}
+
 // NewRenderer creates a new markdown renderer
 func NewRenderer(resolver *LinkResolver, enableWikilinks bool) *Renderer {
 	md := goldmark.New(
@@ -69,9 +76,13 @@ func (r *Renderer) Render(content string) (string, []string) {
 		processed = r.processWikiLinks(processed, &warnings)
 	}
 
-	// Then render markdown to HTML
-	var buf bytes.Buffer
-	if err := r.md.Convert([]byte(processed), &buf); err != nil {
+	// Get buffer from pool (reduces allocations)
+	buf := bufferPool.Get().(*bytes.Buffer)
+	buf.Reset()
+	defer bufferPool.Put(buf)
+
+	// Render markdown to HTML
+	if err := r.md.Convert([]byte(processed), buf); err != nil {
 		warnings = append(warnings, "markdown conversion error: "+err.Error())
 		return content, warnings
 	}

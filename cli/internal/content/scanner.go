@@ -3,7 +3,9 @@ package content
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
+	"sync"
 )
 
 // ReservedPaths contains paths that should be ignored during content scanning
@@ -35,9 +37,17 @@ func NewScanner(rootDir string, ignore []string) *Scanner {
 	return &Scanner{rootDir: rootDir, ignorePaths: ignorePaths}
 }
 
+// fileEntry holds info needed to parse a file
+type fileEntry struct {
+	absPath string
+	relPath string
+	info    os.FileInfo
+}
+
 // Scan walks the directory tree and returns all markdown files
 func (s *Scanner) Scan() ([]*Page, error) {
-	var pages []*Page
+	// Phase 1: Collect file paths (fast, sequential walk)
+	var files []fileEntry
 
 	err := filepath.WalkDir(s.rootDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
@@ -91,18 +101,57 @@ func (s *Scanner) Scan() ([]*Page, error) {
 			return err
 		}
 
-		// Read and parse the file
-		page, err := s.parsePage(path, relPath, info)
-		if err != nil {
-			return err
-		}
-
-		pages = append(pages, page)
+		files = append(files, fileEntry{absPath: path, relPath: relPath, info: info})
 		return nil
 	})
 
 	if err != nil {
 		return nil, err
+	}
+
+	// Phase 2: Parse files in parallel
+	if len(files) == 0 {
+		return nil, nil
+	}
+
+	numWorkers := runtime.NumCPU()
+	if numWorkers > len(files) {
+		numWorkers = len(files)
+	}
+
+	pages := make([]*Page, len(files))
+	fileChan := make(chan int, len(files))
+	var wg sync.WaitGroup
+	var parseErr error
+	var errOnce sync.Once
+
+	// Start workers
+	for i := 0; i < numWorkers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for idx := range fileChan {
+				f := files[idx]
+				page, err := s.parsePage(f.absPath, f.relPath, f.info)
+				if err != nil {
+					errOnce.Do(func() { parseErr = err })
+					return
+				}
+				pages[idx] = page
+			}
+		}()
+	}
+
+	// Send file indices to workers
+	for i := range files {
+		fileChan <- i
+	}
+	close(fileChan)
+
+	wg.Wait()
+
+	if parseErr != nil {
+		return nil, parseErr
 	}
 
 	return pages, nil
