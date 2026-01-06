@@ -24,10 +24,12 @@ Set options in `leafpress.json`:
 Choose any [Google Font](https://fonts.google.com/):
 
 ```json
-"theme": {
-  "fontHeading": "Crimson Pro",
-  "fontBody": "Inter", 
-  "fontMono": "Fira Code"
+{
+  "theme": {
+    "fontHeading": "Crimson Pro",
+    "fontBody": "Inter", 
+    "fontMono": "Fira Code"
+  }
 }
 ```
 
@@ -44,8 +46,10 @@ Popular combinations:
 Used for links, active states, and highlights:
 
 ```json
-"theme": {
-  "accent": "#50ac00"
+{
+  "theme": {
+    "accent": "#50ac00"
+  }
 }
 ```
 
@@ -54,19 +58,23 @@ Used for links, active states, and highlights:
 Solid colors or gradients:
 
 ```json
-"theme": {
-  "background": {
-    "light": "#ffffff",
-    "dark": "#0a0a0a"
+{
+  "theme": {
+    "background": {
+      "light": "#ffffff",
+      "dark": "#0a0a0a"
+    }
   }
 }
 ```
 
 ```json
-"theme": {
-  "background": {
-    "light": "linear-gradient(180deg, #fefefe 0%, #f0f0f0 100%)",
-    "dark": "linear-gradient(180deg, #0a0a0a 0%, #1a1a1a 100%)"
+{
+  "theme": {
+    "background": {
+      "light": "linear-gradient(180deg, #fefefe 0%, #f0f0f0 100%)",
+      "dark": "linear-gradient(180deg, #0a0a0a 0%, #1a1a1a 100%)"
+    }
   }
 }
 ```
@@ -76,8 +84,10 @@ Solid colors or gradients:
 ### Nav Position
 
 ```json
-"theme": {
-  "navStyle": "sticky"
+{
+  "theme": {
+    "navStyle": "sticky"
+  }
 }
 ```
 
@@ -87,8 +97,10 @@ Solid colors or gradients:
 ### Active Link Style
 
 ```json
-"theme": {
-  "navActiveStyle": "underlined"
+{
+  "theme": {
+    "navActiveStyle": "underlined"
+  }
 }
 ```
 

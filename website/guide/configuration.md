@@ -29,8 +29,7 @@ That's it. Everything else has sensible defaults.
   
   "nav": [
     { "label": "About", "path": "/about" },
-    { "label": "Projects", "path": "/projects/" },
-    { "label": "GitHub", "path": "https://github.com/you", "external": true }
+    { "label": "Projects", "path": "/projects/" }
   ],
   
   "theme": {
@@ -78,14 +77,13 @@ That's it. Everything else has sensible defaults.
 ### Navigation
 
 ```json
-"nav": [
-  { "label": "Home", "path": "/" },
-  { "label": "Docs", "path": "/docs/" },
-  { "label": "GitHub", "path": "https://github.com/...", "external": true }
-]
+{
+  "nav": [
+    { "label": "Home", "path": "/" },
+    { "label": "Docs", "path": "/docs/" }
+  ]
+}
 ```
-
-External links open in a new tab with `rel="noopener"`.
 
 ### Theme
 
@@ -102,9 +100,13 @@ External links open in a new tab with `rel="noopener"`.
 
 Gradients work too:
 ```json
-"background": {
-  "light": "linear-gradient(180deg, #ffffff 0%, #f5f5f5 100%)",
-  "dark": "linear-gradient(180deg, #0a0a0a 0%, #171717 100%)"
+{
+  "theme": {
+    "background": {
+      "light": "linear-gradient(180deg, #ffffff 0%, #f5f5f5 100%)",
+      "dark": "linear-gradient(180deg, #0a0a0a 0%, #171717 100%)"
+    }
+  }
 }
 ```
 
@@ -129,15 +131,25 @@ Use `headExtra` to inject custom HTML into `<head>`. Useful for analytics, verif
 
 **Examples:**
 
+Plausible Analytics:
 ```json
-// Plausible Analytics
-"headExtra": "<script defer data-domain=\"example.com\" src=\"https://plausible.io/js/script.js\"></script>"
+{
+  "headExtra": "<script defer data-domain=\"example.com\" src=\"https://plausible.io/js/script.js\"></script>"
+}
+```
 
-// Umami Analytics
-"headExtra": "<script defer src=\"https://analytics.example.com/script.js\" data-website-id=\"xxx\"></script>"
+Umami Analytics:
+```json
+{
+  "headExtra": "<script defer src=\"https://analytics.example.com/script.js\" data-website-id=\"xxx\"></script>"
+}
+```
 
-// Google Site Verification
-"headExtra": "<meta name=\"google-site-verification\" content=\"xxx\" />"
+Google Site Verification:
+```json
+{
+  "headExtra": "<meta name=\"google-site-verification\" content=\"xxx\" />"
+}
 ```
 
 ## Per-Page Overrides

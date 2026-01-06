@@ -121,7 +121,7 @@ Set custom error response:
 ### Dockerfile
 
 ```dockerfile
-FROM golang:1.21-alpine AS builder
+FROM golang:1.25-alpine AS builder
 RUN go install github.com/shivamx96/leafpress/cli/cmd/leafpress@latest
 WORKDIR /site
 COPY . .
