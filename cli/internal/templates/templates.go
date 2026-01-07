@@ -333,7 +333,6 @@ const baseTemplate = `<!DOCTYPE html>
   <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <link rel="alternate" type="application/rss+xml" title="{{.Site.Title}}" href="/feed.xml">
-  <link rel="stylesheet" href="/style.css">
   <style>
     :root {
       --lp-font-heading: "{{.Site.Theme.FontHeading}}", Georgia, serif;
@@ -383,6 +382,7 @@ const baseTemplate = `<!DOCTYPE html>
     }
     {{end}}
   </style>
+  <link rel="stylesheet" href="/style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="{{.Site.Theme.FontHeading | fontURL}}" rel="stylesheet">
@@ -499,6 +499,26 @@ const baseTemplate = `<!DOCTYPE html>
           var newTheme = currentTheme === 'light' ? 'dark' : 'light';
           document.documentElement.setAttribute('data-theme', newTheme);
           localStorage.setItem('theme', newTheme);
+
+          // Update graph colors if graph exists
+          var graphBody = document.getElementById('lp-graph-panel-body');
+          if (graphBody && graphBody.querySelector('svg')) {
+            var isDark = newTheme === 'dark';
+            var linkColor = isDark ? '#444444' : '#d0d0d0';
+            var textColor = getComputedStyle(document.documentElement).getPropertyValue('--lp-text').trim();
+            var accentColor = getComputedStyle(document.documentElement).getPropertyValue('--lp-accent').trim();
+            graphBody.querySelectorAll('.lp-graph-link').forEach(function(link) {
+              if (!link.style.opacity || link.style.opacity === '0.5') {
+                link.setAttribute('stroke', linkColor);
+              }
+            });
+            graphBody.querySelectorAll('.lp-graph-label').forEach(function(label) {
+              label.style.fill = textColor;
+            });
+            graphBody.querySelectorAll('.lp-graph-node').forEach(function(node) {
+              node.setAttribute('fill', accentColor);
+            });
+          }
         });
       }
 
@@ -842,6 +862,7 @@ const baseTemplate = `<!DOCTYPE html>
           });
 
           function highlightConnections(selected) {
+            var currentAccentColor = getComputedStyle(document.documentElement).getPropertyValue('--lp-accent').trim();
             nodes.forEach(function(n) {
               n.element.style.opacity = '0.15';
               if (n.label) n.label.style.opacity = '0';
@@ -857,7 +878,7 @@ const baseTemplate = `<!DOCTYPE html>
             links.forEach(function(link) {
               if (link.sourceId === selected.id || link.targetId === selected.id) {
                 link.element.style.opacity = '0.8';
-                link.element.setAttribute('stroke', accentColor);
+                link.element.setAttribute('stroke', currentAccentColor);
                 link.element.setAttribute('stroke-width', '2.5');
 
                 var connected = link.sourceId === selected.id ? nodeMap[link.targetId] : nodeMap[link.sourceId];
@@ -871,6 +892,7 @@ const baseTemplate = `<!DOCTYPE html>
           }
 
           function clearHighlight() {
+            var currentLinkColor = document.documentElement.getAttribute('data-theme') === 'dark' ? '#444444' : '#d0d0d0';
             nodes.forEach(function(n) {
               n.element.style.opacity = '1';
               n.element.setAttribute('r', n.id === currentSlug ? '8' : '6');
@@ -878,7 +900,7 @@ const baseTemplate = `<!DOCTYPE html>
             });
             links.forEach(function(l) {
               l.element.style.opacity = '0.5';
-              l.element.setAttribute('stroke', linkColor);
+              l.element.setAttribute('stroke', currentLinkColor);
               l.element.setAttribute('stroke-width', '1.5');
             });
           }

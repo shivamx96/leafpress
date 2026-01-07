@@ -616,6 +616,7 @@ html {
 
 .lp-graph-label {
   font-family: var(--lp-font-body);
+  fill: var(--lp-text);
   transition: opacity 0.2s ease;
 }
 

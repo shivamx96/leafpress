@@ -3411,6 +3411,24 @@ fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR"
 
+# Test 152: CSS override ordering - user styles load after config styles
+test_case "User style.css loads after inline config styles"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+"$LEAFPRESS" build > /dev/null 2>&1
+# The <style> block should come BEFORE <link rel="stylesheet" href="/style.css">
+# This ensures user CSS overrides can take precedence
+STYLE_LINE=$(grep -n '</style>' _site/index.html | head -1 | cut -d: -f1)
+LINK_LINE=$(grep -n 'rel="stylesheet" href="/style.css"' _site/index.html | head -1 | cut -d: -f1)
+if [ -n "$STYLE_LINE" ] && [ -n "$LINK_LINE" ] && [ "$STYLE_LINE" -lt "$LINK_LINE" ]; then
+    pass
+else
+    fail "Inline styles should come before stylesheet link for proper CSS override"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
 # Cleanup
 rm -rf "$TESTDIR"
 
