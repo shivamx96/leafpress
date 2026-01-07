@@ -23,6 +23,7 @@ html {
   line-height: 1.6;
   color: var(--lp-text);
   min-height: 100vh;
+  min-height: 100dvh; /* Dynamic viewport height for Safari mobile */
   display: flex;
   flex-direction: column;
 }
