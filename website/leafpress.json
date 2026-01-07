@@ -11,15 +11,15 @@
     { "label": "Changelog", "path": "/changelog" }
   ],
   "theme": {
-    "fontHeading": "Geist",
-    "fontBody": "Geist",
+    "fontHeading": "Inter",
+    "fontBody": "Inter",
     "fontMono": "JetBrains Mono",
     "accent": "#16a34a",
     "background": {
       "light": "linear-gradient(135deg, #ffffff 0%, #dcfce7 100%)",
       "dark": "linear-gradient(135deg, #0a0a0a 0%, #14532d 100%)"
     },
-    "navStyle": "sticky",
+    "navStyle": "glassy",
     "navActiveStyle": "underlined"
   },
   "graph": false,

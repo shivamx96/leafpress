@@ -1,8 +1,46 @@
-/* leafpress Custom Styles
- * Override CSS variables or add custom rules below.
- * See: https://leafpress.dev/docs/theming
- *
- * Available variables:
- * --lp-font, --lp-font-mono, --lp-accent, --lp-bg, --lp-text,
- * --lp-text-muted, --lp-border, --lp-code-bg, --lp-max-width
- */
+/* leafpress Documentation - Custom Styles */
+
+/* Typography refinements */
+.lp-body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.011em;
+}
+
+.lp-content h1 {
+    letter-spacing: -0.03em;
+}
+.lp-content h2 {
+    letter-spacing: -0.025em;
+}
+.lp-content h3 {
+    letter-spacing: -0.02em;
+}
+
+/* Garden accent - elegant vine in bottom-left corner */
+html::before {
+    content: "";
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 320px;
+    height: 400px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 280' preserveAspectRatio='xMinYMax meet'%3E%3Cpath d='M-10 280 Q30 240 35 200 Q38 160 50 130 Q65 95 85 75 Q110 50 140 45' stroke='%2316a34a' stroke-width='2' fill='none' opacity='0.25' stroke-linecap='round'/%3E%3Cpath d='M35 200 Q55 185 75 180' stroke='%2316a34a' stroke-width='1.2' fill='none' opacity='0.18' stroke-linecap='round'/%3E%3Cpath d='M30 210 Q15 195 25 175 Q35 185 45 200 Q35 210 30 210' fill='%2322c55e' opacity='0.2'/%3E%3Cpath d='M55 145 Q72 130 80 140 Q70 155 55 155 Q50 150 55 145' fill='%2316a34a' opacity='0.18'/%3E%3Cpath d='M70 95 Q55 80 65 65 Q78 75 85 90 Q78 98 70 95' fill='%2322c55e' opacity='0.15'/%3E%3Cpath d='M115 55 Q130 42 138 52 Q128 62 115 62 Q112 58 115 55' fill='%2316a34a' opacity='0.12'/%3E%3Cpath d='M65 175 Q78 165 85 175 Q75 185 65 182 Q62 178 65 175' fill='%2322c55e' opacity='0.14'/%3E%3Ccircle cx='145' cy='44' r='3' fill='%2316a34a' opacity='0.15'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: bottom left;
+    background-size: contain;
+    pointer-events: none;
+    z-index: -1;
+}
+
+@media (max-width: 768px) {
+    html::before {
+        width: 200px;
+        height: 280px;
+    }
+}
+
+[data-theme="dark"] html::before {
+    opacity: 0.6;
+    filter: brightness(1.4);
+}

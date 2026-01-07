@@ -4,9 +4,9 @@ date: 2025-01-06
 toc: false
 ---
 
-## v1.0.0
+## v1.0.0-alpha
 
-*January 6, 2025*
+*January 8, 2025*
 
 Initial release.
 
