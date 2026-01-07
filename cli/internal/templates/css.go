@@ -1387,17 +1387,20 @@ html {
   line-height: 1.5;
 }
 
-/* Callouts / Admonitions */
+/* Callouts / Admonitions - Modern Minimal Style */
 .lp-callout {
   margin: 1.5rem 0;
-  padding: 1rem 1.25rem;
-  border-radius: 8px;
-  border-left: 4px solid var(--lp-callout-border);
+  padding: 0.875rem 1rem;
+  border-radius: 6px;
+  border: 1px solid var(--lp-callout-border);
   background: var(--lp-callout-bg);
 }
 
 .lp-callout-title {
-  font-weight: 600;
+  font-weight: 500;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
   margin-bottom: 0.5rem;
   display: flex;
   align-items: center;
@@ -1406,99 +1409,166 @@ html {
 }
 
 .lp-callout-icon {
-  font-size: 1.1rem;
+  font-size: 1rem;
+  line-height: 1;
 }
 
 .lp-callout-content {
   color: var(--lp-text);
+  font-size: 0.9375rem;
+  line-height: 1.6;
 }
 
 .lp-callout-content p:last-child {
   margin-bottom: 0;
 }
 
-/* Callout type colors */
+/* Callout type colors - subtle borders, light backgrounds */
 .lp-callout-note {
-  --lp-callout-border: #3b82f6;
-  --lp-callout-bg: rgba(59, 130, 246, 0.1);
+  --lp-callout-border: rgba(59, 130, 246, 0.3);
+  --lp-callout-bg: rgba(59, 130, 246, 0.05);
   --lp-callout-title: #3b82f6;
 }
 
 .lp-callout-info {
-  --lp-callout-border: #3b82f6;
-  --lp-callout-bg: rgba(59, 130, 246, 0.1);
+  --lp-callout-border: rgba(59, 130, 246, 0.3);
+  --lp-callout-bg: rgba(59, 130, 246, 0.05);
   --lp-callout-title: #3b82f6;
 }
 
 .lp-callout-tip, .lp-callout-hint {
-  --lp-callout-border: #10b981;
-  --lp-callout-bg: rgba(16, 185, 129, 0.1);
+  --lp-callout-border: rgba(16, 185, 129, 0.3);
+  --lp-callout-bg: rgba(16, 185, 129, 0.05);
   --lp-callout-title: #10b981;
 }
 
 .lp-callout-success, .lp-callout-check, .lp-callout-done {
-  --lp-callout-border: #10b981;
-  --lp-callout-bg: rgba(16, 185, 129, 0.1);
+  --lp-callout-border: rgba(16, 185, 129, 0.3);
+  --lp-callout-bg: rgba(16, 185, 129, 0.05);
   --lp-callout-title: #10b981;
 }
 
 .lp-callout-warning, .lp-callout-caution {
-  --lp-callout-border: #f59e0b;
-  --lp-callout-bg: rgba(245, 158, 11, 0.1);
-  --lp-callout-title: #f59e0b;
+  --lp-callout-border: rgba(245, 158, 11, 0.35);
+  --lp-callout-bg: rgba(245, 158, 11, 0.06);
+  --lp-callout-title: #d97706;
 }
 
 .lp-callout-danger, .lp-callout-error {
-  --lp-callout-border: #ef4444;
-  --lp-callout-bg: rgba(239, 68, 68, 0.1);
+  --lp-callout-border: rgba(239, 68, 68, 0.3);
+  --lp-callout-bg: rgba(239, 68, 68, 0.05);
   --lp-callout-title: #ef4444;
 }
 
 .lp-callout-fail, .lp-callout-failure {
-  --lp-callout-border: #ef4444;
-  --lp-callout-bg: rgba(239, 68, 68, 0.1);
+  --lp-callout-border: rgba(239, 68, 68, 0.3);
+  --lp-callout-bg: rgba(239, 68, 68, 0.05);
   --lp-callout-title: #ef4444;
 }
 
 .lp-callout-important {
-  --lp-callout-border: #a855f7;
-  --lp-callout-bg: rgba(168, 85, 247, 0.1);
+  --lp-callout-border: rgba(168, 85, 247, 0.3);
+  --lp-callout-bg: rgba(168, 85, 247, 0.05);
   --lp-callout-title: #a855f7;
 }
 
 .lp-callout-question, .lp-callout-faq {
-  --lp-callout-border: #f59e0b;
-  --lp-callout-bg: rgba(245, 158, 11, 0.1);
-  --lp-callout-title: #f59e0b;
+  --lp-callout-border: rgba(245, 158, 11, 0.35);
+  --lp-callout-bg: rgba(245, 158, 11, 0.06);
+  --lp-callout-title: #d97706;
 }
 
 .lp-callout-quote {
-  --lp-callout-border: #6b7280;
-  --lp-callout-bg: rgba(107, 114, 128, 0.1);
+  --lp-callout-border: rgba(107, 114, 128, 0.3);
+  --lp-callout-bg: rgba(107, 114, 128, 0.05);
   --lp-callout-title: #6b7280;
 }
 
 .lp-callout-example {
-  --lp-callout-border: #8b5cf6;
-  --lp-callout-bg: rgba(139, 92, 246, 0.1);
+  --lp-callout-border: rgba(139, 92, 246, 0.3);
+  --lp-callout-bg: rgba(139, 92, 246, 0.05);
   --lp-callout-title: #8b5cf6;
 }
 
 .lp-callout-todo {
-  --lp-callout-border: #3b82f6;
-  --lp-callout-bg: rgba(59, 130, 246, 0.1);
+  --lp-callout-border: rgba(59, 130, 246, 0.3);
+  --lp-callout-bg: rgba(59, 130, 246, 0.05);
   --lp-callout-title: #3b82f6;
 }
 
 .lp-callout-bug {
-  --lp-callout-border: #ef4444;
-  --lp-callout-bg: rgba(239, 68, 68, 0.1);
+  --lp-callout-border: rgba(239, 68, 68, 0.3);
+  --lp-callout-bg: rgba(239, 68, 68, 0.05);
   --lp-callout-title: #ef4444;
 }
 
 .lp-callout-abstract, .lp-callout-summary, .lp-callout-tldr {
-  --lp-callout-border: #06b6d4;
-  --lp-callout-bg: rgba(6, 182, 212, 0.1);
+  --lp-callout-border: rgba(6, 182, 212, 0.3);
+  --lp-callout-bg: rgba(6, 182, 212, 0.05);
   --lp-callout-title: #06b6d4;
+}
+
+/* Dark mode adjustments for callouts */
+[data-theme="dark"] .lp-callout-note,
+[data-theme="dark"] .lp-callout-info {
+  --lp-callout-border: rgba(96, 165, 250, 0.25);
+  --lp-callout-bg: rgba(59, 130, 246, 0.08);
+  --lp-callout-title: #60a5fa;
+}
+
+[data-theme="dark"] .lp-callout-tip,
+[data-theme="dark"] .lp-callout-hint,
+[data-theme="dark"] .lp-callout-success,
+[data-theme="dark"] .lp-callout-check,
+[data-theme="dark"] .lp-callout-done {
+  --lp-callout-border: rgba(52, 211, 153, 0.25);
+  --lp-callout-bg: rgba(16, 185, 129, 0.08);
+  --lp-callout-title: #34d399;
+}
+
+[data-theme="dark"] .lp-callout-warning,
+[data-theme="dark"] .lp-callout-caution,
+[data-theme="dark"] .lp-callout-question,
+[data-theme="dark"] .lp-callout-faq {
+  --lp-callout-border: rgba(251, 191, 36, 0.25);
+  --lp-callout-bg: rgba(245, 158, 11, 0.08);
+  --lp-callout-title: #fbbf24;
+}
+
+[data-theme="dark"] .lp-callout-danger,
+[data-theme="dark"] .lp-callout-error,
+[data-theme="dark"] .lp-callout-fail,
+[data-theme="dark"] .lp-callout-failure,
+[data-theme="dark"] .lp-callout-bug {
+  --lp-callout-border: rgba(248, 113, 113, 0.25);
+  --lp-callout-bg: rgba(239, 68, 68, 0.08);
+  --lp-callout-title: #f87171;
+}
+
+[data-theme="dark"] .lp-callout-important {
+  --lp-callout-border: rgba(192, 132, 252, 0.25);
+  --lp-callout-bg: rgba(168, 85, 247, 0.08);
+  --lp-callout-title: #c084fc;
+}
+
+[data-theme="dark"] .lp-callout-quote {
+  --lp-callout-border: rgba(156, 163, 175, 0.25);
+  --lp-callout-bg: rgba(107, 114, 128, 0.08);
+  --lp-callout-title: #9ca3af;
+}
+
+[data-theme="dark"] .lp-callout-example,
+[data-theme="dark"] .lp-callout-todo {
+  --lp-callout-border: rgba(167, 139, 250, 0.25);
+  --lp-callout-bg: rgba(139, 92, 246, 0.08);
+  --lp-callout-title: #a78bfa;
+}
+
+[data-theme="dark"] .lp-callout-abstract,
+[data-theme="dark"] .lp-callout-summary,
+[data-theme="dark"] .lp-callout-tldr {
+  --lp-callout-border: rgba(34, 211, 238, 0.25);
+  --lp-callout-bg: rgba(6, 182, 212, 0.08);
+  --lp-callout-title: #22d3ee;
 }
 `
