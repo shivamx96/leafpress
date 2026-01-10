@@ -93,6 +93,9 @@ func (r *Renderer) Render(content string) (string, []string) {
 	// Add lazy loading to images
 	html = processLazyImages(html)
 
+	// Convert blockquote citations (- Author) to <cite> elements
+	html = processBlockquoteCitations(html)
+
 	return html, warnings
 }
 
@@ -106,6 +109,11 @@ var (
 	calloutStartRegex = regexp.MustCompile(`(?m)^>\s*\[!(\w+)\](?:\s+(.*))?$`)
 	// Image regex for lazy loading (captures attributes, handles self-closing)
 	imgTagFullRegex = regexp.MustCompile(`<img\s+([^>]*?)\s*/?\s*>`)
+	// Blockquote citation regex: matches <p>- Author</p> or <p>— Author</p> at end of blockquote
+	blockquoteCiteRegex = regexp.MustCompile(`(?s)(<blockquote>\s*(?:<p>.*?</p>\s*)*)<p>\s*[-–—]\s*(.+?)\s*</p>\s*(</blockquote>)`)
+	// Blockquote citation from list: matches single-item <ul><li>Author</li></ul> at end of blockquote
+	// This handles "> - Author" which markdown parses as a list
+	blockquoteCiteListRegex = regexp.MustCompile(`(?s)(<blockquote>\s*(?:<p>.*?</p>\s*)*)<ul>\s*<li>(.+?)</li>\s*</ul>\s*(</blockquote>)`)
 )
 
 // calloutTypes maps callout type to display title and icon
@@ -391,6 +399,19 @@ func processLazyImages(html string) string {
 		}
 		return `<img ` + attrs[1] + ` loading="lazy" decoding="async">`
 	})
+}
+
+// processBlockquoteCitations converts blockquote paragraphs starting with - or — to <cite>
+// Input:  <blockquote><p>Quote text</p><p>- Author Name</p></blockquote>
+// Output: <blockquote><p>Quote text</p><cite>Author Name</cite></blockquote>
+// Also handles: <blockquote><p>Quote text</p><ul><li>Author</li></ul></blockquote>
+// (which is what "> - Author" produces in markdown)
+func processBlockquoteCitations(html string) string {
+	// First, handle explicit dash/em-dash in paragraph
+	result := blockquoteCiteRegex.ReplaceAllString(html, `$1<cite>$2</cite>$3`)
+	// Then, handle single-item list (from "> - Author" syntax)
+	result = blockquoteCiteListRegex.ReplaceAllString(result, `$1<cite>$2</cite>$3`)
+	return result
 }
 
 // RenderPages renders HTML content for all pages in parallel

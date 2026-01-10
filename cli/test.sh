@@ -3429,6 +3429,59 @@ fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR"
 
+# Test 153: Blockquote is styled with quote mark
+test_case "Blockquote has decorative quote mark styling"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+"$LEAFPRESS" build > /dev/null 2>&1
+# Check that blockquote CSS includes the decorative quote mark
+if grep -q 'blockquote::before' _site/style.css && grep -q 'content: ' _site/style.css; then
+    pass
+else
+    fail "Blockquote CSS should include decorative quote mark"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
+# Test 154: Blockquote citation styling
+test_case "Blockquote citation has dash prefix"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+"$LEAFPRESS" build > /dev/null 2>&1
+# Check that citation styling includes dash prefix
+if grep -q "blockquote footer::before" _site/style.css && grep -q "blockquote cite::before" _site/style.css; then
+    pass
+else
+    fail "Blockquote citation should have dash prefix styling"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
+# Test 155: Blockquote citation markdown syntax conversion
+test_case "Blockquote citation converts - Author to cite element"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > index.md << 'EOF'
+---
+title: Quote Test
+---
+
+> Here is a profound quote about life.
+> - Famous Author
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+# Check that the - Author line is converted to <cite>
+if grep -q "<cite>Famous Author</cite>" _site/index.html; then
+    pass
+else
+    fail "Blockquote should convert '- Author' to <cite> element"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
 # Cleanup
 rm -rf "$TESTDIR"
 

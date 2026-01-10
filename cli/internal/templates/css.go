@@ -443,11 +443,50 @@ html {
 }
 
 .lp-content blockquote {
-  border-left: 3px solid var(--lp-accent);
-  padding-left: 1rem;
-  margin: 1rem 0;
-  color: var(--lp-text-muted);
+  font-family: var(--lp-font-heading);
+  font-size: 1.25rem;
+  position: relative;
+  border: none;
+  padding: 1.5rem 1.5rem 1.5rem 3rem;
+  margin: 1.5rem 0;
+  color: var(--lp-text);
   font-style: italic;
+}
+
+.lp-content blockquote::before {
+  content: '"';
+  position: absolute;
+  top: 0.5rem;
+  left: 0.75rem;
+  font-size: 3rem;
+  font-family: Georgia, serif;
+  color: var(--lp-accent);
+  opacity: 0.4;
+  line-height: 1;
+}
+
+.lp-content blockquote p {
+  margin: 0;
+  line-height: 1.7;
+}
+
+.lp-content blockquote p + p {
+  margin-top: 0.75rem;
+}
+
+/* Citation/attribution styling */
+.lp-content blockquote footer,
+.lp-content blockquote cite {
+  display: block;
+  margin-top: 0.75rem;
+  font-size: 1rem;
+  font-style: normal;
+  color: var(--lp-text-muted);
+}
+
+.lp-content blockquote footer::before,
+.lp-content blockquote cite::before {
+  content: '- ';
 }
 
 .lp-content pre {
