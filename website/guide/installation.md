@@ -77,6 +77,16 @@ leafpress build
 
 Static files are generated in `_site/`. Upload this folder to any web host.
 
+## Update leafpress
+
+Update to the latest version with a single command:
+
+```bash
+leafpress update
+```
+
+This checks GitHub for the latest release and replaces your binary automatically. Use `--force` to reinstall even if you're on the latest version.
+
 ## Next Steps
 
 - [[guide/writing|Writing Content]] — Learn the markdown features
