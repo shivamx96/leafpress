@@ -1,20 +1,14 @@
 /* leafpress Documentation - Custom Styles */
 
-/* Typography refinements */
-.lp-body {
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    letter-spacing: -0.011em;
+/* Softer text colors */
+:root {
+    --lp-text: #6d6d6d;
+    --lp-text-muted: #737373;
 }
 
-.lp-content h1 {
-    letter-spacing: -0.03em;
-}
-.lp-content h2 {
-    letter-spacing: -0.025em;
-}
-.lp-content h3 {
-    letter-spacing: -0.02em;
+[data-theme="dark"] {
+    --lp-text: #d4d4d4;
+    --lp-text-muted: #8a8a8a;
 }
 
 /* Garden accent - elegant vine in bottom-left corner */

@@ -11,8 +11,8 @@
     { "label": "Changelog", "path": "/changelog" }
   ],
   "theme": {
-    "fontHeading": "Inter",
-    "fontBody": "Inter",
+    "fontHeading": "Sora",
+    "fontBody": "Geist",
     "fontMono": "JetBrains Mono",
     "accent": "#16a34a",
     "background": {
