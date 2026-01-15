@@ -86,12 +86,14 @@ Solid colors or gradients:
 ```json
 {
   "theme": {
-    "navStyle": "sticky"
+    "navStyle": "base"
   }
 }
 ```
 
-- `"sticky"` — Fixed bar at top (default)
+- `"base"` — Standard navigation bar (default)
+- `"sticky"` — Fixed bar at top
+- `"glassy"` — Glassmorphic blur effect
 - `"pill"` — Floating pill that appears on scroll
 
 ### Active Link Style
@@ -99,12 +101,13 @@ Solid colors or gradients:
 ```json
 {
   "theme": {
-    "navActiveStyle": "underlined"
+    "navActiveStyle": "base"
   }
 }
 ```
 
-- `"underlined"` — Underline on active link (default)
+- `"base"` — No special styling (default)
+- `"underlined"` — Underline on active link
 - `"box"` — Background box on active link
 - `"accent"` — Accent color text on active link
 

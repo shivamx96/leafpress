@@ -41,8 +41,8 @@ That's it. Everything else has sensible defaults.
       "light": "#ffffff",
       "dark": "#1a1a1a"
     },
-    "navStyle": "sticky",
-    "navActiveStyle": "underlined"
+    "navStyle": "base",
+    "navActiveStyle": "base"
   },
   
   "graph": true,
@@ -95,8 +95,8 @@ That's it. Everything else has sensible defaults.
 | `accent` | `"#50ac00"` | Accent color for links and highlights |
 | `background.light` | `"#ffffff"` | Light mode background (color or gradient) |
 | `background.dark` | `"#1a1a1a"` | Dark mode background (color or gradient) |
-| `navStyle` | `"sticky"` | `"sticky"` or `"pill"` |
-| `navActiveStyle` | `"underlined"` | `"box"`, `"underlined"`, or `"accent"` |
+| `navStyle` | `"base"` | `"base"`, `"sticky"`, `"glassy"`, or `"pill"` |
+| `navActiveStyle` | `"base"` | `"base"`, `"box"`, `"underlined"`, or `"accent"` |
 
 Gradients work too:
 ```json
@@ -118,6 +118,17 @@ Gradients work too:
 | `toc` | `true` | Show table of contents on pages |
 | `search` | `true` | Enable full-text search |
 | `wikilinks` | `true` | Enable wiki-link processing |
+| `backlinks` | `true` | Show backlinks section on pages |
+
+### Ignore Patterns
+
+Exclude files from builds using glob patterns:
+
+```json
+{
+  "ignore": ["drafts/**", "*.draft.md", "private/**"]
+}
+```
 
 ## Custom Head Content
 

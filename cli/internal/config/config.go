@@ -152,7 +152,7 @@ func Default() *Config {
 			FontBody:       "Inter",
 			FontMono:       "JetBrains Mono",
 			Accent:         "#50ac00",
-			NavStyle:       "glassy",
+			NavStyle:       "base",
 			NavActiveStyle: "base",
 		},
 		Graph:     false,
@@ -199,7 +199,7 @@ func Load(path string) (*Config, error) {
 		cfg.Theme.Accent = "#50ac00"
 	}
 	if cfg.Theme.NavStyle == "" {
-		cfg.Theme.NavStyle = "glassy"
+		cfg.Theme.NavStyle = "base"
 	}
 	if cfg.Theme.NavActiveStyle == "" {
 		cfg.Theme.NavActiveStyle = "base"
