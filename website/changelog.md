@@ -5,7 +5,6 @@ toc: false
 ---
 
 ## v1.1.0-alpha
-
 *January 25, 2025*
 
 - **One-command deploy**: `leafpress deploy` for GitHub Pages with browser-based OAuth
@@ -13,8 +12,19 @@ toc: false
 - Secure token handling (tokens not exposed in process arguments)
 - CI/CD support via `LEAFPRESS_GITHUB_TOKEN` environment variable
 
-## v1.0.0-alpha
+## v1.0.0-alpha.2
+*January 11, 2025*
 
+- Adding `update` command to CLI
+- Make blockquotes cleaner and modern
+
+## v1.0.0-alpha.1
+*January 8, 2025*
+
+- Callouts restyled to be more modern
+- Set height to full dynamic viewport
+
+## v1.0.0-alpha
 *January 8, 2025*
 
 Initial release.
