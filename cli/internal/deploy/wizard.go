@@ -5,9 +5,14 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 )
+
+// repoNameRegex validates GitHub repository names (owner/repo format)
+// Allows alphanumeric, hyphens, underscores, and dots (for repo name)
+var repoNameRegex = regexp.MustCompile(`^[a-zA-Z0-9_-]+/[a-zA-Z0-9._-]+$`)
 
 // Wizard handles interactive setup for deployment
 type Wizard struct {
@@ -127,6 +132,9 @@ func (w *Wizard) authenticate(ctx context.Context, provider Provider) (*Credenti
 	// Save credentials
 	if err := w.store.Set(creds); err != nil {
 		fmt.Printf("  Warning: couldn't save credentials: %v\n", err)
+	} else {
+		fmt.Printf("\n  Credentials saved to %s\n", w.store.Path())
+		fmt.Println("  Note: Token stored in plaintext. For CI/CD, use LEAFPRESS_GITHUB_TOKEN env var instead.")
 	}
 
 	fmt.Printf("\n  Authenticated as %s\n", creds.Username)
@@ -138,7 +146,11 @@ func (w *Wizard) authenticate(ctx context.Context, provider Provider) (*Credenti
 func (w *Wizard) configureProvider(ctx context.Context, provider Provider, creds *Credentials) (*ProviderConfig, error) {
 	switch provider.Name() {
 	case "github-pages":
-		return w.configureGitHubPages(ctx, provider.(*GitHubPagesProvider), creds)
+		ghProvider, ok := provider.(*GitHubPagesProvider)
+		if !ok {
+			return nil, fmt.Errorf("internal error: expected GitHubPagesProvider, got %T", provider)
+		}
+		return w.configureGitHubPages(ctx, ghProvider, creds)
 	case "mock":
 		return &ProviderConfig{
 			Provider: "mock",
@@ -213,13 +225,13 @@ func (w *Wizard) configureGitHubPages(ctx context.Context, provider *GitHubPages
 			continue
 		}
 
-		// Check if it looks like a repo name
-		if strings.Contains(input, "/") {
+		// Validate repo name format (owner/repo with safe characters only)
+		if repoNameRegex.MatchString(input) {
 			selectedRepo = input
 			break
 		}
 
-		fmt.Println("  Please enter a valid repo name (e.g., username/repo)")
+		fmt.Println("  Invalid format. Use: owner/repo (alphanumeric, hyphens, underscores)")
 	}
 
 	// Ask for branch

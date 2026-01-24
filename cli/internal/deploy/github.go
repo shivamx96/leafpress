@@ -2,6 +2,7 @@ package deploy
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -86,29 +87,11 @@ func (g *GitHubPagesProvider) Configure(ctx context.Context, creds *Credentials)
 func (g *GitHubPagesProvider) ListRepos(ctx context.Context, token string) ([]GitHubRepo, error) {
 	var allRepos []GitHubRepo
 	page := 1
+	const maxPages = 10 // Safety limit: max 1000 repos (100 per page)
 
 	for {
-		url := fmt.Sprintf("%s?per_page=100&page=%d&sort=updated", githubReposURL, page)
-		req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+		repos, err := g.fetchRepoPage(ctx, token, page)
 		if err != nil {
-			return nil, err
-		}
-		req.Header.Set("Authorization", "Bearer "+token)
-		req.Header.Set("Accept", "application/vnd.github+json")
-
-		resp, err := g.httpClient.Do(req)
-		if err != nil {
-			return nil, err
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK {
-			body, _ := io.ReadAll(resp.Body)
-			return nil, fmt.Errorf("failed to list repos: %s", string(body))
-		}
-
-		var repos []GitHubRepo
-		if err := json.NewDecoder(resp.Body).Decode(&repos); err != nil {
 			return nil, err
 		}
 
@@ -119,13 +102,41 @@ func (g *GitHubPagesProvider) ListRepos(ctx context.Context, token string) ([]Gi
 		allRepos = append(allRepos, repos...)
 		page++
 
-		// Safety limit
-		if page > 10 {
+		if page > maxPages {
 			break
 		}
 	}
 
 	return allRepos, nil
+}
+
+// fetchRepoPage fetches a single page of repositories
+func (g *GitHubPagesProvider) fetchRepoPage(ctx context.Context, token string, page int) ([]GitHubRepo, error) {
+	url := fmt.Sprintf("%s?per_page=100&page=%d&sort=updated", githubReposURL, page)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Accept", "application/vnd.github+json")
+
+	resp, err := g.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close() // Now properly deferred per-request
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("failed to list repos: %s", string(body))
+	}
+
+	var repos []GitHubRepo
+	if err := json.NewDecoder(resp.Body).Decode(&repos); err != nil {
+		return nil, err
+	}
+
+	return repos, nil
 }
 
 func (g *GitHubPagesProvider) Deploy(ctx context.Context, cfg *DeployContext) (*DeployResult, error) {
@@ -166,15 +177,25 @@ func (g *GitHubPagesProvider) Deploy(ctx context.Context, cfg *DeployContext) (*
 
 // gitDeploy performs the actual git-based deployment
 func (g *GitHubPagesProvider) gitDeploy(ctx context.Context, buildDir, tmpDir, repo, branch, token string) error {
-	repoURL := fmt.Sprintf("https://x-access-token:%s@github.com/%s.git", token, repo)
+	// Add timeout to prevent hanging on slow networks or large repos
+	const gitTimeout = 5 * time.Minute
+	ctx, cancel := context.WithTimeout(ctx, gitTimeout)
+	defer cancel()
+
+	repoURL := fmt.Sprintf("https://github.com/%s.git", repo)
+
+	// Set up git environment with token authentication
+	// This avoids exposing the token in command line arguments (visible via ps aux)
+	gitEnv := g.gitAuthEnv(token)
 
 	// Try to clone the existing gh-pages branch
 	cloneCmd := exec.CommandContext(ctx, "git", "clone", "--depth", "1", "--branch", branch, repoURL, tmpDir)
+	cloneCmd.Env = append(os.Environ(), gitEnv...)
 	cloneErr := cloneCmd.Run()
 
 	if cloneErr != nil {
 		// Branch doesn't exist, initialize new repo
-		if err := g.initNewBranch(ctx, tmpDir, repoURL, branch); err != nil {
+		if err := g.initNewBranch(ctx, tmpDir, repoURL, branch, gitEnv); err != nil {
 			return err
 		}
 	}
@@ -214,12 +235,21 @@ func (g *GitHubPagesProvider) gitDeploy(ctx context.Context, buildDir, tmpDir, r
 	// Git commit
 	commitCmd := exec.CommandContext(ctx, "git", "commit", "-m", fmt.Sprintf("Deploy via leafpress at %s", time.Now().Format(time.RFC3339)))
 	commitCmd.Dir = tmpDir
-	// Commit might fail if no changes - that's OK
-	commitCmd.Run()
+	commitOutput, commitErr := commitCmd.CombinedOutput()
+	if commitErr != nil {
+		// Only ignore "nothing to commit" errors - actual failures should be reported
+		outputStr := string(commitOutput)
+		if !strings.Contains(outputStr, "nothing to commit") &&
+			!strings.Contains(outputStr, "no changes added") {
+			return fmt.Errorf("git commit failed: %s", outputStr)
+		}
+		// No changes to deploy - this is fine
+	}
 
 	// Git push
 	pushCmd := exec.CommandContext(ctx, "git", "push", "origin", branch)
 	pushCmd.Dir = tmpDir
+	pushCmd.Env = append(os.Environ(), gitEnv...)
 	if output, err := pushCmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("git push failed: %s", string(output))
 	}
@@ -228,7 +258,7 @@ func (g *GitHubPagesProvider) gitDeploy(ctx context.Context, buildDir, tmpDir, r
 }
 
 // initNewBranch creates an orphan branch for first deployment
-func (g *GitHubPagesProvider) initNewBranch(ctx context.Context, tmpDir, repoURL, branch string) error {
+func (g *GitHubPagesProvider) initNewBranch(ctx context.Context, tmpDir, repoURL, branch string, gitEnv []string) error {
 	// Initialize empty repo
 	initCmd := exec.CommandContext(ctx, "git", "init")
 	initCmd.Dir = tmpDir
@@ -236,7 +266,7 @@ func (g *GitHubPagesProvider) initNewBranch(ctx context.Context, tmpDir, repoURL
 		return fmt.Errorf("git init failed: %w", err)
 	}
 
-	// Add remote
+	// Add remote (URL doesn't contain token - auth is via environment)
 	remoteCmd := exec.CommandContext(ctx, "git", "remote", "add", "origin", repoURL)
 	remoteCmd.Dir = tmpDir
 	if err := remoteCmd.Run(); err != nil {
@@ -253,8 +283,39 @@ func (g *GitHubPagesProvider) initNewBranch(ctx context.Context, tmpDir, repoURL
 	return nil
 }
 
+// gitAuthEnv returns environment variables for git authentication
+// This avoids exposing the token in command line arguments
+func (g *GitHubPagesProvider) gitAuthEnv(token string) []string {
+	// Use git credential helper via environment
+	// GIT_ASKPASS is called by git to get credentials
+	// We provide a simple script that echoes the token
+	return []string{
+		fmt.Sprintf("GIT_ASKPASS=%s", "echo"),
+		fmt.Sprintf("GIT_USERNAME=%s", "x-access-token"),
+		fmt.Sprintf("GIT_PASSWORD=%s", token),
+		// Tell git to use the credential helper for this operation
+		"GIT_TERMINAL_PROMPT=0",
+		// Use the extraheader approach which is more reliable
+		fmt.Sprintf("GIT_CONFIG_COUNT=1"),
+		fmt.Sprintf("GIT_CONFIG_KEY_0=http.https://github.com/.extraheader"),
+		fmt.Sprintf("GIT_CONFIG_VALUE_0=AUTHORIZATION: basic %s", basicAuth("x-access-token", token)),
+	}
+}
+
+// basicAuth encodes credentials for HTTP basic auth
+func basicAuth(username, password string) string {
+	auth := username + ":" + password
+	return base64.StdEncoding.EncodeToString([]byte(auth))
+}
+
 // buildPagesURL constructs the GitHub Pages URL for a repo
 func (g *GitHubPagesProvider) buildPagesURL(repo string) string {
+	return BuildGitHubPagesURL(repo)
+}
+
+// BuildGitHubPagesURL constructs the GitHub Pages URL for a repo
+// Exported for use by the deploy command
+func BuildGitHubPagesURL(repo string) string {
 	parts := strings.Split(repo, "/")
 	if len(parts) != 2 {
 		return ""

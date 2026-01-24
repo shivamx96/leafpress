@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"strings"
 	"time"
 
 	"github.com/shivamx96/leafpress/cli/internal/build"
@@ -54,13 +53,18 @@ func runDeploy(providerFlag string, skipBuild, reconfigure, dryRun bool) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// Handle interrupt
+	// Handle interrupt - goroutine exits when context is cancelled
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt)
+	defer signal.Stop(sigChan) // Stop receiving signals on function exit
 	go func() {
-		<-sigChan
-		fmt.Println("\nCancelled")
-		cancel()
+		select {
+		case <-sigChan:
+			fmt.Println("\nCancelled")
+			cancel()
+		case <-ctx.Done():
+			// Context cancelled, exit goroutine cleanly
+		}
 	}()
 
 	// Load config
@@ -220,7 +224,7 @@ func saveDeployConfig(cfg *config.Config, deployConfig *deploy.ProviderConfig) e
 	// Set baseURL for GitHub Pages if not already set
 	if deployConfig.Provider == "github-pages" {
 		if currentBaseURL, _ := rawConfig["baseURL"].(string); currentBaseURL == "" {
-			baseURL := buildGitHubPagesURL(deployConfig.Settings[deploy.SettingRepo])
+			baseURL := deploy.BuildGitHubPagesURL(deployConfig.Settings[deploy.SettingRepo])
 			if baseURL != "" {
 				rawConfig["baseURL"] = baseURL
 				fmt.Printf("  Setting baseURL to %s\n", baseURL)
@@ -235,21 +239,4 @@ func saveDeployConfig(cfg *config.Config, deployConfig *deploy.ProviderConfig) e
 	}
 
 	return os.WriteFile("leafpress.json", newData, 0644)
-}
-
-// buildGitHubPagesURL constructs the GitHub Pages URL for a repo
-func buildGitHubPagesURL(repo string) string {
-	parts := strings.Split(repo, "/")
-	if len(parts) != 2 {
-		return ""
-	}
-	username := parts[0]
-	repoName := parts[1]
-
-	// Check if it's a user/org pages repo (username.github.io)
-	if repoName == username+".github.io" {
-		return fmt.Sprintf("https://%s.github.io", username)
-	}
-
-	return fmt.Sprintf("https://%s.github.io/%s", username, repoName)
 }

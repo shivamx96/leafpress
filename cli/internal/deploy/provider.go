@@ -3,6 +3,7 @@ package deploy
 
 import (
 	"context"
+	"sort"
 	"time"
 )
 
@@ -84,11 +85,15 @@ func Get(name string) (Provider, bool) {
 	return p, ok
 }
 
-// List returns all registered providers
+// List returns all registered providers sorted by name for consistent ordering
 func List() []Provider {
 	providers := make([]Provider, 0, len(registry))
 	for _, p := range registry {
 		providers = append(providers, p)
 	}
+	// Sort by name for consistent menu ordering
+	sort.Slice(providers, func(i, j int) bool {
+		return providers[i].Name() < providers[j].Name()
+	})
 	return providers
 }
