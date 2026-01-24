@@ -927,6 +927,8 @@ html {
   gap: 0.5rem;
   color: var(--lp-text);
   text-decoration: none;
+  min-width: 0;
+  flex: 1;
 }
 
 .lp-index-link:hover .lp-index-title {
@@ -935,15 +937,21 @@ html {
 
 .lp-index-title {
   font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .lp-index-growth {
   font-size: 0.9rem;
+  flex-shrink: 0;
 }
 
 .lp-index-date {
   color: var(--lp-text-muted);
   font-size: 0.85rem;
+  flex-shrink: 0;
+  margin-left: 1rem;
 }
 
 /* Tag cloud */
