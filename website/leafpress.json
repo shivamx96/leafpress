@@ -1,13 +1,6 @@
 {
   "author": "Shivam Shekhar",
   "baseURL": "https://shivamx96.github.io",
-  "deploy": {
-    "provider": "github-pages",
-    "settings": {
-      "branch": "gh-pages",
-      "repo": "shivamx96/shivamx96.github.io"
-    }
-  },
   "description": "A fast, opinionated static site generator for digital gardens",
   "graph": false,
   "nav": [
