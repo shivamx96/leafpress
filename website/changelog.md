@@ -4,6 +4,15 @@ date: 2025-01-06
 toc: false
 ---
 
+## v1.1.0-alpha
+
+*January 25, 2025*
+
+- **One-command deploy**: `leafpress deploy` for GitHub Pages with browser-based OAuth
+- GitHub Pages subdirectory hosting support (auto-sets baseURL)
+- Secure token handling (tokens not exposed in process arguments)
+- CI/CD support via `LEAFPRESS_GITHUB_TOKEN` environment variable
+
 ## v1.0.0-alpha
 
 *January 8, 2025*
