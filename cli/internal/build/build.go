@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -130,9 +131,12 @@ func (b *Builder) Build() (*Stats, error) {
 	}
 	b.logTiming("backlinks", time.Since(t0))
 
+	// Extract basePath early for use in rendering
+	basePath := extractBasePath(b.cfg.BaseURL)
+
 	// Render markdown to HTML
 	t0 = time.Now()
-	warnings := content.RenderPages(pages, b.cfg.Wikilinks, b.linkResolver)
+	warnings := content.RenderPages(pages, b.cfg.Wikilinks, b.linkResolver, basePath)
 	b.logTiming("markdown", time.Since(t0))
 	stats.WarningCount = len(warnings)
 
@@ -150,6 +154,7 @@ func (b *Builder) Build() (*Stats, error) {
 		Nav:         b.cfg.Nav,
 		Theme:       b.cfg.Theme,
 		BaseURL:     b.cfg.BaseURL,
+		BasePath:    basePath,
 		Image:       b.cfg.Image,
 		TOC:         b.cfg.TOC,
 		Graph:       b.cfg.Graph,
@@ -499,7 +504,7 @@ func (b *Builder) rebuildMarkdownFile(relPath string, changeType ChangeType) (*I
 			}
 		}
 	}
-	content.RenderPages(pagesToRender, b.cfg.Wikilinks, b.linkResolver)
+	content.RenderPages(pagesToRender, b.cfg.Wikilinks, b.linkResolver, b.siteData.BasePath)
 	b.logTiming("markdown", time.Since(t0))
 
 	// Render the affected pages
@@ -600,7 +605,7 @@ func (b *Builder) handleDeletedFile(relPath string) (*IncrementalStats, error) {
 	}
 
 	// Re-render affected pages
-	content.RenderPages(pagesToRebuild, b.cfg.Wikilinks, b.linkResolver)
+	content.RenderPages(pagesToRebuild, b.cfg.Wikilinks, b.linkResolver, b.siteData.BasePath)
 	for _, page := range pagesToRebuild {
 		if page.IsIndex {
 			if err := b.renderSectionIndex(page, b.pages, b.siteData); err != nil {
@@ -1315,7 +1320,7 @@ func (b *Builder) generateJSONFiles(pages []*content.Page, genGraph, genSearch b
 			graph.Nodes = append(graph.Nodes, GraphNode{
 				ID:     page.Slug,
 				Title:  page.Title,
-				URL:    page.Permalink,
+				URL:    b.siteData.BasePath + page.Permalink,
 				Growth: page.Growth,
 				Tags:   page.Tags,
 			})
@@ -1334,7 +1339,7 @@ func (b *Builder) generateJSONFiles(pages []*content.Page, genGraph, genSearch b
 		if genSearch && !page.IsIndex {
 			searchIndex = append(searchIndex, SearchEntry{
 				Title:   page.Title,
-				URL:     page.Permalink,
+				URL:     b.siteData.BasePath + page.Permalink,
 				Content: page.PlainContent(),
 				Tags:    page.Tags,
 			})
@@ -1501,4 +1506,22 @@ func encodeJSON(f *os.File, v interface{}) error {
 	encoder := json.NewEncoder(f)
 	encoder.SetIndent("", "  ")
 	return encoder.Encode(v)
+}
+
+// extractBasePath extracts the path portion from a URL for subdirectory hosting
+// e.g., "https://user.github.io/repo" -> "/repo"
+// e.g., "https://example.com" -> ""
+func extractBasePath(baseURL string) string {
+	if baseURL == "" {
+		return ""
+	}
+
+	parsed, err := url.Parse(baseURL)
+	if err != nil {
+		return ""
+	}
+
+	// Remove trailing slash
+	path := strings.TrimSuffix(parsed.Path, "/")
+	return path
 }

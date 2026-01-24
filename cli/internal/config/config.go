@@ -17,22 +17,29 @@ type Background struct {
 
 // Config represents the leafpress.json configuration
 type Config struct {
-	Title       string    `json:"title"`
-	Description string    `json:"description"` // Site-wide meta description
-	Author      string    `json:"author"`
-	BaseURL     string    `json:"baseURL"`
-	Image       string    `json:"image"` // Default OG image path (e.g., "/og-image.png")
-	OutputDir   string    `json:"outputDir"`
-	Port        int       `json:"port"`
-	Nav         []NavItem `json:"nav"`
-	Theme       Theme     `json:"theme"`
-	Graph       bool      `json:"graph"`
-	Search      bool      `json:"search"`
-	TOC         bool      `json:"toc"`
-	Backlinks   bool      `json:"backlinks"`
-	Wikilinks   bool      `json:"wikilinks"`
-	Ignore      []string  `json:"ignore"`
-	HeadExtra   string    `json:"headExtra"` // Custom HTML to inject in <head>
+	Title       string       `json:"title"`
+	Description string       `json:"description"` // Site-wide meta description
+	Author      string       `json:"author"`
+	BaseURL     string       `json:"baseURL"`
+	Image       string       `json:"image"` // Default OG image path (e.g., "/og-image.png")
+	OutputDir   string       `json:"outputDir"`
+	Port        int          `json:"port"`
+	Nav         []NavItem    `json:"nav"`
+	Theme       Theme        `json:"theme"`
+	Graph       bool         `json:"graph"`
+	Search      bool         `json:"search"`
+	TOC         bool         `json:"toc"`
+	Backlinks   bool         `json:"backlinks"`
+	Wikilinks   bool         `json:"wikilinks"`
+	Ignore      []string     `json:"ignore"`
+	HeadExtra   string       `json:"headExtra"` // Custom HTML to inject in <head>
+	Deploy      DeployConfig `json:"deploy"`    // Deployment configuration
+}
+
+// DeployConfig holds deployment settings
+type DeployConfig struct {
+	Provider string            `json:"provider"` // e.g., "github-pages", "netlify", "vercel"
+	Settings map[string]string `json:"settings"` // Provider-specific settings
 }
 
 // NavItem represents a navigation link

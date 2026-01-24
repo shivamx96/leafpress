@@ -110,6 +110,7 @@ type SiteData struct {
 	Nav         []config.NavItem
 	Theme       config.Theme
 	BaseURL     string
+	BasePath    string // Path portion of BaseURL (e.g., "/repo-name" for GitHub Pages)
 	Image       string // Default OG image path
 	TOC         bool
 	Graph       bool
@@ -329,10 +330,10 @@ const baseTemplate = `<!DOCTYPE html>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{block "title" .}}{{.Site.Title}}{{end}}</title>
   {{block "seo" .}}{{end}}
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
-  <link rel="icon" type="image/x-icon" href="/favicon.ico">
-  <link rel="alternate" type="application/rss+xml" title="{{.Site.Title}}" href="/feed.xml">
+  <link rel="icon" type="image/svg+xml" href="{{.Site.BasePath}}/favicon.svg">
+  <link rel="icon" type="image/png" sizes="96x96" href="{{.Site.BasePath}}/favicon-96x96.png">
+  <link rel="icon" type="image/x-icon" href="{{.Site.BasePath}}/favicon.ico">
+  <link rel="alternate" type="application/rss+xml" title="{{.Site.Title}}" href="{{.Site.BasePath}}/feed.xml">
   <style>
     :root {
       --lp-font-heading: "{{.Site.Theme.FontHeading}}", Georgia, serif;
@@ -382,7 +383,7 @@ const baseTemplate = `<!DOCTYPE html>
     }
     {{end}}
   </style>
-  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="{{.Site.BasePath}}/style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="{{.Site.Theme.FontHeading | fontURL}}" rel="stylesheet">
@@ -395,7 +396,7 @@ const baseTemplate = `<!DOCTYPE html>
   <nav class="lp-nav">
     <div class="lp-nav-container">
       <div class="lp-nav-brand">
-        <a class="lp-nav-title" href="/">{{.Site.Title}}</a>
+        <a class="lp-nav-title" href="{{.Site.BasePath}}/">{{.Site.Title}}</a>
         <div class="lp-nav-actions">
           {{if .Site.Graph}}<button class="lp-graph-toggle" aria-label="Open knowledge graph" title="Explore graph">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -433,7 +434,7 @@ const baseTemplate = `<!DOCTYPE html>
       </div>
       <div class="lp-nav-links">
         {{range .Site.Nav}}
-        <a class="lp-nav-link{{if hasPrefix $.CurrentPath .Path}} lp-nav-link--active lp-nav-active-{{$.Site.Theme.NavActiveStyle}}{{end}}" href="{{.Path}}">{{.Label}}</a>
+        <a class="lp-nav-link{{if hasPrefix $.CurrentPath .Path}} lp-nav-link--active lp-nav-active-{{$.Site.Theme.NavActiveStyle}}{{end}}" href="{{$.Site.BasePath}}{{.Path}}">{{.Label}}</a>
         {{end}}
       </div>
     </div>
@@ -483,6 +484,9 @@ const baseTemplate = `<!DOCTYPE html>
   </div>{{end}}
 
   <script>
+    // Base path for asset loading (supports GitHub Pages subdirectory hosting)
+    var LP_BASE_PATH = '{{.Site.BasePath}}';
+
     // Theme switching
     (function() {
       var theme = localStorage.getItem('theme') || 'light';
@@ -589,7 +593,7 @@ const baseTemplate = `<!DOCTYPE html>
             renderGraph(graphData);
             graphRendered = true;
           } else if (!graphData) {
-            fetch('/graph.json')
+            fetch(LP_BASE_PATH + '/graph.json')
               .then(function(r) { return r.json(); })
               .then(function(data) {
                 graphData = data;
@@ -1112,7 +1116,7 @@ const baseTemplate = `<!DOCTYPE html>
           setTimeout(function() { input.focus(); }, 200);
 
           if (!searchIndex) {
-            fetch('/search-index.json')
+            fetch(LP_BASE_PATH + '/search-index.json')
               .then(function(r) { return r.json(); })
               .then(function(data) { searchIndex = data; });
           }
@@ -1324,7 +1328,7 @@ const baseTemplate = `<!DOCTYPE html>
             callback(previewIndex);
             return;
           }
-          fetch('/search-index.json')
+          fetch(LP_BASE_PATH + '/search-index.json')
             .then(function(r) { return r.json(); })
             .then(function(data) {
               previewIndex = {};
@@ -1417,7 +1421,7 @@ const pageTemplate = `
       {{if .Page.Tags}}
       <div class="lp-tags">
         {{range .Page.Tags}}
-        <a class="lp-tag" href="/tags/{{. | lower}}/">#{{.}}</a>
+        <a class="lp-tag" href="{{$.Site.BasePath}}/tags/{{. | lower}}/">#{{.}}</a>
         {{end}}
       </div>
       {{end}}
@@ -1432,7 +1436,7 @@ const pageTemplate = `
       <h2 class="lp-backlinks-title">Referenced from</h2>
       <ul class="lp-backlinks-list">
         {{range .Page.Backlinks}}
-        <li><a class="lp-backlink" href="{{.Permalink}}">{{.Title}}</a></li>
+        <li><a class="lp-backlink" href="{{$.Site.BasePath}}{{.Permalink}}">{{.Title}}</a></li>
         {{end}}
       </ul>
     </aside>
@@ -1473,7 +1477,7 @@ const indexTemplate = `
   <ul class="lp-index">
     {{range .Pages}}
     <li class="lp-index-item">
-      <a class="lp-index-link" href="{{.Permalink}}">
+      <a class="lp-index-link" href="{{$.Site.BasePath}}{{.Permalink}}">
         {{if .Growth}}
         <span class="lp-index-growth lp-index-growth--{{.Growth}}">{{growthEmoji .Growth}}</span>
         {{end}}
@@ -1511,7 +1515,7 @@ const tagIndexTemplate = `
 
   <div class="lp-tag-cloud">
     {{range .Tags}}
-    <a class="lp-tag-cloud-item" href="/tags/{{.Name | lower}}/">
+    <a class="lp-tag-cloud-item" href="{{$.Site.BasePath}}/tags/{{.Name | lower}}/">
       #{{.Name}} <span class="lp-tag-count">({{.Count}})</span>
     </a>
     {{end}}
@@ -1542,7 +1546,7 @@ const tagPageTemplate = `
   <ul class="lp-index">
     {{range .Pages}}
     <li class="lp-index-item">
-      <a class="lp-index-link" href="{{.Permalink}}">
+      <a class="lp-index-link" href="{{$.Site.BasePath}}{{.Permalink}}">
         {{if .Growth}}
         <span class="lp-index-growth lp-index-growth--{{.Growth}}">{{growthEmoji .Growth}}</span>
         {{end}}
@@ -1568,7 +1572,7 @@ const notFoundTemplate = `
 <div class="lp-not-found">
   <h1 class="lp-not-found-title">404</h1>
   <p class="lp-not-found-message">This page doesn't exist yet.</p>
-  <a class="lp-not-found-link" href="/">Return home</a>
+  <a class="lp-not-found-link" href="{{.Site.BasePath}}/">Return home</a>
 </div>
 {{end}}
 `

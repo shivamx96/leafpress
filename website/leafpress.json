@@ -1,28 +1,44 @@
 {
-  "title": "leafpress",
   "author": "Shivam Shekhar",
-  "baseURL": "https://leafpress.in",
+  "baseURL": "https://shivamx96.github.io",
+  "deploy": {
+    "provider": "github-pages",
+    "settings": {
+      "branch": "gh-pages",
+      "repo": "shivamx96/shivamx96.github.io"
+    }
+  },
   "description": "A fast, opinionated static site generator for digital gardens",
+  "graph": false,
+  "nav": [
+    {
+      "label": "Guide",
+      "path": "/guide/"
+    },
+    {
+      "label": "Features",
+      "path": "/features"
+    },
+    {
+      "label": "Changelog",
+      "path": "/changelog"
+    }
+  ],
   "outputDir": "_site",
   "port": 3000,
-  "nav": [
-    { "label": "Guide", "path": "/guide/" },
-    { "label": "Features", "path": "/features" },
-    { "label": "Changelog", "path": "/changelog" }
-  ],
+  "search": true,
   "theme": {
-    "fontHeading": "Sora",
-    "fontBody": "Geist",
-    "fontMono": "JetBrains Mono",
     "accent": "#16a34a",
     "background": {
-      "light": "linear-gradient(135deg, #ffffff 0%, #dcfce7 100%)",
-      "dark": "linear-gradient(135deg, #0a0a0a 0%, #14532d 100%)"
+      "dark": "linear-gradient(135deg, #0a0a0a 0%, #14532d 100%)",
+      "light": "linear-gradient(135deg, #ffffff 0%, #dcfce7 100%)"
     },
-    "navStyle": "base",
-    "navActiveStyle": "base"
+    "fontBody": "Geist",
+    "fontHeading": "Sora",
+    "fontMono": "JetBrains Mono",
+    "navActiveStyle": "base",
+    "navStyle": "base"
   },
-  "graph": false,
-  "toc": true,
-  "search": true
+  "title": "leafpress",
+  "toc": true
 }

@@ -21,6 +21,7 @@ type Renderer struct {
 	md              goldmark.Markdown
 	resolver        *LinkResolver
 	enableWikilinks bool
+	basePath        string // Base path for links (e.g., "/repo-name" for GitHub Pages)
 }
 
 // Buffer pool for markdown rendering (reduces allocations)
@@ -31,7 +32,7 @@ var bufferPool = sync.Pool{
 }
 
 // NewRenderer creates a new markdown renderer
-func NewRenderer(resolver *LinkResolver, enableWikilinks bool) *Renderer {
+func NewRenderer(resolver *LinkResolver, enableWikilinks bool, basePath string) *Renderer {
 	md := goldmark.New(
 		goldmark.WithExtensions(
 			extension.GFM, // GitHub Flavored Markdown
@@ -58,6 +59,7 @@ func NewRenderer(resolver *LinkResolver, enableWikilinks bool) *Renderer {
 		md:              md,
 		resolver:        resolver,
 		enableWikilinks: enableWikilinks,
+		basePath:        basePath,
 	}
 }
 
@@ -319,7 +321,7 @@ func (r *Renderer) processWikiLinks(content string, warnings *[]string) string {
 				if resolved.Ambiguous {
 					*warnings = append(*warnings, "ambiguous link: [["+link.Target+"]]")
 				}
-				replacement = `<a class="lp-wikilink" href="` + resolved.Page.Permalink + `">` + link.Label + `</a>`
+				replacement = `<a class="lp-wikilink" href="` + r.basePath + resolved.Page.Permalink + `">` + link.Label + `</a>`
 			}
 		} else {
 			// No resolver - just render the label
@@ -416,7 +418,7 @@ func processBlockquoteCitations(html string) string {
 
 // RenderPages renders HTML content for all pages in parallel
 // If resolver is nil, a new one will be created
-func RenderPages(pages []*Page, enableWikilinks bool, resolver *LinkResolver) []string {
+func RenderPages(pages []*Page, enableWikilinks bool, resolver *LinkResolver, basePath string) []string {
 	if len(pages) == 0 {
 		return nil
 	}
@@ -424,7 +426,7 @@ func RenderPages(pages []*Page, enableWikilinks bool, resolver *LinkResolver) []
 	if resolver == nil {
 		resolver = NewLinkResolver(pages)
 	}
-	renderer := NewRenderer(resolver, enableWikilinks)
+	renderer := NewRenderer(resolver, enableWikilinks, basePath)
 
 	numWorkers := runtime.NumCPU()
 	if numWorkers > len(pages) {
