@@ -26,20 +26,13 @@ leafpress deploy
 
 ## Setup
 
-### 1. Create Access Token
-
-1. Go to [vercel.com/account/tokens](https://vercel.com/account/tokens)
-2. Click "Create" to generate a new token
-3. Name it (e.g., "leafpress")
-4. Copy the token
-
-### 2. Run Deploy
+Run the deploy command:
 
 ```bash
 leafpress deploy --provider vercel
 ```
 
-Paste your token when prompted. The wizard will guide you through project selection.
+This opens your browser for Vercel authentication. After authorizing, the wizard guides you through project selection.
 
 ## CI/CD Usage
 

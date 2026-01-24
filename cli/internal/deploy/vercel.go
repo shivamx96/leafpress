@@ -57,10 +57,10 @@ func (v *VercelProvider) NeedsAuth() bool {
 	return true
 }
 
-// Authenticate prompts for a personal access token
+// Authenticate performs OAuth device flow
 func (v *VercelProvider) Authenticate(ctx context.Context) (*Credentials, error) {
-	auth := NewVercelAuth()
-	return auth.Authenticate(ctx)
+	oauth := NewVercelOAuth()
+	return oauth.Authenticate(ctx)
 }
 
 // ValidateCredentials checks if the token is still valid
