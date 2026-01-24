@@ -134,7 +134,11 @@ func (w *Wizard) authenticate(ctx context.Context, provider Provider) (*Credenti
 		fmt.Printf("  Warning: couldn't save credentials: %v\n", err)
 	} else {
 		fmt.Printf("\n  Credentials saved to %s\n", w.store.Path())
-		fmt.Println("  Note: Token stored in plaintext. For CI/CD, use LEAFPRESS_GITHUB_TOKEN env var instead.")
+		envVar := "LEAFPRESS_GITHUB_TOKEN"
+		if provider.Name() == "vercel" {
+			envVar = "LEAFPRESS_VERCEL_TOKEN"
+		}
+		fmt.Printf("  Note: Token stored in plaintext. For CI/CD, use %s env var instead.\n", envVar)
 	}
 
 	fmt.Printf("\n  Authenticated as %s\n", creds.Username)
@@ -151,6 +155,12 @@ func (w *Wizard) configureProvider(ctx context.Context, provider Provider, creds
 			return nil, fmt.Errorf("internal error: expected GitHubPagesProvider, got %T", provider)
 		}
 		return w.configureGitHubPages(ctx, ghProvider, creds)
+	case "vercel":
+		vercelProvider, ok := provider.(*VercelProvider)
+		if !ok {
+			return nil, fmt.Errorf("internal error: expected VercelProvider, got %T", provider)
+		}
+		return w.configureVercel(ctx, vercelProvider, creds)
 	case "mock":
 		return &ProviderConfig{
 			Provider: "mock",
@@ -253,6 +263,128 @@ func (w *Wizard) configureGitHubPages(ctx context.Context, provider *GitHubPages
 			SettingBranch: branch,
 		},
 	}, nil
+}
+
+// configureVercel handles Vercel specific setup
+func (w *Wizard) configureVercel(ctx context.Context, provider *VercelProvider, creds *Credentials) (*ProviderConfig, error) {
+	fmt.Println()
+	fmt.Println("  Fetching your Vercel projects...")
+
+	projects, err := provider.ListProjects(ctx, creds.AccessToken, "")
+	if err != nil {
+		fmt.Printf("  Could not fetch projects: %v\n", err)
+		fmt.Println("  You can enter a project name manually.")
+		projects = nil
+	}
+
+	var selectedProject string
+
+	if len(projects) > 0 {
+		// Show project selection
+		fmt.Println()
+		fmt.Println("  Select a project or create a new one:")
+		fmt.Println()
+
+		maxShow := 10
+		if len(projects) < maxShow {
+			maxShow = len(projects)
+		}
+
+		fmt.Println("    0. Create new project")
+		for i := 0; i < maxShow; i++ {
+			fmt.Printf("    %d. %s\n", i+1, projects[i].Name)
+		}
+
+		if len(projects) > maxShow {
+			fmt.Printf("    ... and %d more\n", len(projects)-maxShow)
+		}
+
+		for {
+			fmt.Print("\n  Enter choice or project name: ")
+			input, err := w.reader.ReadString('\n')
+			if err != nil {
+				return nil, err
+			}
+
+			input = strings.TrimSpace(input)
+			if input == "" {
+				continue
+			}
+
+			// Check if it's a number
+			if choice, err := strconv.Atoi(input); err == nil {
+				if choice == 0 {
+					// Create new project - prompt for name
+					selectedProject = ""
+					break
+				}
+				if choice >= 1 && choice <= len(projects) {
+					selectedProject = projects[choice-1].Name
+					break
+				}
+				fmt.Printf("  Please enter a number between 0 and %d\n", len(projects))
+				continue
+			}
+
+			// Use input as project name
+			selectedProject = input
+			break
+		}
+	}
+
+	// If no project selected, prompt for new project name
+	if selectedProject == "" {
+		for {
+			fmt.Print("\n  Enter project name: ")
+			input, err := w.reader.ReadString('\n')
+			if err != nil {
+				return nil, err
+			}
+
+			input = strings.TrimSpace(input)
+			if input == "" {
+				fmt.Println("  Project name cannot be empty")
+				continue
+			}
+
+			// Validate project name (alphanumeric, hyphens, lowercase)
+			if !isValidVercelProjectName(input) {
+				fmt.Println("  Invalid name. Use lowercase letters, numbers, and hyphens only.")
+				continue
+			}
+
+			selectedProject = input
+			break
+		}
+	}
+
+	fmt.Println()
+	fmt.Printf("  Project: %s\n", selectedProject)
+	fmt.Printf("  URL: https://%s.vercel.app\n", selectedProject)
+
+	return &ProviderConfig{
+		Provider: "vercel",
+		Settings: map[string]string{
+			"project_name": selectedProject,
+		},
+	}, nil
+}
+
+// isValidVercelProjectName checks if a project name is valid for Vercel
+func isValidVercelProjectName(name string) bool {
+	if len(name) == 0 || len(name) > 52 {
+		return false
+	}
+	for _, c := range name {
+		if !((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-') {
+			return false
+		}
+	}
+	// Cannot start or end with hyphen
+	if name[0] == '-' || name[len(name)-1] == '-' {
+		return false
+	}
+	return true
 }
 
 // IsInteractive returns true if running in an interactive terminal

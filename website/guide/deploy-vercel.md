@@ -3,53 +3,98 @@ title: "Deploy to Vercel"
 date: 2025-12-21
 ---
 
-Deploy your leafpress site to Vercel with Git-based continuous deployment.
+Deploy your leafpress site to Vercel with automatic SSL and edge network distribution.
 
-## Quick Start
+## One-Command Deploy
 
-1. Push your site to GitHub/GitLab
-2. Import the repository in Vercel dashboard
-3. Configure build settings
-4. Deploy
+The simplest way to deploy to Vercel:
+
+```bash
+leafpress deploy --provider vercel
+```
+
+First-time setup will:
+1. Prompt you for a Vercel access token
+2. Let you select or create a project
+3. Save configuration for future deploys
+
+After setup, subsequent deploys are just:
+
+```bash
+leafpress deploy
+```
 
 ## Setup
 
-### 1. Connect Repository
+### 1. Create Access Token
 
-1. Go to [vercel.com](https://vercel.com) and sign in
-2. Click "Add New Project"
-3. Import your Git repository
+1. Go to [vercel.com/account/tokens](https://vercel.com/account/tokens)
+2. Click "Create" to generate a new token
+3. Name it (e.g., "leafpress")
+4. Copy the token
 
-### 2. Configure Build Settings
+### 2. Run Deploy
 
-Set the following in the Vercel project settings:
+```bash
+leafpress deploy --provider vercel
+```
 
-- **Framework Preset**: Other
-- **Build Command**: `go install github.com/shivamx96/leafpress/cli/cmd/leafpress@latest && leafpress build`
-- **Output Directory**: `_site`
-- **Install Command**: (leave empty)
+Paste your token when prompted. The wizard will guide you through project selection.
 
-### 3. Deploy
+## CI/CD Usage
 
-Click "Deploy" and Vercel will build and deploy your site. Future pushes to your main branch will trigger automatic deployments.
+For automated deployments, use the `LEAFPRESS_VERCEL_TOKEN` environment variable:
 
-## Configuration File
+```bash
+export LEAFPRESS_VERCEL_TOKEN=your_token_here
+leafpress deploy
+```
 
-Add a `vercel.json` to your project root for consistent settings:
+### GitHub Actions Example
 
-```json
-{
-  "buildCommand": "go install github.com/shivamx96/leafpress/cli/cmd/leafpress@latest && leafpress build",
-  "outputDirectory": "_site"
-}
+```yaml
+name: Deploy to Vercel
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+      
+      - name: Install leafpress
+        run: go install github.com/shivamx96/leafpress/cli/cmd/leafpress@latest
+      
+      - name: Deploy
+        env:
+          LEAFPRESS_VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: leafpress deploy --provider vercel
+```
+
+Add your Vercel token as a repository secret named `VERCEL_TOKEN`.
+
+## Dry Run
+
+Validate your setup without deploying:
+
+```bash
+leafpress deploy --dry-run
 ```
 
 ## Custom Domain
 
-1. Go to your project settings in Vercel
-2. Navigate to "Domains"
-3. Add your custom domain
-4. Update `baseURL` in `leafpress.json`:
+1. Deploy your site first
+2. Go to your project in Vercel dashboard
+3. Navigate to Settings > Domains
+4. Add your custom domain
+5. Update `baseURL` in `leafpress.json`:
 
 ```json
 {
@@ -57,21 +102,29 @@ Add a `vercel.json` to your project root for consistent settings:
 }
 ```
 
-## Environment Variables
+## Reconfigure
 
-If you need to set environment variables for your build:
+To change projects or re-authenticate:
 
-1. Go to Project Settings > Environment Variables
-2. Add variables as needed
+```bash
+leafpress deploy --reconfigure
+```
 
-## Preview Deployments
+## Alternative: Git-Based Deploy
 
-Vercel automatically creates preview deployments for pull requests. Each PR gets a unique URL to preview changes before merging.
+You can also deploy via Vercel's Git integration:
 
-## Troubleshooting
+1. Push your site to GitHub/GitLab
+2. Import the repository at [vercel.com](https://vercel.com)
+3. Configure build settings:
+   - **Build Command**: `go install github.com/shivamx96/leafpress/cli/cmd/leafpress@latest && leafpress build`
+   - **Output Directory**: `_site`
 
-**Build failing?** Check that Go is available in Vercel's build environment. The `go install` command should handle this automatically.
+Add a `vercel.json` for consistent settings:
 
-**404 on routes?** Vercel handles client-side routing differently. For a static site like leafpress, this shouldn't be an issue as all pages are pre-rendered.
-
-**Slow builds?** The first build downloads and installs leafpress. Subsequent builds use Vercel's cache and should be faster.
+```json
+{
+  "buildCommand": "go install github.com/shivamx96/leafpress/cli/cmd/leafpress@latest && leafpress build",
+  "outputDirectory": "_site"
+}
+```
