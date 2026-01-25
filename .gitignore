@@ -18,6 +18,7 @@ go.work
 
 # IDE
 .idea/
+leafpress.iml
 .vscode/
 *.swp
 *.swo
