@@ -4,6 +4,15 @@ date: 2025-01-06
 toc: false
 ---
 
+## v1.1.0-alpha.1
+*January 25, 2025*
+
+- **Vercel deployment provider** - Deploy to Vercel with `leafpress deploy --provider vercel`
+- **OAuth device flow for Vercel** - Browser-based authentication (same UX as GitHub)
+- **Clipboard support for auth codes** - Auth codes automatically copied to clipboard on macOS, Linux, and Windows
+- **Better error messages** - Improved error reporting for deployment failures
+- Fixed Vercel username display after authentication and docs for navStyle/navActiveStyle options
+
 ## v1.1.0-alpha
 *January 25, 2025*
 
