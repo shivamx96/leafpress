@@ -270,3 +270,39 @@ func openBrowser(url string) error {
 
 	return cmd.Start()
 }
+
+// copyToClipboard copies text to the system clipboard
+func copyToClipboard(text string) error {
+	var cmd *exec.Cmd
+
+	switch runtime.GOOS {
+	case "darwin":
+		cmd = exec.Command("pbcopy")
+	case "linux":
+		// Try xclip first, fall back to xsel
+		cmd = exec.Command("xclip", "-selection", "clipboard")
+	case "windows":
+		cmd = exec.Command("cmd", "/c", "clip")
+	default:
+		return fmt.Errorf("unsupported platform")
+	}
+
+	pipe, err := cmd.StdinPipe()
+	if err != nil {
+		return err
+	}
+
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+
+	if _, err := pipe.Write([]byte(text)); err != nil {
+		return err
+	}
+
+	if err := pipe.Close(); err != nil {
+		return err
+	}
+
+	return cmd.Wait()
+}

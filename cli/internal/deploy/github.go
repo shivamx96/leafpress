@@ -62,9 +62,17 @@ func (g *GitHubPagesProvider) NeedsAuth() bool {
 func (g *GitHubPagesProvider) Authenticate(ctx context.Context) (*Credentials, error) {
 	return g.oauth.Authenticate(ctx, func(userCode, verificationURL string) {
 		fmt.Println()
+
+		// Copy code to clipboard first
+		if err := copyToClipboard(userCode); err == nil {
+			fmt.Printf("  Code copied to clipboard: %s\n", userCode)
+		} else {
+			fmt.Printf("  Your code: %s\n", userCode)
+		}
+
+		fmt.Println()
 		fmt.Printf("  Opening browser to authorize leafpress...\n")
 		fmt.Printf("  If browser doesn't open, visit: %s\n", verificationURL)
-		fmt.Printf("  And enter code: %s\n", userCode)
 		fmt.Println()
 		fmt.Println("  Waiting for authorization...")
 	})

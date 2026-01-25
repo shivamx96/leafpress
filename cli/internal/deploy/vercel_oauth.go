@@ -20,7 +20,9 @@ const (
 	// Vercel OAuth endpoints (from OpenID Connect discovery)
 	vercelDeviceAuthURL = "https://api.vercel.com/login/oauth/device-authorization"
 	vercelTokenURL      = "https://api.vercel.com/login/oauth/token"
-	vercelUserInfoURL   = "https://api.vercel.com/login/oauth/userinfo"
+
+	// Vercel REST API for user info
+	vercelUserAPIURL = "https://api.vercel.com/v2/user"
 )
 
 // VercelDeviceCodeResponse from Vercel's device flow
@@ -43,12 +45,13 @@ type VercelTokenResponse struct {
 	ErrorDesc    string `json:"error_description,omitempty"`
 }
 
-// VercelUserInfo represents the authenticated user
-type VercelUserInfo struct {
-	Sub      string `json:"sub"`      // User ID
-	Name     string `json:"name"`     // Display name
-	Username string `json:"username"` // Username (preferred_username in OIDC)
-	Email    string `json:"email"`
+// VercelUserResponse represents the /v2/user API response
+type VercelUserResponse struct {
+	User struct {
+		Username string `json:"username"`
+		Name     string `json:"name"`
+		Email    string `json:"email"`
+	} `json:"user"`
 }
 
 // VercelOAuth handles the Vercel device OAuth flow
@@ -75,12 +78,18 @@ func (v *VercelOAuth) Authenticate(ctx context.Context) (*Credentials, error) {
 		return nil, fmt.Errorf("failed to request device code: %w", err)
 	}
 
-	// Step 2: Show user the code and verification URL
+	// Step 2: Copy code to clipboard and show user
 	fmt.Println()
-	fmt.Println("  To authenticate, visit:")
-	fmt.Printf("  %s\n", deviceCode.VerificationURI)
+
+	if err := copyToClipboard(deviceCode.UserCode); err == nil {
+		fmt.Printf("  Code copied to clipboard: %s\n", deviceCode.UserCode)
+	} else {
+		fmt.Printf("  Your code: %s\n", deviceCode.UserCode)
+	}
+
 	fmt.Println()
-	fmt.Printf("  And enter code: %s\n", deviceCode.UserCode)
+	fmt.Println("  Opening browser to authorize leafpress...")
+	fmt.Printf("  If browser doesn't open, visit: %s\n", deviceCode.VerificationURI)
 	fmt.Println()
 	fmt.Println("  Waiting for authorization...")
 
@@ -96,7 +105,7 @@ func (v *VercelOAuth) Authenticate(ctx context.Context) (*Credentials, error) {
 	}
 
 	// Step 4: Get user info
-	userInfo, err := v.getUserInfo(ctx, token.AccessToken)
+	userResp, err := v.getUser(ctx, token.AccessToken)
 	if err != nil {
 		// Not fatal - we have a valid token
 		return &Credentials{
@@ -105,9 +114,12 @@ func (v *VercelOAuth) Authenticate(ctx context.Context) (*Credentials, error) {
 		}, nil
 	}
 
-	username := userInfo.Username
+	username := userResp.User.Username
 	if username == "" {
-		username = userInfo.Name
+		username = userResp.User.Name
+	}
+	if username == "" {
+		username = userResp.User.Email
 	}
 
 	return &Credentials{
@@ -121,6 +133,7 @@ func (v *VercelOAuth) Authenticate(ctx context.Context) (*Credentials, error) {
 func (v *VercelOAuth) requestDeviceCode(ctx context.Context) (*VercelDeviceCodeResponse, error) {
 	data := url.Values{
 		"client_id": {v.clientID},
+		"scope":     {"openid offline_access"},
 	}
 
 	req, err := http.NewRequestWithContext(ctx, "POST", vercelDeviceAuthURL, strings.NewReader(data.Encode()))
@@ -240,9 +253,9 @@ func (v *VercelOAuth) checkToken(ctx context.Context, deviceCode string) (*Verce
 	return &token, nil
 }
 
-// getUserInfo fetches the authenticated user's info
-func (v *VercelOAuth) getUserInfo(ctx context.Context, token string) (*VercelUserInfo, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET", vercelUserInfoURL, nil)
+// getUser fetches the authenticated user's info from /v2/user
+func (v *VercelOAuth) getUser(ctx context.Context, token string) (*VercelUserResponse, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", vercelUserAPIURL, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -260,10 +273,10 @@ func (v *VercelOAuth) getUserInfo(ctx context.Context, token string) (*VercelUse
 		return nil, fmt.Errorf("failed to get user info: %s", string(body))
 	}
 
-	var userInfo VercelUserInfo
-	if err := json.NewDecoder(resp.Body).Decode(&userInfo); err != nil {
+	var userResp VercelUserResponse
+	if err := json.NewDecoder(resp.Body).Decode(&userResp); err != nil {
 		return nil, err
 	}
 
-	return &userInfo, nil
+	return &userResp, nil
 }

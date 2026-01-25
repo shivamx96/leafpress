@@ -18,7 +18,7 @@ const (
 	vercelAPIURL      = "https://api.vercel.com"
 	vercelUploadURL   = "https://api.vercel.com/v2/files"
 	vercelDeployURL   = "https://api.vercel.com/v13/deployments"
-	vercelProjectsURL = "https://api.vercel.com/v9/projects"
+	vercelProjectsURL = "https://api.vercel.com/v10/projects"
 	vercelUserURL     = "https://api.vercel.com/v2/user"
 )
 
@@ -133,14 +133,14 @@ func (v *VercelProvider) ListProjects(ctx context.Context, token string, teamID 
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("failed to list projects: %s", string(body))
+		return nil, fmt.Errorf("failed to list projects (status %d): %s", resp.StatusCode, string(body))
 	}
 
 	var result struct {
 		Projects []VercelProject `json:"projects"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse projects response: %w", err)
 	}
 
 	return result.Projects, nil
