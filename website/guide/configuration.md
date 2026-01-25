@@ -95,8 +95,8 @@ That's it. Everything else has sensible defaults.
 | `accent` | `"#50ac00"` | Accent color for links and highlights |
 | `background.light` | `"#ffffff"` | Light mode background (color or gradient) |
 | `background.dark` | `"#1a1a1a"` | Dark mode background (color or gradient) |
-| `navStyle` | `"base"` | `"base"`, `"sticky"`, `"glassy"`, or `"pill"` |
-| `navActiveStyle` | `"base"` | `"base"`, `"box"`, `"underlined"`, or `"accent"` |
+| `navStyle` | `"base"` | `"base"`, `"sticky"`, or `"glassy"` |
+| `navActiveStyle` | `"base"` | `"base"`, `"box"`, or `"underlined"` |
 
 Gradients work too:
 ```json

@@ -140,8 +140,6 @@ func GetFromEnv(provider string) *Credentials {
 	switch provider {
 	case "github-pages":
 		tokenEnv = "LEAFPRESS_GITHUB_TOKEN"
-	case "netlify":
-		tokenEnv = "LEAFPRESS_NETLIFY_TOKEN"
 	case "vercel":
 		tokenEnv = "LEAFPRESS_VERCEL_TOKEN"
 	default:

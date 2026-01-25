@@ -14,8 +14,8 @@ leafpress deploy --provider vercel
 ```
 
 First-time setup will:
-1. Prompt you for a Vercel access token
-2. Let you select or create a project
+1. Open your browser for Vercel authorization
+2. Guide you through project configuration
 3. Save configuration for future deploys
 
 After setup, subsequent deploys are just:

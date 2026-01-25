@@ -20,6 +20,6 @@ Everything you need to get started with leafpress.
 ## Going Live
 
 6. [[guide/deploy-github|Deploy to GitHub Pages]] — One-command deploy with `leafpress deploy`
-7. [[guide/deploy-vercel|Deploy to Vercel]] — Git-based deployment to Vercel
+7. [[guide/deploy-vercel|Deploy to Vercel]] — One-command deploy to Vercel
 8. [[guide/deploy-custom|Custom Deployment]] — Netlify, Docker, and more
 
