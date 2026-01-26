@@ -75,6 +75,16 @@ jobs:
 
 Add your Vercel token as a repository secret named `VERCEL_TOKEN` in your repository settings.
 
+## Check What's Pending
+
+Before deploying, see what files have changed:
+
+```bash
+leafpress status
+```
+
+This shows which files are new, modified, or deleted since your last deployment. See [[guide/deployment-status|Deployment Status]] for details.
+
 ## Dry Run
 
 Validate your setup without deploying:

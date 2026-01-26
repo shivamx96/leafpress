@@ -159,6 +159,17 @@ Netlify automatically provides free SSL certificates for custom domains via Let'
 - **Automatic SSL**: HTTPS included automatically
 - **Preview URLs**: Each deploy gets a unique preview URL
 - **Deploy Previews**: Optional branch deploys for testing
+- **Deployment Tracking**: `leafpress status` shows pending changes since last deploy
+
+## Check What's Pending
+
+Before deploying, see what files have changed:
+
+```bash
+leafpress status
+```
+
+This shows which files are new, modified, or deleted since your last deployment. See [[guide/deployment-status|Deployment Status]] for details.
 
 ## Reconfigure
 

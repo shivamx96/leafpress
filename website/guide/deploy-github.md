@@ -97,6 +97,16 @@ jobs:
 
 Alternatively, if you want to use a Personal Access Token instead, create one with `repo` scope and add it as a repository secret named `GITHUB_TOKEN`.
 
+## Check What's Pending
+
+Before deploying, see what files have changed:
+
+```bash
+leafpress status
+```
+
+This shows which files are new, modified, or deleted since your last deployment. See [[guide/deployment-status|Deployment Status]] for details.
+
 ## Configuration
 
 Deploy settings are stored in `leafpress.json`:

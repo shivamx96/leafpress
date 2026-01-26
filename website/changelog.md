@@ -4,6 +4,12 @@ date: 2025-01-06
 toc: false
 ---
 
+## v1.0.0-beta
+*January 26, 2025*
+
+- Deployment manifest tracking: stores list of deployed files with hashes
+- New `leafpress status` command: show pending changes since last deployment
+
 ## v1.0.0-alpha.4
 *January 26, 2025*
 
