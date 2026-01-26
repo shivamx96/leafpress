@@ -17,7 +17,8 @@ type DeploymentRecord struct {
 	DeployID      string            `json:"deployID"`
 	URL           string            `json:"url"`
 	FileCount     int               `json:"fileCount"`
-	FilesDeployed map[string]string `json:"filesDeployed"` // path -> SHA1 hash
+	FilesDeployed map[string]string `json:"filesDeployed"` // path -> SHA1 hash (deployed files for reference)
+	SourceFiles   map[string]string `json:"sourceFiles"`   // path -> SHA1 hash (source files for comparison)
 }
 
 // DeploymentManifest tracks deployment history and current state
@@ -72,7 +73,7 @@ func (m *DeploymentManifest) Save(projectRoot string) error {
 }
 
 // RecordDeployment records a new deployment
-func (m *DeploymentManifest) RecordDeployment(result *DeployResult, provider string, filesDeployed map[string]string) {
+func (m *DeploymentManifest) RecordDeployment(result *DeployResult, provider string, filesDeployed map[string]string, sourceFiles map[string]string) {
 	record := DeploymentRecord{
 		Timestamp:     result.DeployedAt,
 		Provider:      provider,
@@ -80,6 +81,7 @@ func (m *DeploymentManifest) RecordDeployment(result *DeployResult, provider str
 		URL:           result.URL,
 		FileCount:     len(filesDeployed),
 		FilesDeployed: filesDeployed,
+		SourceFiles:   sourceFiles,
 	}
 
 	// Add to history (keep last 10 deployments)
@@ -92,7 +94,7 @@ func (m *DeploymentManifest) RecordDeployment(result *DeployResult, provider str
 	m.LastDeploy = &record
 }
 
-// GetPendingFiles compares current files against last deployment
+// GetPendingFiles compares current source files against last deployment
 // Returns a list of changed files (path -> current hash)
 func (m *DeploymentManifest) GetPendingFiles(currentFiles map[string]string) map[string]string {
 	if m.LastDeploy == nil {
@@ -102,15 +104,21 @@ func (m *DeploymentManifest) GetPendingFiles(currentFiles map[string]string) map
 
 	pending := make(map[string]string)
 
+	// Use SourceFiles for comparison if available, fallback to FilesDeployed for backwards compatibility
+	previousFiles := m.LastDeploy.SourceFiles
+	if previousFiles == nil {
+		previousFiles = m.LastDeploy.FilesDeployed
+	}
+
 	// Check for new or modified files
 	for path, hash := range currentFiles {
-		if oldHash, exists := m.LastDeploy.FilesDeployed[path]; !exists || oldHash != hash {
+		if oldHash, exists := previousFiles[path]; !exists || oldHash != hash {
 			pending[path] = hash
 		}
 	}
 
-	// Check for deleted files (in lastDeploy but not in current)
-	for path := range m.LastDeploy.FilesDeployed {
+	// Check for deleted files (in previous but not in current)
+	for path := range previousFiles {
 		if _, exists := currentFiles[path]; !exists {
 			pending[path] = "deleted"
 		}

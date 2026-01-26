@@ -44,16 +44,34 @@ Each file shows a status indicator:
 - **`~` (modified)** — File was changed since last deployment
 - **`-` (deleted)** — File was removed since last deployment
 
+## What Gets Tracked
+
+The status command tracks **source files** (what you actually changed):
+
+**Included:**
+- Content files (`.md`, `.txt`)
+- Configuration (`leafpress.json`, theme files)
+- Static assets (`images/`, `static/`, `fonts/`, etc.)
+- Custom CSS and styling
+
+**Excluded:**
+- Build output (`_site/` directory and everything in it)
+- Ignored directories (defined in `leafpress.json`'s `ignore` field)
+- System/metadata files (`.obsidian/`, `.git/`, `node_modules/`, `.DS_Store`, `Thumbs.db`)
+- Deployment manifest (`.leafpress-deploy-state.json`)
+
+This means you see exactly what **you** changed, not auto-generated files. Perfect for knowing what needs deployment!
+
 ## Deployment Manifest
 
 Leafpress stores a `.leafpress-deploy-state.json` file in your project root (added to `.gitignore`). This file tracks:
 
 - Last deployment timestamp
 - Deployed provider and URL
-- SHA1 hash of each deployed file
+- SHA1 hash of each **source file** (notes, config, static assets) at the time of deployment
 - Deployment history (last 10 deployments)
 
-This allows the status command to know exactly which files have changed without rebuilding or analyzing git history.
+This allows the status command to detect exactly which **source files** have changed without rebuilding. The manifest compares your current source files against what was deployed, so you know instantly what needs updating.
 
 ## Use Cases
 
@@ -71,12 +89,14 @@ leafpress deploy
 
 ### Troubleshooting
 
-If a file isn't showing as pending even though you changed it, the hashes might be out of sync. Rebuild and check again:
+**File not showing as pending?**
 
-```bash
-leafpress build
-leafpress status
-```
+The status command compares your current source files against what was deployed. If a file isn't showing as pending even though you know you changed it:
+
+1. Make sure you actually saved the file
+2. Run `leafpress status` again (it recalculates hashes from your source files in real-time)
+
+You shouldn't need to rebuild — the status command checks your actual source files, not the build output.
 
 ### CI/CD Integration
 

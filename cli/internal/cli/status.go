@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/shivamx96/leafpress/cli/internal/config"
 	"github.com/shivamx96/leafpress/cli/internal/deploy"
@@ -66,8 +67,8 @@ func runStatus() error {
 		return fmt.Errorf("build directory '%s' not found - run 'leafpress build' first", buildDir)
 	}
 
-	// Collect current files with hashes
-	currentFiles, err := collectFilesWithHashes(buildDir)
+	// Collect current source files with hashes (respecting ignore patterns and excluding output dir)
+	currentFiles, err := CollectSourceFilesWithHashes(buildDir, cfg.Ignore)
 	if err != nil {
 		return fmt.Errorf("failed to collect files: %w", err)
 	}
@@ -127,21 +128,66 @@ func runStatus() error {
 	return nil
 }
 
-// collectFilesWithHashes walks the build directory and returns file paths with SHA1 hashes
-func collectFilesWithHashes(buildDir string) (map[string]string, error) {
+// CollectSourceFilesWithHashes walks the source directory and returns file paths with SHA1 hashes
+// Tracks all source files (notes, config, assets) that have changed
+// Excludes the output directory (generated files), ignored directories, .obsidian, and system/metadata files
+func CollectSourceFilesWithHashes(buildDir string, ignorePatterns []string) (map[string]string, error) {
 	files := make(map[string]string)
 
-	err := filepath.Walk(buildDir, func(path string, info os.FileInfo, err error) error {
+	// Convert buildDir to absolute path for comparison
+	absBuildDir, err := filepath.Abs(buildDir)
+	if err != nil {
+		return nil, err
+	}
+
+	// System directories to always skip
+	skipDirs := map[string]bool{
+		".obsidian":    true,
+		".git":         true,
+		"node_modules": true,
+	}
+
+	err = filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
+
+		// Skip directories
 		if info.IsDir() {
+			absPath, _ := filepath.Abs(path)
+
+			// Skip output directory
+			if absPath == absBuildDir {
+				return filepath.SkipDir
+			}
+
+			// Skip system directories
+			dirName := filepath.Base(path)
+			if skipDirs[dirName] {
+				return filepath.SkipDir
+			}
+
+			// Skip ignored directories
+			for _, pattern := range ignorePatterns {
+				if dirName == pattern {
+					return filepath.SkipDir
+				}
+			}
 			return nil
 		}
 
-		relPath, err := filepath.Rel(buildDir, path)
-		if err != nil {
-			return err
+		filename := filepath.Base(path)
+
+		// Skip metadata/system files
+		skipFiles := []string{
+			deploy.ManifestFile, // .leafpress-deploy-state.json
+			".DS_Store",         // macOS
+			"Thumbs.db",         // Windows
+		}
+		for _, pattern := range skipFiles {
+			if filename == pattern {
+				return nil
+			}
 		}
 
 		// Calculate SHA1
@@ -152,8 +198,11 @@ func collectFilesWithHashes(buildDir string) (map[string]string, error) {
 		hash := sha1.Sum(data)
 		hashStr := hex.EncodeToString(hash[:])
 
-		// Use forward slashes
-		relPath = filepath.ToSlash(relPath)
+		// Use forward slashes for consistency, remove leading ./
+		relPath := filepath.ToSlash(path)
+		if strings.HasPrefix(relPath, "./") {
+			relPath = relPath[2:]
+		}
 		files["/"+relPath] = hashStr
 
 		return nil
