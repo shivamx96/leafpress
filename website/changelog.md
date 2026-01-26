@@ -4,6 +4,15 @@ date: 2025-01-06
 toc: false
 ---
 
+## v1.0.0-beta.1
+*January 26, 2025*
+
+- All features enabled by default: graph, toc, search, wikilinks, backlinks
+- `leafpress status` now tracks source files instead of build output
+- Status command works without building first
+- Hidden files (`.env`, `.gitignore`, etc.) excluded from tracking by default
+- Improved Netlify deployment reliability with better error handling
+
 ## v1.0.0-beta
 *January 26, 2025*
 
