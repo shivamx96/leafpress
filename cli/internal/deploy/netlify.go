@@ -265,12 +265,19 @@ func (n *NetlifyProvider) Deploy(ctx context.Context, cfg *DeployContext) (*Depl
 		}
 	}
 
-	// Build deployment URL
+	// Build deployment URL - ensure no double protocols
 	deployURL := deploy.URL
 	if deployURL == "" {
 		deployURL = fmt.Sprintf("https://%s.netlify.app", siteID)
-	}
-	if !strings.HasPrefix(deployURL, "https://") {
+	} else {
+		// Remove any existing protocol (http:// or https://)
+		if strings.HasPrefix(deployURL, "https://") {
+			deployURL = strings.TrimPrefix(deployURL, "https://")
+		}
+		if strings.HasPrefix(deployURL, "http://") {
+			deployURL = strings.TrimPrefix(deployURL, "http://")
+		}
+		// Always use https
 		deployURL = "https://" + deployURL
 	}
 

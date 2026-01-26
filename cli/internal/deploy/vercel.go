@@ -238,9 +238,14 @@ func (v *VercelProvider) Deploy(ctx context.Context, cfg *DeployContext) (*Deplo
 	}
 
 	deploymentURL := deployResp.URL
-	if !strings.HasPrefix(deploymentURL, "https://") {
-		deploymentURL = "https://" + deploymentURL
+	// Remove any existing protocol and ensure https
+	if strings.HasPrefix(deploymentURL, "https://") {
+		deploymentURL = strings.TrimPrefix(deploymentURL, "https://")
 	}
+	if strings.HasPrefix(deploymentURL, "http://") {
+		deploymentURL = strings.TrimPrefix(deploymentURL, "http://")
+	}
+	deploymentURL = "https://" + deploymentURL
 
 	return &DeployResult{
 		URL:           deploymentURL,
