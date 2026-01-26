@@ -2,7 +2,9 @@ package deploy
 
 import (
 	"context"
+	"crypto/sha1"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -170,16 +172,49 @@ func (g *GitHubPagesProvider) Deploy(ctx context.Context, cfg *DeployContext) (*
 	}
 	defer os.RemoveAll(tmpDir)
 
+	// Collect files for manifest tracking
+	deployedFileMap := make(map[string]string)
+	err = filepath.Walk(cfg.BuildDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+
+		relPath, err := filepath.Rel(cfg.BuildDir, path)
+		if err != nil {
+			return err
+		}
+
+		// Calculate SHA1 for manifest
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		hash := sha1.Sum(data)
+		hashStr := hex.EncodeToString(hash[:])
+
+		relPath = filepath.ToSlash(relPath)
+		deployedFileMap["/"+relPath] = hashStr
+
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to collect files for manifest: %w", err)
+	}
+
 	// Deploy using git
 	if err := g.gitDeploy(ctx, cfg.BuildDir, tmpDir, repo, branch, cfg.Creds.AccessToken); err != nil {
 		return nil, err
 	}
 
 	return &DeployResult{
-		URL:        g.buildPagesURL(repo),
-		DeployID:   fmt.Sprintf("gh-%d", time.Now().Unix()),
-		DeployedAt: time.Now(),
-		Message:    fmt.Sprintf("Deployed to %s", branch),
+		URL:           g.buildPagesURL(repo),
+		DeployID:      fmt.Sprintf("gh-%d", time.Now().Unix()),
+		DeployedAt:    time.Now(),
+		Message:       fmt.Sprintf("Deployed to %s", branch),
+		DeployedFiles: deployedFileMap,
 	}, nil
 }
 

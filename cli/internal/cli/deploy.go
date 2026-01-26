@@ -191,6 +191,17 @@ func runDeploy(providerFlag string, skipBuild, reconfigure, dryRun bool) error {
 		fmt.Printf("  Dry run complete. Would deploy to: %s\n", result.URL)
 	} else {
 		fmt.Printf("  Deployed! Live at %s\n", result.URL)
+
+		// Save deployment manifest for tracking
+		manifest, err := deploy.LoadDeploymentManifest(".")
+		if err != nil {
+			fmt.Printf("  Warning: couldn't load deployment manifest: %v\n", err)
+		} else {
+			manifest.RecordDeployment(result, providerConfig.Provider, result.DeployedFiles)
+			if err := manifest.Save("."); err != nil {
+				fmt.Printf("  Warning: couldn't save deployment manifest: %v\n", err)
+			}
+		}
 	}
 
 	return nil

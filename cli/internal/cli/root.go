@@ -32,6 +32,7 @@ Your garden folder IS the product. leafpress is invisible infrastructure.`,
 	rootCmd.AddCommand(serveCmd())
 	rootCmd.AddCommand(newCmd())
 	rootCmd.AddCommand(deployCmd())
+	rootCmd.AddCommand(statusCmd())
 	rootCmd.AddCommand(versionCmd(version))
 	rootCmd.AddCommand(updateCmd(version))
 

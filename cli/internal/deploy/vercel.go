@@ -172,8 +172,9 @@ func (v *VercelProvider) Deploy(ctx context.Context, cfg *DeployContext) (*Deplo
 
 	fmt.Printf("  Uploading %d files...\n", len(files))
 
-	// Upload each file
+	// Upload each file and track deployed files
 	uploadedFiles := make([]map[string]interface{}, 0, len(files))
+	deployedFileMap := make(map[string]string)
 	for _, file := range files {
 		sha, size, err := v.uploadFile(ctx, cfg.Creds.AccessToken, file.path, teamID)
 		if err != nil {
@@ -184,6 +185,7 @@ func (v *VercelProvider) Deploy(ctx context.Context, cfg *DeployContext) (*Deplo
 			"sha":  sha,
 			"size": size,
 		})
+		deployedFileMap["/"+file.relativePath] = sha
 	}
 
 	fmt.Println("  Creating deployment...")
@@ -241,10 +243,11 @@ func (v *VercelProvider) Deploy(ctx context.Context, cfg *DeployContext) (*Deplo
 	}
 
 	return &DeployResult{
-		URL:        deploymentURL,
-		DeployID:   deployResp.ID,
-		DeployedAt: time.Now(),
-		Message:    "Deployed to Vercel",
+		URL:           deploymentURL,
+		DeployID:      deployResp.ID,
+		DeployedAt:    time.Now(),
+		Message:       "Deployed to Vercel",
+		DeployedFiles: deployedFileMap,
 	}, nil
 }
 

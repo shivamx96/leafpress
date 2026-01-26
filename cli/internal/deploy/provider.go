@@ -58,10 +58,11 @@ type DeployContext struct {
 
 // DeployResult contains information about a completed deployment
 type DeployResult struct {
-	URL        string    // Live URL of the deployed site
-	DeployID   string    // Provider-specific deploy identifier
-	DeployedAt time.Time // Timestamp of deployment
-	Message    string    // Optional status message
+	URL           string            // Live URL of the deployed site
+	DeployID      string            // Provider-specific deploy identifier
+	DeployedAt    time.Time         // Timestamp of deployment
+	Message       string            // Optional status message
+	DeployedFiles map[string]string // Map of path -> SHA1 hash of deployed files
 }
 
 // Common provider setting keys
