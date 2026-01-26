@@ -22,6 +22,10 @@ jobs:
             goarch: amd64
           - goos: linux
             goarch: arm64
+          - goos: windows
+            goarch: amd64
+          - goos: windows
+            goarch: arm64
 
     steps:
       - uses: actions/checkout@v4
@@ -41,18 +45,29 @@ jobs:
           GOARCH: ${{ matrix.goarch }}
         run: |
           cd cli
-          go build -ldflags="-s -w -X main.version=${{ steps.version.outputs.VERSION }}" -o leafpress ./cmd/leafpress
+          BINARY_NAME="leafpress"
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            BINARY_NAME="leafpress.exe"
+          fi
+          go build -ldflags="-s -w -X main.version=${{ steps.version.outputs.VERSION }}" -o $BINARY_NAME ./cmd/leafpress
 
-      - name: Package
+      - name: Package (Unix)
+        if: matrix.goos != 'windows'
         run: |
           mkdir -p dist
           tar -czvf dist/leafpress-${{ steps.version.outputs.VERSION }}-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz -C cli leafpress
+
+      - name: Package (Windows)
+        if: matrix.goos == 'windows'
+        run: |
+          mkdir -p dist
+          cd cli && zip ../dist/leafpress-${{ steps.version.outputs.VERSION }}-${{ matrix.goos }}-${{ matrix.goarch }}.zip leafpress.exe
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: leafpress-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: dist/*.tar.gz
+          path: dist/*
 
   release:
     needs: build
@@ -70,7 +85,9 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: artifacts/**/*.tar.gz
+          files: |
+            artifacts/**/*.tar.gz
+            artifacts/**/*.zip
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
