@@ -108,11 +108,17 @@ func runStatus() error {
 			}
 			sort.Strings(pendingPaths)
 
+			// Use SourceFiles for comparison, fallback to FilesDeployed for backwards compatibility
+			previousFiles := manifest.LastDeploy.SourceFiles
+			if previousFiles == nil {
+				previousFiles = manifest.LastDeploy.FilesDeployed
+			}
+
 			for _, path := range pendingPaths {
 				status := "modified"
 				if pendingFiles[path] == "deleted" {
 					status = "deleted"
-				} else if _, exists := manifest.LastDeploy.FilesDeployed[path]; !exists {
+				} else if _, exists := previousFiles[path]; !exists {
 					status = "new"
 				}
 
