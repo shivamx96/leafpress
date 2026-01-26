@@ -135,8 +135,11 @@ func (w *Wizard) authenticate(ctx context.Context, provider Provider) (*Credenti
 	} else {
 		fmt.Printf("\n  Credentials saved to %s\n", w.store.Path())
 		envVar := "LEAFPRESS_GITHUB_TOKEN"
-		if provider.Name() == "vercel" {
+		switch provider.Name() {
+		case "vercel":
 			envVar = "LEAFPRESS_VERCEL_TOKEN"
+		case "netlify":
+			envVar = "LEAFPRESS_NETLIFY_TOKEN"
 		}
 		fmt.Printf("  Note: Token stored in plaintext. For CI/CD, use %s env var instead.\n", envVar)
 	}
@@ -161,6 +164,12 @@ func (w *Wizard) configureProvider(ctx context.Context, provider Provider, creds
 			return nil, fmt.Errorf("internal error: expected VercelProvider, got %T", provider)
 		}
 		return w.configureVercel(ctx, vercelProvider, creds)
+	case "netlify":
+		netlifyProvider, ok := provider.(*NetlifyProvider)
+		if !ok {
+			return nil, fmt.Errorf("internal error: expected NetlifyProvider, got %T", provider)
+		}
+		return w.configureNetlify(ctx, netlifyProvider, creds)
 	case "mock":
 		return &ProviderConfig{
 			Provider: "mock",
@@ -373,6 +382,136 @@ func (w *Wizard) configureVercel(ctx context.Context, provider *VercelProvider, 
 // isValidVercelProjectName checks if a project name is valid for Vercel
 func isValidVercelProjectName(name string) bool {
 	if len(name) == 0 || len(name) > 52 {
+		return false
+	}
+	for _, c := range name {
+		if !((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-') {
+			return false
+		}
+	}
+	// Cannot start or end with hyphen
+	if name[0] == '-' || name[len(name)-1] == '-' {
+		return false
+	}
+	return true
+}
+
+// configureNetlify handles Netlify specific setup
+func (w *Wizard) configureNetlify(ctx context.Context, provider *NetlifyProvider, creds *Credentials) (*ProviderConfig, error) {
+	fmt.Println()
+	fmt.Println("  Fetching your Netlify sites...")
+
+	sites, err := provider.ListSites(ctx, creds.AccessToken)
+	if err != nil {
+		fmt.Printf("  Could not fetch sites: %v\n", err)
+		fmt.Println("  You can enter a site ID manually.")
+		sites = nil
+	}
+
+	var selectedSiteID string
+
+	if len(sites) > 0 {
+		// Show site selection
+		fmt.Println()
+		fmt.Println("  Select a site or create a new one:")
+		fmt.Println()
+
+		maxShow := 10
+		if len(sites) < maxShow {
+			maxShow = len(sites)
+		}
+
+		fmt.Println("    0. Create new site")
+		for i := 0; i < maxShow; i++ {
+			fmt.Printf("    %d. %s (%s)\n", i+1, sites[i].Name, sites[i].URL)
+		}
+
+		if len(sites) > maxShow {
+			fmt.Printf("    ... and %d more\n", len(sites)-maxShow)
+		}
+
+		for {
+			fmt.Print("\n  Enter choice or site name: ")
+			input, err := w.reader.ReadString('\n')
+			if err != nil {
+				return nil, err
+			}
+
+			input = strings.TrimSpace(input)
+			if input == "" {
+				continue
+			}
+
+			// Check if it's a number
+			if choice, err := strconv.Atoi(input); err == nil {
+				if choice == 0 {
+					// Create new site - prompt for name
+					selectedSiteID = ""
+					break
+				}
+				if choice >= 1 && choice <= len(sites) {
+					selectedSiteID = sites[choice-1].ID
+					break
+				}
+				fmt.Printf("  Please enter a number between 0 and %d\n", len(sites))
+				continue
+			}
+
+			// Use input as site ID or name
+			selectedSiteID = input
+			break
+		}
+	}
+
+	// If no site selected or creating new, prompt for site name
+	if selectedSiteID == "" {
+		for {
+			fmt.Print("\n  Enter site name: ")
+			input, err := w.reader.ReadString('\n')
+			if err != nil {
+				return nil, err
+			}
+
+			input = strings.TrimSpace(input)
+			if input == "" {
+				fmt.Println("  Site name cannot be empty")
+				continue
+			}
+
+			// Validate site name (alphanumeric, hyphens, 1-63 chars)
+			if !isValidNetlifySiteName(input) {
+				fmt.Println("  Invalid name. Use lowercase letters, numbers, and hyphens only (1-63 chars).")
+				continue
+			}
+
+			// Try to create the site
+			fmt.Println("  Creating site...")
+			site, err := provider.CreateSite(ctx, creds.AccessToken, input)
+			if err != nil {
+				fmt.Printf("  Failed to create site: %v\n", err)
+				fmt.Println("  Please try again with a different name.")
+				continue
+			}
+
+			selectedSiteID = site.ID
+			break
+		}
+	}
+
+	fmt.Println()
+	fmt.Printf("  Site ID: %s\n", selectedSiteID)
+
+	return &ProviderConfig{
+		Provider: "netlify",
+		Settings: map[string]string{
+			SettingSiteID: selectedSiteID,
+		},
+	}, nil
+}
+
+// isValidNetlifySiteName checks if a site name is valid for Netlify
+func isValidNetlifySiteName(name string) bool {
+	if len(name) == 0 || len(name) > 63 {
 		return false
 	}
 	for _, c := range name {

@@ -142,6 +142,8 @@ func GetFromEnv(provider string) *Credentials {
 		tokenEnv = "LEAFPRESS_GITHUB_TOKEN"
 	case "vercel":
 		tokenEnv = "LEAFPRESS_VERCEL_TOKEN"
+	case "netlify":
+		tokenEnv = "LEAFPRESS_NETLIFY_TOKEN"
 	default:
 		return nil
 	}
