@@ -56,15 +56,10 @@ func runStatus() error {
 		return fmt.Errorf("failed to load deployment manifest: %w", err)
 	}
 
-	// Get build directory
+	// Get build directory (to exclude from source file tracking)
 	buildDir := cfg.OutputDir
 	if buildDir == "" {
 		buildDir = "_site"
-	}
-
-	// Check if build directory exists
-	if _, err := os.Stat(buildDir); os.IsNotExist(err) {
-		return fmt.Errorf("build directory '%s' not found - run 'leafpress build' first", buildDir)
 	}
 
 	// Collect current source files with hashes (respecting ignore patterns and excluding output dir)
@@ -184,11 +179,20 @@ func CollectSourceFilesWithHashes(buildDir string, ignorePatterns []string) (map
 
 		filename := filepath.Base(path)
 
-		// Skip metadata/system files
+		// Skip hidden files (start with .) except specific allowed ones
+		if strings.HasPrefix(filename, ".") {
+			// Allow these hidden files to be tracked
+			allowedHidden := map[string]bool{
+				".htaccess": true, // Apache config often needed for deployment
+			}
+			if !allowedHidden[filename] {
+				return nil
+			}
+		}
+
+		// Skip specific system/metadata files
 		skipFiles := []string{
-			deploy.ManifestFile, // .leafpress-deploy-state.json
-			".DS_Store",         // macOS
-			"Thumbs.db",         // Windows
+			"Thumbs.db", // Windows
 		}
 		for _, pattern := range skipFiles {
 			if filename == pattern {
