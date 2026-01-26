@@ -241,8 +241,6 @@ func (n *NetlifyProvider) Deploy(ctx context.Context, cfg *DeployContext) (*Depl
 		return nil, fmt.Errorf("failed to create deploy: %w", err)
 	}
 
-	deployedFiles := make(map[string]string)
-
 	if len(deploy.Required) > 0 {
 		fmt.Printf("  Uploading %d files...\n", len(deploy.Required))
 
@@ -250,19 +248,14 @@ func (n *NetlifyProvider) Deploy(ctx context.Context, cfg *DeployContext) (*Depl
 		if err := n.uploadFiles(ctx, cfg.Creds.AccessToken, deploy.ID, hashToFile, deploy.Required); err != nil {
 			return nil, fmt.Errorf("failed to upload files: %w", err)
 		}
-
-		// Record which files were uploaded
-		for _, hash := range deploy.Required {
-			if file, ok := hashToFile[hash]; ok {
-				deployedFiles["/"+file.relativePath] = hash
-			}
-		}
 	} else {
 		fmt.Println("  No files need uploading (all cached)")
-		// Even if no new files, record all deployed files
-		for path, hash := range filesManifest {
-			deployedFiles[path] = hash
-		}
+	}
+
+	// Record all deployed files (both uploaded and cached)
+	deployedFiles := make(map[string]string)
+	for path, hash := range filesManifest {
+		deployedFiles[path] = hash
 	}
 
 	// Build deployment URL - ensure no double protocols
@@ -389,16 +382,28 @@ func (n *NetlifyProvider) uploadFiles(ctx context.Context, token, deployID strin
 	semaphore := make(chan struct{}, maxWorkers)
 
 	for _, hash := range requiredHashes {
+		// Check for context cancellation before spawning new goroutines
+		select {
+		case <-ctx.Done():
+			break
+		default:
+		}
+
 		file, ok := hashToFile[hash]
 		if !ok {
-			errChan <- fmt.Errorf("required file hash %s not found in local files", hash)
-			continue
+			return fmt.Errorf("required file hash %s not found in local files", hash)
 		}
 
 		wg.Add(1)
 		go func(h string, f fileInfo) {
 			defer wg.Done()
-			semaphore <- struct{}{}
+
+			// Check context before acquiring semaphore
+			select {
+			case <-ctx.Done():
+				return
+			case semaphore <- struct{}{}:
+			}
 			defer func() { <-semaphore }()
 
 			if err := n.uploadFile(ctx, token, deployID, h, f); err != nil {
