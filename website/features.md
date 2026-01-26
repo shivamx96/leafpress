@@ -32,7 +32,7 @@ Everything you need to build a digital garden, nothing you don't.
 
 ## Publishing
 
-**One-Command Deploy** — `leafpress deploy` handles authentication, building, and pushing to GitHub Pages. No manual setup required.
+**One-Command Deploy** — `leafpress deploy` handles authentication, building, and deployment to GitHub Pages, Vercel, Netlify, and more. No manual setup required.
 
 **SEO Ready** — Automatic sitemap.xml, robots.txt, RSS feed, Open Graph tags, Twitter cards.
 
