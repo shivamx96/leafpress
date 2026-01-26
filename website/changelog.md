@@ -4,6 +4,12 @@ date: 2025-01-06
 toc: false
 ---
 
+## v1.0.0-alpha.4
+*January 26, 2025*
+
+- Deploy to Netlify with Personal Access Token authentication
+- Smart file uploads: only changed files are uploaded in parallel to Netlify
+
 ## v1.0.0-alpha.3
 *January 25, 2025*
 

@@ -38,8 +38,10 @@ This opens your browser for Vercel authentication. After authorizing, the wizard
 
 For automated deployments, use the `LEAFPRESS_VERCEL_TOKEN` environment variable:
 
+Generate a token at [Vercel Settings → Tokens](https://vercel.com/account/tokens) (select "Read/Write" access):
+
 ```bash
-export LEAFPRESS_VERCEL_TOKEN=your_token_here
+export LEAFPRESS_VERCEL_TOKEN=your_vercel_token_here
 leafpress deploy
 ```
 
@@ -60,7 +62,7 @@ jobs:
       
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.23'
+          go-version: '1.25'
       
       - name: Install leafpress
         run: go install github.com/shivamx96/leafpress/cli/cmd/leafpress@latest
@@ -71,7 +73,7 @@ jobs:
         run: leafpress deploy --provider vercel
 ```
 
-Add your Vercel token as a repository secret named `VERCEL_TOKEN`.
+Add your Vercel token as a repository secret named `VERCEL_TOKEN` in your repository settings.
 
 ## Dry Run
 
@@ -102,6 +104,28 @@ To change projects or re-authenticate:
 ```bash
 leafpress deploy --reconfigure
 ```
+
+## Security Best Practices
+
+**Token Management**:
+- Never commit tokens to git or any version control
+- Regenerate tokens if they're ever exposed
+- Use GitHub secrets for CI/CD tokens, never hardcode
+- Consider rotating tokens periodically for added security
+
+**Token Expiration & Rotation**:
+- [Vercel Tokens](https://vercel.com/account/tokens) can be revoked anytime
+- Regularly review and rotate tokens for security
+- When revoking an old token, generate a new one and update your CI/CD secrets immediately
+
+**GitHub Secrets**:
+- Store `LEAFPRESS_VERCEL_TOKEN` in [repository secrets](https://docs.github.com/en/actions/security-guides/encrypted-secrets), never hardcode
+- Restrict secret access to workflows that need them
+- Never echo or log tokens in CI/CD output
+
+**Token Scope**:
+- Use the minimum necessary permissions for your token
+- Vercel tokens should have deploy access only
 
 ## Alternative: Git-Based Deploy
 

@@ -17,6 +17,10 @@ This creates your site in `_site/` (or your configured `outputDir`). Upload this
 
 ## Netlify
 
+For the simplest setup, see [[guide/deploy-netlify|Deploy to Netlify]] for one-command deployment with `leafpress deploy --provider netlify`.
+
+For Git-based continuous deployment:
+
 ### Git Integration
 
 1. Push your site to GitHub/GitLab
@@ -43,7 +47,7 @@ This creates your site in `_site/` (or your configured `outputDir`). Upload this
 ### Dockerfile
 
 ```dockerfile
-FROM golang:1.23-alpine AS builder
+FROM golang:1.25-alpine AS builder
 RUN go install github.com/shivamx96/leafpress/cli/cmd/leafpress@latest
 WORKDIR /site
 COPY . .

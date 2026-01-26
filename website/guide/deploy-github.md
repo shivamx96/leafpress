@@ -63,7 +63,39 @@ export LEAFPRESS_GITHUB_TOKEN=ghp_your_token_here
 leafpress deploy
 ```
 
-The token needs `repo` scope for pushing to repositories. In GitHub Actions, you can use the built-in `GITHUB_TOKEN` secret.
+The token needs `repo` scope for pushing to repositories.
+
+### GitHub Actions Example
+
+The easiest approach is to use GitHub's built-in `GITHUB_TOKEN`, which requires no setup:
+
+```yaml
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+
+      - name: Install leafpress
+        run: go install github.com/shivamx96/leafpress/cli/cmd/leafpress@latest
+
+      - name: Deploy
+        env:
+          LEAFPRESS_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: leafpress deploy
+```
+
+Alternatively, if you want to use a Personal Access Token instead, create one with `repo` scope and add it as a repository secret named `GITHUB_TOKEN`.
 
 ## Configuration
 
@@ -101,6 +133,28 @@ To use a custom domain with GitHub Pages:
   "baseURL": "https://yourdomain.com"
 }
 ```
+
+## Security Best Practices
+
+**Token Management**:
+- Never commit tokens to git or any version control
+- Regenerate tokens if they're ever exposed
+- Use GitHub secrets for CI/CD tokens in Actions workflows
+- Consider rotating tokens periodically for added security
+
+**Token Expiration & Rotation**:
+- [GitHub Personal Access Tokens](https://github.com/settings/tokens) can be set to expire (recommended for security)
+- When a token expires, generate a new one and update your CI/CD secrets
+- Use the built-in `GITHUB_TOKEN` in GitHub Actions (it's ephemeral and handled by GitHub automatically)
+
+**GitHub Secrets** (for CI/CD):
+- Store `LEAFPRESS_GITHUB_TOKEN` in [repository secrets](https://docs.github.com/en/actions/security-guides/encrypted-secrets), never hardcode
+- Use `${{ secrets.GITHUB_TOKEN }}` for GitHub Actions, which requires no setup
+- Restrict secret access to workflows that need them
+
+**Token Scope**:
+- Use Personal Access Tokens with only `repo` scope (if using PAT instead of built-in token)
+- The built-in `GITHUB_TOKEN` has appropriate scope automatically
 
 ## Troubleshooting
 
