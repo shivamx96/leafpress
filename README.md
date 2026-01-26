@@ -21,6 +21,23 @@ cd my-garden
 leafpress serve
 ```
 
+Visit `http://localhost:3000` to see your site live.
+
+## Deploy
+
+One-command deployment to your choice of hosting:
+
+```bash
+leafpress deploy
+```
+
+Supports:
+- **GitHub Pages** – Free hosting for public repos
+- **Vercel** – Fast edge CDN with automatic deployments
+- **Netlify** – Global CDN with one-click rollbacks
+
+See the [deployment guide](https://leafpress.in/guide/deploy-github) for details.
+
 ## Features
 
 - Wiki-links with automatic backlinks
@@ -32,6 +49,7 @@ leafpress serve
 - Link previews on hover
 - SEO ready (sitemap, RSS, Open Graph)
 - Fast builds (~150ms for 1000 pages)
+- One-command deploy to GitHub Pages, Vercel, or Netlify
 
 ## Documentation
 

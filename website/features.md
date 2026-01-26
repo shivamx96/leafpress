@@ -50,7 +50,7 @@ Everything you need to build a digital garden, nothing you don't.
 
 **Dark Mode** — Built-in toggle with system preference detection.
 
-**Navigation** — Sticky or pill-style nav. Box, underlined, or accent active states.
+**Navigation** — Multiple styles (base, sticky, glassmorphic). Box or underlined active link indicators.
 
 **Custom CSS** — Drop in a `style.css` to override anything.
 
