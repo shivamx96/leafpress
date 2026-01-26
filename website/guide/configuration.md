@@ -49,6 +49,7 @@ That's it. Everything else has sensible defaults.
   "toc": true,
   "search": true,
   "wikilinks": true,
+  "backlinks": true,
   
   "headExtra": "<script defer data-domain=\"example.com\" src=\"https://plausible.io/js/script.js\"></script>"
 }
@@ -114,7 +115,7 @@ Gradients work too:
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `graph` | `false` | Show interactive graph visualization |
+| `graph` | `true` | Show interactive graph visualization |
 | `toc` | `true` | Show table of contents on pages |
 | `search` | `true` | Enable full-text search |
 | `wikilinks` | `true` | Enable wiki-link processing |
