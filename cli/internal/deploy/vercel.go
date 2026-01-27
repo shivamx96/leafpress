@@ -190,11 +190,12 @@ func (v *VercelProvider) Deploy(ctx context.Context, cfg *DeployContext) (*Deplo
 
 	fmt.Println("  Creating deployment...")
 
-	// Create deployment
+	// Create deployment (target production by default)
 	deployReq := map[string]interface{}{
 		"name":    projectName,
 		"files":   uploadedFiles,
 		"project": projectName,
+		"target":  "production",
 		"projectSettings": map[string]interface{}{
 			"framework": nil, // Static site, no framework
 		},
