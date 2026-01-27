@@ -116,6 +116,11 @@ func (s *Server) Start() error {
 // handleStatic serves static files with live reload script injection
 func (s *Server) handleStatic(root string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// Disable caching for development
+		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+		w.Header().Set("Pragma", "no-cache")
+		w.Header().Set("Expires", "0")
+
 		path := r.URL.Path
 
 		// Clean the path
@@ -230,15 +235,24 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 	s.clientsMu.Lock()
 	s.clients[conn] = true
+	clientCount := len(s.clients)
 	s.clientsMu.Unlock()
+
+	if s.opts.Verbose {
+		log.Printf("Live reload: browser connected (%d total)", clientCount)
+	}
 
 	// Keep connection open
 	for {
 		if _, _, err := conn.ReadMessage(); err != nil {
 			s.clientsMu.Lock()
 			delete(s.clients, conn)
+			clientCount = len(s.clients)
 			s.clientsMu.Unlock()
 			conn.Close()
+			if s.opts.Verbose {
+				log.Printf("Live reload: browser disconnected (%d remaining)", clientCount)
+			}
 			break
 		}
 	}
@@ -265,6 +279,9 @@ func (s *Server) watchFiles() {
 	var pendingPath string
 	var pendingChangeType build.ChangeType
 
+	// Get working directory for relative path calculation
+	cwd, _ := os.Getwd()
+
 	for {
 		select {
 		case event, ok := <-s.watcher.Events:
@@ -284,11 +301,22 @@ func (s *Server) watchFiles() {
 				continue
 			}
 
+			// Get relative path for checking
+			relPath, err := filepath.Rel(cwd, event.Name)
+			if err != nil {
+				relPath = event.Name
+			}
+
 			// Check if it's a file we care about
 			ext := filepath.Ext(event.Name)
 			base := filepath.Base(event.Name)
-			if ext != ".md" && ext != ".css" && base != "leafpress.json" && !strings.HasPrefix(event.Name, "static/") {
+			isStaticFile := strings.HasPrefix(relPath, "static"+string(filepath.Separator)) || relPath == "static"
+			if ext != ".md" && ext != ".css" && base != "leafpress.json" && !isStaticFile {
 				continue
+			}
+
+			if s.opts.Verbose {
+				log.Printf("File changed: %s (type: %d)", relPath, changeType)
 			}
 
 			// Debounce
@@ -336,7 +364,18 @@ func (s *Server) rebuild() {
 }
 
 func (s *Server) rebuildIncremental(changedPath string, changeType build.ChangeType) {
-	fmt.Println("Rebuilding...")
+	// Get relative path for display
+	cwd, _ := os.Getwd()
+	relPath, _ := filepath.Rel(cwd, changedPath)
+	if relPath == "" {
+		relPath = changedPath
+	}
+
+	if s.opts.Verbose {
+		fmt.Printf("Rebuilding (%s)...\n", relPath)
+	} else {
+		fmt.Println("Rebuilding...")
+	}
 	start := time.Now()
 
 	stats, err := s.builder.RebuildIncremental(changedPath, changeType)
@@ -352,7 +391,17 @@ func (s *Server) rebuildIncremental(changedPath string, changeType build.ChangeT
 		fmt.Printf("Rebuilt %d pages in %s\n", stats.PagesRebuilt, elapsed.Round(time.Millisecond))
 	}
 
-	s.notifyClients()
+	// Notify connected browsers to reload
+	s.clientsMu.Lock()
+	clientCount := len(s.clients)
+	s.clientsMu.Unlock()
+
+	if clientCount > 0 {
+		s.notifyClients()
+		if s.opts.Verbose {
+			fmt.Printf("Notified %d browser(s) to reload\n", clientCount)
+		}
+	}
 }
 
 // addWatchDirs recursively adds directories to the watcher

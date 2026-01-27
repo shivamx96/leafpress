@@ -333,8 +333,23 @@ func (b *Builder) RebuildIncremental(changedPath string, changeType ChangeType) 
 		relPath = changedPath
 	}
 
-	// Check if it's a config change - requires full rebuild
+	// Check if it's a config change - requires full rebuild with fresh config
 	if filepath.Base(relPath) == "leafpress.json" {
+		// Reload config from disk
+		newCfg, err := config.Load("leafpress.json")
+		if err != nil {
+			return nil, fmt.Errorf("failed to reload config: %w", err)
+		}
+		b.cfg = newCfg
+		b.outputDir = filepath.Join(b.rootDir, b.cfg.OutputDir)
+
+		// Regenerate templates
+		newTemplates, err := templates.New()
+		if err != nil {
+			return nil, fmt.Errorf("failed to reload templates: %w", err)
+		}
+		b.templates = newTemplates
+
 		b.opts.SkipClean = false // Full clean for config changes
 		if _, err := b.Build(); err != nil {
 			return nil, err
@@ -343,8 +358,9 @@ func (b *Builder) RebuildIncremental(changedPath string, changeType ChangeType) 
 		return stats, nil
 	}
 
-	// Check if it's a static file
-	if strings.HasPrefix(relPath, "static/") {
+	// Check if it's a static file (cross-platform: handle both / and \ separators)
+	isStaticFile := strings.HasPrefix(relPath, "static/") || strings.HasPrefix(relPath, "static"+string(filepath.Separator))
+	if isStaticFile {
 		t0 = time.Now()
 		if err := b.copyStatic(); err != nil {
 			return nil, err
@@ -751,6 +767,10 @@ func (b *Builder) rebuildTagPages(tags map[string]bool, pages []*content.Page) e
 // renderPage renders a single content page
 func (b *Builder) renderPage(page *content.Page, siteData templates.SiteData) error {
 	outPath := filepath.Join(b.outputDir, page.OutputPath)
+
+	if b.opts.Verbose {
+		fmt.Printf("  writing: %s\n", outPath)
+	}
 
 	// Create parent directories
 	if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
