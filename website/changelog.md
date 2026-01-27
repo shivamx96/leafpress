@@ -4,6 +4,15 @@ date: 2025-01-06
 toc: false
 ---
 
+## v1.0.0-beta.2
+*January 27, 2025*
+
+- Fixed hot reload not detecting static file changes
+- Fixed browser caching during development (pages now refresh properly)
+- Vercel deployments now target production environment by default
+- Cross-platform path handling for Windows compatibility
+- Verbose mode (`-v`) shows detailed rebuild and live reload info
+
 ## v1.0.0-beta.1
 *January 26, 2025*
 
