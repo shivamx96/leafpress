@@ -1491,7 +1491,14 @@ func sortPages(pages []*content.Page, sortBy string) {
 }
 
 func copyDir(src, dst string) error {
-	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+	// Collect files and create directories in first pass
+	type fileCopy struct {
+		src string
+		dst string
+	}
+	var files []fileCopy
+
+	err := filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -1514,12 +1521,64 @@ func copyDir(src, dst string) error {
 			return os.MkdirAll(dstPath, 0755)
 		}
 
-		data, err := os.ReadFile(path)
+		files = append(files, fileCopy{src: path, dst: dstPath})
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	// Copy files in parallel
+	if len(files) == 0 {
+		return nil
+	}
+
+	numWorkers := runtime.NumCPU()
+	if numWorkers > len(files) {
+		numWorkers = len(files)
+	}
+
+	fileChan := make(chan fileCopy, len(files))
+	errChan := make(chan error, numWorkers)
+	var wg sync.WaitGroup
+
+	// Start workers
+	for i := 0; i < numWorkers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for f := range fileChan {
+				data, err := os.ReadFile(f.src)
+				if err != nil {
+					errChan <- err
+					return
+				}
+				if err := os.WriteFile(f.dst, data, 0644); err != nil {
+					errChan <- err
+					return
+				}
+			}
+		}()
+	}
+
+	// Send files to workers
+	for _, f := range files {
+		fileChan <- f
+	}
+	close(fileChan)
+
+	// Wait for completion
+	wg.Wait()
+	close(errChan)
+
+	// Return first error if any
+	for err := range errChan {
 		if err != nil {
 			return err
 		}
-		return os.WriteFile(dstPath, data, 0644)
-	})
+	}
+
+	return nil
 }
 
 func encodeJSON(f *os.File, v interface{}) error {

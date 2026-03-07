@@ -48,8 +48,8 @@ type LinkResolver struct {
 func NewLinkResolver(pages []*Page) *LinkResolver {
 	resolver := &LinkResolver{
 		pages:   pages,
-		slugMap: make(map[string]*Page),
-		nameMap: make(map[string][]*Page),
+		slugMap: make(map[string]*Page, len(pages)),      // Pre-size to avoid rehashing
+		nameMap: make(map[string][]*Page, len(pages)/2), // Estimate ~2 pages per name on average
 	}
 
 	for _, page := range pages {
