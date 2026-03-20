@@ -19,7 +19,7 @@ toc: false
 - Consistent 1rem spacing between all content blocks
 
 ## v1.0.0-beta.2
-*January 27, 2025*
+*January 27, 2026*
 
 - Fixed hot reload not detecting static file changes
 - Fixed browser caching during development (pages now refresh properly)
@@ -28,7 +28,7 @@ toc: false
 - Verbose mode (`-v`) shows detailed rebuild and live reload info
 
 ## v1.0.0-beta.1
-*January 26, 2025*
+*January 26, 2026*
 
 - All features enabled by default: graph, toc, search, wikilinks, backlinks
 - `leafpress status` now tracks source files instead of build output
@@ -37,19 +37,19 @@ toc: false
 - Improved Netlify deployment reliability with better error handling
 
 ## v1.0.0-beta
-*January 26, 2025*
+*January 26, 2026*
 
 - Deployment manifest tracking: stores list of deployed files with hashes
 - New `leafpress status` command: show pending changes since last deployment
 
 ## v1.0.0-alpha.4
-*January 26, 2025*
+*January 26, 2026*
 
 - Deploy to Netlify with Personal Access Token authentication
 - Smart file uploads: only changed files are uploaded in parallel to Netlify
 
 ## v1.0.0-alpha.3
-*January 25, 2025*
+*January 25, 2026*
 
 - One-command deploy using `leafpress deploy` for multiple providers
 - Deploy to GitHub Pages with browser-based OAuth
