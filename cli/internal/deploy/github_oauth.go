@@ -17,7 +17,7 @@ const (
 	// GitHub OAuth App credentials for leafpress
 	// This is a public client ID - it's safe to embed
 	// Users will see "leafpress" when authorizing
-	githubClientID = "Ov23liBzTwDReEfk8lbC" // TODO: Replace with real client ID
+	githubClientID = "Ov23liBzTwDReEfk8lbC"
 
 	githubDeviceCodeURL = "https://github.com/login/device/code"
 	githubTokenURL      = "https://github.com/login/oauth/access_token"

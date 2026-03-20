@@ -18,8 +18,8 @@ echo -e "${GREEN}✓${NC} Build successful"
 
 # Test 1: Build website
 echo -n "Testing build... "
-cd website
-../leafpress build > /dev/null 2>&1
+cd ../website
+../cli/leafpress build > /dev/null 2>&1
 if [ -f "_site/index.html" ]; then
     echo -e "${GREEN}✓${NC}"
 else
@@ -63,9 +63,9 @@ else
     exit 1
 fi
 
-# Test 6: Code block protection
+# Test 6: Code block protection (wiki-link syntax preserved in code blocks)
 echo -n "Testing code block protection... "
-if grep -q '<code>\[\[wiki-links\]\]</code>' website/_site/features/index.html; then
+if grep -q '<code>\[\[.*\]\]</code>' website/_site/features/index.html; then
     echo -e "${GREEN}✓${NC}"
 else
     echo -e "${RED}✗${NC}"

@@ -2,6 +2,7 @@ package content
 
 import (
 	"regexp"
+	"sort"
 	"strings"
 )
 
@@ -61,6 +62,15 @@ func NewLinkResolver(pages []*Page) *LinkResolver {
 		parts := strings.Split(page.Slug, "/")
 		name := strings.ToLower(parts[len(parts)-1])
 		resolver.nameMap[name] = append(resolver.nameMap[name], page)
+	}
+
+	// Sort nameMap slices by slug for deterministic ambiguous link resolution
+	for _, pages := range resolver.nameMap {
+		if len(pages) > 1 {
+			sort.Slice(pages, func(i, j int) bool {
+				return pages[i].Slug < pages[j].Slug
+			})
+		}
 	}
 
 	return resolver
