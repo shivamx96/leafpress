@@ -381,11 +381,12 @@ func (n *NetlifyProvider) uploadFiles(ctx context.Context, token, deployID strin
 	var wg sync.WaitGroup
 	semaphore := make(chan struct{}, maxWorkers)
 
+uploadLoop:
 	for _, hash := range requiredHashes {
 		// Check for context cancellation before spawning new goroutines
 		select {
 		case <-ctx.Done():
-			break
+			break uploadLoop
 		default:
 		}
 
@@ -423,6 +424,11 @@ func (n *NetlifyProvider) uploadFiles(ctx context.Context, token, deployID strin
 		if err != nil {
 			return err
 		}
+	}
+
+	// If the loop exited due to context cancellation, propagate the error
+	if ctx.Err() != nil {
+		return ctx.Err()
 	}
 
 	return nil

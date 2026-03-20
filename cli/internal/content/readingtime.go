@@ -19,12 +19,8 @@ var imgTagRegex = regexp.MustCompile(`<img\s`)
 
 // CountWords counts words in HTML content by stripping tags first
 func CountWords(htmlContent string) int {
-	// Strip HTML tags
+	// Strip HTML tags (uses pre-compiled htmlTagRegex from page.go)
 	plain := htmlTagRegex.ReplaceAllString(htmlContent, " ")
-	plain = htmlTagRegex.ReplaceAllString(plain, " ")
-
-	// Use the same regex as page.go for consistency
-	plain = regexp.MustCompile(`<[^>]*>`).ReplaceAllString(htmlContent, " ")
 
 	// Normalize whitespace and split
 	words := strings.Fields(plain)

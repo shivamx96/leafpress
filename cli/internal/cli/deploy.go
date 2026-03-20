@@ -112,20 +112,23 @@ func runDeploy(providerFlag string, skipBuild, reconfigure, dryRun bool) error {
 			Settings: cfg.Deploy.Settings,
 		}
 
-		// Get credentials
-		if envCreds := deploy.GetFromEnv(cfg.Deploy.Provider); envCreds != nil {
+		// Override provider if flag is set (BEFORE loading credentials)
+		if providerFlag != "" {
+			if _, ok := deploy.Get(providerFlag); !ok {
+				return fmt.Errorf("unknown provider: %s", providerFlag)
+			}
+			providerConfig.Provider = providerFlag
+		}
+
+		// Get credentials for the actual provider being used
+		if envCreds := deploy.GetFromEnv(providerConfig.Provider); envCreds != nil {
 			creds = envCreds
-		} else if storedCreds, ok := store.Get(cfg.Deploy.Provider); ok {
+		} else if storedCreds, ok := store.Get(providerConfig.Provider); ok {
 			creds = storedCreds
 		} else {
 			return fmt.Errorf("no credentials found for %s\n"+
-				"Run 'leafpress deploy --reconfigure' to set up authentication", cfg.Deploy.Provider)
+				"Run 'leafpress deploy --reconfigure' to set up authentication", providerConfig.Provider)
 		}
-	}
-
-	// Override provider if flag is set
-	if providerFlag != "" {
-		providerConfig.Provider = providerFlag
 	}
 
 	// Get provider

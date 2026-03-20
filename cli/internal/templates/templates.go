@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"io"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/shivamx96/leafpress/cli/internal/config"
@@ -273,7 +274,7 @@ func ExtractTOC(htmlContent string) (string, []TOCItem) {
 		// Handle duplicate IDs
 		if count, exists := idCounter[id]; exists {
 			idCounter[id] = count + 1
-			id = id + "-" + string(rune('0'+count))
+			id = id + "-" + strconv.Itoa(count)
 		} else {
 			idCounter[id] = 1
 		}

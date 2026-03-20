@@ -121,23 +121,41 @@ func (s *Server) handleStatic(root string) http.HandlerFunc {
 		w.Header().Set("Pragma", "no-cache")
 		w.Header().Set("Expires", "0")
 
-		path := r.URL.Path
-
-		// Clean the path
-		if path == "/" {
-			path = "/index.html"
-		} else if !strings.Contains(filepath.Base(path), ".") {
-			// Clean URL - try adding /index.html
-			path = filepath.Join(path, "index.html")
+		// Clean and sanitize path to prevent directory traversal
+		urlPath := filepath.Clean(r.URL.Path)
+		// Remove leading slash and any .. components
+		urlPath = strings.TrimPrefix(urlPath, "/")
+		// filepath.Clean on relative path removes .. that would escape
+		urlPath = filepath.Clean(urlPath)
+		// Reject any path that still tries to escape
+		if strings.HasPrefix(urlPath, "..") {
+			http.NotFound(w, r)
+			return
 		}
 
-		filePath := filepath.Join(root, path)
+		// Handle index files
+		if urlPath == "" || urlPath == "." {
+			urlPath = "index.html"
+		} else if !strings.Contains(filepath.Base(urlPath), ".") {
+			// Clean URL - try adding /index.html
+			urlPath = filepath.Join(urlPath, "index.html")
+		}
+
+		filePath := filepath.Join(root, urlPath)
+
+		// Final safety check: ensure resolved path is within root
+		absRoot, _ := filepath.Abs(root)
+		absFile, _ := filepath.Abs(filePath)
+		if !strings.HasPrefix(absFile, absRoot+string(filepath.Separator)) && absFile != absRoot {
+			http.NotFound(w, r)
+			return
+		}
 
 		// Check if file exists
 		info, err := os.Stat(filePath)
 		if err != nil {
 			// Try with .html extension
-			if !strings.HasSuffix(path, ".html") {
+			if !strings.HasSuffix(urlPath, ".html") {
 				htmlPath := filePath + ".html"
 				if _, err := os.Stat(htmlPath); err == nil {
 					filePath = htmlPath

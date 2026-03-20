@@ -7,6 +7,6 @@ cd "$1"
 now_ms() { python3 -c "import time; print(int(time.time() * 1000))"; }
 
 start=$(now_ms)
-zola build 2>&1 >/dev/null
+zola build >/dev/null 2>&1
 end=$(now_ms)
 echo $((end - start))

@@ -67,15 +67,25 @@ func NewRenderer(resolver *LinkResolver, enableWikilinks bool, basePath string) 
 func (r *Renderer) Render(content string) (string, []string) {
 	var warnings []string
 
-	// First, process Obsidian image embeds (![[image.png]])
-	processed := r.processObsidianImages(content)
+	// Extract code blocks ONCE to protect them from all pre-processing
+	codeBlocks := extractCodeBlocks(content)
+	protected := content
+	for i, block := range codeBlocks {
+		placeholder := fmt.Sprintf("___CODE_BLOCK_%d___", i)
+		protected = strings.Replace(protected, block, placeholder, 1)
+	}
 
-	// Process callouts before markdown conversion
-	processed = r.processCallouts(processed)
-
-	// Then, replace wiki-links with HTML anchors (if enabled)
+	// Pre-markdown processing (all on protected content)
+	processed := r.processObsidianImagesProtected(protected)
+	processed = r.processCalloutsProtected(processed)
 	if r.enableWikilinks {
-		processed = r.processWikiLinks(processed, &warnings)
+		processed = r.processWikiLinksProtected(processed, &warnings)
+	}
+
+	// Restore code blocks ONCE before markdown conversion
+	for i, block := range codeBlocks {
+		placeholder := fmt.Sprintf("___CODE_BLOCK_%d___", i)
+		processed = strings.Replace(processed, placeholder, block, 1)
 	}
 
 	// Get buffer from pool (reduces allocations)
@@ -89,14 +99,8 @@ func (r *Renderer) Render(content string) (string, []string) {
 		return content, warnings
 	}
 
-	// Process external links
-	html := r.processExternalLinks(buf.String())
-
-	// Add lazy loading to images
-	html = processLazyImages(html)
-
-	// Convert blockquote citations (- Author) to <cite> elements
-	html = processBlockquoteCitations(html)
+	// Post-markdown processing (single pass)
+	html := r.processPostMarkdown(buf.String())
 
 	return html, warnings
 }
@@ -148,24 +152,9 @@ var calloutTypes = map[string]struct {
 	"tldr":      {"TL;DR", "📄"},
 }
 
-// processCallouts converts Obsidian-style callouts to HTML
-// Input: > [!note] Optional title
-//
-//	> Content here
-//
-// Output: <div class="lp-callout lp-callout-note">...</div>
-func (r *Renderer) processCallouts(content string) string {
-	// Extract code blocks to protect them
-	codeBlocks := extractCodeBlocks(content)
-	protectedContent := content
-
-	// Replace code blocks with placeholders
-	for i, block := range codeBlocks {
-		placeholder := fmt.Sprintf("___CODE_BLOCK_%d___", i)
-		protectedContent = strings.Replace(protectedContent, block, placeholder, 1)
-	}
-
-	lines := strings.Split(protectedContent, "\n")
+// processCalloutsProtected converts Obsidian-style callouts (assumes code blocks already protected)
+func (r *Renderer) processCalloutsProtected(content string) string {
+	lines := strings.Split(content, "\n")
 	var result []string
 	i := 0
 
@@ -239,19 +228,16 @@ func (r *Renderer) processCallouts(content string) string {
 		}
 	}
 
-	processed := strings.Join(result, "\n")
-
-	// Restore code blocks
-	for i, block := range codeBlocks {
-		placeholder := fmt.Sprintf("___CODE_BLOCK_%d___", i)
-		processed = strings.Replace(processed, placeholder, block, 1)
-	}
-
-	return processed
+	return strings.Join(result, "\n")
 }
 
-// processObsidianImages converts Obsidian image embeds to standard markdown
-func (r *Renderer) processObsidianImages(content string) string {
+// processCallouts converts Obsidian-style callouts to HTML
+// Input: > [!note] Optional title
+//
+//	> Content here
+//
+// Output: <div class="lp-callout lp-callout-note">...</div>
+func (r *Renderer) processCallouts(content string) string {
 	// Extract code blocks to protect them
 	codeBlocks := extractCodeBlocks(content)
 	protectedContent := content
@@ -262,9 +248,22 @@ func (r *Renderer) processObsidianImages(content string) string {
 		protectedContent = strings.Replace(protectedContent, block, placeholder, 1)
 	}
 
+	processed := r.processCalloutsProtected(protectedContent)
+
+	// Restore code blocks
+	for i, block := range codeBlocks {
+		placeholder := fmt.Sprintf("___CODE_BLOCK_%d___", i)
+		processed = strings.Replace(processed, placeholder, block, 1)
+	}
+
+	return processed
+}
+
+// processObsidianImagesProtected converts Obsidian image embeds (assumes code blocks already protected)
+func (r *Renderer) processObsidianImagesProtected(content string) string {
 	// Replace ![[image.png]] with ![image.png](/static/images/image.png)
 	// Replace ![[image.png|alt]] with ![alt](/static/images/image.png)
-	result := obsidianImageRegex.ReplaceAllStringFunc(protectedContent, func(match string) string {
+	return obsidianImageRegex.ReplaceAllStringFunc(content, func(match string) string {
 		submatches := obsidianImageRegex.FindStringSubmatch(match)
 		if len(submatches) < 2 {
 			return match
@@ -281,6 +280,21 @@ func (r *Renderer) processObsidianImages(content string) string {
 
 		return fmt.Sprintf("![%s](/static/images/%s)", alt, encodedFilename)
 	})
+}
+
+// processObsidianImages converts Obsidian image embeds to standard markdown
+func (r *Renderer) processObsidianImages(content string) string {
+	// Extract code blocks to protect them
+	codeBlocks := extractCodeBlocks(content)
+	protectedContent := content
+
+	// Replace code blocks with placeholders
+	for i, block := range codeBlocks {
+		placeholder := fmt.Sprintf("___CODE_BLOCK_%d___", i)
+		protectedContent = strings.Replace(protectedContent, block, placeholder, 1)
+	}
+
+	result := r.processObsidianImagesProtected(protectedContent)
 
 	// Restore code blocks
 	for i, block := range codeBlocks {
@@ -292,20 +306,11 @@ func (r *Renderer) processObsidianImages(content string) string {
 }
 
 // processWikiLinks replaces [[links]] with HTML anchors
-func (r *Renderer) processWikiLinks(content string, warnings *[]string) string {
-	// Extract code blocks and inline code to protect them
-	codeBlocks := extractCodeBlocks(content)
-	protectedContent := content
+// processWikiLinksProtected replaces [[links]] with HTML anchors (assumes code blocks already protected)
+func (r *Renderer) processWikiLinksProtected(content string, warnings *[]string) string {
+	links := ExtractWikiLinks(content)
 
-	// Replace code blocks with placeholders
-	for i, block := range codeBlocks {
-		placeholder := fmt.Sprintf("___CODE_BLOCK_%d___", i)
-		protectedContent = strings.Replace(protectedContent, block, placeholder, 1)
-	}
-
-	links := ExtractWikiLinks(protectedContent)
-
-	result := protectedContent
+	result := content
 	for _, link := range links {
 		var replacement string
 
@@ -330,6 +335,22 @@ func (r *Renderer) processWikiLinks(content string, warnings *[]string) string {
 
 		result = replaceFirst(result, link.Raw, replacement)
 	}
+
+	return result
+}
+
+func (r *Renderer) processWikiLinks(content string, warnings *[]string) string {
+	// Extract code blocks and inline code to protect them
+	codeBlocks := extractCodeBlocks(content)
+	protectedContent := content
+
+	// Replace code blocks with placeholders
+	for i, block := range codeBlocks {
+		placeholder := fmt.Sprintf("___CODE_BLOCK_%d___", i)
+		protectedContent = strings.Replace(protectedContent, block, placeholder, 1)
+	}
+
+	result := r.processWikiLinksProtected(protectedContent, warnings)
 
 	// Restore code blocks
 	for i, block := range codeBlocks {
@@ -369,6 +390,17 @@ func indexOf(s, substr string) int {
 		}
 	}
 	return -1
+}
+
+// processPostMarkdown combines all post-markdown HTML processing in one function
+func (r *Renderer) processPostMarkdown(html string) string {
+	// Process external links
+	result := r.processExternalLinks(html)
+	// Add lazy loading to images
+	result = processLazyImages(result)
+	// Convert blockquote citations
+	result = processBlockquoteCitations(result)
+	return result
 }
 
 // processExternalLinks adds target="_blank" and class to external links
