@@ -341,6 +341,14 @@ const baseTemplate = `<!DOCTYPE html>
       --lp-font-body: "{{.Site.Theme.FontBody}}", system-ui, -apple-system, sans-serif;
       --lp-font-mono: "{{.Site.Theme.FontMono}}", "Fira Code", "Courier New", monospace;
       --lp-accent: {{.Site.Theme.Accent}};
+      --lp-font-xs: 0.75rem;
+      --lp-font-sm: 0.875rem;
+      --lp-font-base: 1rem;
+      --lp-font-lg: 1.25rem;
+      --lp-font-xl: 1.5rem;
+      --lp-font-2xl: 1.75rem;
+      --lp-font-3xl: 2rem;
+      --lp-font-display: 6rem;
       --lp-bg: #ffffff;
       --lp-text: #1a1a1a;
       --lp-text-muted: #666666;
