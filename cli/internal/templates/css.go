@@ -987,6 +987,9 @@ html {
   justify-content: center;
   align-items: center;
   gap: 0.5rem;
+  width: 100%;
+  max-width: var(--lp-max-width);
+  margin: 0 auto;
 }
 
 .lp-footer a {
