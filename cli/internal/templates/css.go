@@ -297,7 +297,7 @@ html {
 }
 
 .lp-header {
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid var(--lp-border);
 }
@@ -420,7 +420,8 @@ html {
 .lp-content h4 { font-size: var(--lp-font-lg); }
 
 .lp-content p {
-  margin-bottom: 1rem;
+  margin-top: 0.75rem;
+  margin-bottom: 0.5rem;
 }
 
 .lp-content a {
@@ -434,7 +435,7 @@ html {
 
 .lp-content ul,
 .lp-content ol {
-  margin-bottom: 0.5rem;
+  margin-bottom: 1rem;
   padding-left: 1.5rem;
 }
 
@@ -447,8 +448,7 @@ html {
   font-size: var(--lp-font-lg);
   position: relative;
   border: none;
-  padding: 1.5rem 1.5rem 1.5rem 3rem;
-  margin: 0 0;
+  padding: 1rem 1.5rem 1rem 3rem;
   color: var(--lp-text);
   font-style: italic;
 }
@@ -556,7 +556,7 @@ html {
 .lp-content hr {
   border: none;
   border-top: 1px solid var(--lp-border);
-  margin: 2rem 0;
+  margin: 1rem 0;
 }
 
 .lp-content table {
@@ -807,8 +807,8 @@ html {
 
 /* Backlinks */
 .lp-backlinks {
-  margin-top: 3rem;
-  padding-top: 1.5rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
   border-top: 1px solid var(--lp-border);
 }
 
@@ -816,7 +816,7 @@ html {
   font-size: var(--lp-font-sm);
   font-weight: 600;
   color: var(--lp-text-muted);
-  margin-bottom: 0.75rem;
+  margin-bottom: 1rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -827,7 +827,7 @@ html {
 }
 
 .lp-backlinks-list li {
-  margin-bottom: 0.5rem;
+  margin-bottom: 1rem;
 }
 
 .lp-backlink {
@@ -854,7 +854,7 @@ html {
 .lp-section-count {
   color: var(--lp-text-muted);
   font-size: var(--lp-font-sm);
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.0rem;
 }
 
 .lp-section-intro {
@@ -870,7 +870,7 @@ html {
 .lp-section-intro h6 {
   font-family: var(--lp-font-heading);
   margin-top: 1rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 1rem;
   font-weight: 600;
   line-height: 1.3;
   color: var(--lp-text);
@@ -887,7 +887,7 @@ html {
 
 .lp-section-intro ul,
 .lp-section-intro ol {
-  margin-bottom: 0.5rem;
+  margin-bottom: 1rem;
   padding-left: 1.5rem;
 }
 
@@ -1436,7 +1436,7 @@ html {
 
 /* Callouts / Admonitions - Modern Minimal Style */
 .lp-callout {
-  margin: 1.5rem 0;
+  margin: 1rem 0;
   padding: 0.875rem 1rem;
   border-radius: 6px;
   border: 1px solid var(--lp-callout-border);
