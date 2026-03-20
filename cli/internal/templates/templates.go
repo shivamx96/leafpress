@@ -349,6 +349,10 @@ const baseTemplate = `<!DOCTYPE html>
       --lp-font-2xl: 1.75rem;
       --lp-font-3xl: 2rem;
       --lp-font-display: 6rem;
+      --lp-radius-sm: 4px;
+      --lp-radius-md: 8px;
+      --lp-radius-lg: 12px;
+      --lp-radius-full: 9999px;
       --lp-bg: #ffffff;
       --lp-text: #1a1a1a;
       --lp-text-muted: #666666;

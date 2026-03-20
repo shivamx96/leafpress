@@ -45,7 +45,7 @@ html {
   width: calc(100% - 4rem);
   max-width: var(--lp-max-width);
   border: 1px solid var(--lp-border);
-  border-radius: 9999px;
+  border-radius: var(--lp-radius-full);
   z-index: 1000;
   animation: pillIn 0.3s ease-out forwards;
 }
@@ -125,7 +125,7 @@ html {
   color: white;
   padding: 0.25rem 0.5rem;
   margin: -0.25rem -0.5rem;
-  border-radius: 4px;
+  border-radius: var(--lp-radius-sm);
 }
 
 .lp-nav-link.lp-nav-link--active.lp-nav-active-underlined {
@@ -188,7 +188,7 @@ html {
 
   .lp-nav.lp-nav--pill {
     width: calc(100% - 1rem);
-    border-radius: 1rem;
+    border-radius: var(--lp-radius-lg);
   }
 }
 
@@ -351,7 +351,7 @@ html {
   color: var(--lp-text);
   border: 1px solid var(--lp-border);
   padding: 6px 10px;
-  border-radius: 4px;
+  border-radius: var(--lp-radius-sm);
   font-size: var(--lp-font-xs);
   white-space: nowrap;
   opacity: 0;
@@ -491,7 +491,7 @@ html {
 
 .lp-content pre {
   background-color: var(--lp-code-bg);
-  border-radius: 4px;
+  border-radius: var(--lp-radius-md);
   padding: 1rem;
   overflow-x: auto;
   margin: 1rem 0;
@@ -515,7 +515,7 @@ html {
   background-color: var(--lp-bg);
   color: var(--lp-text);
   border: 1px solid var(--lp-border);
-  border-radius: 3px;
+  border-radius: var(--lp-radius-sm);
   cursor: pointer;
   opacity: 0;
   transition: opacity 0.2s;
@@ -544,13 +544,13 @@ html {
 .lp-content li code {
   background-color: var(--lp-code-bg);
   padding: 0.15em 0.4em;
-  border-radius: 3px;
+  border-radius: var(--lp-radius-sm);
 }
 
 .lp-content img {
   max-width: min(100%, 600px);
   height: auto;
-  border-radius: 4px;
+  border-radius: var(--lp-radius-sm);
 }
 
 .lp-content hr {
@@ -583,7 +583,7 @@ html {
   text-decoration: none;
   background-color: color-mix(in srgb, var(--lp-accent) 10%, transparent);
   padding: 0.1em 0.25em;
-  border-radius: 3px;
+  border-radius: var(--lp-radius-sm);
   transition: background-color 0.2s;
 }
 
@@ -621,7 +621,7 @@ html {
   color: var(--lp-text);
   border: 1px solid var(--lp-border);
   padding: 4px 8px;
-  border-radius: 4px;
+  border-radius: var(--lp-radius-sm);
   font-size: var(--lp-font-xs);
   white-space: nowrap;
   opacity: 0;
@@ -720,7 +720,7 @@ html {
   max-width: 1200px;
   max-height: 800px;
   background: var(--lp-bg);
-  border-radius: 12px;
+  border-radius: var(--lp-radius-lg);
   box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2);
   opacity: 0;
   transition: transform 0.3s ease, opacity 0.3s ease;
@@ -801,7 +801,7 @@ html {
     height: 90%;
     max-width: none;
     max-height: none;
-    border-radius: 8px;
+    border-radius: var(--lp-radius-md);
   }
 }
 
@@ -1229,7 +1229,7 @@ html {
   max-width: 560px;
   max-height: 70vh;
   background: var(--lp-bg);
-  border-radius: 12px;
+  border-radius: var(--lp-radius-lg);
   box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2);
   opacity: 0;
   transition: transform 0.2s ease, opacity 0.2s ease;
@@ -1276,7 +1276,7 @@ html {
   padding: 0.2rem 0.4rem;
   background: var(--lp-code-bg);
   border: 1px solid var(--lp-border);
-  border-radius: 4px;
+  border-radius: var(--lp-radius-sm);
   color: var(--lp-text-muted);
 }
 
@@ -1336,7 +1336,7 @@ html {
   background: color-mix(in srgb, var(--lp-accent) 30%, transparent);
   color: inherit;
   padding: 0 0.1em;
-  border-radius: 2px;
+  border-radius: var(--lp-radius-sm);
 }
 
 .lp-search-empty {
@@ -1394,7 +1394,7 @@ html {
   background: var(--lp-accent);
   color: white;
   text-decoration: none;
-  border-radius: 0.5rem;
+  border-radius: var(--lp-radius-md);
   font-weight: 500;
   transition: opacity 0.2s;
 }
@@ -1411,7 +1411,7 @@ html {
   padding: 0.75rem 1rem;
   background: var(--lp-bg);
   border: 1px solid var(--lp-border);
-  border-radius: 8px;
+  border-radius: var(--lp-radius-md);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   display: none;
   transition: opacity 0.15s ease;
@@ -1438,7 +1438,7 @@ html {
 .lp-callout {
   margin: 1rem 0;
   padding: 0.875rem 1rem;
-  border-radius: 6px;
+  border-radius: var(--lp-radius-md);
   border: 1px solid var(--lp-callout-border);
   background: var(--lp-callout-bg);
 }
