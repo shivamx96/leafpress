@@ -171,6 +171,19 @@ To scale all text up or down proportionally, override the variables with `calc()
 }
 ```
 
+### Border Radius
+
+All border radii use a consistent scale:
+
+```css
+:root {
+  --lp-radius-sm: 4px;       /* inline code, buttons, tooltips, badges */
+  --lp-radius-md: 8px;       /* code blocks, callouts, cards, link previews */
+  --lp-radius-lg: 12px;      /* overlay panels (graph, search) */
+  --lp-radius-full: 9999px;  /* pill-shaped elements */
+}
+```
+
 ### CSS Classes
 
 Key classes you might want to customize:

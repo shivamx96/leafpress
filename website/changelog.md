@@ -4,6 +4,20 @@ date: 2025-01-06
 toc: false
 ---
 
+## v1.0.0-beta.3
+*March 20, 2026*
+
+- Design system: font sizes, border radii, and spacing now use CSS custom properties for easy global overrides
+- New theming docs with font scale and proportional scaling examples
+- Fixed directory traversal vulnerability in dev server path handling
+- Fixed Netlify deploy cancellation silently reporting success
+- Fixed `--provider` flag loading credentials for wrong provider
+- Deterministic wiki-link resolution for ambiguous page names
+- Fixed heading ID generation for 10+ duplicate headings
+- Parallel file copying in build for faster site generation
+- Footer border now aligns with content width instead of full viewport
+- Consistent 1rem spacing between all content blocks
+
 ## v1.0.0-beta.2
 *January 27, 2025*
 
@@ -44,19 +58,19 @@ toc: false
 - CI/CD support via `LEAFPRESS_<provider>_TOKEN` environment variable
 
 ## v1.0.0-alpha.2
-*January 11, 2025*
+*January 11, 2026*
 
 - Adding `update` command to update leafpress
 - Make blockquotes cleaner and modern
 
 ## v1.0.0-alpha.1
-*January 8, 2025*
+*January 8, 2026*
 
 - Callouts restyled to be more modern
 - Set height to full dynamic viewport
 
 ## v1.0.0-alpha
-*January 8, 2025*
+*January 8, 2026*
 
 Initial release.
 
