@@ -140,6 +140,37 @@ Run `leafpress init` to get a `style.css` you can modify. Or start from scratch 
 }
 ```
 
+### Font Size Scale
+
+All font sizes use a consistent type scale via CSS variables. Override any of these to adjust sizing globally:
+
+```css
+:root {
+  --lp-font-xs: 0.75rem;      /* badges, tooltips, kbd shortcuts */
+  --lp-font-sm: 0.875rem;     /* nav, tags, meta, footer, code blocks, TOC */
+  --lp-font-base: 1rem;       /* body text, search input */
+  --lp-font-lg: 1.25rem;      /* h3, h4, blockquotes */
+  --lp-font-xl: 1.5rem;       /* h2 */
+  --lp-font-2xl: 1.75rem;     /* h1 */
+  --lp-font-3xl: 2rem;        /* page titles */
+  --lp-font-display: 6rem;    /* decorative (404 page) */
+}
+```
+
+To scale all text up or down proportionally, override the variables with `calc()`:
+
+```css
+:root {
+  --lp-font-xs: calc(0.75rem * 1.1);
+  --lp-font-sm: calc(0.875rem * 1.1);
+  --lp-font-base: calc(1rem * 1.1);
+  --lp-font-lg: calc(1.25rem * 1.1);
+  --lp-font-xl: calc(1.5rem * 1.1);
+  --lp-font-2xl: calc(1.75rem * 1.1);
+  --lp-font-3xl: calc(2rem * 1.1);
+}
+```
+
 ### CSS Classes
 
 Key classes you might want to customize:
