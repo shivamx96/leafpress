@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -263,6 +264,7 @@ func (r *Renderer) processCallouts(content string) string {
 func (r *Renderer) processObsidianImagesProtected(content string) string {
 	// Replace ![[image.png]] with ![image.png](/static/images/image.png)
 	// Replace ![[image.png|alt]] with ![alt](/static/images/image.png)
+	// Replace ![[image.png|500]] with <img> tag with width (numeric pipe value = width, like Obsidian)
 	return obsidianImageRegex.ReplaceAllStringFunc(content, func(match string) string {
 		submatches := obsidianImageRegex.FindStringSubmatch(match)
 		if len(submatches) < 2 {
@@ -271,13 +273,23 @@ func (r *Renderer) processObsidianImagesProtected(content string) string {
 
 		filename := strings.TrimSpace(submatches[1])
 		alt := filename
+		width := 0
+
 		if len(submatches) > 2 && submatches[2] != "" {
-			alt = strings.TrimSpace(submatches[2])
+			pipeValue := strings.TrimSpace(submatches[2])
+			if w, err := strconv.Atoi(pipeValue); err == nil {
+				width = w
+			} else {
+				alt = pipeValue
+			}
 		}
 
 		// URL-encode spaces in filename
 		encodedFilename := strings.ReplaceAll(filename, " ", "%20")
 
+		if width > 0 {
+			return fmt.Sprintf(`<img src="/static/images/%s" alt="%s" width="%d">`, encodedFilename, alt, width)
+		}
 		return fmt.Sprintf("![%s](/static/images/%s)", alt, encodedFilename)
 	})
 }
