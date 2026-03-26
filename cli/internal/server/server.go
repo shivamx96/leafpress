@@ -205,6 +205,8 @@ func (s *Server) handleStatic(root string) http.HandlerFunc {
 			contentType = "image/svg+xml"
 		case ".ico":
 			contentType = "image/x-icon"
+		case ".xml":
+			contentType = "application/xml; charset=utf-8"
 		}
 		w.Header().Set("Content-Type", contentType)
 

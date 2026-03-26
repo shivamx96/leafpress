@@ -3482,6 +3482,119 @@ fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR"
 
+# Test 156: Design system font-size variables
+test_case "Design system font-size CSS variables are defined"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q '\-\-lp-font-xs' _site/index.html && grep -q '\-\-lp-font-sm' _site/index.html && grep -q '\-\-lp-font-base' _site/index.html; then
+    pass
+else
+    fail "Font-size CSS variables not found in output"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
+# Test 157: Design system border-radius variables
+test_case "Design system border-radius CSS variables are defined"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q '\-\-lp-radius-sm' _site/index.html && grep -q '\-\-lp-radius-md' _site/index.html && grep -q '\-\-lp-radius-lg' _site/index.html; then
+    pass
+else
+    fail "Border-radius CSS variables not found in output"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
+# Test 158: RSS feed disabled via config
+test_case "RSS feed is not generated when disabled"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+# Disable RSS in config
+cat leafpress.json | sed 's/"rss": true/"rss": false/' > tmp.json && mv tmp.json leafpress.json
+"$LEAFPRESS" build > /dev/null 2>&1
+if [ ! -f "_site/feed.xml" ]; then
+    pass
+else
+    fail "feed.xml should not be generated when rss is false"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
+# Test 159: RSS nav icon present when enabled
+test_case "RSS icon appears in nav when enabled"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'lp-rss-link' _site/index.html; then
+    pass
+else
+    fail "RSS icon not found in nav"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
+# Test 160: RSS nav icon hidden when disabled
+test_case "RSS icon hidden in nav when disabled"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat leafpress.json | sed 's/"rss": true/"rss": false/' > tmp.json && mv tmp.json leafpress.json
+"$LEAFPRESS" build > /dev/null 2>&1
+if ! grep -q 'lp-rss-link' _site/index.html; then
+    pass
+else
+    fail "RSS icon should not appear when rss is false"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
+# Test 161: Obsidian image width syntax
+test_case "Obsidian image embed with width renders correctly"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > test.md << 'EOF'
+---
+title: Image Test
+---
+![[photo.png|500]]
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'width="500"' _site/test/index.html; then
+    pass
+else
+    fail "Obsidian image width syntax not rendered"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
+# Test 162: Obsidian image alt text syntax
+test_case "Obsidian image embed with alt text renders correctly"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > test.md << 'EOF'
+---
+title: Image Test
+---
+![[photo.png|my caption]]
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'alt="my caption"' _site/test/index.html; then
+    pass
+else
+    fail "Obsidian image alt text syntax not rendered"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
 # Cleanup
 rm -rf "$TESTDIR"
 

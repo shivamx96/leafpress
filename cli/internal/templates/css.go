@@ -788,6 +788,18 @@ html {
   opacity: 0.7;
 }
 
+.lp-rss-link {
+  display: flex;
+  align-items: center;
+  padding: 0.25rem;
+  color: var(--lp-text);
+  transition: opacity 0.2s;
+}
+
+.lp-rss-link:hover {
+  opacity: 0.7;
+}
+
 /* Current node highlight in overlay graph */
 .lp-graph-node--current {
   stroke: var(--lp-accent) !important;

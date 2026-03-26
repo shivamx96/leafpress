@@ -116,6 +116,7 @@ type SiteData struct {
 	TOC         bool
 	Graph       bool
 	Search      bool
+	RSS         bool
 	HeadExtra   string // Custom HTML to inject in <head>
 }
 
@@ -334,7 +335,7 @@ const baseTemplate = `<!DOCTYPE html>
   <link rel="icon" type="image/svg+xml" href="{{.Site.BasePath}}/favicon.svg">
   <link rel="icon" type="image/png" sizes="96x96" href="{{.Site.BasePath}}/favicon-96x96.png">
   <link rel="icon" type="image/x-icon" href="{{.Site.BasePath}}/favicon.ico">
-  <link rel="alternate" type="application/rss+xml" title="{{.Site.Title}}" href="{{.Site.BasePath}}/feed.xml">
+  {{if .Site.RSS}}<link rel="alternate" type="application/rss+xml" title="{{.Site.Title}}" href="{{.Site.BasePath}}/feed.xml">{{end}}
   <style>
     :root {
       --lp-font-heading: "{{.Site.Theme.FontHeading}}", Georgia, serif;
@@ -411,6 +412,13 @@ const baseTemplate = `<!DOCTYPE html>
       <div class="lp-nav-brand">
         <a class="lp-nav-title" href="{{.Site.BasePath}}/">{{.Site.Title}}</a>
         <div class="lp-nav-actions">
+          {{if .Site.RSS}}<a href="{{.Site.BasePath}}/feed.xml" class="lp-rss-link" aria-label="RSS feed" title="RSS feed" target="_blank">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 11a9 9 0 0 1 9 9"></path>
+              <path d="M4 4a16 16 0 0 1 16 16"></path>
+              <circle cx="5" cy="19" r="1"></circle>
+            </svg>
+          </a>{{end}}
           {{if .Site.Graph}}<button class="lp-graph-toggle" aria-label="Open knowledge graph" title="Explore graph">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="6" cy="6" r="3"></circle>

@@ -31,6 +31,7 @@ type Config struct {
 	TOC         bool         `json:"toc"`
 	Backlinks   bool         `json:"backlinks"`
 	Wikilinks   bool         `json:"wikilinks"`
+	RSS         bool         `json:"rss"`
 	Ignore      []string     `json:"ignore"`
 	HeadExtra   string       `json:"headExtra"` // Custom HTML to inject in <head>
 	Deploy      DeployConfig `json:"deploy"`    // Deployment configuration
@@ -167,6 +168,7 @@ func Default() *Config {
 		TOC:       true,
 		Backlinks: true,
 		Wikilinks: true,
+		RSS:       true,
 	}
 }
 

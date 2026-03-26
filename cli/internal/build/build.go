@@ -159,6 +159,7 @@ func (b *Builder) Build() (*Stats, error) {
 		TOC:         b.cfg.TOC,
 		Graph:       b.cfg.Graph,
 		Search:      b.cfg.Search,
+		RSS:         b.cfg.RSS,
 		HeadExtra:   b.cfg.HeadExtra,
 	}
 
@@ -289,8 +290,10 @@ func (b *Builder) Build() (*Stats, error) {
 
 	// Generate RSS feed
 	t0 = time.Now()
-	if err := b.generateRSS(pages, siteData); err != nil {
-		return nil, fmt.Errorf("failed to generate RSS feed: %w", err)
+	if b.cfg.RSS {
+		if err := b.generateRSS(pages, siteData); err != nil {
+			return nil, fmt.Errorf("failed to generate RSS feed: %w", err)
+		}
 	}
 	b.logTiming("rss", time.Since(t0))
 

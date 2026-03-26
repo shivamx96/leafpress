@@ -72,6 +72,24 @@ else
     exit 1
 fi
 
+# Test 7: RSS feed generated
+echo -n "Testing RSS feed... "
+if [ -f "website/_site/feed.xml" ] && grep -q '<rss' website/_site/feed.xml; then
+    echo -e "${GREEN}✓${NC}"
+else
+    echo -e "${RED}✗${NC}"
+    exit 1
+fi
+
+# Test 8: Design system variables
+echo -n "Testing design system variables... "
+if grep -q '\-\-lp-font-sm' website/_site/index.html && grep -q '\-\-lp-radius-sm' website/_site/index.html; then
+    echo -e "${GREEN}✓${NC}"
+else
+    echo -e "${RED}✗${NC}"
+    exit 1
+fi
+
 echo ""
 echo -e "${GREEN}All smoke tests passed!${NC}"
 echo ""
