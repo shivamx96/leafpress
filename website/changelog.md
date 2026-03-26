@@ -4,6 +4,14 @@ date: 2025-01-06
 toc: false
 ---
 
+## v1.0.0-beta.4
+*March 26, 2026*
+
+- RSS feed with configurable toggle (`"rss": true/false` in config)
+- RSS icon in nav bar with auto-discovery link in `<head>`
+- Obsidian image width syntax support (`![[image.png|500]]`)
+- XML content type in dev server for proper feed rendering
+
 ## v1.0.0-beta.3
 *March 20, 2026*
 
