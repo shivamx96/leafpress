@@ -4,6 +4,12 @@ date: 2025-01-06
 toc: false
 ---
 
+## v1.0.0-beta.5
+*March 29, 2026*
+
+- Auto-detect system dark/light mode preference on the first visit
+- Switching to a newer, optimized and redesigned favicon
+
 ## v1.0.0-beta.4
 *March 26, 2026*
 
