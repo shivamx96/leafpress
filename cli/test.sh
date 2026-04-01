@@ -3675,6 +3675,104 @@ fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR"
 
+# Test 167: Mermaid code block renders as div
+test_case "Mermaid code block is converted to div"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > test.md << 'MEOF'
+---
+title: Diagram Test
+---
+
+```mermaid
+graph TD
+    A --> B
+```
+MEOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'class="mermaid"' _site/test/index.html && ! grep -q 'language-mermaid' _site/test/index.html; then
+    pass
+else
+    fail "Mermaid block should be a div, not a code block"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
+# Test 168: Mermaid JS loads only when diagrams present
+test_case "Mermaid JS loads only when diagram exists on page"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > with-mermaid.md << 'MEOF'
+---
+title: With Mermaid
+---
+
+```mermaid
+graph TD
+    A --> B
+```
+MEOF
+cat > without-mermaid.md << 'MEOF'
+---
+title: Without Mermaid
+---
+
+Just regular text.
+MEOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'mermaid.esm.min.mjs' _site/with-mermaid/index.html; then
+    pass
+else
+    fail "Mermaid JS should load on page with diagrams"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
+# Test 169: Mermaid dark mode uses CSS filter
+test_case "Mermaid dark mode uses CSS invert filter"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'data-theme="dark".*\.mermaid' _site/index.html || grep -q '\[data-theme="dark"\] .mermaid svg' _site/index.html; then
+    pass
+else
+    # Check in style.css if external
+    if [ -f "_site/style.css" ] && grep -q 'dark.*mermaid' _site/style.css; then
+        pass
+    else
+        fail "Mermaid should have dark mode CSS filter"
+    fi
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
+# Test 170: Mermaid diagram content is preserved
+test_case "Mermaid diagram source content is preserved"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > test.md << 'MEOF'
+---
+title: Diagram Test
+---
+
+```mermaid
+graph TD
+    A[Start] --> B[End]
+```
+MEOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'A\[Start\]' _site/test/index.html || grep -q 'A\[Start\]' _site/test/index.html; then
+    pass
+else
+    fail "Mermaid diagram source should be preserved in div"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
 # Cleanup
 rm -rf "$TESTDIR"
 
