@@ -3,7 +3,6 @@ package build
 import (
 	"encoding/json"
 	"fmt"
-	"html/template"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -802,7 +801,7 @@ func (b *Builder) renderPage(page *content.Page, siteData templates.SiteData) er
 	data := templates.PageData{
 		Site:        siteData,
 		Page:        page,
-		Content:     template.HTML(htmlContent),
+		Content:     htmlContent,
 		TOC:         toc,
 		CurrentPath: page.Permalink,
 	}
@@ -845,7 +844,7 @@ func (b *Builder) renderSectionIndex(indexPage *content.Page, allPages []*conten
 		Site:        siteData,
 		Title:       indexPage.Title,
 		Pages:       sectionPages,
-		Intro:       template.HTML(indexPage.HTMLContent),
+		Intro:       indexPage.HTMLContent,
 		ShowList:    showList,
 		CurrentPath: currentPath,
 	}

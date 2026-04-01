@@ -3,11 +3,11 @@ package templates
 import (
 	"bufio"
 	"html"
-	"html/template"
 	"io"
 	"regexp"
 	"strconv"
 	"strings"
+	"text/template" // text/template used instead of html/template for performance — safe because leafpress is a trusted-content SSG (single author, no user-submitted input)
 
 	"github.com/shivamx96/leafpress/cli/internal/config"
 	"github.com/shivamx96/leafpress/cli/internal/content"
@@ -33,8 +33,8 @@ func init() {
 		"growthEmoji":       growthEmoji,
 		"growthDescription": growthDescription,
 		"lower":             strings.ToLower,
-		"safeHTML":          func(s string) template.HTML { return template.HTML(s) },
-		"safeCSS":           func(s string) template.CSS { return template.CSS(s) },
+		"safeHTML":          func(s string) string { return s },
+		"safeCSS":           func(s string) string { return s },
 		"fontURL":           fontURL,
 		"hasPrefix":         strings.HasPrefix,
 	}
@@ -54,7 +54,7 @@ type Templates struct {
 type PageData struct {
 	Site        SiteData
 	Page        *content.Page
-	Content     template.HTML
+	Content     string
 	TOC         []TOCItem
 	CurrentPath string // Current page path for nav active state
 }
@@ -71,7 +71,7 @@ type IndexData struct {
 	Site        SiteData
 	Title       string
 	Pages       []*content.Page
-	Intro       template.HTML // Optional intro content for section indexes
+	Intro       string // Optional intro content for section indexes
 	ShowList    bool          // Show the page list
 	CurrentPath string        // Current page path for nav active state
 }
@@ -242,10 +242,10 @@ func growthDescription(growth string) string {
 	}
 }
 
-func fontURL(font string) template.URL {
+func fontURL(font string) string {
 	// Replace spaces with + for Google Fonts URL
 	fontParam := strings.ReplaceAll(font, " ", "+")
-	return template.URL("https://fonts.googleapis.com/css2?family=" + fontParam + ":wght@400;500;600;700&display=swap")
+	return "https://fonts.googleapis.com/css2?family=" + fontParam + ":wght@400;500;600;700&display=swap"
 }
 
 // ExtractTOC extracts headings from HTML content and adds IDs to them
