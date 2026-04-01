@@ -35,17 +35,23 @@ Most static site generators make you choose: simple but limited, or powerful but
 
 ## Performance
 
-Build times in milliseconds (median of 10 runs):
+Build times in milliseconds (median of 10 runs) as of Apr 1, 2026 on **v1.0.0-beta.6**:
 
-**Apple M3, 24GB RAM**
+**Docker on Apple M3, 24GB RAM**
 
-| pages | zola | leafpress | hugo | eleventy | jekyll |
-|-------|------|-----------|------|----------|--------|
-| 100   | 55   | 51        | 142  | 246      | 268    |
-| 1000  | 172  | 199       | 307  | 508      | 513    |
-| 2000  | 330  | 347       | 494  | 816      | 776    |
+| SSG | 100 pages | 1000 pages | 2000 pages |
+|-----|-----|------------|------------|
+| zola | 25 | 76 | 135  |
+| hugo | 40| 128 | 224  |
+| leafpress-minimal | 24| 89 | 145  |
+| leafpress | 30| 125 | 233  |
+| eleventy | 266| 555 | 836  |
+| jekyll | 175| 332 | 499  |
 
-leafpress runs with all features enabled (wikilinks, backlinks, graph, TOC). Closer to zola, faster than hugo, eleventy, and jekyll.
+*leafpress-minimal: all extra features disabled (comparable to Hugo/Zola).*
+*leafpress: full features including wikilinks, backlinks, graph, search, and TOC.*
+
+On apples-to-apples comparison, we're literally the **2nd fastest just behind zola**. The cost of digital gardens is real and it adds up taking us to **hugo's** level once we include everything that matters.
 
 ## Quick Start
 
