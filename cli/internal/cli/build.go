@@ -2,6 +2,8 @@ package cli
 
 import (
 	"fmt"
+	"os"
+	"runtime/pprof"
 	"time"
 
 	"github.com/shivamx96/leafpress/cli/internal/build"
@@ -10,6 +12,8 @@ import (
 )
 
 var includeDrafts bool
+var cpuProfile string
+var memProfile string
 
 func buildCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -20,11 +24,26 @@ func buildCmd() *cobra.Command {
 	}
 
 	cmd.Flags().BoolVarP(&includeDrafts, "drafts", "d", false, "include draft pages")
+	cmd.Flags().StringVar(&cpuProfile, "cpuprofile", "", "write CPU profile to file")
+	cmd.Flags().StringVar(&memProfile, "memprofile", "", "write memory profile to file")
 
 	return cmd
 }
 
 func runBuild(cmd *cobra.Command, args []string) error {
+	// Start CPU profiling
+	if cpuProfile != "" {
+		f, err := os.Create(cpuProfile)
+		if err != nil {
+			return fmt.Errorf("could not create CPU profile: %w", err)
+		}
+		defer f.Close()
+		if err := pprof.StartCPUProfile(f); err != nil {
+			return fmt.Errorf("could not start CPU profile: %w", err)
+		}
+		defer pprof.StopCPUProfile()
+	}
+
 	start := time.Now()
 
 	// Load config
@@ -50,6 +69,18 @@ func runBuild(cmd *cobra.Command, args []string) error {
 
 	if stats.WarningCount > 0 {
 		fmt.Printf("Warnings: %d\n", stats.WarningCount)
+	}
+
+	// Write memory profile
+	if memProfile != "" {
+		f, err := os.Create(memProfile)
+		if err != nil {
+			return fmt.Errorf("could not create memory profile: %w", err)
+		}
+		defer f.Close()
+		if err := pprof.WriteHeapProfile(f); err != nil {
+			return fmt.Errorf("could not write memory profile: %w", err)
+		}
 	}
 
 	return nil
