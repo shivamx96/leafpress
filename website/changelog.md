@@ -4,6 +4,16 @@ date: 2025-01-06
 toc: false
 ---
 
+## v1.0.0-beta.6
+*April 2, 2026*
+
+- YouTube auto-embed: paste a YouTube URL on its own line and it renders as a responsive iframe (privacy-enhanced via youtube-nocookie.com)
+- Mermaid diagram support: fenced `mermaid` code blocks render client-side with dark mode via CSS invert filter
+- Local video/audio embeds: `![[video.mp4]]` and `![[recording.mp3]]` render as native `<video>` and `<audio>` elements
+- Dev server now uses `http.ServeFile` for media — enables range requests for video/audio seeking
+- Performance: switched to `text/template` — ~40% faster template rendering (1000 pages in ~125ms)
+- Benchmark: added `leafpress-minimal` config for fair comparison against Hugo/Zola
+
 ## v1.0.0-beta.5
 *March 29, 2026*
 
