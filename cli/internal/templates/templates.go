@@ -1387,7 +1387,7 @@ const baseTemplate = `<!DOCTYPE html>
   <script>
     if (document.querySelector('.mermaid')) {
       var s = document.createElement('script');
-      s.src = 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js';
+      s.src = 'https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js';
       s.onload = function() {
         mermaid.initialize({ startOnLoad: false, theme: 'default', htmlLabels: false, flowchart: { htmlLabels: false, useHtmlLabels: false }, sequence: { useHtmlLabels: false } });
         mermaid.run();
