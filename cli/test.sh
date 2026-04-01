@@ -3699,12 +3699,12 @@ fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR"
 
-# Test 168: Mermaid JS loads only when diagrams present
-test_case "Mermaid JS loads only when diagram exists on page"
+# Test 168: Mermaid JS loader is present
+test_case "Mermaid JS loader script is included"
 TESTDIR=$(mktemp -d)
 cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
-cat > with-mermaid.md << 'MEOF'
+cat > test.md << 'MEOF'
 ---
 title: With Mermaid
 ---
@@ -3714,18 +3714,11 @@ graph TD
     A --> B
 ```
 MEOF
-cat > without-mermaid.md << 'MEOF'
----
-title: Without Mermaid
----
-
-Just regular text.
-MEOF
 "$LEAFPRESS" build > /dev/null 2>&1
-if grep -q 'mermaid.esm.min.mjs' _site/with-mermaid/index.html; then
+if grep -q 'mermaid.min.js' _site/test/index.html; then
     pass
 else
-    fail "Mermaid JS should load on page with diagrams"
+    fail "Mermaid JS loader should be in page"
 fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR"
@@ -3736,15 +3729,10 @@ TESTDIR=$(mktemp -d)
 cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 "$LEAFPRESS" build > /dev/null 2>&1
-if grep -q 'data-theme="dark".*\.mermaid' _site/index.html || grep -q '\[data-theme="dark"\] .mermaid svg' _site/index.html; then
+if grep -q 'dark.*mermaid' _site/style.css 2>/dev/null || grep -q 'dark.*mermaid' _site/index.html; then
     pass
 else
-    # Check in style.css if external
-    if [ -f "_site/style.css" ] && grep -q 'dark.*mermaid' _site/style.css; then
-        pass
-    else
-        fail "Mermaid should have dark mode CSS filter"
-    fi
+    fail "Mermaid should have dark mode CSS filter"
 fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR"

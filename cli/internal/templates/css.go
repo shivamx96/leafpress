@@ -565,13 +565,6 @@ html {
   height: auto;
 }
 
-.mermaid .node rect,
-.mermaid .node polygon,
-.mermaid .node circle {
-  rx: 6;
-  ry: 6;
-}
-
 [data-theme="dark"] .mermaid svg {
   filter: invert(1) hue-rotate(180deg);
 }
