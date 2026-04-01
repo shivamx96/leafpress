@@ -114,6 +114,8 @@ var (
 	externalLinkRegex  = regexp.MustCompile(`<a\s+href="(https?://[^"]+)"([^>]*)>([^<]+)</a>`)
 	// YouTube URL patterns for auto-embed
 	youtubeRegex = regexp.MustCompile(`<p>\s*<a[^>]+href="https?://(?:www\.)?(?:youtube\.com/watch\?v=|youtu\.be/)([\w-]+)[^"]*"[^>]*>[^<]*</a>\s*</p>`)
+	// Mermaid code block detection (Chroma-highlighted or plain)
+	mermaidRegex = regexp.MustCompile(`(?s)<pre[^>]*><code[^>]*class="[^"]*language-mermaid[^"]*"[^>]*>(.*?)</code></pre>|<div class="highlight"><pre[^>]*class="chroma"><code class="language-mermaid"[^>]*>(.*?)</code></pre></div>`)
 	// Callout regex: matches > [!type] or > [!type] title followed by content lines
 	calloutStartRegex = regexp.MustCompile(`(?m)^>\s*\[!(\w+)\](?:\s+(.*))?$`)
 	// Image regex for lazy loading (captures attributes, handles self-closing)
@@ -408,8 +410,10 @@ func indexOf(s, substr string) int {
 
 // processPostMarkdown combines all post-markdown HTML processing in one function
 func (r *Renderer) processPostMarkdown(html string) string {
+	// Convert mermaid code blocks to divs for client-side rendering
+	result := processMermaidBlocks(html)
 	// Embed YouTube links before processing external links
-	result := processYouTubeEmbeds(html)
+	result = processYouTubeEmbeds(result)
 	// Process external links
 	result = r.processExternalLinks(result)
 	// Add lazy loading to images
@@ -417,6 +421,25 @@ func (r *Renderer) processPostMarkdown(html string) string {
 	// Convert blockquote citations
 	result = processBlockquoteCitations(result)
 	return result
+}
+
+// processMermaidBlocks converts mermaid code blocks into divs for client-side rendering
+func processMermaidBlocks(html string) string {
+	return mermaidRegex.ReplaceAllStringFunc(html, func(match string) string {
+		submatches := mermaidRegex.FindStringSubmatch(match)
+		// Content is in group 1 or group 2 depending on which pattern matched
+		content := submatches[1]
+		if content == "" {
+			content = submatches[2]
+		}
+		// Unescape HTML entities back to raw text for Mermaid.js
+		content = strings.ReplaceAll(content, "&amp;", "&")
+		content = strings.ReplaceAll(content, "&lt;", "<")
+		content = strings.ReplaceAll(content, "&gt;", ">")
+		content = strings.ReplaceAll(content, "&#34;", `"`)
+		content = strings.ReplaceAll(content, "&quot;", `"`)
+		return `<div class="mermaid">` + content + `</div>`
+	})
 }
 
 // processYouTubeEmbeds converts standalone YouTube links into responsive iframes

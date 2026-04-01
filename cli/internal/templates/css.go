@@ -553,6 +553,29 @@ html {
   border-radius: var(--lp-radius-sm);
 }
 
+/* Mermaid diagrams */
+.mermaid {
+  margin: 1rem 0;
+  overflow-x: auto;
+  text-align: center;
+}
+
+.mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.mermaid .node rect,
+.mermaid .node polygon,
+.mermaid .node circle {
+  rx: 6;
+  ry: 6;
+}
+
+[data-theme="dark"] .mermaid svg {
+  filter: invert(1) hue-rotate(180deg);
+}
+
 .lp-video {
   position: relative;
   width: 100%;

@@ -1384,6 +1384,16 @@ const baseTemplate = `<!DOCTYPE html>
       })();
     });
   </script>
+  <script>
+    if (document.querySelector('.mermaid')) {
+      var s = document.createElement('script');
+      s.type = 'module';
+      var font = getComputedStyle(document.documentElement).getPropertyValue('--lp-font-body').trim();
+      s.textContent = "import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';" +
+        "mermaid.initialize({ startOnLoad: true, theme: 'default', themeVariables: { fontFamily: '" + font + "' } });";
+      document.body.appendChild(s);
+    }
+  </script>
 </body>
 </html>
 `
