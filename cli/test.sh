@@ -3761,6 +3761,86 @@ fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR"
 
+# Test 171: Local video embed
+test_case "Obsidian video embed renders as video element"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > test.md << 'EOF'
+---
+title: Video Test
+---
+![[demo.mp4]]
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q '<video' _site/test/index.html && grep -q 'demo.mp4' _site/test/index.html; then
+    pass
+else
+    fail "Video embed should render as <video> element"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
+# Test 172: Local audio embed
+test_case "Obsidian audio embed renders as audio element"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > test.md << 'EOF'
+---
+title: Audio Test
+---
+![[recording.mp3]]
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q '<audio' _site/test/index.html && grep -q 'recording.mp3' _site/test/index.html; then
+    pass
+else
+    fail "Audio embed should render as <audio> element"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
+# Test 173: Path-aware embed resolves correctly
+test_case "Embed with path does not double-prefix static/images"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > test.md << 'EOF'
+---
+title: Path Test
+---
+![[static/demo.mp4]]
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q '/static/demo.mp4' _site/test/index.html && ! grep -q '/static/images/static/' _site/test/index.html; then
+    pass
+else
+    fail "Path embed should resolve to /static/demo.mp4 not /static/images/static/demo.mp4"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
+# Test 174: Video has playsinline attribute
+test_case "Video embed includes playsinline for iOS"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > test.md << 'EOF'
+---
+title: Video Test
+---
+![[demo.mp4]]
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'playsinline' _site/test/index.html; then
+    pass
+else
+    fail "Video should have playsinline attribute"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
 # Cleanup
 rm -rf "$TESTDIR"
 
