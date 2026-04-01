@@ -3595,6 +3595,86 @@ fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR"
 
+# Test 163: YouTube full URL auto-embed
+test_case "YouTube full URL is auto-embedded as iframe"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > test.md << 'EOF'
+---
+title: Video Test
+---
+https://www.youtube.com/watch?v=dQw4w9WgXcQ
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'youtube-nocookie.com/embed/dQw4w9WgXcQ' _site/test/index.html && grep -q 'class="lp-video"' _site/test/index.html; then
+    pass
+else
+    fail "YouTube full URL not auto-embedded"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
+# Test 164: YouTube short URL auto-embed
+test_case "YouTube short URL is auto-embedded as iframe"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > test.md << 'EOF'
+---
+title: Video Test
+---
+https://youtu.be/dQw4w9WgXcQ
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'youtube-nocookie.com/embed/dQw4w9WgXcQ' _site/test/index.html; then
+    pass
+else
+    fail "YouTube short URL not auto-embedded"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
+# Test 165: YouTube inline link is NOT auto-embedded
+test_case "YouTube inline link is not converted to embed"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > test.md << 'EOF'
+---
+title: Video Test
+---
+Check out this video: https://www.youtube.com/watch?v=dQw4w9WgXcQ
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if ! grep -q 'lp-video' _site/test/index.html; then
+    pass
+else
+    fail "Inline YouTube link should not be auto-embedded"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
+# Test 166: YouTube embed uses privacy-enhanced mode
+test_case "YouTube embed uses privacy-enhanced mode (nocookie)"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > test.md << 'EOF'
+---
+title: Video Test
+---
+https://www.youtube.com/watch?v=dQw4w9WgXcQ
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'youtube-nocookie.com' _site/test/index.html && ! grep -q 'www.youtube.com/embed' _site/test/index.html; then
+    pass
+else
+    fail "YouTube embed should use youtube-nocookie.com"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
 # Cleanup
 rm -rf "$TESTDIR"
 
