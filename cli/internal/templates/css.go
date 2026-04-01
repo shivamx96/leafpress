@@ -553,6 +553,23 @@ html {
   border-radius: var(--lp-radius-sm);
 }
 
+.lp-video {
+  position: relative;
+  width: 100%;
+  padding-bottom: 56.25%;
+  margin: 1rem 0;
+  border-radius: var(--lp-radius-md);
+  overflow: hidden;
+}
+
+.lp-video iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
 .lp-content hr {
   border: none;
   border-top: 1px solid var(--lp-border);

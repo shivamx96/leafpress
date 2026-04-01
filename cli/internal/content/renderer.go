@@ -112,6 +112,8 @@ var (
 	codeBlockRegex     = regexp.MustCompile("(?s)```[^`]*```")
 	inlineCodeRegex    = regexp.MustCompile("`[^`]+`")
 	externalLinkRegex  = regexp.MustCompile(`<a\s+href="(https?://[^"]+)"([^>]*)>([^<]+)</a>`)
+	// YouTube URL patterns for auto-embed
+	youtubeRegex = regexp.MustCompile(`<p>\s*<a[^>]+href="https?://(?:www\.)?(?:youtube\.com/watch\?v=|youtu\.be/)([\w-]+)[^"]*"[^>]*>[^<]*</a>\s*</p>`)
 	// Callout regex: matches > [!type] or > [!type] title followed by content lines
 	calloutStartRegex = regexp.MustCompile(`(?m)^>\s*\[!(\w+)\](?:\s+(.*))?$`)
 	// Image regex for lazy loading (captures attributes, handles self-closing)
@@ -406,13 +408,27 @@ func indexOf(s, substr string) int {
 
 // processPostMarkdown combines all post-markdown HTML processing in one function
 func (r *Renderer) processPostMarkdown(html string) string {
+	// Embed YouTube links before processing external links
+	result := processYouTubeEmbeds(html)
 	// Process external links
-	result := r.processExternalLinks(html)
+	result = r.processExternalLinks(result)
 	// Add lazy loading to images
 	result = processLazyImages(result)
 	// Convert blockquote citations
 	result = processBlockquoteCitations(result)
 	return result
+}
+
+// processYouTubeEmbeds converts standalone YouTube links into responsive iframes
+func processYouTubeEmbeds(html string) string {
+	return youtubeRegex.ReplaceAllStringFunc(html, func(match string) string {
+		submatches := youtubeRegex.FindStringSubmatch(match)
+		if len(submatches) < 2 {
+			return match
+		}
+		videoID := submatches[1]
+		return `<div class="lp-video"><iframe src="https://www.youtube-nocookie.com/embed/` + videoID + `" frameborder="0" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe></div>`
+	})
 }
 
 // processExternalLinks adds target="_blank" and class to external links
