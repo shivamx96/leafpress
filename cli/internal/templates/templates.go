@@ -36,6 +36,7 @@ func init() {
 		"safeHTML":          func(s string) string { return s },
 		"safeCSS":           func(s string) string { return s },
 		"fontURL":           fontURL,
+		"combinedFontURL":   combinedFontURL,
 		"hasPrefix":         strings.HasPrefix,
 	}
 }
@@ -245,7 +246,20 @@ func growthDescription(growth string) string {
 func fontURL(font string) string {
 	// Replace spaces with + for Google Fonts URL
 	fontParam := strings.ReplaceAll(font, " ", "+")
-	return "https://fonts.googleapis.com/css2?family=" + fontParam + ":wght@400;500;600;700&display=swap"
+	return fontParam + ":wght@400;500;600;700"
+}
+
+func combinedFontURL(heading, body, mono string) string {
+	families := []string{}
+	seen := map[string]bool{}
+	for _, font := range []string{heading, body, mono} {
+		param := fontURL(font)
+		if !seen[param] {
+			seen[param] = true
+			families = append(families, param)
+		}
+	}
+	return "https://fonts.googleapis.com/css2?family=" + strings.Join(families, "&family=") + "&display=swap"
 }
 
 // ExtractTOC extracts headings from HTML content and adds IDs to them
@@ -400,9 +414,7 @@ const baseTemplate = `<!DOCTYPE html>
   <link rel="stylesheet" href="{{.Site.BasePath}}/style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="{{.Site.Theme.FontHeading | fontURL}}" rel="stylesheet">
-  <link href="{{.Site.Theme.FontBody | fontURL}}" rel="stylesheet">
-  <link href="{{.Site.Theme.FontMono | fontURL}}" rel="stylesheet">
+  <link href="{{combinedFontURL .Site.Theme.FontHeading .Site.Theme.FontBody .Site.Theme.FontMono}}" rel="stylesheet">
   {{if .Site.HeadExtra}}{{.Site.HeadExtra | safeHTML}}{{end}}
 </head>
 <body class="lp-body">
