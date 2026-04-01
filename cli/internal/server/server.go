@@ -177,45 +177,21 @@ func (s *Server) handleStatic(root string) http.HandlerFunc {
 			return
 		}
 
-		// Read file
-		content, err := os.ReadFile(filePath)
-		if err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		// For HTML files, read and inject live reload script
+		if strings.HasSuffix(filePath, ".html") {
+			content, err := os.ReadFile(filePath)
+			if err != nil {
+				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			w.Write(s.injectLiveReload(content))
 			return
 		}
 
-		// Set content type
-		contentType := "application/octet-stream"
-		switch filepath.Ext(filePath) {
-		case ".html":
-			contentType = "text/html; charset=utf-8"
-		case ".css":
-			contentType = "text/css; charset=utf-8"
-		case ".js":
-			contentType = "application/javascript"
-		case ".json":
-			contentType = "application/json"
-		case ".png":
-			contentType = "image/png"
-		case ".jpg", ".jpeg":
-			contentType = "image/jpeg"
-		case ".gif":
-			contentType = "image/gif"
-		case ".svg":
-			contentType = "image/svg+xml"
-		case ".ico":
-			contentType = "image/x-icon"
-		case ".xml":
-			contentType = "application/xml; charset=utf-8"
-		}
-		w.Header().Set("Content-Type", contentType)
-
-		// Inject live reload script for HTML files
-		if strings.HasSuffix(filePath, ".html") {
-			content = s.injectLiveReload(content)
-		}
-
-		w.Write(content)
+		// For all other files, use http.ServeFile (handles content type,
+		// range requests for media, caching headers, etc.)
+		http.ServeFile(w, r, filePath)
 	}
 }
 

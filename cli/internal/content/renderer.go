@@ -3,6 +3,7 @@ package content
 import (
 	"bytes"
 	"fmt"
+	"path/filepath"
 	"regexp"
 	"runtime"
 	"strconv"
@@ -264,11 +265,55 @@ func (r *Renderer) processCallouts(content string) string {
 	return processed
 }
 
-// processObsidianImagesProtected converts Obsidian image embeds (assumes code blocks already protected)
+// isVideoFile checks if a filename has a video extension
+func isVideoFile(name string) bool {
+	ext := strings.ToLower(filepath.Ext(name))
+	switch ext {
+	case ".mp4", ".webm", ".ogv", ".mov":
+		return true
+	}
+	return false
+}
+
+// isAudioFile checks if a filename has an audio extension
+func isAudioFile(name string) bool {
+	ext := strings.ToLower(filepath.Ext(name))
+	switch ext {
+	case ".mp3", ".wav", ".ogg", ".m4a", ".flac":
+		return true
+	}
+	return false
+}
+
+// resolveMediaSrc resolves an Obsidian embed filename to a URL path.
+// Bare filenames (e.g. "photo.png") get prefixed with /static/images/.
+// Paths (e.g. "static/video.mp4") get a leading slash only.
+func resolveMediaSrc(filename, basePath string) string {
+	cleaned := filepath.ToSlash(filepath.Clean(filename))
+	cleaned = strings.TrimPrefix(cleaned, "/")
+
+	var src string
+	if strings.Contains(cleaned, "/") {
+		src = "/" + cleaned
+	} else {
+		src = "/static/images/" + cleaned
+	}
+
+	// Encode path segments (preserve /)
+	parts := strings.Split(src, "/")
+	for i, p := range parts {
+		parts[i] = strings.ReplaceAll(p, " ", "%20")
+	}
+	src = strings.Join(parts, "/")
+
+	if basePath != "" && basePath != "/" {
+		src = basePath + src
+	}
+	return src
+}
+
+// processObsidianImagesProtected converts Obsidian image/video/audio embeds (assumes code blocks already protected)
 func (r *Renderer) processObsidianImagesProtected(content string) string {
-	// Replace ![[image.png]] with ![image.png](/static/images/image.png)
-	// Replace ![[image.png|alt]] with ![alt](/static/images/image.png)
-	// Replace ![[image.png|500]] with <img> tag with width (numeric pipe value = width, like Obsidian)
 	return obsidianImageRegex.ReplaceAllStringFunc(content, func(match string) string {
 		submatches := obsidianImageRegex.FindStringSubmatch(match)
 		if len(submatches) < 2 {
@@ -276,7 +321,7 @@ func (r *Renderer) processObsidianImagesProtected(content string) string {
 		}
 
 		filename := strings.TrimSpace(submatches[1])
-		alt := filename
+		alt := filepath.Base(filename) // Use just the filename for alt text
 		width := 0
 
 		if len(submatches) > 2 && submatches[2] != "" {
@@ -288,13 +333,18 @@ func (r *Renderer) processObsidianImagesProtected(content string) string {
 			}
 		}
 
-		// URL-encode spaces in filename
-		encodedFilename := strings.ReplaceAll(filename, " ", "%20")
+		src := resolveMediaSrc(filename, r.basePath)
 
-		if width > 0 {
-			return fmt.Sprintf(`<img src="/static/images/%s" alt="%s" width="%d">`, encodedFilename, alt, width)
+		if isVideoFile(filename) {
+			return fmt.Sprintf(`<div class="lp-video-local"><video controls playsinline preload="metadata"><source src="%s">%s</video></div>`, src, alt)
 		}
-		return fmt.Sprintf("![%s](/static/images/%s)", alt, encodedFilename)
+		if isAudioFile(filename) {
+			return fmt.Sprintf(`<audio controls preload="metadata"><source src="%s">%s</audio>`, src, alt)
+		}
+		if width > 0 {
+			return fmt.Sprintf(`<img src="%s" alt="%s" width="%d">`, src, alt, width)
+		}
+		return fmt.Sprintf("![%s](%s)", alt, src)
 	})
 }
 

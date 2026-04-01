@@ -576,6 +576,22 @@ html {
   filter: invert(1) hue-rotate(180deg);
 }
 
+.lp-video-local {
+  margin: 1rem 0;
+  width: 100%;
+}
+
+.lp-video-local video {
+  width: 100%;
+  border-radius: var(--lp-radius-md);
+}
+
+.lp-content audio {
+  display: block;
+  width: 100%;
+  margin: 1rem 0;
+}
+
 .lp-video {
   position: relative;
   width: 100%;
