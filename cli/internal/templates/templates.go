@@ -305,14 +305,16 @@ func ExtractTOC(htmlContent string) (string, []TOCItem) {
 			Level: levelInt,
 		})
 
-		// Return heading with ID (preserve existing attributes if any)
-		if attrs != "" && !idAttrRegex.MatchString(attrs) {
-			return "<h" + level + attrs + " id=\"" + id + "\">" + text + "</h" + level + ">"
-		} else if attrs == "" {
-			return "<h" + level + " id=\"" + id + "\">" + text + "</h" + level + ">"
+		// If heading already has an id from goldmark, replace it with ours for consistency
+		if attrs != "" && idAttrRegex.MatchString(attrs) {
+			// Replace existing id with our generated one
+			existingIDRegex := regexp.MustCompile(`\s*id="[^"]*"`)
+			attrs = existingIDRegex.ReplaceAllString(attrs, "")
 		}
-		// If it already has an id, skip
-		return match
+		if attrs != "" {
+			return "<h" + level + attrs + " id=\"" + id + "\">" + text + "</h" + level + ">"
+		}
+		return "<h" + level + " id=\"" + id + "\">" + text + "</h" + level + ">"
 	})
 
 	return modifiedHTML, toc
