@@ -69,11 +69,18 @@ func NewRenderer(resolver *LinkResolver, enableWikilinks bool, basePath string) 
 func (r *Renderer) Render(content string) (string, []string) {
 	var warnings []string
 
-	// Extract code blocks ONCE to protect them from all pre-processing
-	codeBlocks := extractCodeBlocks(content)
+	// Extract fenced code blocks first, then inline code from the remainder
+	fencedBlocks := codeBlockRegex.FindAllString(content, -1)
 	protected := content
-	for i, block := range codeBlocks {
+	for i, block := range fencedBlocks {
 		placeholder := fmt.Sprintf("___CODE_BLOCK_%d___", i)
+		protected = strings.Replace(protected, block, placeholder, 1)
+	}
+	// Now extract inline code from content with fenced blocks already removed
+	inlineBlocks := inlineCodeRegex.FindAllString(protected, -1)
+	codeBlocks := append(fencedBlocks, inlineBlocks...)
+	for i, block := range inlineBlocks {
+		placeholder := fmt.Sprintf("___CODE_BLOCK_%d___", len(fencedBlocks)+i)
 		protected = strings.Replace(protected, block, placeholder, 1)
 	}
 
