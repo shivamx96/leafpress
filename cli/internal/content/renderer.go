@@ -39,6 +39,7 @@ func NewRenderer(resolver *LinkResolver, enableWikilinks bool, basePath string) 
 		goldmark.WithExtensions(
 			extension.GFM, // GitHub Flavored Markdown
 			extension.Typographer,
+			extension.NewFootnote(),
 			highlighting.NewHighlighting(
 				highlighting.WithStyle("github"),
 				highlighting.WithFormatOptions(

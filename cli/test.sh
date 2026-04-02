@@ -3841,6 +3841,95 @@ fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR"
 
+# Test 175: Footnote renders as superscript reference
+test_case "Footnote reference renders as superscript link"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > test.md << 'EOF'
+---
+title: Footnote Test
+---
+This has a footnote[^1].
+
+[^1]: The footnote content.
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'class="footnote-ref"' _site/test/index.html && grep -q '<sup' _site/test/index.html; then
+    pass
+else
+    fail "Footnote should render as superscript reference"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
+# Test 176: Footnote section renders at bottom
+test_case "Footnote definitions render at bottom of page"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > test.md << 'EOF'
+---
+title: Footnote Test
+---
+Some text[^1].
+
+[^1]: Bottom footnote.
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'class="footnotes"' _site/test/index.html && grep -q 'footnote-backref' _site/test/index.html; then
+    pass
+else
+    fail "Footnote section should render at bottom with backref links"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
+# Test 177: Named footnotes are auto-numbered
+test_case "Named footnotes are auto-numbered"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > test.md << 'EOF'
+---
+title: Footnote Test
+---
+First[^alpha] and second[^beta].
+
+[^alpha]: Alpha note.
+[^beta]: Beta note.
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q '>1<' _site/test/index.html && grep -q '>2<' _site/test/index.html; then
+    pass
+else
+    fail "Named footnotes should be auto-numbered as 1, 2"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
+# Test 178: Footnote content supports markdown
+test_case "Footnote content supports inline markdown"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > test.md << 'EOF'
+---
+title: Footnote Test
+---
+See here[^1].
+
+[^1]: This has **bold** and `code`.
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q '<strong>bold</strong>' _site/test/index.html && grep -q '<code>code</code>' _site/test/index.html; then
+    pass
+else
+    fail "Footnote content should support markdown formatting"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
 # Cleanup
 rm -rf "$TESTDIR"
 
