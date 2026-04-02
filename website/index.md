@@ -27,11 +27,17 @@ Most static site generators make you choose: simple but limited, or powerful but
 - **Full-text search** built-in, no external services
 - **Graph visualization** of your knowledge connections
 - **Table of contents** auto-generated from headings
-- **SEO ready** with sitemap, RSS, Open Graph, and meta tags
+- **Mermaid diagrams** rendered from fenced code blocks
+- **YouTube auto-embeds** from pasted URLs
+- **Video & audio embeds** via Obsidian syntax (`![[video.mp4]]`)
+- **Image width control** with `![[image.png|500]]`
+- **RSS feed** with configurable nav icon
+- **SEO ready** with sitemap, Open Graph, and meta tags
 - **Callouts** for notes, warnings, tips (`> [!note]`)
 - **Syntax highlighting** for code blocks
 - **Dark mode** with system preference detection
 - **Link previews** on hover
+- **Design system** with CSS custom properties for fonts, radii, and spacing
 
 ## Performance
 

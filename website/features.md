@@ -13,6 +13,8 @@ Everything you need to build a digital garden, nothing you don't.
 
 **Tags** — Add `tags: [idea, project]` to frontmatter. Get tag pages automatically.
 
+**Mermaid Diagrams** — Fenced `mermaid` code blocks render as interactive diagrams. Supports flowcharts, sequence diagrams, Gantt charts, and more. Dark mode compatible.
+
 **Callouts** — Obsidian-compatible admonitions for notes, warnings, tips, and more.
 
 > [!tip] Like this
@@ -30,11 +32,21 @@ Everything you need to build a digital garden, nothing you don't.
 
 **Link Previews** — Hover over any wiki-link to preview the target page.
 
+## Media
+
+**YouTube Embeds** — Paste a YouTube URL on its own line and it auto-embeds as a responsive iframe. Privacy-enhanced via youtube-nocookie.com.
+
+**Video & Audio** — Embed local media with Obsidian syntax: `![[video.mp4]]` renders as a native video player, `![[recording.mp3]]` as an audio player.
+
+**Image Width** — Control image size with Obsidian syntax: `![[photo.png|500]]` sets the width to 500px.
+
 ## Publishing
 
 **One-Command Deploy** — `leafpress deploy` handles authentication, building, and deployment to GitHub Pages, Vercel, Netlify, and more. No manual setup required.
 
-**SEO Ready** — Automatic sitemap.xml, robots.txt, RSS feed, Open Graph tags, Twitter cards.
+**SEO Ready** — Automatic sitemap.xml, robots.txt, Open Graph tags, Twitter cards.
+
+**RSS Feed** — Auto-generated feed.xml with nav icon. Toggle with `"rss": true/false` in config.
 
 **Custom 404** — Styled error page, ready for any hosting platform.
 

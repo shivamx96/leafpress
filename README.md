@@ -45,10 +45,16 @@ See the [deployment guide](https://leafpress.in/guide/deploy-github) for details
 - Graph visualization
 - Table of contents
 - Callouts (Obsidian-compatible)
-- Dark mode
+- Mermaid diagrams
+- YouTube auto-embeds
+- Local video and audio embeds
+- Obsidian image width syntax (`![[image.png|500]]`)
+- RSS feed with nav icon
+- Dark mode with system preference detection
 - Link previews on hover
+- Design system with CSS custom properties (font scale, border radius)
 - SEO ready (sitemap, RSS, Open Graph)
-- Fast builds (~150ms for 1000 pages)
+- Fast builds (~125ms for 1000 pages)
 - One-command deploy to GitHub Pages, Vercel, or Netlify
 
 ## Documentation

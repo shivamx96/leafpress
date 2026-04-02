@@ -50,6 +50,7 @@ That's it. Everything else has sensible defaults.
   "search": true,
   "wikilinks": true,
   "backlinks": true,
+  "rss": true,
   
   "headExtra": "<script defer data-domain=\"example.com\" src=\"https://plausible.io/js/script.js\"></script>"
 }
@@ -120,6 +121,7 @@ Gradients work too:
 | `search` | `true` | Enable full-text search |
 | `wikilinks` | `true` | Enable wiki-link processing |
 | `backlinks` | `true` | Show backlinks section on pages |
+| `rss` | `true` | Generate RSS feed and show feed icon in nav |
 
 ### Ignore Patterns
 

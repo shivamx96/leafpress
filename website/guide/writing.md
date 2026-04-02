@@ -90,9 +90,47 @@ Obsidian-style embeds also work:
 ```markdown
 ![[photo.jpg]]
 ![[photo.jpg|Alt text]]
+![[photo.jpg|500]]
 ```
 
-Images in `static/images/` are copied to the output.
+The pipe value is treated as width if numeric, alt text otherwise. Images in `static/images/` are copied to the output.
+
+### Video & Audio
+
+Embed local media with Obsidian syntax:
+
+```markdown
+![[demo.mp4]]
+![[recording.mp3]]
+![[static/videos/intro.webm]]
+```
+
+Supported formats: `.mp4`, `.webm`, `.ogv`, `.mov` (video) and `.mp3`, `.wav`, `.ogg`, `.m4a`, `.flac` (audio). Bare filenames resolve to `static/images/`, paths with `/` are used as-is.
+
+### YouTube Embeds
+
+Paste a YouTube URL on its own line:
+
+```markdown
+https://www.youtube.com/watch?v=dQw4w9WgXcQ
+```
+
+It auto-converts to a responsive embedded player. Links inline with other text are not affected.
+
+### Mermaid Diagrams
+
+Fenced code blocks with `mermaid` language render as diagrams:
+
+````markdown
+```mermaid
+graph TD
+    A[Start] --> B{Decision}
+    B -->|Yes| C[Done]
+    B -->|No| D[Retry]
+```
+````
+
+Supports all Mermaid diagram types: flowcharts, sequence diagrams, Gantt charts, class diagrams, and more.
 
 ### Code Blocks
 
