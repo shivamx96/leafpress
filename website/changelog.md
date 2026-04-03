@@ -4,6 +4,15 @@ date: 2025-01-06
 toc: false
 ---
 
+## v1.0.0-beta.7
+*April 3, 2026*
+
+- Footnotes support via `[^1]` syntax with auto-numbered references and back-links
+- Anchored headings: hover over h2/h3 to reveal a `#` deep-link
+- Fixed wiki-links inside inline code being processed as links
+- Fixed TOC links not matching heading IDs for headings with special characters (e.g. `&`)
+- Combined Google Fonts into a single request — eliminates 2 render-blocking network calls
+
 ## v1.0.0-beta.6
 *April 2, 2026*
 
