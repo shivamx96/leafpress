@@ -22,6 +22,8 @@ Everything you need to build a digital garden, nothing you don't.
 
 **Table of Contents** — Auto-generated from your headings. Toggle globally or per-page.
 
+**Footnotes** — Add references with `[^1]` and definitions with `[^1]: ...`. Renders as superscript links with a footnote section at the bottom.
+
 **Growth Stages** — Track note maturity with `growth: seedling`, `budding`, or `evergreen`.
 
 ## Discovery

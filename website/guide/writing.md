@@ -146,6 +146,19 @@ function hello() {
 
 Copy button appears on hover.
 
+### Footnotes
+
+Add references with `[^name]` and define them anywhere in the file:
+
+```markdown
+This needs a source[^1]. Another claim[^note].
+
+[^1]: Source: Wikipedia, 2026.
+[^note]: This supports **bold**, `code`, and [links](https://example.com).
+```
+
+Footnotes render as superscript numbers linking to a footnote section at the bottom of the page. Named footnotes are auto-numbered.
+
 ## Folders
 
 Organize content in folders. Create `folder/_index.md` for section pages:

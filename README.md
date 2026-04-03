@@ -44,6 +44,7 @@ See the [deployment guide](https://leafpress.in/guide/deploy-github) for details
 - Full-text search
 - Graph visualization
 - Table of contents
+- Footnotes
 - Callouts (Obsidian-compatible)
 - Mermaid diagrams
 - YouTube auto-embeds
