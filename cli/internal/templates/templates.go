@@ -311,10 +311,11 @@ func ExtractTOC(htmlContent string) (string, []TOCItem) {
 			existingIDRegex := regexp.MustCompile(`\s*id="[^"]*"`)
 			attrs = existingIDRegex.ReplaceAllString(attrs, "")
 		}
+		anchor := `<a class="lp-heading-anchor" href="#` + id + `" aria-hidden="true">#</a>`
 		if attrs != "" {
-			return "<h" + level + attrs + " id=\"" + id + "\">" + text + "</h" + level + ">"
+			return "<h" + level + attrs + " id=\"" + id + "\">" + text + " " + anchor + "</h" + level + ">"
 		}
-		return "<h" + level + " id=\"" + id + "\">" + text + "</h" + level + ">"
+		return "<h" + level + " id=\"" + id + "\">" + text + " " + anchor + "</h" + level + ">"
 	})
 
 	return modifiedHTML, toc

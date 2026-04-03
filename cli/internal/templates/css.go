@@ -296,6 +296,24 @@ html {
   scroll-margin-top: calc(var(--lp-nav-height) + 2rem);
 }
 
+.lp-heading-anchor {
+  color: var(--lp-text-muted);
+  text-decoration: none;
+  opacity: 0;
+  font-weight: 400;
+  margin-left: 0.25rem;
+  transition: opacity 0.2s;
+}
+
+.lp-content h2:hover .lp-heading-anchor,
+.lp-content h3:hover .lp-heading-anchor {
+  opacity: 1;
+}
+
+.lp-heading-anchor:hover {
+  color: var(--lp-accent);
+}
+
 .lp-header {
   margin-bottom: 1rem;
   padding-bottom: 1rem;
