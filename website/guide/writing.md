@@ -31,19 +31,28 @@ Your content here.
 
 ## Frontmatter
 
-Required:
-- `title` — Page title
+All fields are optional:
 
-Optional:
+- `title` — Page title (falls back to a title generated from the filename)
 - `date` — Publication date (YYYY-MM-DD)
 - `modified` — Last modified date
 - `tags` — List of tags: `[tag1, tag2]`
 - `growth` — Note maturity: `seedling`, `budding`, or `evergreen`
 - `toc` — Override global TOC setting: `true` or `false`
-- `description` — SEO meta description (auto-generated if omitted)
+- `description` — SEO meta description (auto-generated from content if omitted)
 - `image` — OG image path for social sharing
 - `draft` — Set `true` to exclude from build
 - `readingTime` — Override calculated reading time (minutes)
+
+### Obsidian-compatible aliases
+
+- `created`, `createdAt` — Aliases for `date`
+- `updated`, `updatedAt` — Aliases for `modified`
+
+### Section index pages (`_index.md`)
+
+- `sort` — Sort order for the section's page list: `date` (default), `title`, or `growth`
+- `showList` — Set `false` to hide the page list on a section index (default `true`)
 
 ## Markdown Features
 
