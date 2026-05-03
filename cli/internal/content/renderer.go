@@ -294,7 +294,7 @@ func isAudioFile(name string) bool {
 }
 
 // resolveMediaSrc resolves an Obsidian embed filename to a URL path.
-// Bare filenames (e.g. "photo.png") get prefixed with /static/images/.
+// Bare filenames get routed to a media-specific default under /static/.
 // Paths (e.g. "static/video.mp4") get a leading slash only.
 func resolveMediaSrc(filename, basePath string) string {
 	cleaned := filepath.ToSlash(filepath.Clean(filename))
@@ -304,7 +304,14 @@ func resolveMediaSrc(filename, basePath string) string {
 	if strings.Contains(cleaned, "/") {
 		src = "/" + cleaned
 	} else {
-		src = "/static/images/" + cleaned
+		switch {
+		case isVideoFile(cleaned):
+			src = "/static/video/" + cleaned
+		case isAudioFile(cleaned):
+			src = "/static/audio/" + cleaned
+		default:
+			src = "/static/images/" + cleaned
+		}
 	}
 
 	// Encode path segments (preserve /)

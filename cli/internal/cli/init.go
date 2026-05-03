@@ -62,12 +62,13 @@ func runInit(cmd *cobra.Command, args []string) error {
 		if err := os.MkdirAll(staticDir, 0755); err != nil {
 			return fmt.Errorf("failed to create static directory: %w", err)
 		}
-		// Create images subdirectory
-		imagesDir := filepath.Join(staticDir, "images")
-		if err := os.MkdirAll(imagesDir, 0755); err != nil {
-			return fmt.Errorf("failed to create static/images directory: %w", err)
+		for _, dir := range []string{"images", "video", "audio"} {
+			mediaDir := filepath.Join(staticDir, dir)
+			if err := os.MkdirAll(mediaDir, 0755); err != nil {
+				return fmt.Errorf("failed to create static/%s directory: %w", dir, err)
+			}
 		}
-		fmt.Println("Created static/images/")
+		fmt.Println("Created static/images/, static/video/, static/audio/")
 	}
 
 	// Update .gitignore

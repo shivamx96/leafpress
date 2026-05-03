@@ -3773,10 +3773,10 @@ title: Video Test
 ![[demo.mp4]]
 EOF
 "$LEAFPRESS" build > /dev/null 2>&1
-if grep -q '<video' _site/test/index.html && grep -q 'demo.mp4' _site/test/index.html; then
+if grep -q '<video' _site/test/index.html && grep -q '/static/video/demo.mp4' _site/test/index.html; then
     pass
 else
-    fail "Video embed should render as <video> element"
+    fail "Video embed should render as <video> element with /static/video/ source"
 fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR"
@@ -3793,10 +3793,10 @@ title: Audio Test
 ![[recording.mp3]]
 EOF
 "$LEAFPRESS" build > /dev/null 2>&1
-if grep -q '<audio' _site/test/index.html && grep -q 'recording.mp3' _site/test/index.html; then
+if grep -q '<audio' _site/test/index.html && grep -q '/static/audio/recording.mp3' _site/test/index.html; then
     pass
 else
-    fail "Audio embed should render as <audio> element"
+    fail "Audio embed should render as <audio> element with /static/audio/ source"
 fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR"
