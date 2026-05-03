@@ -575,7 +575,6 @@ html {
 .mermaid {
   margin: 1rem 0;
   overflow-x: auto;
-  text-align: center;
 }
 
 .mermaid svg {
