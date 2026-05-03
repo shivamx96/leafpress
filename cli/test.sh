@@ -3841,7 +3841,30 @@ fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR"
 
-# Test 175: Footnote renders as superscript reference
+# Test 175: Task lists render without duplicate bullets
+test_case "Task list CSS removes list bullets from checkbox items"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > test.md << 'EOF'
+---
+title: Checklist Test
+---
+- [x] prototype the note graph
+- [ ] replace placeholder media with real files
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'type="checkbox"' _site/test/index.html && \
+   grep -Fq '.lp-content li:has(> input[type="checkbox"])' _site/style.css && \
+   grep -Fq '.lp-content ul:has(> li > input[type="checkbox"])' _site/style.css; then
+    pass
+else
+    fail "Task list items should render flush-left without default list bullets"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
+# Test 176: Footnote renders as superscript reference
 test_case "Footnote reference renders as superscript link"
 TESTDIR=$(mktemp -d)
 cd "$TESTDIR"

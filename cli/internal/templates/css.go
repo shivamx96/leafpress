@@ -461,6 +461,18 @@ html {
   margin-bottom: 0.25rem;
 }
 
+.lp-content li:has(> input[type="checkbox"]) {
+  list-style: none;
+}
+
+.lp-content ul:has(> li > input[type="checkbox"]) {
+  padding-left: 0;
+}
+
+.lp-content li > input[type="checkbox"] {
+  margin-right: 0.5rem;
+}
+
 .lp-content blockquote {
   font-family: var(--lp-font-heading);
   font-size: var(--lp-font-lg);
