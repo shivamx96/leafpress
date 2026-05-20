@@ -10,9 +10,9 @@ RUN cd cli && go build -o /usr/local/bin/leafpress ./cmd/leafpress
 COPY website/ ./website/
 RUN cd website && leafpress build
 
-FROM nginx:alpine
+FROM cgr.io/chainguard/nginx:latest
 
 COPY --from=builder /build/website/_site /usr/share/nginx/html
 COPY website/nginx.conf /etc/nginx/conf.d/default.conf
 
-EXPOSE 80
+EXPOSE 8080

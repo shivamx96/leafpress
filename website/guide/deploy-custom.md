@@ -53,16 +53,17 @@ WORKDIR /site
 COPY . .
 RUN leafpress build
 
-FROM nginx:alpine
+FROM cgr.io/chainguard/nginx:latest
 COPY --from=builder /site/_site /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 8080
 ```
 
 ### nginx.conf
 
 ```nginx
 server {
-    listen 80;
+    listen 8080;
     root /usr/share/nginx/html;
     index index.html;
 
@@ -81,7 +82,7 @@ server {
 
 ```bash
 docker build -t my-garden .
-docker run -p 8080:80 my-garden
+docker run -p 8080:8080 my-garden
 ```
 
 ## Any Static Host
