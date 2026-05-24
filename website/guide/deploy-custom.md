@@ -53,7 +53,7 @@ WORKDIR /site
 COPY . .
 RUN leafpress build
 
-FROM cgr.io/chainguard/nginx:latest
+FROM cgr.dev/chainguard/nginx:latest
 COPY --from=builder /site/_site /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 8080
