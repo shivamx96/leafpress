@@ -10,11 +10,11 @@
     },
     {
       "label": "Features",
-      "path": "/features"
+      "path": "/features/"
     },
     {
       "label": "Changelog",
-      "path": "/changelog"
+      "path": "/changelog/"
     }
   ],
   "outputDir": "_site",
