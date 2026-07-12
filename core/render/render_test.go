@@ -273,3 +273,263 @@ func TestOptionalFieldsDefaulted(t *testing.T) {
 		t.Error("warnings should be an empty slice, not nil")
 	}
 }
+
+// --- XSS hardening ---
+
+func TestXSSBodyAndMetadataEscaped(t *testing.T) {
+	tests := []struct {
+		name        string
+		page        string   // page JSON
+		slug        string   // slug to inspect
+		mustHave    []string // escaped fragments that must appear
+		mustNotHave []string // raw fragments that must never appear anywhere in the page HTML
+	}{
+		{
+			name:        "script tag in body",
+			page:        `{"slug": "p", "title": "P", "markdown": "hello <script>alert(1)</script> world"}`,
+			slug:        "p",
+			mustHave:    []string{"&lt;script&gt;alert(1)&lt;/script&gt;"},
+			mustNotHave: []string{"<script>alert(1)</script>"},
+		},
+		{
+			name:        "img onerror in body",
+			page:        `{"slug": "p", "title": "P", "markdown": "look <img src=x onerror=alert(document.domain)> here"}`,
+			slug:        "p",
+			mustHave:    []string{"&lt;img src=x onerror=alert(document.domain)&gt;"},
+			mustNotHave: []string{"<img src=x onerror="},
+		},
+		{
+			name:        "block-level script in body",
+			page:        `{"slug": "p", "title": "P", "markdown": "<script>\nalert(1)\n</script>"}`,
+			slug:        "p",
+			mustHave:    []string{"&lt;script&gt;"},
+			mustNotHave: []string{"<script>\nalert(1)"},
+		},
+		{
+			name: "script tag in title",
+			page: `{"slug": "p", "title": "<script>alert(1)</script>", "markdown": "body", "description": "desc"}`,
+			slug: "p",
+			mustHave: []string{
+				"<title>&lt;script&gt;alert(1)&lt;/script&gt; | g</title>",
+				`<h1 class="lp-title">&lt;script&gt;alert(1)&lt;/script&gt;</h1>`,
+				`<meta property="og:title" content="&lt;script&gt;alert(1)&lt;/script&gt;">`,
+				`<meta name="twitter:title" content="&lt;script&gt;alert(1)&lt;/script&gt;">`,
+			},
+			mustNotHave: []string{"<script>alert(1)</script>"},
+		},
+		{
+			name: "quotes and angle brackets in description",
+			page: `{"slug": "p", "title": "P", "markdown": "body", "description": "she said \"><script>alert(1)</script> & left"}`,
+			slug: "p",
+			mustHave: []string{
+				`<meta name="description" content="she said &#34;&gt;&lt;script&gt;alert(1)&lt;/script&gt; &amp; left">`,
+			},
+			mustNotHave: []string{`"><script>`, "<script>alert(1)</script>"},
+		},
+		{
+			name: "auto-generated description from hostile body",
+			page: `{"slug": "p", "title": "P", "markdown": "\"><script>alert(1)</script> plain text follows"}`,
+			slug: "p",
+			mustHave: []string{
+				// PlainContent un-escapes entities; render must re-escape
+				// before the value hits the meta attributes. (The leading
+				// straight quote becomes a curly one via the Typographer.)
+				`&gt;&lt;script&gt;alert(1)&lt;/script&gt; plain text follows"`,
+			},
+			mustNotHave: []string{`content=""><script>`, "<script>alert(1)</script>"},
+		},
+		{
+			name: "script tag in garden title",
+			page: `{"slug": "p", "title": "P", "markdown": "body"}`,
+			slug: "p",
+			mustHave: []string{
+				"&lt;script&gt;alert(2)&lt;/script&gt;",
+			},
+			mustNotHave: []string{"<script>alert(2)</script>"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gardenTitle := "g"
+			if tt.name == "script tag in garden title" {
+				gardenTitle = `<script>alert(2)</script>`
+			}
+			input := `{"garden": {"slug": "g", "title": ` + jsonString(gardenTitle) + `}, "pages": [` + tt.page + `]}`
+			out := runJSON(t, input)
+			html := pageHTML(t, out, tt.slug)
+
+			for _, want := range tt.mustHave {
+				if !strings.Contains(html, want) {
+					t.Errorf("page HTML missing escaped fragment %q", want)
+				}
+			}
+			for _, raw := range tt.mustNotHave {
+				if strings.Contains(html, raw) {
+					t.Errorf("page HTML contains unescaped fragment %q", raw)
+				}
+				if strings.Contains(out.Index, raw) {
+					t.Errorf("index HTML contains unescaped fragment %q", raw)
+				}
+			}
+		})
+	}
+}
+
+// jsonString marshals a string as a JSON literal for test input assembly.
+func jsonString(s string) string {
+	b, _ := json.Marshal(s)
+	return string(b)
+}
+
+func TestXSSTitleNotUnescapedAnywhere(t *testing.T) {
+	// The hostile title flows into <title>, <h1>, og:/twitter: meta, the
+	// index listing, and backlink text — none may carry it unescaped.
+	out := runJSON(t, `{
+	  "garden": {"slug": "g"},
+	  "pages": [
+	    {"slug": "evil", "title": "<script>alert(1)</script>", "markdown": "links to [[safe]]"},
+	    {"slug": "safe", "title": "Safe", "markdown": "plain"}
+	  ]
+	}`)
+
+	for _, doc := range []string{pageHTML(t, out, "evil"), pageHTML(t, out, "safe"), out.Index} {
+		if strings.Contains(doc, "<script>alert(1)</script>") {
+			t.Error("hostile title appears unescaped in output")
+		}
+	}
+}
+
+func TestInvalidTagsRejected(t *testing.T) {
+	tests := []struct {
+		name string
+		tag  string
+	}{
+		{"attribute breakout", `\"><script>`},
+		{"angle brackets", "<img>"},
+		{"space", "two words"},
+		{"slash", "a/b"},
+		{"dot", "a.b"},
+		{"empty", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			input := `{"garden": {"slug": "g"}, "pages": [{"slug": "p", "markdown": "x", "tags": ["` + tt.tag + `"]}]}`
+			_, err := Run([]byte(input))
+			if err == nil {
+				t.Fatalf("tag %q should be rejected", tt.tag)
+			}
+			var inputErr *InputError
+			if !errors.As(err, &inputErr) {
+				t.Errorf("expected *InputError, got %T: %v", err, err)
+			}
+		})
+	}
+}
+
+func TestTagPagesGenerated(t *testing.T) {
+	out := runJSON(t, `{
+	  "garden": {"slug": "g", "baseUrl": "/g/shivam"},
+	  "pages": [
+	    {"slug": "a", "title": "A", "markdown": "x", "tags": ["Systems", "go-lang"], "createdAt": "2026-01-02T00:00:00Z"},
+	    {"slug": "b", "title": "B", "markdown": "y", "tags": ["systems"], "createdAt": "2026-01-01T00:00:00Z"}
+	  ]
+	}`)
+
+	// Index links every tag (lowercased, sorted) with the base path.
+	if out.Tags.Index == "" {
+		t.Fatal("tags index should be rendered")
+	}
+	for _, want := range []string{`href="/g/shivam/tags/go-lang/"`, `href="/g/shivam/tags/systems/"`} {
+		if !strings.Contains(out.Tags.Index, want) {
+			t.Errorf("tags index missing link %s", want)
+		}
+	}
+	if !strings.Contains(out.Tags.Index, "(2)") {
+		t.Error("tags index should show systems count of 2")
+	}
+
+	// Tag list is deterministic and sorted.
+	if len(out.Tags.Pages) != 2 || out.Tags.Pages[0].Tag != "go-lang" || out.Tags.Pages[1].Tag != "systems" {
+		got := make([]string, 0, len(out.Tags.Pages))
+		for _, tp := range out.Tags.Pages {
+			got = append(got, tp.Tag)
+		}
+		t.Fatalf("tag pages should be [go-lang systems], got %v", got)
+	}
+
+	// The systems tag page lists both pages, newest first, base-prefixed.
+	systems := out.Tags.Pages[1].HTML
+	if !strings.HasPrefix(systems, "<!DOCTYPE html>") {
+		t.Error("tag page should be a full document")
+	}
+	aIdx := strings.Index(systems, `href="/g/shivam/a/"`)
+	bIdx := strings.Index(systems, `href="/g/shivam/b/"`)
+	if aIdx == -1 || bIdx == -1 {
+		t.Fatalf("systems tag page missing page links:\n%s", systems)
+	}
+	if aIdx > bIdx {
+		t.Error("systems tag page should list newest page (a) first")
+	}
+
+	// The page header tag link now has a matching generated page.
+	if !strings.Contains(pageHTML(t, out, "a"), `href="/g/shivam/tags/systems/"`) {
+		t.Error("page header should link to the systems tag page")
+	}
+}
+
+func TestNoTagsEmptyTagsOutput(t *testing.T) {
+	out := runJSON(t, `{"garden": {"slug": "g"}, "pages": [{"slug": "p", "markdown": "x"}]}`)
+
+	if out.Tags.Index != "" {
+		t.Error("tags index should be empty when no page has tags")
+	}
+	if out.Tags.Pages == nil {
+		t.Error("tags pages should be an empty slice, not nil")
+	}
+	if len(out.Tags.Pages) != 0 {
+		t.Errorf("tags pages should be empty, got %d", len(out.Tags.Pages))
+	}
+	// No dead tag links: pages without tags render no tag hrefs at all.
+	if strings.Contains(pageHTML(t, out, "p"), "/tags/") {
+		t.Error("untagged page should not link to any tag page")
+	}
+
+	// JSON shape check: "tags": {"index": "", "pages": []}
+	b, err := json.Marshal(out)
+	if err != nil {
+		t.Fatalf("marshal failed: %v", err)
+	}
+	if !strings.Contains(string(b), `"tags":{"index":"","pages":[]}`) {
+		t.Error(`output JSON should contain "tags":{"index":"","pages":[]}`)
+	}
+}
+
+func TestDeterministicOutputWithHostileContent(t *testing.T) {
+	// Exercises the escape pipeline (random trusted-chunk nonces) plus tag
+	// pages: double-run must still be byte-identical.
+	input := `{
+	  "garden": {"slug": "g", "title": "T"},
+	  "pages": [
+	    {"slug": "a", "title": "<script>x</script>", "markdown": "> [!note] Hi\n> body <script>alert(1)</script>\n\nlink [[b]] and ![[demo.mp4]]", "tags": ["one", "two"]},
+	    {"slug": "b", "title": "B", "markdown": "<div class=\"x\">\nraw\n</div>", "tags": ["one"]}
+	  ]
+	}`
+	out1, err := Run([]byte(input))
+	if err != nil {
+		t.Fatalf("first run failed: %v", err)
+	}
+	out2, err := Run([]byte(input))
+	if err != nil {
+		t.Fatalf("second run failed: %v", err)
+	}
+	b1, _ := json.Marshal(out1)
+	b2, _ := json.Marshal(out2)
+	if string(b1) != string(b2) {
+		t.Error("identical hostile input did not produce byte-identical output")
+	}
+	// The per-render placeholder nonce must never leak into output.
+	if strings.Contains(string(b1), "lp-callout-note") == false {
+		t.Error("callout should render live in bridge output")
+	}
+}

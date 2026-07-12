@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"html"
 	"regexp"
 	"sort"
 	"strings"
@@ -49,6 +50,7 @@ type InputPage struct {
 type Output struct {
 	Pages    []OutputPage `json:"pages"`
 	Index    string       `json:"index"`
+	Tags     OutputTags   `json:"tags"`
 	CSS      string       `json:"css"`
 	Warnings []string     `json:"warnings"`
 }
@@ -56,6 +58,21 @@ type Output struct {
 // OutputPage is a rendered page document.
 type OutputPage struct {
 	Slug string `json:"slug"`
+	HTML string `json:"html"`
+}
+
+// OutputTags holds the rendered tag index and per-tag pages. When no page
+// carries any tag, Index is "" and Pages is empty (mirroring the CLI, which
+// skips the tags section entirely in that case).
+type OutputTags struct {
+	Index string          `json:"index"`
+	Pages []OutputTagPage `json:"pages"`
+}
+
+// OutputTagPage is a rendered page listing everything under one tag,
+// served at {baseUrl}/tags/<tag>/.
+type OutputTagPage struct {
+	Tag  string `json:"tag"`
 	HTML string `json:"html"`
 }
 
@@ -78,6 +95,9 @@ var (
 	// unsafeSlugChars are characters that would break hrefs/attributes when a
 	// slug is interpolated into template output.
 	unsafeSlugChars = "\"'<>\\ \t\r\n"
+	// tagRegex restricts tags to letters/digits/underscore/hyphen (leafpad's
+	// tag shape); tags are interpolated into hrefs and text unescaped.
+	tagRegex = regexp.MustCompile(`^[\p{L}\p{N}_-]+$`)
 )
 
 // Run decodes raw JSON input and renders it. Errors of type *InputError
@@ -96,9 +116,11 @@ func Render(in *Input) (*Output, error) {
 		return nil, inputErrorf("garden.slug is required")
 	}
 
-	title := in.Garden.Title
+	// Templates are text/template, so anything author-controlled must be
+	// made HTML-safe at this input boundary.
+	title := html.EscapeString(in.Garden.Title)
 	if title == "" {
-		title = in.Garden.Slug
+		title = html.EscapeString(in.Garden.Slug)
 	}
 
 	basePath, err := normalizeBasePath(in.Garden.BaseURL)
@@ -132,14 +154,25 @@ func Render(in *Input) (*Output, error) {
 	content.BuildBacklinks(pages, resolver)
 	renderer := content.NewRenderer(resolver, true, basePath)
 	renderer.SetPlainBrokenLinks(true)
+	// Raw HTML in author markdown renders as visibly escaped text; this
+	// bridge serves multi-tenant user content to third parties.
+	renderer.SetEscapeRawHTML(true)
 
 	warnings := []string{}
 	for _, p := range pages {
-		html, warns := renderer.Render(p.RawContent)
-		p.HTMLContent = html
-		p.WordCount = content.CountWords(html)
-		p.ImageCount = content.CountImages(html)
+		rendered, warns := renderer.Render(p.RawContent)
+		p.HTMLContent = rendered
+		p.WordCount = content.CountWords(rendered)
+		p.ImageCount = content.CountImages(rendered)
 		p.ReadingTime = content.CalculateReadingTime(p.WordCount, p.ImageCount)
+		// Pin the auto-generated SEO description to an escaped value.
+		// Page.SEODescription derives it from HTMLContent via PlainContent,
+		// which runs html.UnescapeString — that would resurrect quotes and
+		// angle brackets from body text right before the value is placed in
+		// meta attributes by text/template.
+		if p.Description == "" {
+			p.Description = html.EscapeString(p.SEODescription())
+		}
 		for _, w := range warns {
 			warnings = append(warnings, fmt.Sprintf("page %q: %s", p.Slug, w))
 		}
@@ -190,12 +223,81 @@ func Render(in *Input) (*Output, error) {
 		return nil, fmt.Errorf("failed to render index: %w", err)
 	}
 
+	tags, err := renderTagPages(tmpl, site, pages)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Output{
 		Pages:    outPages,
 		Index:    idx.String(),
+		Tags:     tags,
 		CSS:      templates.DefaultCSS,
 		Warnings: warnings,
 	}, nil
+}
+
+// renderTagPages renders the tags index and one page per tag, matching the
+// CLI's tag output (tags are grouped case-insensitively; pages within a tag
+// are sorted by date; tags are listed alphabetically). Page headers link to
+// {baseUrl}/tags/<tag>/, so these pages are what keeps those links alive.
+func renderTagPages(tmpl *templates.Templates, site templates.SiteData, pages []*content.Page) (OutputTags, error) {
+	out := OutputTags{Pages: []OutputTagPage{}}
+
+	// Group pages by lowercased tag (mirrors the CLI's buildTagIndex).
+	pagesByTag := make(map[string][]*content.Page)
+	for _, p := range pages {
+		for _, tag := range p.Tags {
+			key := strings.ToLower(tag)
+			pagesByTag[key] = append(pagesByTag[key], p)
+		}
+	}
+	if len(pagesByTag) == 0 {
+		// No tags anywhere: no tag links are rendered on pages (the tag
+		// block is per-page), so emit nothing — like the CLI, which skips
+		// the tags/ output directory entirely.
+		return out, nil
+	}
+
+	tagNames := make([]string, 0, len(pagesByTag))
+	for tag := range pagesByTag {
+		tagNames = append(tagNames, tag)
+	}
+	sort.Strings(tagNames)
+
+	tagInfos := make([]templates.TagInfo, 0, len(tagNames))
+	for _, tag := range tagNames {
+		tagInfos = append(tagInfos, templates.TagInfo{Name: tag, Count: len(pagesByTag[tag])})
+	}
+
+	var idx bytes.Buffer
+	if err := tmpl.RenderTagIndex(&idx, templates.TagIndexData{
+		Site:        site,
+		Tags:        tagInfos,
+		CurrentPath: "/tags/",
+	}); err != nil {
+		return out, fmt.Errorf("failed to render tag index: %w", err)
+	}
+	out.Index = idx.String()
+
+	for _, tag := range tagNames {
+		tagged := make([]*content.Page, len(pagesByTag[tag]))
+		copy(tagged, pagesByTag[tag])
+		sortPages(tagged, "date")
+
+		var buf bytes.Buffer
+		if err := tmpl.RenderTagPage(&buf, templates.TagPageData{
+			Site:        site,
+			Tag:         tag,
+			Pages:       tagged,
+			CurrentPath: "/tags/" + tag + "/",
+		}); err != nil {
+			return out, fmt.Errorf("failed to render tag page %q: %w", tag, err)
+		}
+		out.Pages = append(out.Pages, OutputTagPage{Tag: tag, HTML: buf.String()})
+	}
+
+	return out, nil
 }
 
 // normalizeBasePath validates and normalizes the garden baseUrl into a URL
@@ -276,6 +378,20 @@ func buildPages(in []InputPage) ([]*content.Page, error) {
 		}
 		seen[slug] = true
 
+		for _, tag := range ip.Tags {
+			if !tagRegex.MatchString(tag) {
+				return nil, inputErrorf("pages[%d] has invalid tag %q: tags may only contain letters, digits, underscores, and hyphens", i, tag)
+			}
+		}
+
+		// Growth flows into class/data attributes unescaped; restrict it to
+		// the known enum.
+		switch ip.Growth {
+		case "", "seedling", "budding", "evergreen":
+		default:
+			return nil, inputErrorf("pages[%d].growth must be one of seedling, budding, evergreen; got %q", i, ip.Growth)
+		}
+
 		created, err := parseTime(ip.CreatedAt)
 		if err != nil {
 			return nil, inputErrorf("pages[%d].createdAt: %v", i, err)
@@ -285,14 +401,16 @@ func buildPages(in []InputPage) ([]*content.Page, error) {
 			return nil, inputErrorf("pages[%d].updatedAt: %v", i, err)
 		}
 
-		title := ip.Title
+		// Title and description reach <title>, <h1>, and og:/twitter: meta
+		// attributes through text/template — escape at the input boundary.
+		title := html.EscapeString(ip.Title)
 		if title == "" {
-			title = slug
+			title = html.EscapeString(slug)
 		}
 
 		pages = append(pages, &content.Page{
 			Title:       title,
-			Description: ip.Description,
+			Description: html.EscapeString(ip.Description),
 			Date:        created,
 			Created:     created,
 			Modified:    updated,

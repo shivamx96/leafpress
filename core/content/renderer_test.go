@@ -293,3 +293,185 @@ func TestRender_FootnoteMarkdown(t *testing.T) {
 		t.Error("footnote content should support inline code")
 	}
 }
+
+// --- Raw HTML escaping (SetEscapeRawHTML) ---
+
+// escapingRenderer returns a renderer with raw-HTML escaping enabled.
+func escapingRenderer(resolver *LinkResolver, enableWikilinks bool, basePath string) *Renderer {
+	r := NewRenderer(resolver, enableWikilinks, basePath)
+	r.SetEscapeRawHTML(true)
+	return r
+}
+
+func TestRender_RawHTMLEscaping(t *testing.T) {
+	tests := []struct {
+		name        string
+		markdown    string
+		wantDefault string // must appear in default (pass-through) output
+		wantEscaped string // must appear in escaped output
+		rawFragment string // must NOT appear in escaped output
+	}{
+		{
+			name:        "inline raw HTML",
+			markdown:    "before <script>alert(1)</script> after",
+			wantDefault: "<script>alert(1)</script>",
+			wantEscaped: "&lt;script&gt;alert(1)&lt;/script&gt;",
+			rawFragment: "<script>",
+		},
+		{
+			name:        "block-level raw HTML",
+			markdown:    "<div class=\"evil\">\nowned\n</div>\n\nparagraph",
+			wantDefault: `<div class="evil">`,
+			wantEscaped: "&lt;div class=&quot;evil&quot;&gt;",
+			rawFragment: `<div class="evil">`,
+		},
+		{
+			name:        "mixed paragraph",
+			markdown:    "text with <img src=x onerror=alert(1)> embedded **bold**",
+			wantDefault: "<img src=x onerror=alert(1)",
+			wantEscaped: "&lt;img src=x onerror=alert(1)&gt;",
+			rawFragment: "<img src=x",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			defaultOut, _ := NewRenderer(nil, false, "").Render(tt.markdown)
+			if !strings.Contains(defaultOut, tt.wantDefault) {
+				t.Errorf("default mode should pass raw HTML through, want %q in:\n%s", tt.wantDefault, defaultOut)
+			}
+
+			escapedOut, _ := escapingRenderer(nil, false, "").Render(tt.markdown)
+			if !strings.Contains(escapedOut, tt.wantEscaped) {
+				t.Errorf("escape mode should render raw HTML as escaped text, want %q in:\n%s", tt.wantEscaped, escapedOut)
+			}
+			if strings.Contains(escapedOut, tt.rawFragment) {
+				t.Errorf("escape mode leaked raw HTML %q in:\n%s", tt.rawFragment, escapedOut)
+			}
+			if strings.Contains(escapedOut, "raw HTML omitted") {
+				t.Errorf("escape mode should show escaped text, not goldmark's omission comment:\n%s", escapedOut)
+			}
+		})
+	}
+}
+
+func TestRender_EscapeModeCodeBlocksUnchanged(t *testing.T) {
+	// Fenced and inline code containing HTML must render exactly as before
+	// in both modes: no double-escaping via the protect/restore pipeline,
+	// no interference from the raw-HTML escaper.
+	markdown := "Intro with `<b>inline</b>` code.\n\n```html\n<script>alert(1)</script> & <div>\n```\n\ndone"
+
+	defaultOut, _ := NewRenderer(nil, false, "").Render(markdown)
+	escapedOut, _ := escapingRenderer(nil, false, "").Render(markdown)
+
+	if defaultOut != escapedOut {
+		t.Errorf("code blocks should render identically in both modes:\ndefault:\n%s\nescaped:\n%s", defaultOut, escapedOut)
+	}
+	if strings.Contains(escapedOut, "&amp;lt;") || strings.Contains(escapedOut, "&amp;gt;") {
+		t.Errorf("code block content was double-escaped:\n%s", escapedOut)
+	}
+	if !strings.Contains(escapedOut, "&lt;b&gt;inline&lt;/b&gt;") {
+		t.Errorf("inline code should render singly-escaped, got:\n%s", escapedOut)
+	}
+}
+
+func TestRender_EscapeModeCalloutStillLive(t *testing.T) {
+	r := escapingRenderer(nil, false, "")
+	html, _ := r.Render("> [!note] My Title\n> Callout body with <script>x</script> inside.")
+
+	if !strings.Contains(html, `<div class="lp-callout lp-callout-note">`) {
+		t.Errorf("callout wrapper should stay live HTML in escape mode, got:\n%s", html)
+	}
+	if !strings.Contains(html, "My Title") {
+		t.Errorf("callout title missing, got:\n%s", html)
+	}
+	if !strings.Contains(html, "&lt;script&gt;") || strings.Contains(html, "<script>") {
+		t.Errorf("raw HTML inside callout body should be escaped, got:\n%s", html)
+	}
+}
+
+func TestRender_EscapeModeCalloutTitleEscaped(t *testing.T) {
+	r := escapingRenderer(nil, false, "")
+	html, _ := r.Render("> [!note] <img src=x onerror=alert(1)>\n> body")
+
+	if strings.Contains(html, "<img") {
+		t.Errorf("callout title HTML should be escaped in escape mode, got:\n%s", html)
+	}
+	if !strings.Contains(html, "&lt;img src=x onerror=alert(1)&gt;") {
+		t.Errorf("callout title should render as escaped text, got:\n%s", html)
+	}
+}
+
+func TestRender_EscapeModeWikilinkStillAnchor(t *testing.T) {
+	pages := []*Page{{Title: "Beta", Slug: "beta", Permalink: "/beta/"}}
+	r := escapingRenderer(NewLinkResolver(pages), true, "/g/s")
+	html, _ := r.Render("Linking [[beta|the beta note]] here.")
+
+	if !strings.Contains(html, `<a class="lp-wikilink" href="/g/s/beta/">the beta note</a>`) {
+		t.Errorf("wikilink anchor should stay live HTML in escape mode, got:\n%s", html)
+	}
+}
+
+func TestRender_EscapeModeWikilinkLabelEscaped(t *testing.T) {
+	pages := []*Page{{Title: "Beta", Slug: "beta", Permalink: "/beta/"}}
+	r := escapingRenderer(NewLinkResolver(pages), true, "")
+	html, _ := r.Render("Linking [[beta|</a><script>alert(1)</script>]] here.")
+
+	if strings.Contains(html, "<script>") {
+		t.Errorf("wikilink label HTML should be escaped in escape mode, got:\n%s", html)
+	}
+	if !strings.Contains(html, "&lt;script&gt;") {
+		t.Errorf("wikilink label should render as escaped text, got:\n%s", html)
+	}
+}
+
+func TestRender_EscapeModeMediaEmbedsStillLive(t *testing.T) {
+	r := escapingRenderer(nil, false, "")
+
+	html, _ := r.Render("![[demo.mp4]]")
+	if !strings.Contains(html, `<div class="lp-video-local">`) {
+		t.Errorf("video embed should stay live HTML in escape mode, got:\n%s", html)
+	}
+
+	html, _ = r.Render("![[photo.png|300]]")
+	if !strings.Contains(html, `<img src="/static/images/photo.png" alt="photo.png" width="300"`) {
+		t.Errorf("sized image embed should stay live HTML in escape mode, got:\n%s", html)
+	}
+}
+
+func TestRender_EscapeModeMermaidStaysEscaped(t *testing.T) {
+	markdown := "```mermaid\ngraph TD\nA[\"<script>alert(1)</script>\"] --> B\n```"
+
+	defaultOut, _ := NewRenderer(nil, false, "").Render(markdown)
+	if !strings.Contains(defaultOut, `<div class="mermaid">`) {
+		t.Fatalf("mermaid block should convert to a div, got:\n%s", defaultOut)
+	}
+
+	escapedOut, _ := escapingRenderer(nil, false, "").Render(markdown)
+	if !strings.Contains(escapedOut, `<div class="mermaid">`) {
+		t.Fatalf("mermaid block should convert to a div in escape mode, got:\n%s", escapedOut)
+	}
+	if strings.Contains(escapedOut, "<script>") {
+		t.Errorf("mermaid content must not be unescaped into live HTML in escape mode, got:\n%s", escapedOut)
+	}
+}
+
+func TestRender_EscapeModeDefaultIsOff(t *testing.T) {
+	r := NewRenderer(nil, false, "")
+	html, _ := r.Render("keep <b>me</b> raw")
+	if !strings.Contains(html, "<b>me</b>") {
+		t.Errorf("raw HTML should pass through by default, got:\n%s", html)
+	}
+
+	r.SetEscapeRawHTML(true)
+	html, _ = r.Render("keep <b>me</b> raw")
+	if !strings.Contains(html, "&lt;b&gt;me&lt;/b&gt;") {
+		t.Errorf("raw HTML should escape after SetEscapeRawHTML(true), got:\n%s", html)
+	}
+
+	r.SetEscapeRawHTML(false)
+	html, _ = r.Render("keep <b>me</b> raw")
+	if !strings.Contains(html, "<b>me</b>") {
+		t.Errorf("raw HTML should pass through again after SetEscapeRawHTML(false), got:\n%s", html)
+	}
+}
