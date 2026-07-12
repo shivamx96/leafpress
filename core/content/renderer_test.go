@@ -230,6 +230,46 @@ func TestRender_WikilinkInCodeWithFencedBlockOnSamePage(t *testing.T) {
 	}
 }
 
+// --- Broken wikilinks ---
+
+func TestRender_BrokenWikilinkDefault(t *testing.T) {
+	r := NewRenderer(NewLinkResolver(nil), true, "")
+	html, warnings := r.Render("See [[missing-page]] here")
+	if !strings.Contains(html, `<span class="lp-broken-link">missing-page</span>`) {
+		t.Errorf("broken wiki-link should render as lp-broken-link span by default, got: %s", html)
+	}
+	if len(warnings) != 1 || !strings.Contains(warnings[0], "broken link: [[missing-page]]") {
+		t.Errorf("broken wiki-link should produce a warning, got: %v", warnings)
+	}
+}
+
+func TestRender_BrokenWikilinkPlainMode(t *testing.T) {
+	r := NewRenderer(NewLinkResolver(nil), true, "")
+	r.SetPlainBrokenLinks(true)
+	html, warnings := r.Render("See [[missing-page]] here")
+	if strings.Contains(html, "lp-broken-link") || strings.Contains(html, "<a ") {
+		t.Errorf("plain mode should render broken wiki-link without anchor or class, got: %s", html)
+	}
+	if !strings.Contains(html, "missing-page") {
+		t.Errorf("plain mode should render the display text, got: %s", html)
+	}
+	if len(warnings) != 1 || !strings.Contains(warnings[0], "broken link: [[missing-page]]") {
+		t.Errorf("plain mode should still produce a warning, got: %v", warnings)
+	}
+}
+
+func TestRender_BrokenWikilinkPlainModeUsesLabel(t *testing.T) {
+	r := NewRenderer(NewLinkResolver(nil), true, "")
+	r.SetPlainBrokenLinks(true)
+	html, _ := r.Render("See [[missing-page|Custom Label]] here")
+	if !strings.Contains(html, "Custom Label") {
+		t.Errorf("plain mode should render the label of a broken wiki-link, got: %s", html)
+	}
+	if strings.Contains(html, "lp-broken-link") || strings.Contains(html, "[[") {
+		t.Errorf("plain mode should strip wiki-link syntax entirely, got: %s", html)
+	}
+}
+
 // --- Footnotes ---
 
 func TestRender_Footnotes(t *testing.T) {

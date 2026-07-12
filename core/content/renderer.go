@@ -20,10 +20,11 @@ import (
 
 // Renderer converts markdown to HTML
 type Renderer struct {
-	md              goldmark.Markdown
-	resolver        *LinkResolver
-	enableWikilinks bool
-	basePath        string // Base path for links (e.g., "/repo-name" for GitHub Pages)
+	md               goldmark.Markdown
+	resolver         *LinkResolver
+	enableWikilinks  bool
+	basePath         string // Base path for links (e.g., "/repo-name" for GitHub Pages)
+	plainBrokenLinks bool   // Render unresolved wikilinks as plain text instead of a styled span
 }
 
 // Buffer pool for markdown rendering (reduces allocations)
@@ -64,6 +65,14 @@ func NewRenderer(resolver *LinkResolver, enableWikilinks bool, basePath string) 
 		enableWikilinks: enableWikilinks,
 		basePath:        basePath,
 	}
+}
+
+// SetPlainBrokenLinks controls how unresolved wikilinks are rendered.
+// By default (false), a broken wikilink renders as a styled span
+// (<span class="lp-broken-link">…</span>). When enabled, broken wikilinks
+// render as plain display text instead — no anchor, no class.
+func (r *Renderer) SetPlainBrokenLinks(plain bool) {
+	r.plainBrokenLinks = plain
 }
 
 // Render converts markdown to HTML, processing wiki-links
@@ -399,8 +408,13 @@ func (r *Renderer) processWikiLinksProtected(content string, warnings *[]string)
 			resolved := r.resolver.Resolve(link.Target)
 
 			if resolved.Broken {
-				// Broken link - render as span with class
-				replacement = `<span class="lp-broken-link">` + link.Label + `</span>`
+				if r.plainBrokenLinks {
+					// Plain mode - render just the display text
+					replacement = link.Label
+				} else {
+					// Broken link - render as span with class
+					replacement = `<span class="lp-broken-link">` + link.Label + `</span>`
+				}
 				*warnings = append(*warnings, "broken link: [["+link.Target+"]]")
 			} else {
 				// Valid link

@@ -13,9 +13,9 @@ import (
 	"time"
 
 	"github.com/shivamx96/leafpress/cli/internal/assets"
-	"github.com/shivamx96/leafpress/cli/internal/config"
-	"github.com/shivamx96/leafpress/cli/internal/content"
-	"github.com/shivamx96/leafpress/cli/internal/templates"
+	"github.com/shivamx96/leafpress/core/config"
+	"github.com/shivamx96/leafpress/core/content"
+	"github.com/shivamx96/leafpress/core/templates"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
