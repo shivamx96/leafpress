@@ -533,3 +533,40 @@ func TestDeterministicOutputWithHostileContent(t *testing.T) {
 		t.Error("callout should render live in bridge output")
 	}
 }
+
+// leafpad markdown links by display title ([[Beta Note]]), while public
+// slugs are hyphenated (beta-note). Titles register as resolver aliases.
+func TestWikilinkResolvesByPageTitle(t *testing.T) {
+	out := runJSON(t, `{
+  "garden": {"slug": "shivam", "baseUrl": "/g/shivam"},
+  "pages": [
+    {
+      "slug": "alpha-note",
+      "title": "Alpha Note",
+      "markdown": "See [[Beta Note]] and [[beta   NOTE|the beta one]] and [[Gamma Note]]."
+    },
+    {"slug": "beta-note", "title": "Beta Note", "markdown": "Beta content."}
+  ]
+}`)
+
+	alpha := pageHTML(t, out, "alpha-note")
+	if !strings.Contains(alpha, `<a class="lp-wikilink" href="/g/shivam/beta-note/">Beta Note</a>`) {
+		t.Errorf("title-form wikilink did not resolve to the page slug:\n%s", alpha)
+	}
+	// Case- and whitespace-insensitive, alias label preserved.
+	if !strings.Contains(alpha, `<a class="lp-wikilink" href="/g/shivam/beta-note/">the beta one</a>`) {
+		t.Error("normalized title-form wikilink with label did not resolve")
+	}
+	// Unpublished title degrades to plain text with no href leak.
+	if strings.Contains(alpha, "gamma") || strings.Contains(alpha, "<a class=\"lp-wikilink\" href=\"/g/shivam/gamma") {
+		t.Error("unresolved title leaked a URL")
+	}
+	if !strings.Contains(alpha, "Gamma Note") {
+		t.Error("unresolved title should render as plain display text")
+	}
+	// Backlink from title-form link lands on the target page.
+	beta := pageHTML(t, out, "beta-note")
+	if !strings.Contains(beta, `class="lp-backlink" href="/g/shivam/alpha-note/"`) {
+		t.Error("title-form wikilink did not produce a backlink")
+	}
+}

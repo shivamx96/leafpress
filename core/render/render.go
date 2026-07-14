@@ -151,6 +151,12 @@ func Render(in *Input) (*Output, error) {
 	// Resolve wikilinks over exactly these pages; unresolved links degrade
 	// to plain text (anything unresolved is private by design).
 	resolver := content.NewLinkResolver(pages)
+	// Register each page's raw input title as an alias: authors link by
+	// display title ([[Beta Note]]), while page slugs are hyphenated
+	// (beta-note). buildPages preserves input order, so zip by index.
+	for i, ip := range in.Pages {
+		resolver.AddAlias(ip.Title, pages[i])
+	}
 	content.BuildBacklinks(pages, resolver)
 	renderer := content.NewRenderer(resolver, true, basePath)
 	renderer.SetPlainBrokenLinks(true)
