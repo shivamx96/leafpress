@@ -16,7 +16,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/gorilla/websocket"
 	"github.com/shivamx96/leafpress/cli/internal/build"
-	"github.com/shivamx96/leafpress/cli/internal/config"
+	"github.com/shivamx96/leafpress/core/config"
 )
 
 // Options configures the server

@@ -3,6 +3,7 @@ package content
 import (
 	"bytes"
 	"fmt"
+	stdhtml "html"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -15,15 +16,20 @@ import (
 	highlighting "github.com/yuin/goldmark-highlighting/v2"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/renderer/html"
+	"github.com/yuin/goldmark/util"
 )
 
 // Renderer converts markdown to HTML
 type Renderer struct {
-	md              goldmark.Markdown
-	resolver        *LinkResolver
-	enableWikilinks bool
-	basePath        string // Base path for links (e.g., "/repo-name" for GitHub Pages)
+	md               goldmark.Markdown
+	mdEscaped        goldmark.Markdown // Lazily built variant that escapes raw HTML (see SetEscapeRawHTML)
+	resolver         *LinkResolver
+	enableWikilinks  bool
+	basePath         string // Base path for links (e.g., "/repo-name" for GitHub Pages)
+	plainBrokenLinks bool   // Render unresolved wikilinks as plain text instead of a styled span
+	escapeRawHTML    bool   // Render raw HTML in markdown as visibly escaped text instead of passing it through
 }
 
 // Buffer pool for markdown rendering (reduces allocations)
@@ -33,9 +39,24 @@ var bufferPool = sync.Pool{
 	},
 }
 
-// NewRenderer creates a new markdown renderer
-func NewRenderer(resolver *LinkResolver, enableWikilinks bool, basePath string) *Renderer {
-	md := goldmark.New(
+// newGoldmark builds the goldmark instance shared by both render modes.
+// The default mode uses html.WithUnsafe() (raw HTML passes through, as
+// always). The escaping mode instead registers rawHTMLEscaper for the raw
+// HTML node kinds — and, since WithUnsafe is dropped, goldmark also filters
+// dangerous link/image URLs (javascript:, data:, ...) in that mode.
+func newGoldmark(escapeRawHTML bool) goldmark.Markdown {
+	rendererOpts := []renderer.Option{
+		html.WithHardWraps(),
+		html.WithXHTML(),
+	}
+	if escapeRawHTML {
+		rendererOpts = append(rendererOpts,
+			renderer.WithNodeRenderers(util.Prioritized(&rawHTMLEscaper{}, 100)))
+	} else {
+		rendererOpts = append(rendererOpts, html.WithUnsafe()) // Allow raw HTML in markdown
+	}
+
+	return goldmark.New(
 		goldmark.WithExtensions(
 			extension.GFM, // GitHub Flavored Markdown
 			extension.Typographer,
@@ -51,18 +72,40 @@ func NewRenderer(resolver *LinkResolver, enableWikilinks bool, basePath string) 
 		goldmark.WithParserOptions(
 			parser.WithAutoHeadingID(),
 		),
-		goldmark.WithRendererOptions(
-			html.WithHardWraps(),
-			html.WithXHTML(),
-			html.WithUnsafe(), // Allow raw HTML in markdown
-		),
+		goldmark.WithRendererOptions(rendererOpts...),
 	)
+}
 
+// NewRenderer creates a new markdown renderer
+func NewRenderer(resolver *LinkResolver, enableWikilinks bool, basePath string) *Renderer {
 	return &Renderer{
-		md:              md,
+		md:              newGoldmark(false),
 		resolver:        resolver,
 		enableWikilinks: enableWikilinks,
 		basePath:        basePath,
+	}
+}
+
+// SetPlainBrokenLinks controls how unresolved wikilinks are rendered.
+// By default (false), a broken wikilink renders as a styled span
+// (<span class="lp-broken-link">…</span>). When enabled, broken wikilinks
+// render as plain display text instead — no anchor, no class.
+func (r *Renderer) SetPlainBrokenLinks(plain bool) {
+	r.plainBrokenLinks = plain
+}
+
+// SetEscapeRawHTML controls how raw HTML in markdown is rendered.
+// By default (false), raw HTML passes through unchanged (goldmark's unsafe
+// mode) — appropriate for trusted single-author content. When enabled, raw
+// HTML renders as visibly escaped text (e.g. <script> becomes &lt;script&gt;
+// in the output, so the reader sees the literal characters the author
+// typed), and renderer-generated HTML (wikilinks, callouts, media embeds)
+// is still emitted live. Call this before Render; it is not safe to call
+// concurrently with Render.
+func (r *Renderer) SetEscapeRawHTML(escape bool) {
+	r.escapeRawHTML = escape
+	if escape && r.mdEscaped == nil {
+		r.mdEscaped = newGoldmark(true)
 	}
 }
 
@@ -85,11 +128,18 @@ func (r *Renderer) Render(content string) (string, []string) {
 		protected = strings.Replace(protected, block, placeholder, 1)
 	}
 
+	// In escape mode, renderer-generated HTML is swapped for placeholder
+	// tokens so the raw-HTML escaper only sees author-typed HTML.
+	var trusted *trustedChunks
+	if r.escapeRawHTML {
+		trusted = newTrustedChunks()
+	}
+
 	// Pre-markdown processing (all on protected content)
-	processed := r.processObsidianImagesProtected(protected)
-	processed = r.processCalloutsProtected(processed)
+	processed := r.processObsidianImagesProtected(protected, trusted)
+	processed = r.processCalloutsProtected(processed, trusted)
 	if r.enableWikilinks {
-		processed = r.processWikiLinksProtected(processed, &warnings)
+		processed = r.processWikiLinksProtected(processed, &warnings, trusted)
 	}
 
 	// Restore code blocks ONCE before markdown conversion
@@ -104,13 +154,22 @@ func (r *Renderer) Render(content string) (string, []string) {
 	defer bufferPool.Put(buf)
 
 	// Render markdown to HTML
-	if err := r.md.Convert([]byte(processed), buf); err != nil {
+	md := r.md
+	if r.escapeRawHTML {
+		md = r.mdEscaped
+	}
+	if err := md.Convert([]byte(processed), buf); err != nil {
 		warnings = append(warnings, "markdown conversion error: "+err.Error())
 		return content, warnings
 	}
 
+	rendered := buf.String()
+	if trusted != nil {
+		rendered = trusted.restore(rendered)
+	}
+
 	// Post-markdown processing (single pass)
-	html := r.processPostMarkdown(buf.String())
+	html := r.processPostMarkdown(rendered)
 
 	return html, warnings
 }
@@ -166,8 +225,10 @@ var calloutTypes = map[string]struct {
 	"tldr":      {"TL;DR", "📄"},
 }
 
-// processCalloutsProtected converts Obsidian-style callouts (assumes code blocks already protected)
-func (r *Renderer) processCalloutsProtected(content string) string {
+// processCalloutsProtected converts Obsidian-style callouts (assumes code blocks already protected).
+// When trusted is non-nil (escape mode), the generated wrapper HTML is emitted
+// as trusted placeholder tokens and the custom title is HTML-escaped.
+func (r *Renderer) processCalloutsProtected(content string, trusted *trustedChunks) string {
 	lines := strings.Split(content, "\n")
 	var result []string
 	i := 0
@@ -226,15 +287,25 @@ func (r *Renderer) processCalloutsProtected(content string) string {
 				}
 			}
 
-			// Build the callout HTML
+			// Build the callout HTML (calloutType is regex-restricted to \w+;
+			// the title is author text, so escape it in escape mode)
+			if trusted != nil {
+				title = stdhtml.EscapeString(title)
+			}
 			calloutContent := strings.Join(contentLines, "\n")
-			calloutHTML := fmt.Sprintf(
-				"<div class=\"lp-callout lp-callout-%s\">\n<div class=\"lp-callout-title\"><span class=\"lp-callout-icon\">%s</span> %s</div>\n<div class=\"lp-callout-content\">\n\n%s\n\n</div>\n</div>",
+			open := fmt.Sprintf(
+				"<div class=\"lp-callout lp-callout-%s\">\n<div class=\"lp-callout-title\"><span class=\"lp-callout-icon\">%s</span> %s</div>\n<div class=\"lp-callout-content\">",
 				calloutType,
 				info.icon,
 				title,
-				calloutContent,
 			)
+			const closing = "</div>\n</div>"
+			var calloutHTML string
+			if trusted != nil {
+				calloutHTML = trusted.wrap(open) + "\n\n" + calloutContent + "\n\n" + trusted.wrap(closing)
+			} else {
+				calloutHTML = open + "\n\n" + calloutContent + "\n\n" + closing
+			}
 			result = append(result, calloutHTML)
 		} else {
 			result = append(result, line)
@@ -262,7 +333,7 @@ func (r *Renderer) processCallouts(content string) string {
 		protectedContent = strings.Replace(protectedContent, block, placeholder, 1)
 	}
 
-	processed := r.processCalloutsProtected(protectedContent)
+	processed := r.processCalloutsProtected(protectedContent, nil)
 
 	// Restore code blocks
 	for i, block := range codeBlocks {
@@ -327,8 +398,10 @@ func resolveMediaSrc(filename, basePath string) string {
 	return src
 }
 
-// processObsidianImagesProtected converts Obsidian image/video/audio embeds (assumes code blocks already protected)
-func (r *Renderer) processObsidianImagesProtected(content string) string {
+// processObsidianImagesProtected converts Obsidian image/video/audio embeds (assumes code blocks already protected).
+// When trusted is non-nil (escape mode), the generated embed HTML is emitted
+// as trusted placeholder tokens with author-controlled values escaped.
+func (r *Renderer) processObsidianImagesProtected(content string, trusted *trustedChunks) string {
 	return obsidianImageRegex.ReplaceAllStringFunc(content, func(match string) string {
 		submatches := obsidianImageRegex.FindStringSubmatch(match)
 		if len(submatches) < 2 {
@@ -350,14 +423,28 @@ func (r *Renderer) processObsidianImagesProtected(content string) string {
 
 		src := resolveMediaSrc(filename, r.basePath)
 
+		// The HTML-emitting branches below interpolate author-controlled
+		// values into trusted HTML that bypasses the raw-HTML escaper, so in
+		// escape mode escape those values and wrap the result in a trusted
+		// placeholder. The markdown-image fallback is left untouched —
+		// goldmark escapes it itself.
+		emitHTML := func(format, src, alt string, args ...interface{}) string {
+			if trusted == nil {
+				return fmt.Sprintf(format, append([]interface{}{src, alt}, args...)...)
+			}
+			src = stdhtml.EscapeString(src)
+			alt = stdhtml.EscapeString(alt)
+			return trusted.wrap(fmt.Sprintf(format, append([]interface{}{src, alt}, args...)...))
+		}
+
 		if isVideoFile(filename) {
-			return fmt.Sprintf(`<div class="lp-video-local"><video controls playsinline preload="metadata"><source src="%s">%s</video></div>`, src, alt)
+			return emitHTML(`<div class="lp-video-local"><video controls playsinline preload="metadata"><source src="%s">%s</video></div>`, src, alt)
 		}
 		if isAudioFile(filename) {
-			return fmt.Sprintf(`<audio controls preload="metadata"><source src="%s">%s</audio>`, src, alt)
+			return emitHTML(`<audio controls preload="metadata"><source src="%s">%s</audio>`, src, alt)
 		}
 		if width > 0 {
-			return fmt.Sprintf(`<img src="%s" alt="%s" width="%d">`, src, alt, width)
+			return emitHTML(`<img src="%s" alt="%s" width="%d">`, src, alt, width)
 		}
 		return fmt.Sprintf("![%s](%s)", alt, src)
 	})
@@ -375,7 +462,7 @@ func (r *Renderer) processObsidianImages(content string) string {
 		protectedContent = strings.Replace(protectedContent, block, placeholder, 1)
 	}
 
-	result := r.processObsidianImagesProtected(protectedContent)
+	result := r.processObsidianImagesProtected(protectedContent, nil)
 
 	// Restore code blocks
 	for i, block := range codeBlocks {
@@ -386,10 +473,20 @@ func (r *Renderer) processObsidianImages(content string) string {
 	return result
 }
 
-// processWikiLinks replaces [[links]] with HTML anchors
-// processWikiLinksProtected replaces [[links]] with HTML anchors (assumes code blocks already protected)
-func (r *Renderer) processWikiLinksProtected(content string, warnings *[]string) string {
+// processWikiLinksProtected replaces [[links]] with HTML anchors (assumes code blocks already protected).
+// When trusted is non-nil (escape mode), the generated open/close tags are
+// emitted as trusted placeholder tokens; the label stays inline so it is
+// still processed (and escaped) as markdown, exactly like the default path.
+func (r *Renderer) processWikiLinksProtected(content string, warnings *[]string, trusted *trustedChunks) string {
 	links := ExtractWikiLinks(content)
+
+	// tag wraps generated HTML tags as trusted placeholders in escape mode.
+	tag := func(html string) string {
+		if trusted != nil {
+			return trusted.wrap(html)
+		}
+		return html
+	}
 
 	result := content
 	for _, link := range links {
@@ -399,15 +496,26 @@ func (r *Renderer) processWikiLinksProtected(content string, warnings *[]string)
 			resolved := r.resolver.Resolve(link.Target)
 
 			if resolved.Broken {
-				// Broken link - render as span with class
-				replacement = `<span class="lp-broken-link">` + link.Label + `</span>`
+				if r.plainBrokenLinks {
+					// Plain mode - render just the display text
+					replacement = link.Label
+				} else {
+					// Broken link - render as span with class
+					replacement = tag(`<span class="lp-broken-link">`) + link.Label + tag(`</span>`)
+				}
 				*warnings = append(*warnings, "broken link: [["+link.Target+"]]")
 			} else {
 				// Valid link
 				if resolved.Ambiguous {
 					*warnings = append(*warnings, "ambiguous link: [["+link.Target+"]]")
 				}
-				replacement = `<a class="lp-wikilink" href="` + r.basePath + resolved.Page.Permalink + `">` + link.Label + `</a>`
+				href := r.basePath + resolved.Page.Permalink
+				if trusted != nil {
+					// href bypasses the raw-HTML escaper via the trusted
+					// placeholder, so make it attribute-safe here.
+					href = stdhtml.EscapeString(href)
+				}
+				replacement = tag(`<a class="lp-wikilink" href="`+href+`">`) + link.Label + tag(`</a>`)
 			}
 		} else {
 			// No resolver - just render the label
@@ -431,7 +539,7 @@ func (r *Renderer) processWikiLinks(content string, warnings *[]string) string {
 		protectedContent = strings.Replace(protectedContent, block, placeholder, 1)
 	}
 
-	result := r.processWikiLinksProtected(protectedContent, warnings)
+	result := r.processWikiLinksProtected(protectedContent, warnings, nil)
 
 	// Restore code blocks
 	for i, block := range codeBlocks {
@@ -475,8 +583,10 @@ func indexOf(s, substr string) int {
 
 // processPostMarkdown combines all post-markdown HTML processing in one function
 func (r *Renderer) processPostMarkdown(html string) string {
-	// Convert mermaid code blocks to divs for client-side rendering
-	result := processMermaidBlocks(html)
+	// Convert mermaid code blocks to divs for client-side rendering.
+	// In escape mode the diagram source stays HTML-escaped inside the div
+	// (unescaping it would reintroduce live author HTML).
+	result := processMermaidBlocks(html, !r.escapeRawHTML)
 	// Embed YouTube links before processing external links
 	result = processYouTubeEmbeds(result)
 	// Process external links
@@ -489,7 +599,7 @@ func (r *Renderer) processPostMarkdown(html string) string {
 }
 
 // processMermaidBlocks converts mermaid code blocks into divs for client-side rendering
-func processMermaidBlocks(html string) string {
+func processMermaidBlocks(html string, unescapeEntities bool) string {
 	return mermaidRegex.ReplaceAllStringFunc(html, func(match string) string {
 		submatches := mermaidRegex.FindStringSubmatch(match)
 		// Content is in group 1 or group 2 depending on which pattern matched
@@ -497,12 +607,14 @@ func processMermaidBlocks(html string) string {
 		if content == "" {
 			content = submatches[2]
 		}
-		// Unescape HTML entities back to raw text for Mermaid.js
-		content = strings.ReplaceAll(content, "&amp;", "&")
-		content = strings.ReplaceAll(content, "&lt;", "<")
-		content = strings.ReplaceAll(content, "&gt;", ">")
-		content = strings.ReplaceAll(content, "&#34;", `"`)
-		content = strings.ReplaceAll(content, "&quot;", `"`)
+		if unescapeEntities {
+			// Unescape HTML entities back to raw text for Mermaid.js
+			content = strings.ReplaceAll(content, "&amp;", "&")
+			content = strings.ReplaceAll(content, "&lt;", "<")
+			content = strings.ReplaceAll(content, "&gt;", ">")
+			content = strings.ReplaceAll(content, "&#34;", `"`)
+			content = strings.ReplaceAll(content, "&quot;", `"`)
+		}
 		return `<div class="mermaid">` + content + `</div>`
 	})
 }

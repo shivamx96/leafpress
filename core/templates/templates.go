@@ -9,8 +9,8 @@ import (
 	"strings"
 	"text/template" // text/template used instead of html/template for performance — safe because leafpress is a trusted-content SSG (single author, no user-submitted input)
 
-	"github.com/shivamx96/leafpress/cli/internal/config"
-	"github.com/shivamx96/leafpress/cli/internal/content"
+	"github.com/shivamx96/leafpress/core/config"
+	"github.com/shivamx96/leafpress/core/content"
 )
 
 // Pre-compiled regexes for ExtractTOC and generateHeadingID (compiled once at startup)
@@ -73,8 +73,8 @@ type IndexData struct {
 	Title       string
 	Pages       []*content.Page
 	Intro       string // Optional intro content for section indexes
-	ShowList    bool          // Show the page list
-	CurrentPath string        // Current page path for nav active state
+	ShowList    bool   // Show the page list
+	CurrentPath string // Current page path for nav active state
 }
 
 // TagIndexData is the data passed to the tags index template

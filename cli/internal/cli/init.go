@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/shivamx96/leafpress/cli/internal/config"
+	"github.com/shivamx96/leafpress/core/config"
 	"github.com/spf13/cobra"
 )
 

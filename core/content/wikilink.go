@@ -40,17 +40,25 @@ func ExtractWikiLinks(content string) []WikiLink {
 
 // LinkResolver resolves wiki-links to actual pages
 type LinkResolver struct {
-	pages   []*Page
-	slugMap map[string]*Page   // Exact slug -> page
-	nameMap map[string][]*Page // Filename -> pages (may have duplicates)
+	pages    []*Page
+	slugMap  map[string]*Page   // Exact slug -> page
+	nameMap  map[string][]*Page // Filename -> pages (may have duplicates)
+	aliasMap map[string]*Page   // Normalized alias (e.g. page title) -> page
+}
+
+// normalizeAlias is the matching key for aliases: lowercase with interior
+// whitespace collapsed, so "Beta  Note" and "beta note" resolve alike.
+func normalizeAlias(name string) string {
+	return strings.Join(strings.Fields(strings.ToLower(name)), " ")
 }
 
 // NewLinkResolver creates a new link resolver
 func NewLinkResolver(pages []*Page) *LinkResolver {
 	resolver := &LinkResolver{
-		pages:   pages,
-		slugMap: make(map[string]*Page, len(pages)),      // Pre-size to avoid rehashing
-		nameMap: make(map[string][]*Page, len(pages)/2), // Estimate ~2 pages per name on average
+		pages:    pages,
+		slugMap:  make(map[string]*Page, len(pages)),     // Pre-size to avoid rehashing
+		nameMap:  make(map[string][]*Page, len(pages)/2), // Estimate ~2 pages per name on average
+		aliasMap: make(map[string]*Page),
 	}
 
 	for _, page := range pages {
@@ -103,8 +111,28 @@ func (r *LinkResolver) Resolve(target string) ResolveResult {
 		}
 	}
 
-	// 3. Broken link
+	// 3. Registered alias (e.g. a page title distinct from its slug, so
+	// title-form links like [[Beta Note]] reach slug "beta-note")
+	if page, ok := r.aliasMap[normalizeAlias(target)]; ok {
+		return ResolveResult{Page: page}
+	}
+
+	// 4. Broken link
 	return ResolveResult{Broken: true}
+}
+
+// AddAlias registers an additional name (e.g. a page's display title) that
+// resolves to [page]. Matching is case- and interior-whitespace-insensitive.
+// Slug and filename matches take precedence; a duplicate alias keeps the
+// first registration (deterministic when callers register in page order).
+func (r *LinkResolver) AddAlias(name string, page *Page) {
+	key := normalizeAlias(name)
+	if key == "" {
+		return
+	}
+	if _, exists := r.aliasMap[key]; !exists {
+		r.aliasMap[key] = page
+	}
 }
 
 // BuildBacklinks populates the Backlinks field on all pages
