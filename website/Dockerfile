@@ -3,6 +3,7 @@ FROM golang:1.25-alpine AS builder
 WORKDIR /build
 
 # Copy cli source and build leafpress
+COPY core/ ./core/
 COPY cli/ ./cli/
 RUN cd cli && go build -o /usr/local/bin/leafpress ./cmd/leafpress
 
