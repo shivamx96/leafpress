@@ -39,10 +39,11 @@ jobs:
         id: version
         run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
-      - name: Build
+      - name: Build CLI
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: "0"
         run: |
           cd cli
           BINARY_NAME="leafpress"
@@ -51,17 +52,34 @@ jobs:
           fi
           go build -ldflags="-s -w -X main.version=${{ steps.version.outputs.VERSION }}" -o $BINARY_NAME ./cmd/leafpress
 
+      # The render bridge ships as its own artifact: leafpad's server image
+      # downloads just this binary (pinned + checksum-verified), not the CLI.
+      - name: Build render bridge
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: "0"
+        run: |
+          cd core
+          BINARY_NAME="leafpress-render"
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            BINARY_NAME="leafpress-render.exe"
+          fi
+          go build -ldflags="-s -w" -o $BINARY_NAME ./cmd/leafpress-render
+
       - name: Package (Unix)
         if: matrix.goos != 'windows'
         run: |
           mkdir -p dist
           tar -czvf dist/leafpress-${{ steps.version.outputs.VERSION }}-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz -C cli leafpress
+          tar -czvf dist/leafpress-render-${{ steps.version.outputs.VERSION }}-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz -C core leafpress-render
 
       - name: Package (Windows)
         if: matrix.goos == 'windows'
         run: |
           mkdir -p dist
-          cd cli && zip ../dist/leafpress-${{ steps.version.outputs.VERSION }}-${{ matrix.goos }}-${{ matrix.goarch }}.zip leafpress.exe
+          (cd cli && zip ../dist/leafpress-${{ steps.version.outputs.VERSION }}-${{ matrix.goos }}-${{ matrix.goarch }}.zip leafpress.exe)
+          (cd core && zip ../dist/leafpress-render-${{ steps.version.outputs.VERSION }}-${{ matrix.goos }}-${{ matrix.goarch }}.zip leafpress-render.exe)
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -79,8 +97,13 @@ jobs:
           path: artifacts
           merge-multiple: true
 
-      - name: List artifacts
-        run: find artifacts -type f
+      # One flat checksums file over every archive, so consumers (the leafpad
+      # Dockerfile in particular) can pin a version and verify the download.
+      - name: Generate checksums
+        run: |
+          cd artifacts
+          sha256sum *.tar.gz *.zip | sort -k2 > checksums.txt
+          cat checksums.txt
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
@@ -88,6 +111,7 @@ jobs:
           files: |
             artifacts/**/*.tar.gz
             artifacts/**/*.zip
+            artifacts/checksums.txt
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
