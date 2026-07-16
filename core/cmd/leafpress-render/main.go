@@ -17,24 +17,37 @@ import (
 )
 
 func main() {
-	raw, err := io.ReadAll(os.Stdin)
+	os.Exit(run(os.Stdin, os.Stdout, os.Stderr))
+}
+
+// run is main minus the process boundary, so tests can drive the full
+// bridge contract (exit codes, stdout purity, stderr messages) in-process.
+func run(stdin io.Reader, stdout, stderr io.Writer) int {
+	raw, err := io.ReadAll(stdin)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "leafpress-render: failed to read stdin: %v\n", err)
-		os.Exit(1)
+		fmt.Fprintf(stderr, "leafpress-render: failed to read stdin: %v\n", err)
+		return 1
 	}
 
 	out, err := render.Run(raw)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "leafpress-render: %v\n", err)
-		var inputErr *render.InputError
-		if errors.As(err, &inputErr) {
-			os.Exit(1)
-		}
-		os.Exit(2)
+		fmt.Fprintf(stderr, "leafpress-render: %v\n", err)
+		return exitCode(err)
 	}
 
-	if err := json.NewEncoder(os.Stdout).Encode(out); err != nil {
-		fmt.Fprintf(os.Stderr, "leafpress-render: failed to encode output: %v\n", err)
-		os.Exit(2)
+	if err := json.NewEncoder(stdout).Encode(out); err != nil {
+		fmt.Fprintf(stderr, "leafpress-render: failed to encode output: %v\n", err)
+		return 2
 	}
+	return 0
+}
+
+// exitCode maps a render failure onto the exit-code contract: invalid
+// input is the caller's bug (1), anything else is ours (2).
+func exitCode(err error) int {
+	var inputErr *render.InputError
+	if errors.As(err, &inputErr) {
+		return 1
+	}
+	return 2
 }
