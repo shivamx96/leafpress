@@ -4,6 +4,15 @@ date: 2025-01-06
 toc: false
 ---
 
+## v1.0.0-beta.8
+*July 16, 2026*
+
+- New `leafpress-render` binary ships with every release: a stdin/stdout JSON bridge that renders a set of pages into full HTML documents, an index page, tag pages, and theme CSS — embed leafpress as the render engine inside any app, no filesystem or network access
+- Rendering core extracted into a standalone Go module (`github.com/shivamx96/leafpress/core`) usable as a library; the CLI now builds on it
+- Title-form wikilinks: `[[Page Title]]` resolves to the page's slug, not just filename-form links
+- The render bridge escapes author-typed raw HTML (`<script>` renders as literal text) — CLI rendering behavior is unchanged
+- Release artifacts now include a sha256 `checksums.txt` for verified downloads
+
 ## v1.0.0-beta.7
 *April 3, 2026*
 
