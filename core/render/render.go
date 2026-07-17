@@ -9,10 +9,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"html"
+	"path"
 	"regexp"
 	"sort"
 	"strings"
 	"time"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	"github.com/shivamx96/leafpress/core/config"
 	"github.com/shivamx96/leafpress/core/content"
@@ -34,7 +38,9 @@ type Garden struct {
 	Theme   json.RawMessage `json:"theme"`   // optional; maps onto config.Theme
 }
 
-// InputPage is a single published page.
+// InputPage is a single published page. Slugs may carry path segments
+// ("essays/my-post"); section membership derives from the slug's directory,
+// exactly like the CLI build.
 type InputPage struct {
 	Slug        string   `json:"slug"`
 	Title       string   `json:"title"` // optional; defaults to Slug
@@ -44,19 +50,38 @@ type InputPage struct {
 	UpdatedAt   string   `json:"updatedAt"` // optional RFC3339
 	Description string   `json:"description"`
 	Growth      string   `json:"growth"`
+	// IsIndex marks a section home (the CLI's _index.md): Slug is the
+	// section path itself, Markdown becomes the intro above the child
+	// listing. An IsIndex page with slug "" is the garden home.
+	IsIndex bool `json:"isIndex"`
+	// Sort orders the child listing of an index page: date (default) |
+	// title | growth. Mirrors the _index.md `sort` frontmatter key.
+	Sort string `json:"sort"`
+	// ShowList toggles the child listing of an index page (default true).
+	// Mirrors the _index.md `showList` frontmatter key.
+	ShowList *bool `json:"showList"`
 }
 
 // Output is the top-level JSON object written to stdout.
 type Output struct {
-	Pages    []OutputPage `json:"pages"`
-	Index    string       `json:"index"`
-	Tags     OutputTags   `json:"tags"`
-	CSS      string       `json:"css"`
-	Warnings []string     `json:"warnings"`
+	Pages    []OutputPage    `json:"pages"`
+	Index    string          `json:"index"`
+	Sections []OutputSection `json:"sections"`
+	Tags     OutputTags      `json:"tags"`
+	CSS      string          `json:"css"`
+	Warnings []string        `json:"warnings"`
 }
 
-// OutputPage is a rendered page document.
+// OutputPage is a rendered page document. Index pages appear here too,
+// rendered as their section's home.
 type OutputPage struct {
+	Slug string `json:"slug"`
+	HTML string `json:"html"`
+}
+
+// OutputSection is an auto-generated home for a section that has no index
+// page (the CLI's auto-index), served at {baseUrl}/<slug>/.
+type OutputSection struct {
 	Slug string `json:"slug"`
 	HTML string `json:"html"`
 }
@@ -198,35 +223,102 @@ func Render(in *Input) (*Output, error) {
 		// graph.json, search-index.json, or feed.xml (future flags).
 	}
 
+	// Section membership derives from slug paths, exactly like the CLI:
+	// a page "essays/my-post" is a direct child of section "essays", and
+	// an index page's slug *is* its section path ("" = the garden home).
+	children := make(map[string][]*content.Page)
+	indexBySection := make(map[string]*content.Page)
+	for _, p := range pages {
+		if p.IsIndex {
+			indexBySection[p.Slug] = p
+		} else {
+			dir := sectionOf(p.Slug)
+			children[dir] = append(children[dir], p)
+		}
+	}
+
 	outPages := make([]OutputPage, 0, len(pages))
 	for _, p := range pages {
-		htmlContent, toc := templates.ExtractTOC(p.HTMLContent)
 		var buf bytes.Buffer
-		if err := tmpl.RenderPage(&buf, templates.PageData{
-			Site:        site,
-			Page:        p,
-			Content:     htmlContent,
-			TOC:         toc,
-			CurrentPath: p.Permalink,
-		}); err != nil {
-			return nil, fmt.Errorf("failed to render page %q: %w", p.Slug, err)
+		if p.IsIndex {
+			if p.Slug == "" {
+				continue // the garden home renders into Output.Index below
+			}
+			if err := renderSectionHome(&buf, tmpl, site, p, children[p.Slug]); err != nil {
+				return nil, fmt.Errorf("failed to render section %q: %w", p.Slug, err)
+			}
+		} else {
+			htmlContent, toc := templates.ExtractTOC(p.HTMLContent)
+			if err := tmpl.RenderPage(&buf, templates.PageData{
+				Site:        site,
+				Page:        p,
+				Content:     htmlContent,
+				TOC:         toc,
+				CurrentPath: p.Permalink,
+			}); err != nil {
+				return nil, fmt.Errorf("failed to render page %q: %w", p.Slug, err)
+			}
 		}
 		outPages = append(outPages, OutputPage{Slug: p.Slug, HTML: buf.String()})
 	}
 
-	sorted := make([]*content.Page, len(pages))
-	copy(sorted, pages)
-	sortPages(sorted, sortMode)
+	// Sections without an index page get an auto-generated home, mirroring
+	// the CLI's auto-indexes: title-cased folder name, date sort, list on.
+	sections := []OutputSection{}
+	autoDirs := make([]string, 0, len(children))
+	for dir := range children {
+		if dir != "" && indexBySection[dir] == nil {
+			autoDirs = append(autoDirs, dir)
+		}
+	}
+	sort.Strings(autoDirs)
+	for _, dir := range autoDirs {
+		sorted := make([]*content.Page, len(children[dir]))
+		copy(sorted, children[dir])
+		sortPages(sorted, "date")
+		var buf bytes.Buffer
+		if err := tmpl.RenderIndex(&buf, templates.IndexData{
+			Site:        site,
+			Title:       titleCase(path.Base(dir)),
+			Pages:       sorted,
+			ShowList:    true,
+			CurrentPath: "/" + dir + "/",
+		}); err != nil {
+			return nil, fmt.Errorf("failed to render section %q: %w", dir, err)
+		}
+		sections = append(sections, OutputSection{Slug: dir, HTML: buf.String()})
+	}
 
+	// The garden home: a root index page replaces the generated index and
+	// renders like the CLI's root _index.md (its own intro over the
+	// root-level pages). Without one, keep the bridge's synthetic home — a
+	// flat listing of every non-index page (hosted gardens always have a
+	// home, unlike native sites, which omit / entirely in that case).
 	var idx bytes.Buffer
-	if err := tmpl.RenderIndex(&idx, templates.IndexData{
-		Site:        site,
-		Title:       title,
-		Pages:       sorted,
-		ShowList:    true,
-		CurrentPath: "/",
-	}); err != nil {
-		return nil, fmt.Errorf("failed to render index: %w", err)
+	if root := indexBySection[""]; root != nil {
+		if root.Title == "" {
+			root.Title = title
+		}
+		if err := renderSectionHome(&idx, tmpl, site, root, children[""]); err != nil {
+			return nil, fmt.Errorf("failed to render garden home: %w", err)
+		}
+	} else {
+		sorted := make([]*content.Page, 0, len(pages))
+		for _, p := range pages {
+			if !p.IsIndex {
+				sorted = append(sorted, p)
+			}
+		}
+		sortPages(sorted, sortMode)
+		if err := tmpl.RenderIndex(&idx, templates.IndexData{
+			Site:        site,
+			Title:       title,
+			Pages:       sorted,
+			ShowList:    true,
+			CurrentPath: "/",
+		}); err != nil {
+			return nil, fmt.Errorf("failed to render index: %w", err)
+		}
 	}
 
 	tags, err := renderTagPages(tmpl, site, pages)
@@ -237,10 +329,48 @@ func Render(in *Input) (*Output, error) {
 	return &Output{
 		Pages:    outPages,
 		Index:    idx.String(),
+		Sections: sections,
 		Tags:     tags,
 		CSS:      templates.DefaultCSS,
 		Warnings: warnings,
 	}, nil
+}
+
+// sectionOf returns the section path a slug belongs to ("" for root),
+// mirroring the CLI's filepath.Dir-based grouping.
+func sectionOf(slug string) string {
+	dir := path.Dir(slug)
+	if dir == "." {
+		return ""
+	}
+	return dir
+}
+
+// renderSectionHome renders an index page as its section's home, mirroring
+// the CLI's renderSectionIndex: the page body becomes the intro above the
+// child listing, sorted by the page's sort key (default date), with the
+// listing toggled by showList (default true).
+func renderSectionHome(buf *bytes.Buffer, tmpl *templates.Templates, site templates.SiteData, indexPage *content.Page, sectionPages []*content.Page) error {
+	sorted := make([]*content.Page, len(sectionPages))
+	copy(sorted, sectionPages)
+	sortPages(sorted, indexPage.SectionSort)
+
+	showList := true
+	if indexPage.ShowList != nil {
+		showList = *indexPage.ShowList
+	}
+	currentPath := "/" + indexPage.Slug
+	if currentPath != "/" {
+		currentPath += "/"
+	}
+	return tmpl.RenderIndex(buf, templates.IndexData{
+		Site:        site,
+		Title:       indexPage.Title,
+		Pages:       sorted,
+		Intro:       indexPage.HTMLContent,
+		ShowList:    showList,
+		CurrentPath: currentPath,
+	})
 }
 
 // renderTagPages renders the tags index and one page per tag, matching the
@@ -372,17 +502,28 @@ func buildPages(in []InputPage) ([]*content.Page, error) {
 	pages := make([]*content.Page, 0, len(in))
 	seen := make(map[string]bool, len(in))
 	for i, ip := range in {
-		if ip.Slug == "" {
+		slug := strings.Trim(ip.Slug, "/")
+		// Only the garden-home index page may have an empty slug (the
+		// CLI's root _index.md).
+		if slug == "" && !ip.IsIndex {
 			return nil, inputErrorf("pages[%d].slug is required", i)
 		}
-		slug := strings.Trim(ip.Slug, "/")
-		if slug == "" || strings.ContainsAny(slug, unsafeSlugChars) {
+		if strings.ContainsAny(slug, unsafeSlugChars) {
 			return nil, inputErrorf("pages[%d].slug is invalid: %q", i, ip.Slug)
 		}
 		if seen[slug] {
+			if slug == "" {
+				return nil, inputErrorf("duplicate garden home index page")
+			}
 			return nil, inputErrorf("duplicate page slug: %q", slug)
 		}
 		seen[slug] = true
+
+		switch ip.Sort {
+		case "", "date", "title", "growth":
+		default:
+			return nil, inputErrorf("pages[%d].sort must be one of date, title, growth; got %q", i, ip.Sort)
+		}
 
 		for _, tag := range ip.Tags {
 			if !tagRegex.MatchString(tag) {
@@ -414,6 +555,10 @@ func buildPages(in []InputPage) ([]*content.Page, error) {
 			title = html.EscapeString(slug)
 		}
 
+		permalink := "/" + slug + "/"
+		if slug == "" {
+			permalink = "/"
+		}
 		pages = append(pages, &content.Page{
 			Title:       title,
 			Description: html.EscapeString(ip.Description),
@@ -423,11 +568,20 @@ func buildPages(in []InputPage) ([]*content.Page, error) {
 			Tags:        ip.Tags,
 			Growth:      ip.Growth,
 			Slug:        slug,
-			Permalink:   "/" + slug + "/",
+			Permalink:   permalink,
 			RawContent:  ip.Markdown,
+			IsIndex:     ip.IsIndex,
+			SectionSort: ip.Sort,
+			ShowList:    ip.ShowList,
 		})
 	}
 	return pages, nil
+}
+
+// titleCase title-cases an auto-index section name, matching the CLI's
+// generateAutoIndexes (cases.Title over the folder's base name).
+func titleCase(s string) string {
+	return cases.Title(language.English).String(s)
 }
 
 // parseTime parses an optional RFC3339 timestamp ("" means unset).

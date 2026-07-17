@@ -570,3 +570,163 @@ func TestWikilinkResolvesByPageTitle(t *testing.T) {
 		t.Error("title-form wikilink did not produce a backlink")
 	}
 }
+
+// ---- Sections (folder-path slugs, index pages, auto-indexes) ----
+
+const sectionedGarden = `{
+  "garden": {"slug": "shivam", "title": "Shivam's Garden", "baseUrl": "/g/shivam"},
+  "pages": [
+    {"slug": "hello", "title": "Hello", "markdown": "Root note.", "createdAt": "2026-01-01T00:00:00Z"},
+    {"slug": "essays/first", "title": "First Essay", "markdown": "One.", "createdAt": "2026-02-01T00:00:00Z"},
+    {"slug": "essays/second", "title": "Second Essay", "markdown": "Two.", "createdAt": "2026-03-01T00:00:00Z"},
+    {"slug": "essays", "title": "Essays", "markdown": "Long-form writing.", "isIndex": true},
+    {"slug": "recipes/dal", "title": "Dal", "markdown": "Cook it.", "createdAt": "2026-04-01T00:00:00Z"}
+  ]
+}`
+
+func TestSectionHomeRendersIntroAndChildren(t *testing.T) {
+	out := runJSON(t, sectionedGarden)
+
+	home := pageHTML(t, out, "essays")
+	if !strings.Contains(home, "Long-form writing.") {
+		t.Error("section home should contain the index page's markdown as intro")
+	}
+	for _, href := range []string{`href="/g/shivam/essays/first/"`, `href="/g/shivam/essays/second/"`} {
+		if !strings.Contains(home, href) {
+			t.Errorf("section home should list child %s", href)
+		}
+	}
+	if strings.Contains(home, `href="/g/shivam/hello/"`) {
+		t.Error("section home should not list pages outside the section")
+	}
+	// Newest first (date sort default).
+	if strings.Index(home, "essays/second") > strings.Index(home, "essays/first") {
+		t.Error("section children should sort newest first by default")
+	}
+}
+
+func TestSectionWithoutIndexGetsAutoHome(t *testing.T) {
+	out := runJSON(t, sectionedGarden)
+
+	if len(out.Sections) != 1 {
+		t.Fatalf("expected 1 auto section, got %d", len(out.Sections))
+	}
+	auto := out.Sections[0]
+	if auto.Slug != "recipes" {
+		t.Errorf("auto section slug = %q, want recipes", auto.Slug)
+	}
+	if !strings.Contains(auto.HTML, "Recipes") {
+		t.Error("auto section home should be titled with the title-cased folder name")
+	}
+	if !strings.Contains(auto.HTML, `href="/g/shivam/recipes/dal/"`) {
+		t.Error("auto section home should list its child pages")
+	}
+}
+
+func TestRootIndexReplacesGardenHome(t *testing.T) {
+	out := runJSON(t, `{
+	  "garden": {"slug": "g", "title": "My Garden"},
+	  "pages": [
+	    {"slug": "", "title": "", "markdown": "Welcome to my garden.", "isIndex": true},
+	    {"slug": "note", "title": "Note", "markdown": "n."},
+	    {"slug": "essays/one", "title": "One", "markdown": "o."}
+	  ]
+	}`)
+
+	if !strings.Contains(out.Index, "Welcome to my garden.") {
+		t.Error("home should contain the root index page's intro")
+	}
+	// Root-index home lists only root-level pages, like a native root _index.md.
+	if !strings.Contains(out.Index, `href="/note/"`) {
+		t.Error("home should list root-level pages")
+	}
+	if strings.Contains(out.Index, `href="/essays/one/"`) {
+		t.Error("root-index home should not flatten nested pages into the listing")
+	}
+	// Empty root-index title falls back to the garden title.
+	if !strings.Contains(out.Index, "My Garden") {
+		t.Error("home title should fall back to the garden title")
+	}
+	// The root index page renders as the home, not as a page artifact.
+	for _, p := range out.Pages {
+		if p.Slug == "" {
+			t.Error("root index page should not appear in pages output")
+		}
+	}
+}
+
+func TestSyntheticHomeExcludesIndexPages(t *testing.T) {
+	out := runJSON(t, sectionedGarden)
+
+	// No root index page: home keeps the flat all-pages listing, minus
+	// structural index pages.
+	if !strings.Contains(out.Index, `href="/g/shivam/essays/first/"`) {
+		t.Error("synthetic home should list nested pages")
+	}
+	if strings.Contains(out.Index, `class="lp-index-link" href="/g/shivam/essays/"`) {
+		t.Error("synthetic home should not list index pages")
+	}
+}
+
+func TestSectionSortAndShowList(t *testing.T) {
+	out := runJSON(t, `{
+	  "garden": {"slug": "g"},
+	  "pages": [
+	    {"slug": "s/b", "title": "Banana", "markdown": "x", "createdAt": "2026-03-01T00:00:00Z"},
+	    {"slug": "s/a", "title": "Apple", "markdown": "x", "createdAt": "2026-01-01T00:00:00Z"},
+	    {"slug": "s", "title": "S", "markdown": "intro", "isIndex": true, "sort": "title"},
+	    {"slug": "hidden/x", "title": "X", "markdown": "x"},
+	    {"slug": "hidden", "title": "Hidden", "markdown": "no list here", "isIndex": true, "showList": false}
+	  ]
+	}`)
+
+	s := pageHTML(t, out, "s")
+	if strings.Index(s, "/s/a/") > strings.Index(s, "/s/b/") {
+		t.Error("section with sort=title should list Apple before Banana")
+	}
+	hidden := pageHTML(t, out, "hidden")
+	if strings.Contains(hidden, `href="/hidden/x/"`) {
+		t.Error("showList=false should suppress the child listing")
+	}
+	if !strings.Contains(hidden, "no list here") {
+		t.Error("showList=false should still render the intro")
+	}
+}
+
+func TestWikilinkResolvesToNestedSlug(t *testing.T) {
+	out := runJSON(t, `{
+	  "garden": {"slug": "g", "baseUrl": "/g/me"},
+	  "pages": [
+	    {"slug": "essays/deep-note", "title": "Deep Note", "markdown": "x"},
+	    {"slug": "top", "title": "Top", "markdown": "See [[Deep Note]]."}
+	  ]
+	}`)
+
+	top := pageHTML(t, out, "top")
+	if !strings.Contains(top, `href="/g/me/essays/deep-note/"`) {
+		t.Error("wikilink should resolve to the nested permalink")
+	}
+}
+
+func TestSectionInputValidation(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+	}{
+		{"empty slug without isIndex", `{"garden": {"slug": "g"}, "pages": [{"slug": "", "markdown": "x"}]}`},
+		{"duplicate root index", `{"garden": {"slug": "g"}, "pages": [{"slug": "", "markdown": "x", "isIndex": true}, {"slug": "/", "markdown": "y", "isIndex": true}]}`},
+		{"bad section sort", `{"garden": {"slug": "g"}, "pages": [{"slug": "s", "markdown": "x", "isIndex": true, "sort": "random"}]}`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := Run([]byte(tt.input))
+			if err == nil {
+				t.Fatal("expected error, got nil")
+			}
+			var inputErr *InputError
+			if !errors.As(err, &inputErr) {
+				t.Errorf("expected *InputError, got %T: %v", err, err)
+			}
+		})
+	}
+}
