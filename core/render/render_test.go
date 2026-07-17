@@ -730,3 +730,18 @@ func TestSectionInputValidation(t *testing.T) {
 		})
 	}
 }
+
+func TestUntitledIndexPageTitledFromSlug(t *testing.T) {
+	out := runJSON(t, `{
+	  "garden": {"slug": "g"},
+	  "pages": [
+	    {"slug": "long-form-essays/one", "title": "One", "markdown": "x"},
+	    {"slug": "long-form-essays", "title": "", "markdown": "intro", "isIndex": true}
+	  ]
+	}`)
+
+	home := pageHTML(t, out, "long-form-essays")
+	if !strings.Contains(home, "Long Form Essays") {
+		t.Error("untitled index page should be titled from its slug segment")
+	}
+}

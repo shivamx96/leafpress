@@ -551,8 +551,15 @@ func buildPages(in []InputPage) ([]*content.Page, error) {
 		// Title and description reach <title>, <h1>, and og:/twitter: meta
 		// attributes through text/template — escape at the input boundary.
 		title := html.EscapeString(ip.Title)
-		if title == "" {
-			title = html.EscapeString(slug)
+		if title == "" && slug != "" {
+			if ip.IsIndex {
+				// Mirror the scanner's generateTitleFromSlug fallback for
+				// _index.md files without a frontmatter title. (An untitled
+				// root index falls back to the garden title at render time.)
+				title = html.EscapeString(titleFromSlug(path.Base(slug)))
+			} else {
+				title = html.EscapeString(slug)
+			}
 		}
 
 		permalink := "/" + slug + "/"
@@ -582,6 +589,16 @@ func buildPages(in []InputPage) ([]*content.Page, error) {
 // generateAutoIndexes (cases.Title over the folder's base name).
 func titleCase(s string) string {
 	return cases.Title(language.English).String(s)
+}
+
+// titleFromSlug turns a slug segment into a display title, matching the
+// scanner's generateTitleFromSlug (hyphens to spaces, each word capitalized).
+func titleFromSlug(s string) string {
+	words := strings.Fields(strings.ReplaceAll(s, "-", " "))
+	for i, w := range words {
+		words[i] = strings.ToUpper(w[:1]) + w[1:]
+	}
+	return strings.Join(words, " ")
 }
 
 // parseTime parses an optional RFC3339 timestamp ("" means unset).
