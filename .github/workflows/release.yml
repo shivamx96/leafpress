@@ -9,7 +9,41 @@ permissions:
   contents: write
 
 jobs:
+  verify-modules:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+
+      # This repository contains two Go modules. Their scoped tags must point
+      # at the same commit as the product release tag or `go install @latest`
+      # can select source/config versions that were never tested together.
+      - name: Verify module tags
+        env:
+          VERSION: ${{ github.ref_name }}
+        run: |
+          test "$(git rev-list -n 1 "core/${VERSION}")" = "${GITHUB_SHA}"
+          test "$(git rev-list -n 1 "cli/${VERSION}")" = "${GITHUB_SHA}"
+
+      - name: Verify public Go install
+        env:
+          VERSION: ${{ github.ref_name }}
+          GOBIN: ${{ runner.temp }}/leafpress-go-install
+          GOWORK: "off"
+          GOPROXY: "direct"
+        run: |
+          go install "github.com/shivamx96/leafpress/cli/cmd/leafpress@${VERSION}"
+          go install github.com/shivamx96/leafpress/cli/cmd/leafpress@latest
+          test "$("${GOBIN}/leafpress" version)" = "leafpress ${VERSION}"
+
   build:
+    needs: verify-modules
     runs-on: ubuntu-latest
     strategy:
       matrix:

@@ -1,6 +1,7 @@
 // Command leafpress-render is a pure stdin→stdout JSON bridge that renders
-// a garden (a set of published pages) into full HTML documents, an index
-// page, and theme CSS. No filesystem, network, or database access.
+// a garden (a set of published pages) into full HTML documents, indexes,
+// theme/user CSS, and canonical Leafpress site artifacts. No filesystem,
+// network, or database access.
 //
 // Exit codes: 0 success (warnings allowed), 1 invalid input, 2 internal
 // render failure. Only JSON is ever written to stdout.

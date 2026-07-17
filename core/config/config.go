@@ -174,16 +174,22 @@ func Default() *Config {
 
 // Load reads and parses the config file
 func Load(path string) (*Config, error) {
-	cfg := Default()
-
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
 			// Return defaults if no config file
-			return cfg, nil
+			return Default(), nil
 		}
 		return nil, fmt.Errorf("failed to read config: %w", err)
 	}
+	return Parse(data)
+}
+
+// Parse decodes leafpress.json bytes using the exact same default overlay and
+// validation as Load. It is the filesystem-free entry point for embedders
+// such as leafpress-render, preventing the JSON bridge and CLI from drifting.
+func Parse(data []byte) (*Config, error) {
+	cfg := Default()
 
 	if err := json.Unmarshal(data, cfg); err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)

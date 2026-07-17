@@ -4,6 +4,13 @@ date: 2025-01-06
 toc: false
 ---
 
+## v1.0.0-beta.9
+*July 17, 2026*
+
+- Fixed `go install github.com/shivamx96/leafpress/cli/cmd/leafpress@latest` for the multi-module repository by publishing scoped core/CLI module versions without local `replace` directives; Go-installed binaries now report their module version instead of `dev`
+- `leafpress-render` now accepts the canonical `leafpress.json` configuration shape, custom `style.css` content, and produces graph, search, RSS, sitemap, robots, and 404 artifacts
+- Folder sections, `index`/`_index` homes, root navigation, and all page-level frontmatter settings now share Leafpress CLI rendering semantics
+
 ## v1.0.0-beta.8
 *July 16, 2026*
 

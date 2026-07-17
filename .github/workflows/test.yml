@@ -19,6 +19,13 @@ jobs:
         with:
           go-version: "1.25"
 
+      - name: Verify published CLI module has no local replacements
+        run: |
+          if grep -Eq '^[[:space:]]*replace[[:space:]]' cli/go.mod; then
+            echo "cli/go.mod must not contain replace directives; use go.work for local modules"
+            exit 1
+          fi
+
       - name: Build (cli)
         working-directory: ./cli
         run: go build -o leafpress ./cmd/leafpress

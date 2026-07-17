@@ -60,9 +60,9 @@ func TestValidInputExitsZeroWithPureJSONStdout(t *testing.T) {
 		t.Fatalf("exit code = %d, want 0; stderr: %q", code, stderr.String())
 	}
 	out := decodeSingleJSON(t, &stdout)
-	if len(out.Pages) != 2 || out.Index == "" || out.CSS == "" {
-		t.Fatalf("output missing artifacts: %d pages, index %d bytes, css %d bytes",
-			len(out.Pages), len(out.Index), len(out.CSS))
+	if len(out.Pages) != 2 || out.Index == "" || out.CSS == "" || len(out.Artifacts) == 0 {
+		t.Fatalf("output incomplete: %d pages, index %d bytes, css %d bytes, %d artifacts",
+			len(out.Pages), len(out.Index), len(out.CSS), len(out.Artifacts))
 	}
 	if stderr.Len() != 0 {
 		t.Fatalf("stderr not empty on success: %q", stderr.String())

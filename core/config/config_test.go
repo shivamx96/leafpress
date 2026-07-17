@@ -92,6 +92,29 @@ func TestLoad_InvalidJSON(t *testing.T) {
 	}
 }
 
+func TestParse_MatchesLoadDefaultsAndOverrides(t *testing.T) {
+	raw := []byte(`{
+		"title":"Rendered Site","graph":false,"rss":false,
+		"theme":{"accent":"#123456","navStyle":"sticky"}
+	}`)
+	cfg, err := Parse(raw)
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+	if cfg.Title != "Rendered Site" || cfg.Graph || cfg.RSS {
+		t.Fatalf("overrides not preserved: %+v", cfg)
+	}
+	if !cfg.Search || !cfg.TOC || !cfg.Backlinks || !cfg.Wikilinks {
+		t.Fatal("omitted feature flags should retain CLI defaults")
+	}
+	if cfg.Theme.Accent != "#123456" || cfg.Theme.NavStyle != "sticky" {
+		t.Fatalf("theme overrides not preserved: %+v", cfg.Theme)
+	}
+	if cfg.Theme.FontBody != "Inter" || cfg.Port != 3000 || cfg.OutputDir != "_site" {
+		t.Fatal("omitted config fields should retain CLI defaults")
+	}
+}
+
 // --- Validation ---
 
 func TestValidate_ValidConfig(t *testing.T) {
