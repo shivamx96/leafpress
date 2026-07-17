@@ -62,6 +62,10 @@ See the [deployment guide](https://leafpress.in/guide/deploy-github) for details
 
 Full docs at [leafpress.in](https://leafpress.in)
 
+Embedding the pure renderer: [leafpress-render contract](docs/05_RENDERER_CONTRACT.md)
+
+Maintainers: [multi-module release process](docs/06_RELEASE_PROCESS.md)
+
 ## License
 
 MIT

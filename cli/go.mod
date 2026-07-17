@@ -5,7 +5,7 @@ go 1.25.5
 require (
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/gorilla/websocket v1.5.3
-	github.com/shivamx96/leafpress/core v0.0.0
+	github.com/shivamx96/leafpress/core v1.0.0-beta.9
 	github.com/spf13/cobra v1.10.2
 	golang.org/x/text v0.32.0
 )
@@ -20,6 +20,3 @@ require (
 	golang.org/x/sys v0.13.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-// drop this once core is tagged (core/vX.Y.Z) so `go install .../cli@latest` works again — release core tag first, then cli.
-replace github.com/shivamx96/leafpress/core => ../core

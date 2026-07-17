@@ -31,6 +31,17 @@ func pageHTML(t *testing.T, out *Output, slug string) string {
 	return ""
 }
 
+func artifact(t *testing.T, out *Output, path string) OutputArtifact {
+	t.Helper()
+	for _, item := range out.Artifacts {
+		if item.Path == path {
+			return item
+		}
+	}
+	t.Fatalf("artifact %q not found in output", path)
+	return OutputArtifact{}
+}
+
 const twoLinkedPages = `{
   "garden": {
     "slug": "shivam",
@@ -156,6 +167,158 @@ func TestThemeReflectedInOutput(t *testing.T) {
 	}
 	if out.CSS != templates.DefaultCSS {
 		t.Error("css output should be the leafpress default stylesheet")
+	}
+}
+
+func TestCanonicalSiteConfigAndStyleMatchLeafpressSemantics(t *testing.T) {
+	out := runJSON(t, `{
+	  "garden": {"slug":"hosted", "baseUrl":"/legacy-hosted"},
+	  "config": {
+	    "title":"Configured Garden",
+	    "description":"Site description",
+	    "author":"Garden Author",
+	    "baseURL":"https://example.com/notes",
+	    "image":"/og-default.png",
+	    "outputDir":"ignored-by-renderer",
+	    "port":4444,
+	    "nav":[{"label":"Start Here","path":"/alpha/"}],
+	    "theme":{
+	      "fontHeading":"Fraunces","fontBody":"Atkinson Hyperlegible",
+	      "fontMono":"IBM Plex Mono","accent":"#123456",
+	      "background":{"light":"#fafafa","dark":"#101010"},
+	      "navStyle":"sticky","navActiveStyle":"underlined"
+	    },
+	    "graph":true,"search":true,"toc":false,"backlinks":true,
+	    "wikilinks":true,"rss":true,
+	    "ignore":["private/**"],
+	    "headExtra":"<meta name=\"configured\" content=\"yes\">",
+	    "deploy":{"provider":"netlify","settings":{"site":"demo"}}
+	  },
+	  "styleCSS":".custom-rule { color: rebeccapurple; }",
+	  "pages":[
+	    {"slug":"alpha","title":"Alpha","markdown":"## Heading\n\nSee [[beta]].","createdAt":"2026-01-01T00:00:00Z"},
+	    {"slug":"beta","title":"Beta","markdown":"Beta body.","createdAt":"2026-01-02T00:00:00Z"}
+	  ]
+	}`)
+
+	alpha := pageHTML(t, out, "alpha")
+	for _, want := range []string{
+		"Configured Garden",
+		"Garden Author",
+		`href="/notes/alpha/">Start Here</a>`,
+		`href="https://example.com/notes/alpha/"`,
+		`content="https://example.com/notes/og-default.png"`,
+		`--lp-font-heading: "Fraunces"`,
+		`--lp-accent: #123456`,
+		`--lp-bg: #fafafa`,
+		`lp-nav-active-underlined`,
+		`name="configured" content="yes"`,
+		`class="lp-graph-toggle"`,
+		`class="lp-search-toggle"`,
+		`href="/notes/feed.xml"`,
+		`class="lp-wikilink" href="/notes/beta/"`,
+	} {
+		if !strings.Contains(alpha, want) {
+			t.Errorf("configured HTML missing %q", want)
+		}
+	}
+	if strings.Contains(alpha, `class="lp-toc"`) {
+		t.Error("site toc=false should suppress a page TOC without an override")
+	}
+	if strings.Contains(alpha, `href="/notes/beta/">Beta</a></div>`) {
+		t.Error("canonical nav should not be replaced by derived root-note nav")
+	}
+	if !strings.Contains(out.CSS, "/* User Styles */") ||
+		!strings.Contains(out.CSS, ".custom-rule { color: rebeccapurple; }") {
+		t.Error("styleCSS should append exactly like the CLI's style.css")
+	}
+
+	graph := artifact(t, out, "graph.json")
+	if graph.ContentType != "application/json" ||
+		!strings.Contains(graph.Content, `"source": "alpha"`) ||
+		!strings.Contains(graph.Content, `"target": "beta"`) {
+		t.Errorf("graph artifact missing resolved edge: %s", graph.Content)
+	}
+	search := artifact(t, out, "search-index.json")
+	if !strings.Contains(search.Content, `"url": "/notes/alpha/"`) ||
+		!strings.Contains(search.Content, `"content": "Heading See beta ."`) {
+		t.Errorf("search artifact has unexpected content: %s", search.Content)
+	}
+	if feed := artifact(t, out, "feed.xml"); !strings.Contains(feed.Content, "<title>Configured Garden</title>") ||
+		!strings.Contains(feed.Content, "https://example.com/notes/feed.xml") {
+		t.Errorf("feed artifact missing canonical site config: %s", feed.Content)
+	}
+	if sitemap := artifact(t, out, "sitemap.xml"); !strings.Contains(sitemap.Content, "https://example.com/notes/alpha/") {
+		t.Errorf("sitemap artifact missing canonical URL: %s", sitemap.Content)
+	}
+	if robots := artifact(t, out, "robots.txt"); !strings.Contains(robots.Content, "https://example.com/notes/sitemap.xml") {
+		t.Errorf("robots artifact missing canonical sitemap: %s", robots.Content)
+	}
+	if notFound := artifact(t, out, "404.html"); !strings.Contains(notFound.Content, "Configured Garden") {
+		t.Error("404 artifact should use configured site templates")
+	}
+}
+
+func TestCanonicalConfigDefaultsAndFeatureDisables(t *testing.T) {
+	// Empty canonical config uses exactly the CLI defaults, including enabled
+	// graph/search/TOC/backlinks/wikilinks/RSS and an intentionally empty nav.
+	defaults := runJSON(t, `{
+	  "garden":{"slug":"g","baseUrl":"/g/g"},
+	  "config":{},
+	  "pages":[
+	    {"slug":"one","title":"One","markdown":"## Heading\n\n[[two]]"},
+	    {"slug":"two","title":"Two","markdown":"body"}
+	  ]
+	}`)
+	one := pageHTML(t, defaults, "one")
+	for _, want := range []string{
+		"My Garden", `class="lp-toc"`, `class="lp-backlink"`,
+		`class="lp-wikilink"`, `class="lp-graph-toggle"`, `class="lp-search-toggle"`,
+	} {
+		combined := one + pageHTML(t, defaults, "two")
+		if !strings.Contains(combined, want) {
+			t.Errorf("canonical defaults missing %q", want)
+		}
+	}
+	artifact(t, defaults, "graph.json")
+	artifact(t, defaults, "search-index.json")
+	artifact(t, defaults, "feed.xml")
+	if strings.Contains(one, `class="lp-nav-link"`) {
+		t.Error("an empty canonical nav must stay empty")
+	}
+
+	disabled := runJSON(t, `{
+	  "garden":{"slug":"g"},
+	  "config":{"graph":false,"search":false,"toc":false,"backlinks":false,"wikilinks":false,"rss":false},
+	  "pages":[
+	    {"slug":"one","title":"One","markdown":"## Heading\n\n[[two]]"},
+	    {"slug":"two","title":"Two","markdown":"body"}
+	  ]
+	}`)
+	combined := pageHTML(t, disabled, "one") + pageHTML(t, disabled, "two")
+	for _, absent := range []string{
+		`class="lp-toc"`, `class="lp-backlink"`, `class="lp-wikilink"`,
+		`class="lp-graph-toggle"`, `class="lp-search-toggle"`, `feed.xml`,
+	} {
+		if strings.Contains(combined, absent) {
+			t.Errorf("disabled feature still emitted %q", absent)
+		}
+	}
+	for _, item := range disabled.Artifacts {
+		if item.Path == "graph.json" || item.Path == "search-index.json" || item.Path == "feed.xml" {
+			t.Errorf("disabled artifact still emitted: %s", item.Path)
+		}
+	}
+}
+
+func TestCanonicalConfigRejectsInvalidCLIValues(t *testing.T) {
+	_, err := Run([]byte(`{
+	  "garden":{"slug":"g"},
+	  "config":{"theme":{"accent":"red"}},
+	  "pages":[]
+	}`))
+	if err == nil || !strings.Contains(err.Error(), "accent color") {
+		t.Fatalf("expected canonical config validation error, got %v", err)
 	}
 }
 
@@ -568,5 +731,264 @@ func TestWikilinkResolvesByPageTitle(t *testing.T) {
 	beta := pageHTML(t, out, "beta-note")
 	if !strings.Contains(beta, `class="lp-backlink" href="/g/shivam/alpha-note/"`) {
 		t.Error("title-form wikilink did not produce a backlink")
+	}
+}
+
+// ---- Sections (folder-path slugs, index pages, auto-indexes) ----
+
+const sectionedGarden = `{
+  "garden": {"slug": "shivam", "title": "Shivam's Garden", "baseUrl": "/g/shivam"},
+  "pages": [
+    {"slug": "hello", "title": "Hello", "markdown": "Root note.", "createdAt": "2026-01-01T00:00:00Z"},
+    {"slug": "essays/first", "title": "First Essay", "markdown": "One.", "createdAt": "2026-02-01T00:00:00Z"},
+    {"slug": "essays/second", "title": "Second Essay", "markdown": "Two.", "createdAt": "2026-03-01T00:00:00Z"},
+    {"slug": "essays", "title": "Essays", "markdown": "Long-form writing.", "isIndex": true},
+    {"slug": "recipes/dal", "title": "Dal", "markdown": "Cook it.", "createdAt": "2026-04-01T00:00:00Z"}
+  ]
+}`
+
+func TestSectionHomeRendersIntroAndChildren(t *testing.T) {
+	out := runJSON(t, sectionedGarden)
+
+	home := pageHTML(t, out, "essays")
+	if !strings.Contains(home, "Long-form writing.") {
+		t.Error("section home should contain the index page's markdown as intro")
+	}
+	for _, href := range []string{`href="/g/shivam/essays/first/"`, `href="/g/shivam/essays/second/"`} {
+		if !strings.Contains(home, href) {
+			t.Errorf("section home should list child %s", href)
+		}
+	}
+	if strings.Contains(home, `class="lp-index-link" href="/g/shivam/hello/"`) {
+		t.Error("section home should not list pages outside the section")
+	}
+	// Newest first (date sort default).
+	if strings.Index(home, "essays/second") > strings.Index(home, "essays/first") {
+		t.Error("section children should sort newest first by default")
+	}
+}
+
+func TestSectionWithoutIndexGetsAutoHome(t *testing.T) {
+	out := runJSON(t, sectionedGarden)
+
+	if len(out.Sections) != 1 {
+		t.Fatalf("expected 1 auto section, got %d", len(out.Sections))
+	}
+	auto := out.Sections[0]
+	if auto.Slug != "recipes" {
+		t.Errorf("auto section slug = %q, want recipes", auto.Slug)
+	}
+	if !strings.Contains(auto.HTML, "Recipes") {
+		t.Error("auto section home should be titled with the title-cased folder name")
+	}
+	if !strings.Contains(auto.HTML, `href="/g/shivam/recipes/dal/"`) {
+		t.Error("auto section home should list its child pages")
+	}
+}
+
+func TestNavigationContainsRootNotesAndSectionsOnly(t *testing.T) {
+	out := runJSON(t, sectionedGarden)
+	nested := pageHTML(t, out, "essays/first")
+
+	for _, want := range []string{
+		`class="lp-nav-link" href="/g/shivam/hello/">Hello</a>`,
+		`class="lp-nav-link lp-nav-link--active lp-nav-active-base" href="/g/shivam/essays/">Essays</a>`,
+		`class="lp-nav-link" href="/g/shivam/recipes/">Recipes</a>`,
+	} {
+		if !strings.Contains(nested, want) {
+			t.Errorf("navigation missing %s", want)
+		}
+	}
+	for _, nestedSlug := range []string{"essays/first", "essays/second", "recipes/dal"} {
+		if strings.Contains(nested, `class="lp-nav-link" href="/g/shivam/`+nestedSlug+`/"`) {
+			t.Errorf("nested note %q should not be a nav item", nestedSlug)
+		}
+	}
+}
+
+func TestPageFrontmatterConfigMatchesNativeRendering(t *testing.T) {
+	showTOC := false
+	readingTime := 7
+	out, err := Render(&Input{
+		Garden: Garden{Slug: "g", Title: "Garden"},
+		Pages: []InputPage{{
+			Slug:        "configured",
+			Title:       "Configured",
+			Markdown:    "## Hidden heading\n\nBody.",
+			Description: "A custom description",
+			Growth:      "evergreen",
+			TOC:         &showTOC,
+			Image:       "/images/card.png",
+			ReadingTime: &readingTime,
+		}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	html := pageHTML(t, out, "configured")
+	for _, want := range []string{
+		`content="A custom description"`,
+		`content="/images/card.png"`,
+		`lp-growth--evergreen`,
+		`7 min read`,
+	} {
+		if !strings.Contains(html, want) {
+			t.Errorf("configured page missing %q", want)
+		}
+	}
+	if strings.Contains(html, `class="lp-toc"`) {
+		t.Error("toc=false should suppress the table of contents")
+	}
+}
+
+func TestPageReadingTimeRejectsNonPositiveOverride(t *testing.T) {
+	zero := 0
+	_, err := Render(&Input{
+		Garden: Garden{Slug: "g"},
+		Pages:  []InputPage{{Slug: "bad", ReadingTime: &zero}},
+	})
+	if err == nil || !strings.Contains(err.Error(), "readingTime") {
+		t.Fatalf("expected readingTime validation error, got %v", err)
+	}
+}
+
+func TestRootIndexReplacesGardenHome(t *testing.T) {
+	out := runJSON(t, `{
+	  "garden": {"slug": "g", "title": "My Garden"},
+	  "pages": [
+	    {"slug": "", "title": "", "markdown": "Welcome to my garden.", "isIndex": true},
+	    {"slug": "note", "title": "Note", "markdown": "n."},
+	    {"slug": "essays/one", "title": "One", "markdown": "o."}
+	  ]
+	}`)
+
+	if !strings.Contains(out.Index, "Welcome to my garden.") {
+		t.Error("home should contain the root index page's intro")
+	}
+	// Root-index home lists root-level pages and one entry for each section.
+	if !strings.Contains(out.Index, `href="/note/"`) {
+		t.Error("home should list root-level pages")
+	}
+	if strings.Contains(out.Index, `href="/essays/one/"`) {
+		t.Error("root-index home should not flatten nested pages into the listing")
+	}
+	if !strings.Contains(out.Index, `href="/essays/"`) {
+		t.Error("home should link to the section containing nested pages")
+	}
+	// Empty root-index title falls back to the garden title.
+	if !strings.Contains(out.Index, "My Garden") {
+		t.Error("home title should fall back to the garden title")
+	}
+	// The root index page renders as the home, not as a page artifact.
+	for _, p := range out.Pages {
+		if p.Slug == "" {
+			t.Error("root index page should not appear in pages output")
+		}
+	}
+}
+
+func TestSyntheticHomeListsSectionsInsteadOfNestedPages(t *testing.T) {
+	out := runJSON(t, sectionedGarden)
+
+	if !strings.Contains(out.Index, `href="/g/shivam/hello/"`) {
+		t.Error("synthetic home should list root-level pages")
+	}
+	for _, href := range []string{`href="/g/shivam/essays/"`, `href="/g/shivam/recipes/"`} {
+		if !strings.Contains(out.Index, href) {
+			t.Errorf("synthetic home should link to section %s", href)
+		}
+	}
+	for _, href := range []string{`href="/g/shivam/essays/first/"`, `href="/g/shivam/essays/second/"`, `href="/g/shivam/recipes/dal/"`} {
+		if strings.Contains(out.Index, href) {
+			t.Errorf("synthetic home should not flatten nested page %s", href)
+		}
+	}
+}
+
+func TestSectionSortAndShowList(t *testing.T) {
+	out := runJSON(t, `{
+	  "garden": {"slug": "g"},
+	  "pages": [
+	    {"slug": "s/b", "title": "Banana", "markdown": "x", "createdAt": "2026-03-01T00:00:00Z"},
+	    {"slug": "s/a", "title": "Apple", "markdown": "x", "createdAt": "2026-01-01T00:00:00Z"},
+	    {"slug": "s", "title": "S", "markdown": "intro", "isIndex": true, "sort": "title"},
+	    {"slug": "hidden/x", "title": "X", "markdown": "x"},
+	    {"slug": "hidden", "title": "Hidden", "markdown": "no list here", "isIndex": true, "showList": false}
+	  ]
+	}`)
+
+	s := pageHTML(t, out, "s")
+	if strings.Index(s, "/s/a/") > strings.Index(s, "/s/b/") {
+		t.Error("section with sort=title should list Apple before Banana")
+	}
+	hidden := pageHTML(t, out, "hidden")
+	if strings.Contains(hidden, `href="/hidden/x/"`) {
+		t.Error("showList=false should suppress the child listing")
+	}
+	if !strings.Contains(hidden, "no list here") {
+		t.Error("showList=false should still render the intro")
+	}
+}
+
+func TestWikilinkResolvesToNestedSlug(t *testing.T) {
+	out := runJSON(t, `{
+	  "garden": {"slug": "g", "baseUrl": "/g/me"},
+	  "pages": [
+	    {"slug": "essays/deep-note", "title": "Deep Note", "markdown": "x"},
+	    {"slug": "top", "title": "Top", "markdown": "See [[Deep Note]]."}
+	  ]
+	}`)
+
+	top := pageHTML(t, out, "top")
+	if !strings.Contains(top, `href="/g/me/essays/deep-note/"`) {
+		t.Error("wikilink should resolve to the nested permalink")
+	}
+}
+
+func TestSectionInputValidation(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+	}{
+		{"empty slug without isIndex", `{"garden": {"slug": "g"}, "pages": [{"slug": "", "markdown": "x"}]}`},
+		{"duplicate root index", `{"garden": {"slug": "g"}, "pages": [{"slug": "", "markdown": "x", "isIndex": true}, {"slug": "/", "markdown": "y", "isIndex": true}]}`},
+		{"bad section sort", `{"garden": {"slug": "g"}, "pages": [{"slug": "s", "markdown": "x", "isIndex": true, "sort": "random"}]}`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := Run([]byte(tt.input))
+			if err == nil {
+				t.Fatal("expected error, got nil")
+			}
+			var inputErr *InputError
+			if !errors.As(err, &inputErr) {
+				t.Errorf("expected *InputError, got %T: %v", err, err)
+			}
+		})
+	}
+}
+
+func TestUntitledIndexPageTitledFromSlug(t *testing.T) {
+	out := runJSON(t, `{
+	  "garden": {"slug": "g"},
+	  "pages": [
+	    {"slug": "long-form-essays/one", "title": "One", "markdown": "x"},
+	    {"slug": "long-form-essays", "title": "", "markdown": "intro", "isIndex": true}
+	  ]
+	}`)
+
+	home := pageHTML(t, out, "long-form-essays")
+	if !strings.Contains(home, "Long Form Essays") {
+		t.Error("untitled index page should be titled from its slug segment")
+	}
+}
+
+func TestAutoSectionTitleReadsHyphensAsSpaces(t *testing.T) {
+	out := runJSON(t, `{
+	  "garden": {"slug": "g"},
+	  "pages": [{"slug": "field-notes/one", "title": "One", "markdown": "x"}]
+	}`)
+	if len(out.Sections) != 1 || !strings.Contains(out.Sections[0].HTML, "Field Notes") {
+		t.Errorf("auto section should be titled 'Field Notes', got: %v", out.Sections)
 	}
 }

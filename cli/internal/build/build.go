@@ -1,7 +1,6 @@
 package build
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/url"
 	"os"
@@ -15,6 +14,7 @@ import (
 	"github.com/shivamx96/leafpress/cli/internal/assets"
 	"github.com/shivamx96/leafpress/core/config"
 	"github.com/shivamx96/leafpress/core/content"
+	sitegen "github.com/shivamx96/leafpress/core/site"
 	"github.com/shivamx96/leafpress/core/templates"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -914,7 +914,11 @@ func (b *Builder) generateAutoIndexes(pages []*content.Page, siteData templates.
 					continue
 				}
 
-				title := cases.Title(language.English).String(filepath.Base(dir))
+				// Hyphens read as word separators ("field-notes" → "Field
+				// Notes"), consistent with generateTitleFromSlug's fallback
+				// for _index.md titles.
+				title := cases.Title(language.English).String(
+					strings.ReplaceAll(filepath.Base(dir), "-", " "))
 				data := templates.IndexData{
 					Site:        siteData,
 					Title:       title,
@@ -1114,288 +1118,61 @@ func (b *Builder) copyFavicons() error {
 
 // generateCSS writes the combined stylesheet
 func (b *Builder) generateCSS() error {
-	// Start with default CSS
-	css := templates.DefaultCSS
-
-	// Append user CSS if exists
-	userCSS := filepath.Join(b.rootDir, "style.css")
-	if data, err := os.ReadFile(userCSS); err == nil {
-		css += "\n\n/* User Styles */\n" + string(data)
+	var userCSS string
+	userCSSPath := filepath.Join(b.rootDir, "style.css")
+	if data, err := os.ReadFile(userCSSPath); err == nil {
+		userCSS = string(data)
 	}
-
-	// Write combined CSS
 	outPath := filepath.Join(b.outputDir, "style.css")
-	return os.WriteFile(outPath, []byte(css), 0644)
+	return os.WriteFile(outPath, []byte(sitegen.Styles(userCSS)), 0644)
 }
 
 // generateRobotsTxt writes the robots.txt file
 func (b *Builder) generateRobotsTxt() error {
-	var content string
-	if b.cfg.BaseURL != "" {
-		content = fmt.Sprintf("User-agent: *\nAllow: /\n\nSitemap: %s/sitemap.xml\n", strings.TrimSuffix(b.cfg.BaseURL, "/"))
-	} else {
-		content = "User-agent: *\nAllow: /\n"
-	}
 	outPath := filepath.Join(b.outputDir, "robots.txt")
-	return os.WriteFile(outPath, []byte(content), 0644)
+	return os.WriteFile(outPath, []byte(sitegen.Robots(b.cfg.BaseURL)), 0644)
 }
 
 // generateSitemap writes the sitemap.xml file
 func (b *Builder) generateSitemap(pages []*content.Page) error {
-	baseURL := strings.TrimSuffix(b.cfg.BaseURL, "/")
-
-	var sb strings.Builder
-	sb.WriteString(`<?xml version="1.0" encoding="UTF-8"?>`)
-	sb.WriteString("\n")
-	sb.WriteString(`<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`)
-	sb.WriteString("\n")
-
-	for _, page := range pages {
-		loc := page.Permalink
-		if baseURL != "" {
-			loc = baseURL + page.Permalink
-		}
-
-		// Use modified date if available, otherwise use created date
-		var lastmod string
-		if page.HasModified() {
-			lastmod = page.Modified.Format("2006-01-02")
-		} else if !page.Date.IsZero() {
-			lastmod = page.Date.Format("2006-01-02")
-		}
-
-		sb.WriteString("  <url>\n")
-		sb.WriteString(fmt.Sprintf("    <loc>%s</loc>\n", loc))
-		if lastmod != "" {
-			sb.WriteString(fmt.Sprintf("    <lastmod>%s</lastmod>\n", lastmod))
-		}
-		sb.WriteString("  </url>\n")
-	}
-
-	sb.WriteString("</urlset>\n")
-
 	outPath := filepath.Join(b.outputDir, "sitemap.xml")
-	return os.WriteFile(outPath, []byte(sb.String()), 0644)
+	return os.WriteFile(outPath, []byte(sitegen.Sitemap(pages, b.cfg.BaseURL)), 0644)
 }
 
 // generate404 writes the 404.html file
 func (b *Builder) generate404(siteData templates.SiteData) error {
-	outPath := filepath.Join(b.outputDir, "404.html")
-	f, err := os.Create(outPath)
+	html, err := sitegen.NotFound(b.templates, siteData)
 	if err != nil {
 		return err
 	}
-	defer f.Close()
-
-	return b.templates.RenderNotFound(f, templates.NotFoundData{
-		Site: siteData,
-	})
+	outPath := filepath.Join(b.outputDir, "404.html")
+	return os.WriteFile(outPath, []byte(html), 0644)
 }
 
 // generateRSS writes the feed.xml file
 func (b *Builder) generateRSS(pages []*content.Page, siteData templates.SiteData) error {
-	baseURL := strings.TrimSuffix(b.cfg.BaseURL, "/")
-
-	// Sort pages by date (newest first) and filter out index pages
-	var feedPages []*content.Page
-	for _, p := range pages {
-		if !p.IsIndex {
-			feedPages = append(feedPages, p)
-		}
-	}
-	sort.Slice(feedPages, func(i, j int) bool {
-		dateI := feedPages[i].Date
-		if feedPages[i].HasModified() {
-			dateI = feedPages[i].Modified
-		}
-		dateJ := feedPages[j].Date
-		if feedPages[j].HasModified() {
-			dateJ = feedPages[j].Modified
-		}
-		return dateI.After(dateJ)
-	})
-
-	// Limit to 20 most recent items
-	if len(feedPages) > 20 {
-		feedPages = feedPages[:20]
-	}
-
-	// Build date for the feed (most recent item date)
-	var lastBuildDate string
-	if len(feedPages) > 0 {
-		p := feedPages[0]
-		if p.HasModified() {
-			lastBuildDate = p.Modified.Format(time.RFC1123Z)
-		} else if !p.Date.IsZero() {
-			lastBuildDate = p.Date.Format(time.RFC1123Z)
-		} else {
-			lastBuildDate = time.Now().Format(time.RFC1123Z)
-		}
-	} else {
-		lastBuildDate = time.Now().Format(time.RFC1123Z)
-	}
-
-	var sb strings.Builder
-	sb.WriteString(`<?xml version="1.0" encoding="UTF-8"?>`)
-	sb.WriteString("\n")
-	sb.WriteString(`<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">`)
-	sb.WriteString("\n")
-	sb.WriteString("  <channel>\n")
-	sb.WriteString(fmt.Sprintf("    <title>%s</title>\n", escapeXML(siteData.Title)))
-	if baseURL != "" {
-		sb.WriteString(fmt.Sprintf("    <link>%s</link>\n", baseURL))
-		sb.WriteString(fmt.Sprintf("    <atom:link href=\"%s/feed.xml\" rel=\"self\" type=\"application/rss+xml\"/>\n", baseURL))
-	}
-	if siteData.Author != "" {
-		sb.WriteString(fmt.Sprintf("    <description>%s's digital garden</description>\n", escapeXML(siteData.Author)))
-	} else {
-		sb.WriteString(fmt.Sprintf("    <description>%s</description>\n", escapeXML(siteData.Title)))
-	}
-	sb.WriteString(fmt.Sprintf("    <lastBuildDate>%s</lastBuildDate>\n", lastBuildDate))
-	sb.WriteString("    <generator>leafpress</generator>\n")
-
-	for _, page := range feedPages {
-		link := page.Permalink
-		if baseURL != "" {
-			link = baseURL + page.Permalink
-		}
-
-		var pubDate string
-		if page.HasModified() {
-			pubDate = page.Modified.Format(time.RFC1123Z)
-		} else if !page.Date.IsZero() {
-			pubDate = page.Date.Format(time.RFC1123Z)
-		}
-
-		sb.WriteString("    <item>\n")
-		sb.WriteString(fmt.Sprintf("      <title>%s</title>\n", escapeXML(page.Title)))
-		sb.WriteString(fmt.Sprintf("      <link>%s</link>\n", link))
-		sb.WriteString(fmt.Sprintf("      <guid>%s</guid>\n", link))
-		if pubDate != "" {
-			sb.WriteString(fmt.Sprintf("      <pubDate>%s</pubDate>\n", pubDate))
-		}
-		// Use plain text content as description (truncated)
-		desc := page.PlainContent()
-		if len(desc) > 300 {
-			desc = desc[:300] + "..."
-		}
-		if desc != "" {
-			sb.WriteString(fmt.Sprintf("      <description>%s</description>\n", escapeXML(desc)))
-		}
-		sb.WriteString("    </item>\n")
-	}
-
-	sb.WriteString("  </channel>\n")
-	sb.WriteString("</rss>\n")
-
 	outPath := filepath.Join(b.outputDir, "feed.xml")
-	return os.WriteFile(outPath, []byte(sb.String()), 0644)
-}
-
-// escapeXML escapes special characters for XML
-func escapeXML(s string) string {
-	s = strings.ReplaceAll(s, "&", "&amp;")
-	s = strings.ReplaceAll(s, "<", "&lt;")
-	s = strings.ReplaceAll(s, ">", "&gt;")
-	s = strings.ReplaceAll(s, "\"", "&quot;")
-	s = strings.ReplaceAll(s, "'", "&apos;")
-	return s
+	return os.WriteFile(outPath, []byte(sitegen.RSS(pages, siteData, b.cfg.BaseURL, time.Time{})), 0644)
 }
 
 // generateJSONFiles creates graph.json and search-index.json in a single pass
 func (b *Builder) generateJSONFiles(pages []*content.Page, genGraph, genSearch bool) error {
-	if !genGraph && !genSearch {
-		return nil
+	graphJSON, searchJSON, err := sitegen.GraphSearch(
+		pages, b.linkResolver, b.siteData.BasePath, genGraph, genSearch,
+	)
+	if err != nil {
+		return err
 	}
-
-	// Graph types
-	type GraphNode struct {
-		ID     string   `json:"id"`
-		Title  string   `json:"title"`
-		URL    string   `json:"url"`
-		Growth string   `json:"growth,omitempty"`
-		Tags   []string `json:"tags,omitempty"`
-	}
-	type GraphEdge struct {
-		Source string `json:"source"`
-		Target string `json:"target"`
-	}
-	type Graph struct {
-		Nodes []GraphNode `json:"nodes"`
-		Edges []GraphEdge `json:"edges"`
-	}
-
-	// Search index type
-	type SearchEntry struct {
-		Title   string   `json:"title"`
-		URL     string   `json:"url"`
-		Content string   `json:"content"`
-		Tags    []string `json:"tags,omitempty"`
-	}
-
-	var graph Graph
-	var searchIndex []SearchEntry
-
-	// Single loop over all pages
-	for _, page := range pages {
-		if genGraph {
-			graph.Nodes = append(graph.Nodes, GraphNode{
-				ID:     page.Slug,
-				Title:  page.Title,
-				URL:    b.siteData.BasePath + page.Permalink,
-				Growth: page.Growth,
-				Tags:   page.Tags,
-			})
-
-			for _, target := range page.OutLinks {
-				result := b.linkResolver.Resolve(target)
-				if result.Page != nil {
-					graph.Edges = append(graph.Edges, GraphEdge{
-						Source: page.Slug,
-						Target: result.Page.Slug,
-					})
-				}
-			}
-		}
-
-		if genSearch && !page.IsIndex {
-			searchIndex = append(searchIndex, SearchEntry{
-				Title:   page.Title,
-				URL:     b.siteData.BasePath + page.Permalink,
-				Content: page.PlainContent(),
-				Tags:    page.Tags,
-			})
-		}
-	}
-
-	// Write graph.json
-	if genGraph {
-		outPath := filepath.Join(b.outputDir, "graph.json")
-		f, err := os.Create(outPath)
-		if err != nil {
+	if graphJSON != "" {
+		if err := os.WriteFile(filepath.Join(b.outputDir, "graph.json"), []byte(graphJSON), 0644); err != nil {
 			return err
 		}
-		if err := encodeJSON(f, graph); err != nil {
-			f.Close()
-			return err
-		}
-		f.Close()
 	}
-
-	// Write search-index.json
-	if genSearch {
-		outPath := filepath.Join(b.outputDir, "search-index.json")
-		f, err := os.Create(outPath)
-		if err != nil {
+	if searchJSON != "" {
+		if err := os.WriteFile(filepath.Join(b.outputDir, "search-index.json"), []byte(searchJSON), 0644); err != nil {
 			return err
 		}
-		if err := encodeJSON(f, searchIndex); err != nil {
-			f.Close()
-			return err
-		}
-		f.Close()
 	}
-
 	return nil
 }
 
@@ -1581,12 +1358,6 @@ func copyDir(src, dst string) error {
 	}
 
 	return nil
-}
-
-func encodeJSON(f *os.File, v interface{}) error {
-	encoder := json.NewEncoder(f)
-	encoder.SetIndent("", "  ")
-	return encoder.Encode(v)
 }
 
 // extractBasePath extracts the path portion from a URL for subdirectory hosting
