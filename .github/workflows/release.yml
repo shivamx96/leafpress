@@ -31,12 +31,16 @@ jobs:
           test "$(git rev-list -n 1 "core/${VERSION}")" = "${GITHUB_SHA}"
           test "$(git rev-list -n 1 "cli/${VERSION}")" = "${GITHUB_SHA}"
 
-      - name: Verify public Go install
+      # The tag checks above establish that both published modules are the
+      # exact source being released. Fetch directly from GitHub here so Go's
+      # public proxy/checksum propagation cannot make a valid release flaky.
+      - name: Verify Go install from release tags
         env:
           VERSION: ${{ github.ref_name }}
           GOBIN: ${{ runner.temp }}/leafpress-go-install
           GOWORK: "off"
           GOPROXY: "direct"
+          GOSUMDB: "off"
         run: |
           go install "github.com/shivamx96/leafpress/cli/cmd/leafpress@${VERSION}"
           go install github.com/shivamx96/leafpress/cli/cmd/leafpress@latest
