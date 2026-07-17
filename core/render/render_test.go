@@ -745,3 +745,13 @@ func TestUntitledIndexPageTitledFromSlug(t *testing.T) {
 		t.Error("untitled index page should be titled from its slug segment")
 	}
 }
+
+func TestAutoSectionTitleReadsHyphensAsSpaces(t *testing.T) {
+	out := runJSON(t, `{
+	  "garden": {"slug": "g"},
+	  "pages": [{"slug": "field-notes/one", "title": "One", "markdown": "x"}]
+	}`)
+	if len(out.Sections) != 1 || !strings.Contains(out.Sections[0].HTML, "Field Notes") {
+		t.Errorf("auto section should be titled 'Field Notes', got: %v", out.Sections)
+	}
+}

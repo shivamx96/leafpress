@@ -914,7 +914,11 @@ func (b *Builder) generateAutoIndexes(pages []*content.Page, siteData templates.
 					continue
 				}
 
-				title := cases.Title(language.English).String(filepath.Base(dir))
+				// Hyphens read as word separators ("field-notes" → "Field
+				// Notes"), consistent with generateTitleFromSlug's fallback
+				// for _index.md titles.
+				title := cases.Title(language.English).String(
+					strings.ReplaceAll(filepath.Base(dir), "-", " "))
 				data := templates.IndexData{
 					Site:        siteData,
 					Title:       title,

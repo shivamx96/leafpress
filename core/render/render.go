@@ -586,9 +586,10 @@ func buildPages(in []InputPage) ([]*content.Page, error) {
 }
 
 // titleCase title-cases an auto-index section name, matching the CLI's
-// generateAutoIndexes (cases.Title over the folder's base name).
+// generateAutoIndexes. Hyphens read as word separators ("field-notes" →
+// "Field Notes"), consistent with titleFromSlug below.
 func titleCase(s string) string {
-	return cases.Title(language.English).String(s)
+	return cases.Title(language.English).String(strings.ReplaceAll(s, "-", " "))
 }
 
 // titleFromSlug turns a slug segment into a display title, matching the
