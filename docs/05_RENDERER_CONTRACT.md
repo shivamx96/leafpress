@@ -11,7 +11,8 @@ code; the transport is the only difference.
 {
   "garden": {
     "slug": "hosted-garden",
-    "baseUrl": "/hosted-fallback"
+    "baseUrl": "/hosted-fallback",
+    "showTagsInNav": true
   },
   "config": {
     "title": "My Garden",
@@ -35,6 +36,10 @@ code; the transport is the only difference.
 - `garden.slug` remains required because hosted-garden identity is not a
   `leafpress.json` concern. Existing `garden.title`, `baseUrl`, `sort`, and
   `theme` inputs remain supported when `config` is absent.
+- `garden.showTagsInNav` is a hosted fallback convenience when `config` is
+  absent. It appends a native Tags item only when tagged pages generate a Tags
+  index. Canonical `config.nav` remains authoritative; CLI projects add
+  `/tags/` to that list explicitly.
 - When `config` is present, its render-relevant fields take precedence. If its
   `baseURL` is empty, `garden.baseUrl` may still provide the hosted path prefix.
 - `styleCSS` is the in-memory equivalent of a project's `style.css` and is
