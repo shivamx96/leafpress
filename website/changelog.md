@@ -4,6 +4,12 @@ date: 2025-01-06
 toc: false
 ---
 
+## v1.0.0-beta.10
+*July 31, 2026*
+
+- Hosted `leafpress-render` consumers can opt the generated Tags index into fallback navigation with `garden.showTagsInNav`; the native `/tags/` item is added only when tag artifacts exist
+- Canonical `config.nav` remains authoritative, so CLI projects continue to manage Tags navigation explicitly alongside their other navigation items
+
 ## v1.0.0-beta.9
 *July 17, 2026*
 
