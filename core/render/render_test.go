@@ -806,6 +806,50 @@ func TestNavigationContainsRootNotesAndSectionsOnly(t *testing.T) {
 	}
 }
 
+func TestHostedTagsNavigationIsOptInAndRequiresTags(t *testing.T) {
+	input := &Input{
+		Garden: Garden{
+			Slug:          "garden",
+			Title:         "Garden",
+			ShowTagsInNav: true,
+		},
+		Pages: []InputPage{{
+			Slug:     "tagged",
+			Title:    "Tagged",
+			Markdown: "Body",
+			Tags:     []string{"ideas"},
+		}},
+	}
+
+	out, err := Render(input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	html := pageHTML(t, out, "tagged")
+	if !strings.Contains(html, `class="lp-nav-link" href="/tags/">Tags</a>`) {
+		t.Error("enabled tags navigation should link the generated tags index")
+	}
+
+	input.Garden.ShowTagsInNav = false
+	out, err = Render(input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(pageHTML(t, out, "tagged"), `href="/tags/"`) {
+		t.Error("tags navigation should be opt-in")
+	}
+
+	input.Garden.ShowTagsInNav = true
+	input.Pages[0].Tags = nil
+	out, err = Render(input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(pageHTML(t, out, "tagged"), `href="/tags/"`) {
+		t.Error("tags navigation should stay absent when no tag index exists")
+	}
+}
+
 func TestPageFrontmatterConfigMatchesNativeRendering(t *testing.T) {
 	showTOC := false
 	readingTime := 7

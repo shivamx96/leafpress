@@ -40,11 +40,12 @@ type Input struct {
 
 // Garden describes the garden being rendered.
 type Garden struct {
-	Slug    string          `json:"slug"`
-	Title   string          `json:"title"`   // optional; defaults to Slug
-	BaseURL string          `json:"baseUrl"` // optional URL path prefix, e.g. "/g/shivam"
-	Sort    string          `json:"sort"`    // optional: date (default) | title | growth
-	Theme   json.RawMessage `json:"theme"`   // optional; maps onto config.Theme
+	Slug          string          `json:"slug"`
+	Title         string          `json:"title"`   // optional; defaults to Slug
+	BaseURL       string          `json:"baseUrl"` // optional URL path prefix, e.g. "/g/shivam"
+	Sort          string          `json:"sort"`    // optional: date (default) | title | growth
+	ShowTagsInNav bool            `json:"showTagsInNav"`
+	Theme         json.RawMessage `json:"theme"` // optional; maps onto config.Theme
 }
 
 // InputPage is a single published page. Slugs may carry path segments
@@ -250,6 +251,9 @@ func Render(in *Input) (*Output, error) {
 	homeEntries := rootEntries(children, indexBySection)
 	if !canonicalConfig {
 		site.Nav = navItems(homeEntries)
+		if in.Garden.ShowTagsInNav && pagesHaveTags(pages) {
+			site.Nav = append(site.Nav, config.NavItem{Label: "Tags", Path: "/tags/"})
+		}
 	}
 
 	outPages := make([]OutputPage, 0, len(pages))
@@ -432,6 +436,15 @@ func navItems(entries []*content.Page) []config.NavItem {
 		nav = append(nav, config.NavItem{Label: entry.Title, Path: entry.Permalink})
 	}
 	return nav
+}
+
+func pagesHaveTags(pages []*content.Page) bool {
+	for _, page := range pages {
+		if len(page.Tags) > 0 {
+			return true
+		}
+	}
+	return false
 }
 
 // renderTagPages renders the tags index and one page per tag, matching the
