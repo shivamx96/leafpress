@@ -142,8 +142,8 @@ var (
 	// unsafeSlugChars are characters that would break hrefs/attributes when a
 	// slug is interpolated into template output.
 	unsafeSlugChars = "\"'<>\\ \t\r\n"
-	// tagRegex restricts tags to letters/digits/underscore/hyphen (leafpad's
-	// tag shape); tags are interpolated into hrefs and text unescaped.
+	// tagRegex restricts tags to letters/digits/underscore/hyphen (the
+	// hosted tag shape); tags are interpolated into hrefs and text unescaped.
 	tagRegex = regexp.MustCompile(`^[\p{L}\p{N}_-]+$`)
 )
 

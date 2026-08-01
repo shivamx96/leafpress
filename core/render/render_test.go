@@ -697,7 +697,7 @@ func TestDeterministicOutputWithHostileContent(t *testing.T) {
 	}
 }
 
-// leafpad markdown links by display title ([[Beta Note]]), while public
+// Hosted authors link by display title ([[Beta Note]]), while public
 // slugs are hyphenated (beta-note). Titles register as resolver aliases.
 func TestWikilinkResolvesByPageTitle(t *testing.T) {
 	out := runJSON(t, `{
