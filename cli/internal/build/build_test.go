@@ -30,22 +30,27 @@ func TestBuildWritesDefaultFaviconsFromRegistry(t *testing.T) {
 		t.Fatalf("Build: %v", err)
 	}
 
-	for _, logicalPath := range []string{
-		assets.BuiltinFaviconICO,
-		assets.BuiltinFaviconSVG,
-		assets.BuiltinFaviconPNG,
+	// Literal public paths, independent of registry field plumbing: the base
+	// template links {BasePath}/favicon.*, so these exact root locations are
+	// the historical URL contract.
+	for name, logicalPath := range map[string]string{
+		"favicon.ico":       assets.BuiltinFaviconICO,
+		"favicon.svg":       assets.BuiltinFaviconSVG,
+		"favicon-96x96.png": assets.BuiltinFaviconPNG,
 	} {
 		builtin, ok := assets.BuiltinByLogicalPath(logicalPath)
 		if !ok {
 			t.Fatalf("registry missing %s", logicalPath)
 		}
-		name := builtin.Asset.EffectivePublicPath()
 		got, err := os.ReadFile(filepath.Join(dir, "_site", name))
 		if err != nil {
-			t.Fatalf("favicon %s not written: %v", name, err)
+			t.Fatalf("favicon %s not written at site root: %v", name, err)
 		}
-		if !bytes.Equal(got, builtin.Content) {
+		if !bytes.Equal(got, builtin.Content()) {
 			t.Errorf("favicon %s does not match registry content", name)
+		}
+		if _, err := os.Stat(filepath.Join(dir, "_site", "static", "leafpress", name)); !os.IsNotExist(err) {
+			t.Errorf("favicon %s must not be materialized under static/leafpress", name)
 		}
 	}
 }
@@ -76,7 +81,7 @@ func TestBuildPrefersUserFavicons(t *testing.T) {
 		t.Fatal(err)
 	}
 	builtin, _ := assets.BuiltinByLogicalPath(assets.BuiltinFaviconSVG)
-	if !bytes.Equal(svg, builtin.Content) {
+	if !bytes.Equal(svg, builtin.Content()) {
 		t.Error("favicon.svg does not match registry content")
 	}
 }

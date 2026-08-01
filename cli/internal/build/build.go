@@ -1083,33 +1083,30 @@ func (b *Builder) copyStatic() error {
 }
 
 // copyFavicons copies favicons from the user directory, falling back to the
-// built-in asset registry's defaults. Favicons are served at the site root
-// (their registry public path), not under static/.
+// built-in asset registry's defaults. Selection is registry-driven
+// (assets.RootBuiltins), so adding a root built-in cannot silently split
+// CLI materialization from the renderer's manifest.
 func (b *Builder) copyFavicons() error {
-	builtinFavicons := []string{
-		assets.BuiltinFaviconICO,
-		assets.BuiltinFaviconSVG,
-		assets.BuiltinFaviconPNG,
-	}
-
-	for _, logicalPath := range builtinFavicons {
-		builtin, ok := assets.BuiltinByLogicalPath(logicalPath)
-		if !ok {
-			return fmt.Errorf("built-in asset %s missing from registry", logicalPath)
-		}
-		name := strings.TrimPrefix(builtin.Asset.EffectivePublicPath(), "/")
+	for _, builtin := range assets.RootBuiltins() {
+		name := builtin.Asset.EffectiveOutputPath()
 		userPath := filepath.Join(b.rootDir, name)
 		outPath := filepath.Join(b.outputDir, name)
 
-		// Check if user has provided their own favicon
-		if data, err := os.ReadFile(userPath); err == nil {
+		data, err := os.ReadFile(userPath)
+		switch {
+		case err == nil:
+			// User override wins.
 			if err := os.WriteFile(outPath, data, 0644); err != nil {
 				return fmt.Errorf("failed to write %s: %w", name, err)
 			}
-		} else {
-			if err := os.WriteFile(outPath, builtin.Content, 0644); err != nil {
+		case os.IsNotExist(err):
+			if err := os.WriteFile(outPath, builtin.Content(), 0644); err != nil {
 				return fmt.Errorf("failed to write default %s: %w", name, err)
 			}
+		default:
+			// A user override that exists but cannot be read must not be
+			// silently replaced by the built-in.
+			return fmt.Errorf("failed to read %s override: %w", name, err)
 		}
 	}
 

@@ -3,42 +3,94 @@ package assets
 import "testing"
 
 // pinnedBuiltins locks the stable identifiers of the built-in set. If this
-// test fails, a built-in changed: update the pin AND bump RegistryVersion so
-// hosted consumers re-materialize.
+// test fails, a built-in changed — update the pin deliberately. RegistryID
+// is content-derived, so it tracks any such change automatically.
 var pinnedBuiltins = map[string]struct {
-	sha256     string
-	publicPath string
+	sha256      string
+	outputPath  string
+	contentType string
 }{
 	BuiltinFaviconICO: {
-		sha256:     "35f29c9301797bf2ce58c8a79fde16c92ec7a4a16fac131cea9b9d230b809370",
-		publicPath: "/favicon.ico",
+		sha256:      "35f29c9301797bf2ce58c8a79fde16c92ec7a4a16fac131cea9b9d230b809370",
+		outputPath:  "favicon.ico",
+		contentType: "image/x-icon",
 	},
 	BuiltinFaviconSVG: {
-		sha256:     "796de5b284c308091c61694d4279e5f2f8a76bbdc391e9eb3533087087a85dec",
-		publicPath: "/favicon.svg",
+		sha256:      "796de5b284c308091c61694d4279e5f2f8a76bbdc391e9eb3533087087a85dec",
+		outputPath:  "favicon.svg",
+		contentType: "image/svg+xml",
 	},
 	BuiltinFaviconPNG: {
-		sha256:     "74ff24e72b334920a961bb8983935a37126e559fdc1d5d7a10b40afb508eed25",
-		publicPath: "/favicon-96x96.png",
+		sha256:      "74ff24e72b334920a961bb8983935a37126e559fdc1d5d7a10b40afb508eed25",
+		outputPath:  "favicon-96x96.png",
+		contentType: "image/png",
 	},
 }
 
 func TestBuiltinRegistryPinned(t *testing.T) {
 	all := Builtins()
 	if len(all) != len(pinnedBuiltins) {
-		t.Fatalf("registry has %d builtins, pin covers %d — update pins and bump RegistryVersion", len(all), len(pinnedBuiltins))
+		t.Fatalf("registry has %d builtins, pin covers %d — update pins deliberately", len(all), len(pinnedBuiltins))
 	}
 	for _, b := range all {
 		pin, ok := pinnedBuiltins[b.Asset.LogicalPath]
 		if !ok {
-			t.Errorf("unpinned builtin %q — add a pin and bump RegistryVersion", b.Asset.LogicalPath)
+			t.Errorf("unpinned builtin %q — add a pin deliberately", b.Asset.LogicalPath)
 			continue
 		}
 		if b.Asset.SHA256 != pin.sha256 {
-			t.Errorf("%s: sha256 = %s, pinned %s — content changed, bump RegistryVersion", b.Asset.LogicalPath, b.Asset.SHA256, pin.sha256)
+			t.Errorf("%s: sha256 = %s, pinned %s — content changed", b.Asset.LogicalPath, b.Asset.SHA256, pin.sha256)
 		}
-		if b.Asset.PublicPath != pin.publicPath {
-			t.Errorf("%s: publicPath = %q, pinned %q", b.Asset.LogicalPath, b.Asset.PublicPath, pin.publicPath)
+		if b.Asset.OutputPath != pin.outputPath {
+			t.Errorf("%s: outputPath = %q, pinned %q", b.Asset.LogicalPath, b.Asset.OutputPath, pin.outputPath)
+		}
+		if pin.contentType != "" && b.Asset.ContentType != pin.contentType {
+			t.Errorf("%s: contentType = %q, pinned %q", b.Asset.LogicalPath, b.Asset.ContentType, pin.contentType)
+		}
+	}
+}
+
+func TestValidateUserAssetPolicy(t *testing.T) {
+	valid := Asset{
+		LogicalPath: "static/fonts/my.woff2",
+		ContentType: "font/woff2",
+		SHA256:      Sum([]byte("x")),
+		Size:        1,
+	}
+	if err := ValidateUserAsset(valid); err != nil {
+		t.Fatalf("plain user asset rejected: %v", err)
+	}
+
+	override := valid
+	override.LogicalPath = "static/my-favicon.ico"
+	override.ContentType = "image/x-icon"
+	override.OutputPath = "favicon.ico"
+	if err := ValidateUserAsset(override); err != nil {
+		t.Fatalf("favicon override rejected: %v", err)
+	}
+
+	reserved := valid
+	reserved.LogicalPath = BuiltinPrefix + "evil.woff2"
+	if err := ValidateUserAsset(reserved); err == nil {
+		t.Error("reserved-namespace logical path accepted")
+	}
+
+	arbitrary := valid
+	arbitrary.OutputPath = "style.css"
+	if err := ValidateUserAsset(arbitrary); err == nil {
+		t.Error("non-override outputPath accepted")
+	}
+}
+
+func TestRootBuiltinsAreTheOverridableSet(t *testing.T) {
+	roots := RootBuiltins()
+	overridable := OverridableOutputPaths()
+	if len(roots) != len(overridable) || len(roots) == 0 {
+		t.Fatalf("RootBuiltins (%d) and OverridableOutputPaths (%d) must describe the same non-empty set", len(roots), len(overridable))
+	}
+	for _, b := range roots {
+		if !overridable[b.Asset.OutputPath] {
+			t.Errorf("%s missing from overridable set", b.Asset.OutputPath)
 		}
 	}
 }
@@ -51,15 +103,31 @@ func TestBuiltinRegistryConsistency(t *testing.T) {
 		if !IsBuiltinPath(b.Asset.LogicalPath) {
 			t.Errorf("%s: not under %s", b.Asset.LogicalPath, BuiltinPrefix)
 		}
-		if got := Sum(b.Content); got != b.Asset.SHA256 {
+		content := b.Content()
+		if got := Sum(content); got != b.Asset.SHA256 {
 			t.Errorf("%s: content hash %s does not match asset hash %s", b.Asset.LogicalPath, got, b.Asset.SHA256)
 		}
-		if int64(len(b.Content)) != b.Asset.Size {
-			t.Errorf("%s: content length %d does not match size %d", b.Asset.LogicalPath, len(b.Content), b.Asset.Size)
+		if int64(len(content)) != b.Asset.Size {
+			t.Errorf("%s: content length %d does not match size %d", b.Asset.LogicalPath, len(content), b.Asset.Size)
 		}
-		if len(b.Content) == 0 {
+		if len(content) == 0 {
 			t.Errorf("%s: empty content", b.Asset.LogicalPath)
 		}
+	}
+}
+
+func TestBuiltinContentIsDefensiveCopy(t *testing.T) {
+	b, ok := BuiltinByLogicalPath(BuiltinFaviconICO)
+	if !ok {
+		t.Fatal("favicon.ico builtin not found")
+	}
+	first := b.Content()
+	for i := range first {
+		first[i] = 0xFF
+	}
+	second := b.Content()
+	if got := Sum(second); got != b.Asset.SHA256 {
+		t.Fatal("mutating a returned Content() slice corrupted the registry")
 	}
 }
 
@@ -76,8 +144,17 @@ func TestBuiltinByLogicalPath(t *testing.T) {
 	}
 }
 
-func TestRegistryVersionPositive(t *testing.T) {
-	if RegistryVersion < 1 {
-		t.Fatalf("RegistryVersion = %d", RegistryVersion)
+func TestRegistryIDDerivedFromManifest(t *testing.T) {
+	id := RegistryID()
+	if len(id) != 64 {
+		t.Fatalf("RegistryID %q is not a sha256 hex digest", id)
+	}
+	if id != RegistryID() {
+		t.Error("RegistryID not stable across calls")
+	}
+	// Derived from the canonical manifest: any change to a built-in changes
+	// the manifest and therefore the ID — no version integer to forget.
+	if id == Sum([]byte("[]")) {
+		t.Error("RegistryID suspiciously matches an empty manifest")
 	}
 }
