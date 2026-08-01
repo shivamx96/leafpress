@@ -4,11 +4,18 @@ date: 2025-01-06
 toc: false
 ---
 
-## Unreleased
+## v1.0.0-beta.11
+*August 1, 2026*
 
-- **Fonts are self-hosted by default.** The default families (Crimson Pro, Inter, JetBrains Mono) now ship bundled with Leafpress and are served from your own site — a default build makes no request to Google Fonts. Other family names produce a build warning and fall back to system fonts; set the deprecated `theme.remoteFonts: true` to temporarily keep the old Google Fonts behavior while you migrate. The bundled set covers latin and latin-ext ranges.
-- `@font-face` rules moved from every page head into the generated `style.css`.
+- **Fonts are self-hosted by default.** The default families (Crimson Pro, Inter, JetBrains Mono) now ship bundled with Leafpress and are served from your own site — a default build makes no request to Google Fonts. Other family names produce a build warning and fall back to system fonts; set the deprecated `theme.remoteFonts: true` to temporarily keep the old Google Fonts behavior while you migrate. The bundled set covers latin and latin-ext ranges, and each family's OFL license text ships alongside the font files.
+- **Custom local fonts.** Declare your own font files under `static/fonts/` with `theme.fonts` (family, file, weight, style, display); Leafpress validates the declaration, verifies the file exists, and generates portable `@font-face` CSS. Declared families never load remotely.
+- `@font-face` rules moved from every page head into the generated `style.css` (cached once, smaller pages).
 - **Breaking:** `static/leafpress/` is now reserved for Leafpress built-in assets; builds fail with a clear error if user files are placed there. Move them anywhere else under `static/`.
+- **Portable asset contract for hosted consumers.** `leafpress-render` output now carries `assetManifest` (logical path, MIME type, SHA-256, size, site-relative output path for every asset the site requires) and a content-derived `assetRegistryId`; callers declare their own assets — custom fonts, favicon overrides — through the new `assets` input, and can request built-in bytes as base64 artifacts with `emitAssets`. Every artifact now carries an explicit `encoding` field. Synchronization is hash-driven per manifest entry; see `docs/05_RENDERER_CONTRACT.md`.
+- Declared asset paths (manifests, `theme.fonts`) are validated against one canonical, portable representation on both interfaces: no traversal, URL syntax, CSS-hostile characters, or Windows-reserved names. Bulk `static/` copying is unaffected.
+- Fixed `theme.background` being silently dropped when Leafpress writes `leafpress.json`.
+- Title-form wikilinks (`[[Note B]]` for slug `note-b`) now resolve in CLI builds — links, backlinks, and graph edges — matching hosted rendering; alias conflicts resolve deterministically by slug.
+- A cross-interface parity suite now proves CLI exports and hosted rendering produce equivalent paths, artifacts, stylesheets, and assets.
 
 ## v1.0.0-beta.10
 *July 31, 2026*
