@@ -158,7 +158,7 @@ graph TD
 ```
 ````
 
-Supports all Mermaid diagram types: flowcharts, sequence diagrams, Gantt charts, class diagrams, and more.
+Supports all Mermaid diagram types: flowcharts, sequence diagrams, Gantt charts, class diagrams, and more. The Mermaid runtime is **self-hosted** under `static/leafpress/mermaid/` (no CDN) and is only written into the site when a page actually contains a diagram.
 
 ### Code Blocks
 

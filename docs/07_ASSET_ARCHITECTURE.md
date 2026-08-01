@@ -125,7 +125,8 @@ never carries bytes.
 ### 4. Built-in asset registry
 
 Leafpress owns a small set of assets it ships inside the `core` module via
-`go:embed`: default favicons and the curated font set. The registry:
+`go:embed`: default favicons, the curated font set, and content-optional
+scripts such as Mermaid (`static/leafpress/mermaid/…`). The registry:
 
 - assigns each built-in a **stable logical path** under `static/leafpress/`
   (e.g. `static/leafpress/fonts/inter-normal-latin.woff2`), a content type,
@@ -161,10 +162,11 @@ Duplicate logical or output paths among caller entries are an input error.
 
 **Combination.** The output manifest is:
 
-1. the **referenced built-ins** — favicons (linked from every page head)
-   plus the bundled font faces **and OFL license texts** of configured
-   families (license entries follow the same materialization and
-   `emitAssets` rules as the faces); then
+1. the **referenced built-ins** — favicons (linked from every page head),
+   the bundled font faces **and OFL license texts** of configured families
+   (license entries follow the same materialization and `emitAssets` rules
+   as the faces), and **content-optional** built-ins only when used (Mermaid
+   script + MIT license when any page contains a diagram); then
 2. **caller entries merged over them**: a caller entry whose effective output
    path collides with a built-in's *replaces* that built-in entry (this is the
    favicon-override rule, identical in spirit to the CLI preferring a user

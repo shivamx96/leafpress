@@ -393,7 +393,7 @@ func Render(in *Input) (*Output, error) {
 		}
 	}
 
-	manifest, assetWarnings, err := buildAssetManifest(in, cfg)
+	manifest, assetWarnings, err := buildAssetManifest(in, cfg, pages)
 	if err != nil {
 		return nil, err
 	}
@@ -442,14 +442,17 @@ func callerAssets(in *Input) (assets.Manifest, error) {
 // built-ins with caller entries merged over them (a caller entry replaces a
 // built-in on effective-output-path collision — the favicon-override rule),
 // plus warnings for custom font files the configuration references but the
-// caller never declared.
-func buildAssetManifest(in *Input, cfg *config.Config) (assets.Manifest, []string, error) {
+// caller never declared. Mermaid is included only when content uses diagrams.
+func buildAssetManifest(in *Input, cfg *config.Config, pages []*content.Page) (assets.Manifest, []string, error) {
 	caller, err := callerAssets(in)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	required := assets.RequiredBuiltins(cfg.Theme.FontHeading, cfg.Theme.FontBody, cfg.Theme.FontMono)
+	required := assets.RequiredBuiltinsFor(
+		content.UsesMermaid(pages),
+		cfg.Theme.FontHeading, cfg.Theme.FontBody, cfg.Theme.FontMono,
+	)
 	builtinAssets := make([]assets.Asset, 0, len(required))
 	for _, b := range required {
 		builtinAssets = append(builtinAssets, b.Asset)

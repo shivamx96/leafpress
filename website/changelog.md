@@ -4,6 +4,12 @@ date: 2025-01-06
 toc: false
 ---
 
+## Unreleased
+
+- **Mermaid is self-hosted.** Diagram pages load a pinned `mermaid.min.js` from `static/leafpress/mermaid/` instead of jsDelivr; the script is only materialized when a page contains a diagram. MIT license text ships alongside the file.
+- Link previews keep working when `search` is false: `search-index.json` is always emitted (the search flag only controls the search UI).
+- Documentation fixes: `style.css` is appended (not a full replace); bare video/audio paths; full callout type/alias list.
+
 ## v1.0.0-beta.11
 *August 1, 2026*
 

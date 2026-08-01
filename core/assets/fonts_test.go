@@ -77,6 +77,30 @@ func TestFontFaceCSS(t *testing.T) {
 	}
 }
 
+func TestRequiredBuiltinsOmitsMermaidByDefault(t *testing.T) {
+	for _, b := range RequiredBuiltins("Inter") {
+		if isContentOptional(b.Asset.LogicalPath) {
+			t.Errorf("RequiredBuiltins must omit content-optional %s", b.Asset.LogicalPath)
+		}
+	}
+	with := RequiredBuiltinsFor(true, "Inter")
+	var sawJS, sawLic bool
+	for _, b := range with {
+		if b.Asset.LogicalPath == BuiltinMermaidJS {
+			sawJS = true
+		}
+		if b.Asset.LogicalPath == BuiltinMermaidLicense {
+			sawLic = true
+		}
+	}
+	if !sawJS || !sawLic {
+		t.Fatalf("RequiredBuiltinsFor(true) missing mermaid assets (js=%v license=%v)", sawJS, sawLic)
+	}
+	if MermaidVersion == "" {
+		t.Error("MermaidVersion must be pinned for maintenance")
+	}
+}
+
 func TestFontFaceCSSDedup(t *testing.T) {
 	css := FontFaceCSS("Inter", "Inter", "JetBrains Mono")
 	if got := strings.Count(css, "@font-face"); got != 8 {

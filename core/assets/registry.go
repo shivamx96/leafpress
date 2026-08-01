@@ -11,9 +11,15 @@ import (
 // Logical paths of the built-in assets Leafpress ships. They are stable
 // identifiers: consumers may persist them.
 const (
-	BuiltinFaviconICO = BuiltinPrefix + "favicon.ico"
-	BuiltinFaviconSVG = BuiltinPrefix + "favicon.svg"
-	BuiltinFaviconPNG = BuiltinPrefix + "favicon-96x96.png"
+	BuiltinFaviconICO     = BuiltinPrefix + "favicon.ico"
+	BuiltinFaviconSVG     = BuiltinPrefix + "favicon.svg"
+	BuiltinFaviconPNG     = BuiltinPrefix + "favicon-96x96.png"
+	BuiltinMermaidJS      = BuiltinPrefix + "mermaid/mermaid.min.js"
+	BuiltinMermaidLicense = BuiltinPrefix + "mermaid/LICENSE.txt"
+
+	// MermaidVersion is the npm version of the vendored mermaid.min.js.
+	// Bump this together with the file under builtin/mermaid/ (see docs/MAINTENANCE.md).
+	MermaidVersion = "11.4.1"
 )
 
 //go:embed builtin/favicon.ico
@@ -27,6 +33,12 @@ var faviconPNG []byte
 
 //go:embed builtin/fonts/*.woff2 builtin/fonts/OFL-*.txt
 var builtinFontsFS embed.FS
+
+//go:embed builtin/mermaid/mermaid.min.js
+var mermaidJS []byte
+
+//go:embed builtin/mermaid/LICENSE.txt
+var mermaidLicense []byte
 
 // Builtin is a Leafpress-owned asset together with its embedded content.
 type Builtin struct {
@@ -59,9 +71,11 @@ func mustBuiltins() []Builtin {
 		{BuiltinFaviconICO, "image/x-icon", "favicon.ico", faviconICO},
 		{BuiltinFaviconSVG, "image/svg+xml", "favicon.svg", faviconSVG},
 		{BuiltinFaviconPNG, "image/png", "favicon-96x96.png", faviconPNG},
+		{BuiltinMermaidJS, "text/javascript; charset=utf-8", "", mermaidJS},
+		{BuiltinMermaidLicense, "text/plain; charset=utf-8", "", mermaidLicense},
 	}
 
-	out := make([]Builtin, 0, len(entries)+len(builtinFontFaces))
+	out := make([]Builtin, 0, len(entries)+len(builtinFontFaces)+len(builtinFontLicenses))
 	for _, e := range entries {
 		out = append(out, Builtin{
 			Asset: Asset{
@@ -113,6 +127,18 @@ func mustBuiltins() []Builtin {
 		})
 	}
 	return out
+}
+
+// isContentOptional reports built-ins that are only required when content
+// actually uses them (today: Mermaid diagrams). Theme selection still
+// controls fonts; these are independent of theme.
+func isContentOptional(logicalPath string) bool {
+	switch logicalPath {
+	case BuiltinMermaidJS, BuiltinMermaidLicense:
+		return true
+	default:
+		return false
+	}
 }
 
 func mustBuiltinManifest(list []Builtin) Manifest {
