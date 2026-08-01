@@ -1771,8 +1771,9 @@ fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR"
 
-# Test 80: Search index is NOT generated when disabled
-test_case "search-index.json is NOT generated when search: false"
+# Test 80: Search index is still generated when search UI is disabled
+# (link previews share the index; search:false only hides the UI)
+test_case "search-index.json is generated when search: false (for link previews)"
 TESTDIR=$(mktemp -d)
 cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
@@ -1782,11 +1783,26 @@ cat > leafpress.json << 'EOF'
   "search": false
 }
 EOF
+cat > note.md << 'EOF'
+---
+title: Note
+---
+See [[other]] for more.
+EOF
+cat > other.md << 'EOF'
+---
+title: Other
+---
+Body
+EOF
 "$LEAFPRESS" build > /dev/null 2>&1
-if [ ! -f "_site/search-index.json" ]; then
+if [ -f "_site/search-index.json" ] && \
+   grep -q 'Note' _site/search-index.json && \
+   ! grep -q 'lp-search-toggle' _site/note/index.html && \
+   grep -q 'search-index.json' _site/note/index.html; then
     pass
 else
-    fail "search-index.json should not be generated when search: false"
+    fail "search-index.json must still be emitted for link previews when search UI is off"
 fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR"
@@ -3716,8 +3732,8 @@ fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR"
 
-# Test 168: Mermaid JS loader is present
-test_case "Mermaid JS loader script is included"
+# Test 168: Mermaid JS loader is self-hosted (no CDN)
+test_case "Mermaid JS loader is self-hosted under static/leafpress"
 TESTDIR=$(mktemp -d)
 cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
@@ -3732,10 +3748,12 @@ graph TD
 ```
 MEOF
 "$LEAFPRESS" build > /dev/null 2>&1
-if grep -q 'mermaid.min.js' _site/test/index.html; then
+if grep -q "static/leafpress/mermaid/mermaid.min.js" _site/test/index.html && \
+   [ -f "_site/static/leafpress/mermaid/mermaid.min.js" ] && \
+   ! grep -q 'cdn.jsdelivr' _site/test/index.html; then
     pass
 else
-    fail "Mermaid JS loader should be in page"
+    fail "Mermaid should load from self-hosted static/leafpress path, not a CDN"
 fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR"
