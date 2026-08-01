@@ -159,7 +159,7 @@ Solid colors or gradients:
 
 ## Custom CSS
 
-For deeper customization, create `style.css` in your site root. It completely replaces the default stylesheet.
+For deeper customization, create `style.css` in your site root. Leafpress **appends** it after the default stylesheet (and any self-hosted `@font-face` rules), so you can override variables and classes without rewriting the base theme.
 
 ### Starting Point
 

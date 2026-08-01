@@ -84,7 +84,26 @@ Obsidian-compatible admonitions:
 > Warning with a custom title.
 ```
 
-Available types: `note`, `tip`, `warning`, `danger`, `info`, `example`, `quote`, `question`, `bug`, `success`, `failure`, `abstract`, `todo`
+Available types (with common Obsidian aliases):
+
+| Type | Aliases |
+|------|---------|
+| `note` | |
+| `info` | |
+| `tip` | `hint` |
+| `important` | |
+| `warning` | `caution` |
+| `danger` | `error` |
+| `success` | `check`, `done` |
+| `failure` | `fail` |
+| `question` | `faq` |
+| `abstract` | `summary`, `tldr` |
+| `example` | |
+| `quote` | |
+| `todo` | |
+| `bug` | |
+
+Unknown types still render with a default icon and a title-cased label.
 
 ### Images
 
@@ -111,10 +130,10 @@ Embed local media with Obsidian syntax:
 ```markdown
 ![[demo.mp4]]
 ![[recording.mp3]]
-![[static/videos/intro.webm]]
+![[static/video/intro.webm]]
 ```
 
-Supported formats: `.mp4`, `.webm`, `.ogv`, `.mov` (video) and `.mp3`, `.wav`, `.ogg`, `.m4a`, `.flac` (audio). Bare filenames resolve to `static/images/`, paths with `/` are used as-is.
+Supported formats: `.mp4`, `.webm`, `.ogv`, `.mov` (video) and `.mp3`, `.wav`, `.ogg`, `.m4a`, `.flac` (audio). Bare filenames resolve by media type — video under `static/video/`, audio under `static/audio/` (and images under `static/images/`). Paths that already contain a `/` are used as-is (with a leading slash).
 
 ### YouTube Embeds
 
