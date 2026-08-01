@@ -289,14 +289,13 @@ func (b *Builder) Build() (*Stats, error) {
 	}
 	b.logTiming("fonts", time.Since(t0))
 
-	// Generate graph.json and search-index.json if enabled
-	if b.cfg.Graph || b.cfg.Search {
-		t0 = time.Now()
-		if err := b.generateJSONFiles(pages, b.cfg.Graph, b.cfg.Search); err != nil {
-			return nil, fmt.Errorf("failed to generate JSON files: %w", err)
-		}
-		b.logTiming("json", time.Since(t0))
+	// graph.json is optional; search-index.json is always emitted so link
+	// previews work when the search UI is disabled (cfg.Search only gates UI).
+	t0 = time.Now()
+	if err := b.generateJSONFiles(pages, b.cfg.Graph, true); err != nil {
+		return nil, fmt.Errorf("failed to generate JSON files: %w", err)
 	}
+	b.logTiming("json", time.Since(t0))
 
 	// Generate robots.txt
 	t0 = time.Now()
@@ -602,14 +601,12 @@ func (b *Builder) rebuildMarkdownFile(relPath string, changeType ChangeType) (*I
 		b.logTiming("tags", time.Since(t0))
 	}
 
-	// Regenerate JSON files if enabled
-	if b.cfg.Graph || b.cfg.Search {
-		t0 = time.Now()
-		if err := b.generateJSONFiles(b.pages, b.cfg.Graph, b.cfg.Search); err != nil {
-			return nil, err
-		}
-		b.logTiming("json", time.Since(t0))
+	// Regenerate JSON files (search-index always; graph when enabled)
+	t0 = time.Now()
+	if err := b.generateJSONFiles(b.pages, b.cfg.Graph, true); err != nil {
+		return nil, err
 	}
+	b.logTiming("json", time.Since(t0))
 
 	return stats, nil
 }
@@ -689,11 +686,9 @@ func (b *Builder) handleDeletedFile(relPath string) (*IncrementalStats, error) {
 		}
 	}
 
-	// Regenerate JSON files
-	if b.cfg.Graph || b.cfg.Search {
-		if err := b.generateJSONFiles(b.pages, b.cfg.Graph, b.cfg.Search); err != nil {
-			return nil, err
-		}
+	// Regenerate JSON files (search-index always; graph when enabled)
+	if err := b.generateJSONFiles(b.pages, b.cfg.Graph, true); err != nil {
+		return nil, err
 	}
 
 	return stats, nil
@@ -1220,7 +1215,9 @@ func (b *Builder) generateRSS(pages []*content.Page, siteData templates.SiteData
 	return os.WriteFile(outPath, []byte(sitegen.RSS(pages, siteData, b.cfg.BaseURL, time.Time{})), 0644)
 }
 
-// generateJSONFiles creates graph.json and search-index.json in a single pass
+// generateJSONFiles creates graph.json and/or search-index.json in a single pass.
+// Callers pass genSearch=true in production: the index backs both full-text
+// search and hover link previews.
 func (b *Builder) generateJSONFiles(pages []*content.Page, genGraph, genSearch bool) error {
 	graphJSON, searchJSON, err := sitegen.GraphSearch(
 		pages, b.linkResolver, b.siteData.BasePath, genGraph, genSearch,

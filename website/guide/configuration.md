@@ -120,7 +120,7 @@ Gradients work too:
 |--------|---------|-------------|
 | `graph` | `true` | Show interactive graph visualization |
 | `toc` | `true` | Show table of contents on pages |
-| `search` | `true` | Enable full-text search |
+| `search` | `true` | Enable the full-text search UI (⌘K). The page index used by search and link previews is always generated |
 | `wikilinks` | `true` | Enable wiki-link processing |
 | `backlinks` | `true` | Show backlinks section on pages |
 | `rss` | `true` | Generate RSS feed and show feed icon in nav |

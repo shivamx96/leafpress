@@ -310,9 +310,19 @@ func TestCanonicalConfigDefaultsAndFeatureDisables(t *testing.T) {
 		}
 	}
 	for _, item := range disabled.Artifacts {
-		if item.Path == "graph.json" || item.Path == "search-index.json" || item.Path == "feed.xml" {
+		if item.Path == "graph.json" || item.Path == "feed.xml" {
 			t.Errorf("disabled artifact still emitted: %s", item.Path)
 		}
+	}
+	// search-index.json is always emitted for link previews even when the
+	// search UI is off.
+	search := artifact(t, disabled, "search-index.json")
+	if !strings.Contains(search.Content, `"url": "/one/"`) ||
+		!strings.Contains(search.Content, `"title": "One"`) {
+		t.Errorf("search-index should still list pages when search UI is off: %s", search.Content)
+	}
+	if !strings.Contains(combined, "search-index.json") {
+		t.Error("link preview script should still fetch search-index.json when search UI is off")
 	}
 }
 

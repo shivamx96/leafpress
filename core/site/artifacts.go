@@ -47,6 +47,10 @@ type SearchEntry struct {
 
 // GraphSearch returns the exact JSON artifacts used by the CLI. A disabled
 // artifact is returned as an empty string.
+//
+// genSearch controls emission of search-index.json. Production call sites
+// always pass true: the file is shared by the optional search UI and by
+// hover link previews (which are not gated on cfg.Search).
 func GraphSearch(
 	pages []*content.Page,
 	resolver *content.LinkResolver,

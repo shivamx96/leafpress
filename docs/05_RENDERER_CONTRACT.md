@@ -91,7 +91,8 @@ The existing page, home, section, tag, CSS, and warning fields remain. The
 `artifacts` array adds generated files using their exact CLI filenames:
 
 - `graph.json` when graph is enabled
-- `search-index.json` when search is enabled
+- `search-index.json` always (shared by full-text search and hover link
+  previews; the `search` config flag only toggles the search UI)
 - `feed.xml` when RSS is enabled
 - `robots.txt`
 - `sitemap.xml`
