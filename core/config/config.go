@@ -94,6 +94,30 @@ func (t Theme) DeclaresFamily(family string) bool {
 	return false
 }
 
+// MarshalJSON round-trips the background field UnmarshalJSON accepts: the
+// string form when only light is set (dark keeps defaults), the object form
+// when dark is customized, omitted entirely when unset. Without this, the
+// `json:"-"` tag on Background made config.Write silently drop it.
+func (t Theme) MarshalJSON() ([]byte, error) {
+	type Alias Theme
+	aux := struct {
+		Background any `json:"background,omitempty"`
+		Alias
+	}{
+		Alias: (Alias)(t),
+	}
+	switch {
+	case t.Background.Light != "" && t.Background.Dark == "":
+		aux.Background = t.Background.Light
+	case t.Background.Light != "" || t.Background.Dark != "":
+		aux.Background = map[string]string{
+			"light": t.Background.Light,
+			"dark":  t.Background.Dark,
+		}
+	}
+	return json.Marshal(aux)
+}
+
 // UnmarshalJSON implements custom JSON unmarshaling for Theme
 func (t *Theme) UnmarshalJSON(data []byte) error {
 	// Create a temporary struct to avoid recursion
@@ -403,6 +427,16 @@ func (c *Config) Validate() error {
 	validNavActiveStyles := map[string]bool{"base": true, "box": true, "underlined": true}
 	if !validNavActiveStyles[c.Theme.NavActiveStyle] {
 		return fmt.Errorf("navActiveStyle must be 'base', 'box', or 'underlined', got '%s'", c.Theme.NavActiveStyle)
+	}
+
+	// Validate theme font family names. They are interpolated into the
+	// inline <style> block and the remote font URL, so both the CLI and the
+	// renderer must agree on the safe charset. Empty values are allowed
+	// here because Parse fills defaults before validating.
+	for _, font := range []string{c.Theme.FontHeading, c.Theme.FontBody, c.Theme.FontMono} {
+		if font != "" && !fontFamilyRegex.MatchString(font) {
+			return fmt.Errorf("theme font %q may only contain letters, digits, spaces, hyphens, and underscores", font)
+		}
 	}
 
 	// Validate custom font declarations

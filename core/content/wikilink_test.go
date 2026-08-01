@@ -194,3 +194,46 @@ func slugs(pages []*Page) []string {
 	}
 	return s
 }
+
+func TestResolveByPageTitleAlias(t *testing.T) {
+	pages := []*Page{
+		{Slug: "essays/note-b", Title: "Note B"},
+		{Slug: "note-a", Title: "Note A"},
+	}
+	r := NewLinkResolver(pages)
+
+	result := r.Resolve("Note B")
+	if result.Page == nil || result.Page.Slug != "essays/note-b" {
+		t.Fatalf("Resolve(\"Note B\") = %+v, want essays/note-b", result)
+	}
+	// Case- and whitespace-insensitive, like the embedded renderer.
+	if got := r.Resolve("note  b"); got.Page == nil || got.Page.Slug != "essays/note-b" {
+		t.Fatalf("normalized title resolution failed: %+v", got)
+	}
+	// Slug and filename matches still win over aliases.
+	pages = append(pages, &Page{Slug: "note-b", Title: "Something Else"})
+	r = NewLinkResolver(pages)
+	if got := r.Resolve("note-b"); got.Page == nil || got.Page.Slug != "note-b" {
+		t.Fatalf("filename match should take precedence: %+v", got)
+	}
+}
+
+func TestAliasCollisionIsOrderIndependent(t *testing.T) {
+	// Two pages with the same display title: the smaller slug must win no
+	// matter which order they were registered in (CLI scan order and
+	// renderer input order can differ).
+	forward := NewLinkResolver([]*Page{
+		{Slug: "a-note", Title: "Shared Title"},
+		{Slug: "z-note", Title: "Shared Title"},
+	})
+	reverse := NewLinkResolver([]*Page{
+		{Slug: "z-note", Title: "Shared Title"},
+		{Slug: "a-note", Title: "Shared Title"},
+	})
+	for name, r := range map[string]*LinkResolver{"forward": forward, "reverse": reverse} {
+		got := r.Resolve("Shared Title")
+		if got.Page == nil || got.Page.Slug != "a-note" {
+			t.Errorf("%s order: Resolve = %+v, want a-note", name, got)
+		}
+	}
+}

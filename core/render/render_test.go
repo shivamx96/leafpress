@@ -1366,3 +1366,29 @@ func TestCallerAssetsRejectedWhenInvalid(t *testing.T) {
 		}
 	}
 }
+
+func TestWikilinkResolvesRawTitleWithEntities(t *testing.T) {
+	out := runJSON(t, `{
+	  "garden": {"slug": "g"},
+	  "pages": [
+	    {"slug": "target", "title": "Foo & Bar", "markdown": "content"},
+	    {"slug": "source", "title": "Source", "markdown": "See [[Foo & Bar]]."}
+	  ]
+	}`)
+	html := pageHTML(t, out, "source")
+	if !strings.Contains(html, `href="/target/"`) {
+		t.Errorf("raw title with & must resolve as a wikilink:\n%s", html)
+	}
+}
+
+func TestInvalidThemeFontFailsViaSharedValidation(t *testing.T) {
+	_, err := Run([]byte(`{
+	  "garden": {"slug": "g"},
+	  "config": {"theme": {"fontBody": "Evil\"; @import url(x); \""}},
+	  "pages": []
+	}`))
+	var inputErr *InputError
+	if err == nil || !errors.As(err, &inputErr) {
+		t.Fatalf("unsafe font name must fail as input error via config.Validate, got %v", err)
+	}
+}

@@ -81,6 +81,14 @@ func NewLinkResolver(pages []*Page) *LinkResolver {
 		}
 	}
 
+	// Register display titles as aliases so title-form links ([[Note B]])
+	// resolve to hyphenated slugs (note-b). The embedded renderer has always
+	// done this for hosted gardens; registering here gives the CLI the same
+	// semantics, keeping wikilinks, backlinks, and graph edges in parity.
+	for _, page := range pages {
+		resolver.AddAlias(page.Title, page)
+	}
+
 	return resolver
 }
 
@@ -123,16 +131,19 @@ func (r *LinkResolver) Resolve(target string) ResolveResult {
 
 // AddAlias registers an additional name (e.g. a page's display title) that
 // resolves to [page]. Matching is case- and interior-whitespace-insensitive.
-// Slug and filename matches take precedence; a duplicate alias keeps the
-// first registration (deterministic when callers register in page order).
+// Slug and filename matches take precedence. When two pages claim the same
+// alias, the lexicographically smaller slug wins — like nameMap's ambiguous
+// resolution — so the outcome does not depend on registration order (CLI
+// scan order vs renderer input order).
 func (r *LinkResolver) AddAlias(name string, page *Page) {
 	key := normalizeAlias(name)
 	if key == "" {
 		return
 	}
-	if _, exists := r.aliasMap[key]; !exists {
-		r.aliasMap[key] = page
+	if existing, ok := r.aliasMap[key]; ok && existing.Slug <= page.Slug {
+		return
 	}
+	r.aliasMap[key] = page
 }
 
 // BuildBacklinks populates the Backlinks field on all pages

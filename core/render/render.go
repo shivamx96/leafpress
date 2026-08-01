@@ -168,9 +168,6 @@ func inputErrorf(format string, args ...any) error {
 }
 
 var (
-	// fontNameRegex restricts font names to characters safe for direct
-	// interpolation into the inline <style> block and Google Fonts URL.
-	fontNameRegex = regexp.MustCompile(`^[A-Za-z0-9 _-]+$`)
 	// unsafeSlugChars are characters that would break hrefs/attributes when a
 	// slug is interpolated into template output.
 	unsafeSlugChars = "\"'<>\\ \t\r\n"
@@ -220,9 +217,12 @@ func Render(in *Input) (*Output, error) {
 	// Resolve wikilinks over exactly these pages; unresolved links degrade
 	// to plain text (anything unresolved is private by design).
 	resolver := content.NewLinkResolver(pages)
-	// Register each page's raw input title as an alias: authors link by
-	// display title ([[Beta Note]]), while page slugs are hyphenated
-	// (beta-note). buildPages preserves input order, so zip by index.
+	// NewLinkResolver already registered each page's stored title — which
+	// buildPages HTML-escaped at the input boundary. Authors link by the
+	// raw display title ([[Foo & Bar]], not [[Foo &amp; Bar]]), so register
+	// the raw input titles too; for titles without special characters this
+	// second registration is a no-op. buildPages preserves input order, so
+	// zip by index.
 	for i, ip := range in.Pages {
 		resolver.AddAlias(ip.Title, pages[i])
 	}
@@ -661,9 +661,6 @@ func resolveSiteInput(in *Input) (*config.Config, templates.SiteData, bool, erro
 		if err != nil {
 			return nil, templates.SiteData{}, true, inputErrorf("invalid config: %v", err)
 		}
-		if err := validateThemeFonts(cfg.Theme, "config.theme"); err != nil {
-			return nil, templates.SiteData{}, true, err
-		}
 		if cfg.BaseURL != "" {
 			parsed, err := url.Parse(cfg.BaseURL)
 			if err != nil {
@@ -844,27 +841,14 @@ func resolveTheme(raw json.RawMessage) (config.Theme, error) {
 		theme.NavActiveStyle = def.NavActiveStyle
 	}
 
-	// Reuse config validation (accent hex, backgrounds, nav styles).
+	// Reuse config validation (accent hex, backgrounds, nav styles, font
+	// names, custom font declarations).
 	cfg := config.Default()
 	cfg.Theme = theme
 	if err := cfg.Validate(); err != nil {
 		return theme, inputErrorf("invalid garden.theme: %v", err)
 	}
-	if err := validateThemeFonts(theme, "garden.theme"); err != nil {
-		return theme, err
-	}
 	return theme, nil
-}
-
-func validateThemeFonts(theme config.Theme, field string) error {
-	// Fonts are not covered by config.Validate; restrict values interpolated
-	// into the inline style block and Google Fonts URL.
-	for _, font := range []string{theme.FontHeading, theme.FontBody, theme.FontMono} {
-		if !fontNameRegex.MatchString(font) {
-			return inputErrorf("invalid %s font name: %q", field, font)
-		}
-	}
-	return nil
 }
 
 // buildPages converts input pages into content pages.
