@@ -6,6 +6,7 @@ package render
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"html"
@@ -19,6 +20,7 @@ import (
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
+	"github.com/shivamx96/leafpress/core/assets"
 	"github.com/shivamx96/leafpress/core/config"
 	"github.com/shivamx96/leafpress/core/content"
 	sitegen "github.com/shivamx96/leafpress/core/site"
@@ -36,6 +38,19 @@ type Input struct {
 	Config json.RawMessage `json:"config"`
 	// StyleCSS is the in-memory counterpart of the CLI project's style.css.
 	StyleCSS string `json:"styleCSS"`
+	// Assets optionally declares the user assets the caller will serve
+	// alongside the rendered site (custom font files under static/fonts/,
+	// and in the future other referenced static files). Entries are
+	// validated with the shared manifest rules and merged into the output
+	// manifest; an entry whose effective output path collides with a
+	// built-in's replaces that built-in (the favicon-override rule).
+	Assets []assets.Asset `json:"assets"`
+	// EmitAssets requests base64 artifacts for the built-in assets the
+	// rendered site requires. The asset manifest is always emitted; bytes
+	// are opt-in so routine renders stay small. Synchronization is
+	// hash-driven per manifest entry — the registry ID alone is never a
+	// valid skip signal, because the manifest is a theme-dependent subset.
+	EmitAssets bool `json:"emitAssets"`
 }
 
 // Garden describes the garden being rendered.
@@ -77,13 +92,25 @@ type InputPage struct {
 
 // Output is the top-level JSON object written to stdout.
 type Output struct {
-	Pages     []OutputPage     `json:"pages"`
-	Index     string           `json:"index"`
-	Sections  []OutputSection  `json:"sections"`
-	Tags      OutputTags       `json:"tags"`
-	CSS       string           `json:"css"`
-	Artifacts []OutputArtifact `json:"artifacts"`
-	Warnings  []string         `json:"warnings"`
+	Pages    []OutputPage    `json:"pages"`
+	Index    string          `json:"index"`
+	Sections []OutputSection `json:"sections"`
+	Tags     OutputTags      `json:"tags"`
+	CSS      string          `json:"css"`
+	// AssetManifest is the combined manifest of every asset the rendered
+	// site requires: referenced built-ins plus caller-declared assets, with
+	// caller entries replacing built-ins on output-path collision. Metadata
+	// only, never bytes. Hosted consumers materialize each entry through
+	// their own storage using the content hash; built-in entries also
+	// appear as base64 artifacts when the input sets emitAssets.
+	AssetManifest assets.Manifest `json:"assetManifest"`
+	// AssetRegistryID identifies the built-in registry snapshot the manifest
+	// came from (content-derived). It is a change signal only — the manifest
+	// is a theme-dependent subset, so synchronization stays hash-driven per
+	// entry, never keyed on this ID.
+	AssetRegistryID string           `json:"assetRegistryId"`
+	Artifacts       []OutputArtifact `json:"artifacts"`
+	Warnings        []string         `json:"warnings"`
 }
 
 // OutputArtifact is a filesystem-free generated site file. Path uses the
@@ -92,6 +119,11 @@ type OutputArtifact struct {
 	Path        string `json:"path"`
 	Content     string `json:"content"`
 	ContentType string `json:"contentType"`
+	// Encoding says how Content encodes the file bytes and is authoritative
+	// (never sniff): generated site artifacts are always "utf8"; asset
+	// artifacts emitted under emitAssets are always "base64" regardless of
+	// MIME type (OFL license texts included).
+	Encoding string `json:"encoding"`
 }
 
 // OutputPage is a rendered page document. Index pages appear here too,
@@ -361,15 +393,113 @@ func Render(in *Input) (*Output, error) {
 		}
 	}
 
+	manifest, assetWarnings, err := buildAssetManifest(in, cfg)
+	if err != nil {
+		return nil, err
+	}
+	warnings = append(warnings, assetWarnings...)
+	if in.EmitAssets {
+		artifacts = append(artifacts, builtinAssetArtifacts(manifest)...)
+	}
+
 	return &Output{
-		Pages:     outPages,
-		Index:     idx.String(),
-		Sections:  sections,
-		Tags:      tags,
-		CSS:       sitegen.Styles(in.StyleCSS, cfg.Theme),
-		Artifacts: artifacts,
-		Warnings:  warnings,
+		Pages:           outPages,
+		Index:           idx.String(),
+		Sections:        sections,
+		Tags:            tags,
+		CSS:             sitegen.Styles(in.StyleCSS, cfg.Theme),
+		AssetManifest:   manifest,
+		AssetRegistryID: assets.RegistryID(),
+		Artifacts:       artifacts,
+		Warnings:        warnings,
 	}, nil
+}
+
+// callerAssets validates the caller-supplied asset manifest: the declaration
+// of user files (custom fonts today) the caller will serve alongside the
+// rendered site. A pure renderer cannot discover uploads, so this input is
+// how they enter the asset contract.
+func callerAssets(in *Input) (assets.Manifest, error) {
+	if len(in.Assets) == 0 {
+		return nil, nil
+	}
+	// Policy (reserved namespace, outputPath restricted to built-in
+	// overrides) is shared with the CLI via assets.ValidateUserAsset, so
+	// the two interfaces cannot drift on what a legal user asset is.
+	for i, a := range in.Assets {
+		if err := assets.ValidateUserAsset(a); err != nil {
+			return nil, inputErrorf("assets[%d]: %v", i, err)
+		}
+	}
+	m, err := assets.NewManifest(in.Assets...)
+	if err != nil {
+		return nil, inputErrorf("assets: %v", err)
+	}
+	return m, nil
+}
+
+// buildAssetManifest produces the combined referenced manifest: required
+// built-ins with caller entries merged over them (a caller entry replaces a
+// built-in on effective-output-path collision — the favicon-override rule),
+// plus warnings for custom font files the configuration references but the
+// caller never declared.
+func buildAssetManifest(in *Input, cfg *config.Config) (assets.Manifest, []string, error) {
+	caller, err := callerAssets(in)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	required := assets.RequiredBuiltins(cfg.Theme.FontHeading, cfg.Theme.FontBody, cfg.Theme.FontMono)
+	builtinAssets := make([]assets.Asset, 0, len(required))
+	for _, b := range required {
+		builtinAssets = append(builtinAssets, b.Asset)
+	}
+	base, err := assets.NewManifest(builtinAssets...)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to build built-in manifest: %w", err)
+	}
+
+	merged, err := assets.Merge(base, caller)
+	if err != nil {
+		return nil, nil, inputErrorf("assets: %v", err)
+	}
+
+	var warnings []string
+	declared := map[string]bool{}
+	for _, a := range caller {
+		declared[a.LogicalPath] = true
+	}
+	for _, face := range cfg.Theme.Fonts {
+		if !declared[face.File] {
+			warnings = append(warnings, fmt.Sprintf(
+				"custom font %q references %s, which is not declared in the caller asset manifest; the site will 404 it unless the host serves it another way",
+				face.Family, face.File))
+		}
+	}
+	return merged, warnings, nil
+}
+
+// builtinAssetArtifacts returns base64 artifacts for the manifest entries
+// whose bytes the renderer actually has: built-ins that survived the merge.
+// Caller assets never produce byte artifacts (only the caller has them), and
+// an overridden built-in is not emitted. Artifact paths use the effective
+// output path — the exact filename a CLI export serves — so generic hosts
+// can store artifacts by path without remapping.
+func builtinAssetArtifacts(manifest assets.Manifest) []OutputArtifact {
+	var out []OutputArtifact
+	for _, entry := range manifest {
+		b, ok := assets.BuiltinByLogicalPath(entry.LogicalPath)
+		if !ok || b.Asset.SHA256 != entry.SHA256 {
+			continue
+		}
+		out = append(out, OutputArtifact{
+			Path:        entry.EffectiveOutputPath(),
+			Content:     base64.StdEncoding.EncodeToString(b.Content()),
+			ContentType: entry.ContentType,
+			Encoding:    "base64",
+		})
+	}
+	return out
 }
 
 // sectionOf returns the section path a slug belongs to ("" for root),
@@ -659,6 +789,11 @@ func renderArtifacts(
 			Content:     sitegen.RSS(artifactPages, rawSite, cfg.BaseURL, time.Time{}),
 			ContentType: "application/rss+xml",
 		})
+	}
+	// Every generated artifact is text; asset artifacts (base64) are
+	// appended by the caller.
+	for i := range artifacts {
+		artifacts[i].Encoding = "utf8"
 	}
 	return artifacts, nil
 }

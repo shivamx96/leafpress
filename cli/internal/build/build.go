@@ -1110,6 +1110,12 @@ func (b *Builder) copyStatic() error {
 		return nil // No static directory
 	}
 
+	// static/leafpress is the namespace built-ins materialize into; user
+	// files there would be clobbered or shadow registry assets.
+	if _, err := os.Stat(filepath.Join(srcDir, "leafpress")); err == nil {
+		return fmt.Errorf("static/leafpress is reserved for Leafpress built-in assets; move user files to another directory under static/")
+	}
+
 	dstDir := filepath.Join(b.outputDir, "static")
 	return copyDir(srcDir, dstDir)
 }

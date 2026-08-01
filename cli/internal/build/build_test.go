@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/shivamx96/leafpress/core/assets"
@@ -259,5 +260,25 @@ func TestBuildFailsWhenCustomFontFileMissing(t *testing.T) {
 	b := New(cfg, Options{})
 	if _, err := b.Build(); err == nil {
 		t.Fatal("Build must fail when a declared font file does not exist")
+	}
+}
+
+func TestBuildRejectsUserFilesInReservedNamespace(t *testing.T) {
+	dir := newTestProject(t)
+	reserved := filepath.Join(dir, "static", "leafpress")
+	if err := os.MkdirAll(reserved, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(reserved, "mine.css"), []byte("x"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	b := New(config.Default(), Options{})
+	_, err := b.Build()
+	if err == nil {
+		t.Fatal("Build must reject user files under static/leafpress")
+	}
+	if !strings.Contains(err.Error(), "static/leafpress is reserved") {
+		t.Fatalf("error must name the reserved namespace, got: %v", err)
 	}
 }
