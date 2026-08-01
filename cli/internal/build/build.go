@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/shivamx96/leafpress/cli/internal/assets"
+	"github.com/shivamx96/leafpress/core/assets"
 	"github.com/shivamx96/leafpress/core/config"
 	"github.com/shivamx96/leafpress/core/content"
 	sitegen "github.com/shivamx96/leafpress/core/site"
@@ -1082,32 +1082,32 @@ func (b *Builder) copyStatic() error {
 	return copyDir(srcDir, dstDir)
 }
 
-// copyFavicons copies favicons from user directory or uses embedded defaults
+// copyFavicons copies favicons from the user directory, falling back to the
+// built-in asset registry's defaults. Favicons are served at the site root
+// (their registry public path), not under static/.
 func (b *Builder) copyFavicons() error {
-	favicons := []string{"favicon.ico", "favicon.svg", "favicon-96x96.png"}
+	builtinFavicons := []string{
+		assets.BuiltinFaviconICO,
+		assets.BuiltinFaviconSVG,
+		assets.BuiltinFaviconPNG,
+	}
 
-	for _, name := range favicons {
+	for _, logicalPath := range builtinFavicons {
+		builtin, ok := assets.BuiltinByLogicalPath(logicalPath)
+		if !ok {
+			return fmt.Errorf("built-in asset %s missing from registry", logicalPath)
+		}
+		name := strings.TrimPrefix(builtin.Asset.EffectivePublicPath(), "/")
 		userPath := filepath.Join(b.rootDir, name)
 		outPath := filepath.Join(b.outputDir, name)
 
 		// Check if user has provided their own favicon
 		if data, err := os.ReadFile(userPath); err == nil {
-			// Use user's favicon
 			if err := os.WriteFile(outPath, data, 0644); err != nil {
 				return fmt.Errorf("failed to write %s: %w", name, err)
 			}
 		} else {
-			// Use embedded default favicon
-			var defaultData []byte
-			switch name {
-			case "favicon.ico":
-				defaultData = assets.FaviconICO
-			case "favicon.svg":
-				defaultData = assets.FaviconSVG
-			case "favicon-96x96.png":
-				defaultData = assets.FaviconPNG
-			}
-			if err := os.WriteFile(outPath, defaultData, 0644); err != nil {
+			if err := os.WriteFile(outPath, builtin.Content, 0644); err != nil {
 				return fmt.Errorf("failed to write default %s: %w", name, err)
 			}
 		}
