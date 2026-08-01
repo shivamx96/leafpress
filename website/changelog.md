@@ -4,6 +4,12 @@ date: 2025-01-06
 toc: false
 ---
 
+## Unreleased
+
+- **Fonts are self-hosted by default.** The default families (Crimson Pro, Inter, JetBrains Mono) now ship bundled with Leafpress and are served from your own site — a default build makes no request to Google Fonts. Other family names produce a build warning and fall back to system fonts; set the deprecated `theme.remoteFonts: true` to temporarily keep the old Google Fonts behavior while you migrate. The bundled set covers latin and latin-ext ranges.
+- `@font-face` rules moved from every page head into the generated `style.css`.
+- **Breaking:** `static/leafpress/` is now reserved for Leafpress built-in assets; builds fail with a clear error if user files are placed there. Move them anywhere else under `static/`.
+
 ## v1.0.0-beta.10
 *July 31, 2026*
 

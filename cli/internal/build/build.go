@@ -79,6 +79,15 @@ func (b *Builder) Build() (*Stats, error) {
 	stats := &Stats{}
 	var t0 time.Time
 
+	// Self-contained output is the default: warn about families that have
+	// no self-hosted source instead of silently reaching for Google Fonts.
+	if !b.cfg.Theme.RemoteFonts {
+		for _, family := range templates.UnhostedFamilies(b.cfg.Theme) {
+			fmt.Printf("  warning: %s\n", templates.UnhostedFontWarning(family))
+			stats.WarningCount++
+		}
+	}
+
 	// Initialize templates
 	t0 = time.Now()
 	var err error
@@ -137,7 +146,7 @@ func (b *Builder) Build() (*Stats, error) {
 	t0 = time.Now()
 	warnings := content.RenderPages(pages, b.cfg.Wikilinks, b.linkResolver, basePath)
 	b.logTiming("markdown", time.Since(t0))
-	stats.WarningCount = len(warnings)
+	stats.WarningCount += len(warnings)
 
 	if b.opts.Verbose {
 		for _, w := range warnings {
@@ -256,6 +265,13 @@ func (b *Builder) Build() (*Stats, error) {
 		return nil, fmt.Errorf("failed to copy favicons: %w", err)
 	}
 	b.logTiming("favicons", time.Since(t0))
+
+	// Materialize built-in fonts for the configured theme
+	t0 = time.Now()
+	if err := b.materializeBuiltinFonts(); err != nil {
+		return nil, fmt.Errorf("failed to materialize built-in fonts: %w", err)
+	}
+	b.logTiming("fonts", time.Since(t0))
 
 	// Generate graph.json and search-index.json if enabled
 	if b.cfg.Graph || b.cfg.Search {
@@ -1113,6 +1129,36 @@ func (b *Builder) copyFavicons() error {
 	return nil
 }
 
+// materializeBuiltinFonts writes the bundled woff2 files for every configured
+// theme family covered by the built-in set into the output directory at their
+// logical paths (_site/static/leafpress/fonts/...), matching the @font-face
+// URLs the base template emits. Families outside the set load remotely and
+// need no files.
+func (b *Builder) materializeBuiltinFonts() error {
+	// One shared selection list with the renderer (assets.RequiredBuiltins):
+	// faces and OFL license texts of configured bundled families. Root
+	// built-ins from that list are copyFavicons' job; everything else lands
+	// at its logical path. Families outside the set get no files — they fall
+	// back to the system stacks (or load remotely only under the deprecated
+	// theme.remoteFonts opt-in).
+	for _, builtin := range assets.RequiredBuiltins(
+		b.cfg.Theme.FontHeading, b.cfg.Theme.FontBody, b.cfg.Theme.FontMono,
+	) {
+		if builtin.Asset.OutputPath != "" {
+			continue // root favicons: copyFavicons owns user-override logic
+		}
+		logicalPath := builtin.Asset.LogicalPath
+		outPath := filepath.Join(b.outputDir, filepath.FromSlash(logicalPath))
+		if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
+			return err
+		}
+		if err := os.WriteFile(outPath, builtin.Content(), 0644); err != nil {
+			return fmt.Errorf("failed to write %s: %w", logicalPath, err)
+		}
+	}
+	return nil
+}
+
 // generateCSS writes the combined stylesheet
 func (b *Builder) generateCSS() error {
 	var userCSS string
@@ -1121,7 +1167,7 @@ func (b *Builder) generateCSS() error {
 		userCSS = string(data)
 	}
 	outPath := filepath.Join(b.outputDir, "style.css")
-	return os.WriteFile(outPath, []byte(sitegen.Styles(userCSS)), 0644)
+	return os.WriteFile(outPath, []byte(sitegen.Styles(userCSS, b.cfg.Theme)), 0644)
 }
 
 // generateRobotsTxt writes the robots.txt file

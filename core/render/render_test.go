@@ -165,8 +165,11 @@ func TestThemeReflectedInOutput(t *testing.T) {
 	if !strings.Contains(out.Index, "--lp-accent: #ff0000") {
 		t.Error("index HTML missing theme accent")
 	}
-	if out.CSS != templates.DefaultCSS {
-		t.Error("css output should be the leafpress default stylesheet")
+	if !strings.HasPrefix(out.CSS, templates.DefaultCSS) {
+		t.Error("css output should start with the leafpress default stylesheet")
+	}
+	if !strings.Contains(out.CSS, "@font-face") {
+		t.Error("css output should carry self-hosted @font-face rules for bundled families")
 	}
 }
 
@@ -1034,5 +1037,79 @@ func TestAutoSectionTitleReadsHyphensAsSpaces(t *testing.T) {
 	}`)
 	if len(out.Sections) != 1 || !strings.Contains(out.Sections[0].HTML, "Field Notes") {
 		t.Errorf("auto section should be titled 'Field Notes', got: %v", out.Sections)
+	}
+}
+
+func TestSelfHostedFontsInStylesheet(t *testing.T) {
+	out := runJSON(t, twoLinkedPages)
+	html := pageHTML(t, out, "alpha")
+
+	// Default families are all bundled: @font-face rules live in the
+	// generated stylesheet with site-relative URLs (the stylesheet is
+	// served from the garden root, so they resolve under the base path).
+	if !strings.Contains(out.CSS, "@font-face") {
+		t.Error("stylesheet missing @font-face rules")
+	}
+	if !strings.Contains(out.CSS, `url("static/leafpress/fonts/inter-normal-latin.woff2")`) {
+		t.Error("font URLs must be site-relative in the stylesheet")
+	}
+	if strings.Contains(html, "@font-face") {
+		t.Error("@font-face must not be inlined into every page head")
+	}
+	if strings.Contains(html, "fonts.googleapis.com") || strings.Contains(html, "fonts.gstatic.com") {
+		t.Error("bundled default fonts must not reference Google Fonts")
+	}
+	// No warnings: every family is self-hosted.
+	for _, w := range out.Warnings {
+		if strings.Contains(w, "font family") {
+			t.Errorf("unexpected font warning: %s", w)
+		}
+	}
+}
+
+func TestUnbundledFontWarnsAndFallsBackLocally(t *testing.T) {
+	out := runJSON(t, `{
+	  "garden": {"slug": "g", "theme": {"fontBody": "Lobster"}},
+	  "pages": [{"slug": "note", "title": "Note", "markdown": "hi"}]
+	}`)
+	html := pageHTML(t, out, "note")
+
+	// Self-contained by default: no remote link, a warning instead, and
+	// the CSS variable fallback stack takes over in the browser.
+	if strings.Contains(html, "fonts.googleapis.com") {
+		t.Error("unbundled family must not load remotely by default")
+	}
+	var warned bool
+	for _, w := range out.Warnings {
+		if strings.Contains(w, `"Lobster"`) {
+			warned = true
+		}
+	}
+	if !warned {
+		t.Errorf("expected a fallback warning for Lobster, got %v", out.Warnings)
+	}
+	// Bundled heading/mono fonts still self-host.
+	if !strings.Contains(out.CSS, "@font-face") {
+		t.Error("bundled families should still emit @font-face rules")
+	}
+}
+
+func TestRemoteFontsIsDeprecatedOptIn(t *testing.T) {
+	out := runJSON(t, `{
+	  "garden": {"slug": "g", "theme": {"fontBody": "Lobster", "remoteFonts": true}},
+	  "pages": [{"slug": "note", "title": "Note", "markdown": "hi"}]
+	}`)
+	html := pageHTML(t, out, "note")
+
+	if !strings.Contains(html, "fonts.googleapis.com/css2?family=Lobster") {
+		t.Error("remoteFonts opt-in should keep the Google Fonts link")
+	}
+	if strings.Contains(html, "family=Crimson+Pro") || strings.Contains(html, "family=JetBrains+Mono") {
+		t.Error("bundled families must not appear in the remote URL")
+	}
+	for _, w := range out.Warnings {
+		if strings.Contains(w, `"Lobster"`) {
+			t.Errorf("explicit opt-in should not warn: %s", w)
+		}
 	}
 }

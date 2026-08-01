@@ -12,8 +12,8 @@ Set options in `leafpress.json`:
 ```json
 {
   "theme": {
-    "fontHeading": "Playfair Display",
-    "fontBody": "Source Sans Pro",
+    "fontHeading": "Crimson Pro",
+    "fontBody": "Inter",
     "accent": "#e11d48"
   }
 }
@@ -21,23 +21,40 @@ Set options in `leafpress.json`:
 
 ## Fonts
 
-Choose any [Google Font](https://fonts.google.com/):
+Leafpress sites are **self-hosted by default**: no request ever leaves your
+site for a font. Three families ship bundled with Leafpress — **Crimson Pro**
+(headings), **Inter** (body), and **JetBrains Mono** (code) — and are served
+from your own site as `@font-face` rules in the generated stylesheet:
 
 ```json
 {
   "theme": {
     "fontHeading": "Crimson Pro",
-    "fontBody": "Inter", 
-    "fontMono": "Fira Code"
+    "fontBody": "Inter",
+    "fontMono": "JetBrains Mono"
   }
 }
 ```
 
-Popular combinations:
-- **Classic**: Crimson Pro + Inter
-- **Modern**: Geist + Geist
-- **Technical**: IBM Plex Sans + IBM Plex Mono
-- **Elegant**: Playfair Display + Lora
+The bundled files cover the latin and latin-ext character ranges. Text in
+other scripts (Cyrillic, Greek, Vietnamese, …) falls back to your readers'
+system fonts; use a custom local font if you need full coverage for another
+script.
+
+Any other family name produces a build warning and falls back to the CSS
+system stacks — Leafpress no longer loads arbitrary fonts from Google.
+
+### Migrating from Google Fonts
+
+If your existing config names a Google font (say `"Playfair Display"`), you
+have two options:
+
+1. **Recommended**: download the font's woff2 file and declare it as a
+   custom local font (see below) — your site stays self-contained.
+2. **Temporary bridge**: set `"remoteFonts": true` in `theme` to keep the
+   old Google Fonts link for unbundled families. This option is deprecated
+   and will be removed; names are matched exactly, and bundled families are
+   always self-hosted regardless.
 
 ## Colors
 

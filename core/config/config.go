@@ -51,9 +51,15 @@ type NavItem struct {
 
 // Theme represents theme configuration
 type Theme struct {
-	FontHeading    string     `json:"fontHeading"`
-	FontBody       string     `json:"fontBody"`
-	FontMono       string     `json:"fontMono"`
+	FontHeading string `json:"fontHeading"`
+	FontBody    string `json:"fontBody"`
+	FontMono    string `json:"fontMono"`
+	// RemoteFonts is a deprecated compatibility escape hatch: when true,
+	// families outside the bundled set load from Google Fonts as before.
+	// The default is self-contained output — unknown families produce a
+	// warning and fall back to the CSS system stacks. This flag will be
+	// removed.
+	RemoteFonts    bool       `json:"remoteFonts,omitempty"`
 	Accent         string     `json:"accent"`
 	Background     Background `json:"-"`              // Custom unmarshaling
 	NavStyle       string     `json:"navStyle"`       // "base", "sticky", or "glassy"

@@ -1,9 +1,11 @@
 package assets
 
 import (
+	"embed"
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"strings"
 )
 
 // Logical paths of the built-in assets Leafpress ships. They are stable
@@ -22,6 +24,9 @@ var faviconSVG []byte
 
 //go:embed builtin/favicon-96x96.png
 var faviconPNG []byte
+
+//go:embed builtin/fonts/*.woff2 builtin/fonts/OFL-*.txt
+var builtinFontsFS embed.FS
 
 // Builtin is a Leafpress-owned asset together with its embedded content.
 type Builtin struct {
@@ -56,7 +61,7 @@ func mustBuiltins() []Builtin {
 		{BuiltinFaviconPNG, "image/png", "favicon-96x96.png", faviconPNG},
 	}
 
-	out := make([]Builtin, 0, len(entries))
+	out := make([]Builtin, 0, len(entries)+len(builtinFontFaces))
 	for _, e := range entries {
 		out = append(out, Builtin{
 			Asset: Asset{
@@ -67,6 +72,44 @@ func mustBuiltins() []Builtin {
 				OutputPath:  e.outputPath,
 			},
 			content: e.content,
+		})
+	}
+	readFont := func(logicalPath string) []byte {
+		// Embedded paths mirror logical paths minus the static/leafpress/
+		// prefix, rooted at builtin/.
+		embedPath := "builtin/" + strings.TrimPrefix(logicalPath, BuiltinPrefix)
+		data, err := builtinFontsFS.ReadFile(embedPath)
+		if err != nil {
+			panic(fmt.Sprintf("assets: built-in font asset %s not embedded: %v", logicalPath, err))
+		}
+		return data
+	}
+	for _, face := range builtinFontFaces {
+		data := readFont(face.LogicalPath)
+		out = append(out, Builtin{
+			Asset: Asset{
+				LogicalPath: face.LogicalPath,
+				ContentType: "font/woff2",
+				SHA256:      Sum(data),
+				Size:        int64(len(data)),
+			},
+			content: data,
+		})
+	}
+	for _, family := range BuiltinFontFamilies() {
+		licensePath, ok := BuiltinFontLicense(family)
+		if !ok {
+			panic(fmt.Sprintf("assets: curated family %q has no OFL license asset", family))
+		}
+		data := readFont(licensePath)
+		out = append(out, Builtin{
+			Asset: Asset{
+				LogicalPath: licensePath,
+				ContentType: "text/plain; charset=utf-8",
+				SHA256:      Sum(data),
+				Size:        int64(len(data)),
+			},
+			content: data,
 		})
 	}
 	return out

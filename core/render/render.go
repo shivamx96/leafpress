@@ -353,12 +353,20 @@ func Render(in *Input) (*Output, error) {
 		return nil, err
 	}
 
+	// Self-contained output is the default: families with no self-hosted
+	// source fall back to the CSS system stacks, and the author is told.
+	if !cfg.Theme.RemoteFonts {
+		for _, family := range templates.UnhostedFamilies(cfg.Theme) {
+			warnings = append(warnings, templates.UnhostedFontWarning(family))
+		}
+	}
+
 	return &Output{
 		Pages:     outPages,
 		Index:     idx.String(),
 		Sections:  sections,
 		Tags:      tags,
-		CSS:       sitegen.Styles(in.StyleCSS),
+		CSS:       sitegen.Styles(in.StyleCSS, cfg.Theme),
 		Artifacts: artifacts,
 		Warnings:  warnings,
 	}, nil
