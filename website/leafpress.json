@@ -29,6 +29,7 @@
     "fontBody": "Geist",
     "fontHeading": "Sora",
     "fontMono": "JetBrains Mono",
+    "remoteFonts": true,
     "navActiveStyle": "base",
     "navStyle": "base"
   },

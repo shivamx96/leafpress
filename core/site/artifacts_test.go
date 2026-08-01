@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/shivamx96/leafpress/core/config"
 	"github.com/shivamx96/leafpress/core/content"
 	"github.com/shivamx96/leafpress/core/templates"
 )
@@ -76,10 +77,10 @@ func TestArtifactShapesAndOrdering(t *testing.T) {
 }
 
 func TestStylesMatchesCLIComposition(t *testing.T) {
-	if got := Styles(""); got != templates.DefaultCSS {
+	if got := Styles("", config.Default().Theme); !strings.HasPrefix(got, templates.DefaultCSS) || !strings.Contains(got, "@font-face") {
 		t.Error("empty user CSS should return the embedded stylesheet exactly")
 	}
-	got := Styles("body { outline: none; }")
+	got := Styles("body { outline: none; }", config.Default().Theme)
 	if !strings.HasSuffix(got, "\n\n/* User Styles */\nbody { outline: none; }") {
 		t.Error("user CSS should use the CLI composition marker and ordering")
 	}

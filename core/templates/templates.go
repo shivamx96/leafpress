@@ -2,13 +2,16 @@ package templates
 
 import (
 	"bufio"
+	"fmt"
 	"html"
 	"io"
+	"path"
 	"regexp"
 	"strconv"
 	"strings"
 	"text/template" // text/template used instead of html/template for performance — safe because leafpress is a trusted-content SSG (single author, no user-submitted input)
 
+	"github.com/shivamx96/leafpress/core/assets"
 	"github.com/shivamx96/leafpress/core/config"
 	"github.com/shivamx96/leafpress/core/content"
 )
@@ -36,7 +39,7 @@ func init() {
 		"safeHTML":          func(s string) string { return s },
 		"safeCSS":           func(s string) string { return s },
 		"fontURL":           fontURL,
-		"combinedFontURL":   combinedFontURL,
+		"remoteFontURL":     remoteFontURL,
 		"hasPrefix":         strings.HasPrefix,
 	}
 }
@@ -249,15 +252,107 @@ func fontURL(font string) string {
 	return fontParam + ":wght@400;500;600;700"
 }
 
-func combinedFontURL(heading, body, mono string) string {
+// FontCSS returns every self-hosted @font-face rule for the theme — bundled
+// built-in families plus custom static/fonts/ declarations. It is composed
+// into the generated stylesheet (site.Styles), not inlined per page, so
+// browsers download the rules once.
+func FontCSS(theme config.Theme) string {
+	return assets.FontFaceCSS(theme.FontHeading, theme.FontBody, theme.FontMono) +
+		customFontCSS(theme.Fonts)
+}
+
+// fontFormats maps custom font file extensions to CSS src format() names.
+var fontFormats = map[string]string{
+	".woff2": "woff2",
+	".woff":  "woff",
+	".ttf":   "truetype",
+	".otf":   "opentype",
+}
+
+// customFontCSS renders @font-face rules for the theme's custom local font
+// declarations. URLs are site-relative like the built-in faces (the rules
+// live in the root-served stylesheet) with segments escaped as defense in
+// depth. Empty weight/style/display fall back to "400", "normal", and
+// "swap" (the same defaults config validation documents).
+func customFontCSS(faces []config.FontFace) string {
+	var sb strings.Builder
+	for _, face := range faces {
+		weight := face.Weight
+		if weight == "" {
+			weight = "400"
+		}
+		style := face.Style
+		if style == "" {
+			style = "normal"
+		}
+		display := face.Display
+		if display == "" {
+			display = "swap"
+		}
+		format := fontFormats[strings.ToLower(path.Ext(face.File))]
+		if format == "" {
+			// Validation rejects unknown extensions; never emit format("")
+			// if an unvalidated Theme reaches this point.
+			continue
+		}
+		fmt.Fprintf(&sb, `@font-face {
+  font-family: "%s";
+  font-style: %s;
+  font-weight: %s;
+  font-display: %s;
+  src: url("%s") format("%s");
+}
+`, face.Family, style, weight, display, assets.EscapedURLPath(face.File), format)
+	}
+	return sb.String()
+}
+
+// UnhostedFontWarning is the canonical author-facing message for a family
+// with no self-hosted source. The CLI and the renderer must emit exactly
+// this string so warnings stay greppable and support-friendly.
+func UnhostedFontWarning(family string) string {
+	return fmt.Sprintf(
+		"font family %q is not bundled or declared; falling back to system fonts (declare it under theme.fonts, or set theme.remoteFonts to temporarily keep Google Fonts)",
+		family)
+}
+
+// UnhostedFamilies returns the configured families that have no self-hosted
+// source: neither in the bundled set nor declared as custom local fonts.
+// With the deprecated remoteFonts escape hatch off, these fall back to the
+// CSS system stacks and callers should warn the author.
+func UnhostedFamilies(theme config.Theme) []string {
+	var out []string
+	seen := map[string]bool{}
+	for _, font := range []string{theme.FontHeading, theme.FontBody, theme.FontMono} {
+		if font == "" || assets.IsBuiltinFontFamily(font) || theme.DeclaresFamily(font) || seen[font] {
+			continue
+		}
+		seen[font] = true
+		out = append(out, font)
+	}
+	return out
+}
+
+// remoteFontURL returns the Google Fonts stylesheet URL for the configured
+// families outside the bundled set — but only when the deprecated
+// theme.remoteFonts escape hatch is enabled. The default is self-contained
+// output: unhosted families fall back to the CSS system stacks (with a
+// warning emitted at build/render time).
+func remoteFontURL(theme config.Theme) string {
+	if !theme.RemoteFonts {
+		return ""
+	}
 	families := []string{}
 	seen := map[string]bool{}
-	for _, font := range []string{heading, body, mono} {
+	for _, font := range UnhostedFamilies(theme) {
 		param := fontURL(font)
 		if !seen[param] {
 			seen[param] = true
 			families = append(families, param)
 		}
+	}
+	if len(families) == 0 {
+		return ""
 	}
 	return "https://fonts.googleapis.com/css2?family=" + strings.Join(families, "&family=") + "&display=swap"
 }
@@ -415,10 +510,10 @@ const baseTemplate = `<!DOCTYPE html>
     {{end}}
   </style>
   <link rel="stylesheet" href="{{.Site.BasePath}}/style.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
+  {{$remoteFontURL := remoteFontURL .Site.Theme}}{{if $remoteFontURL}}<link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="{{combinedFontURL .Site.Theme.FontHeading .Site.Theme.FontBody .Site.Theme.FontMono}}" rel="stylesheet">
-  {{if .Site.HeadExtra}}{{.Site.HeadExtra | safeHTML}}{{end}}
+  <link href="{{$remoteFontURL}}" rel="stylesheet">
+  {{end}}{{if .Site.HeadExtra}}{{.Site.HeadExtra | safeHTML}}{{end}}
 </head>
 <body class="lp-body">
   {{if eq .Site.Theme.NavStyle "glassy"}}<div class="lp-nav-placeholder"></div>{{end}}

@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/shivamx96/leafpress/cli/internal/assets"
+	"github.com/shivamx96/leafpress/core/assets"
 	"github.com/shivamx96/leafpress/core/config"
 	"github.com/shivamx96/leafpress/core/content"
 	sitegen "github.com/shivamx96/leafpress/core/site"
@@ -79,6 +79,31 @@ func (b *Builder) Build() (*Stats, error) {
 	stats := &Stats{}
 	var t0 time.Time
 
+	// Verify custom font files exist as regular files. Config validation
+	// covers only the declaration shape; checking the filesystem is the
+	// CLI's job.
+	for _, face := range b.cfg.Theme.Fonts {
+		fontPath := filepath.Join(b.rootDir, filepath.FromSlash(face.File))
+		info, err := os.Stat(fontPath)
+		switch {
+		case err != nil && os.IsNotExist(err):
+			return nil, fmt.Errorf("custom font %q: %s does not exist", face.Family, face.File)
+		case err != nil:
+			return nil, fmt.Errorf("custom font %q (%s): %w", face.Family, face.File, err)
+		case !info.Mode().IsRegular():
+			return nil, fmt.Errorf("custom font %q: %s is not a regular file", face.Family, face.File)
+		}
+	}
+
+	// Self-contained output is the default: warn about families that have
+	// no self-hosted source instead of silently reaching for Google Fonts.
+	if !b.cfg.Theme.RemoteFonts {
+		for _, family := range templates.UnhostedFamilies(b.cfg.Theme) {
+			fmt.Printf("  warning: %s\n", templates.UnhostedFontWarning(family))
+			stats.WarningCount++
+		}
+	}
+
 	// Initialize templates
 	t0 = time.Now()
 	var err error
@@ -137,7 +162,7 @@ func (b *Builder) Build() (*Stats, error) {
 	t0 = time.Now()
 	warnings := content.RenderPages(pages, b.cfg.Wikilinks, b.linkResolver, basePath)
 	b.logTiming("markdown", time.Since(t0))
-	stats.WarningCount = len(warnings)
+	stats.WarningCount += len(warnings)
 
 	if b.opts.Verbose {
 		for _, w := range warnings {
@@ -256,6 +281,13 @@ func (b *Builder) Build() (*Stats, error) {
 		return nil, fmt.Errorf("failed to copy favicons: %w", err)
 	}
 	b.logTiming("favicons", time.Since(t0))
+
+	// Materialize built-in fonts for the configured theme
+	t0 = time.Now()
+	if err := b.materializeBuiltinFonts(); err != nil {
+		return nil, fmt.Errorf("failed to materialize built-in fonts: %w", err)
+	}
+	b.logTiming("fonts", time.Since(t0))
 
 	// Generate graph.json and search-index.json if enabled
 	if b.cfg.Graph || b.cfg.Search {
@@ -1078,41 +1110,74 @@ func (b *Builder) copyStatic() error {
 		return nil // No static directory
 	}
 
+	// static/leafpress is the namespace built-ins materialize into; user
+	// files there would be clobbered or shadow registry assets.
+	if _, err := os.Stat(filepath.Join(srcDir, "leafpress")); err == nil {
+		return fmt.Errorf("static/leafpress is reserved for Leafpress built-in assets; move user files to another directory under static/")
+	}
+
 	dstDir := filepath.Join(b.outputDir, "static")
 	return copyDir(srcDir, dstDir)
 }
 
-// copyFavicons copies favicons from user directory or uses embedded defaults
+// copyFavicons copies favicons from the user directory, falling back to the
+// built-in asset registry's defaults. Selection is registry-driven
+// (assets.RootBuiltins), so adding a root built-in cannot silently split
+// CLI materialization from the renderer's manifest.
 func (b *Builder) copyFavicons() error {
-	favicons := []string{"favicon.ico", "favicon.svg", "favicon-96x96.png"}
-
-	for _, name := range favicons {
+	for _, builtin := range assets.RootBuiltins() {
+		name := builtin.Asset.EffectiveOutputPath()
 		userPath := filepath.Join(b.rootDir, name)
 		outPath := filepath.Join(b.outputDir, name)
 
-		// Check if user has provided their own favicon
-		if data, err := os.ReadFile(userPath); err == nil {
-			// Use user's favicon
+		data, err := os.ReadFile(userPath)
+		switch {
+		case err == nil:
+			// User override wins.
 			if err := os.WriteFile(outPath, data, 0644); err != nil {
 				return fmt.Errorf("failed to write %s: %w", name, err)
 			}
-		} else {
-			// Use embedded default favicon
-			var defaultData []byte
-			switch name {
-			case "favicon.ico":
-				defaultData = assets.FaviconICO
-			case "favicon.svg":
-				defaultData = assets.FaviconSVG
-			case "favicon-96x96.png":
-				defaultData = assets.FaviconPNG
-			}
-			if err := os.WriteFile(outPath, defaultData, 0644); err != nil {
+		case os.IsNotExist(err):
+			if err := os.WriteFile(outPath, builtin.Content(), 0644); err != nil {
 				return fmt.Errorf("failed to write default %s: %w", name, err)
 			}
+		default:
+			// A user override that exists but cannot be read must not be
+			// silently replaced by the built-in.
+			return fmt.Errorf("failed to read %s override: %w", name, err)
 		}
 	}
 
+	return nil
+}
+
+// materializeBuiltinFonts writes the bundled woff2 files for every configured
+// theme family covered by the built-in set into the output directory at their
+// logical paths (_site/static/leafpress/fonts/...), matching the @font-face
+// URLs the base template emits. Families outside the set load remotely and
+// need no files.
+func (b *Builder) materializeBuiltinFonts() error {
+	// One shared selection list with the renderer (assets.RequiredBuiltins):
+	// faces and OFL license texts of configured bundled families. Root
+	// built-ins from that list are copyFavicons' job; everything else lands
+	// at its logical path. Families outside the set get no files — they fall
+	// back to the system stacks (or load remotely only under the deprecated
+	// theme.remoteFonts opt-in).
+	for _, builtin := range assets.RequiredBuiltins(
+		b.cfg.Theme.FontHeading, b.cfg.Theme.FontBody, b.cfg.Theme.FontMono,
+	) {
+		if builtin.Asset.OutputPath != "" {
+			continue // root favicons: copyFavicons owns user-override logic
+		}
+		logicalPath := builtin.Asset.LogicalPath
+		outPath := filepath.Join(b.outputDir, filepath.FromSlash(logicalPath))
+		if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
+			return err
+		}
+		if err := os.WriteFile(outPath, builtin.Content(), 0644); err != nil {
+			return fmt.Errorf("failed to write %s: %w", logicalPath, err)
+		}
+	}
 	return nil
 }
 
@@ -1124,7 +1189,7 @@ func (b *Builder) generateCSS() error {
 		userCSS = string(data)
 	}
 	outPath := filepath.Join(b.outputDir, "style.css")
-	return os.WriteFile(outPath, []byte(sitegen.Styles(userCSS)), 0644)
+	return os.WriteFile(outPath, []byte(sitegen.Styles(userCSS, b.cfg.Theme)), 0644)
 }
 
 // generateRobotsTxt writes the robots.txt file

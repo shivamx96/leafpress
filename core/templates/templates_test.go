@@ -3,6 +3,8 @@ package templates
 import (
 	"strings"
 	"testing"
+
+	"github.com/shivamx96/leafpress/core/config"
 )
 
 // --- Heading ID generation ---
@@ -150,38 +152,130 @@ func TestExtractTOC_NoHeadings(t *testing.T) {
 	}
 }
 
-// --- Font URL ---
+// --- Fonts ---
 
-func TestCombinedFontURL(t *testing.T) {
-	url := combinedFontURL("Crimson Pro", "Inter", "Fira Code")
-	if !strings.Contains(url, "family=Crimson+Pro") {
-		t.Error("should contain heading font")
+func testTheme(heading, body, mono string) config.Theme {
+	theme := config.Default().Theme
+	theme.FontHeading = heading
+	theme.FontBody = body
+	theme.FontMono = mono
+	return theme
+}
+
+func TestRemoteFontURL_OffByDefault(t *testing.T) {
+	// Without the deprecated remoteFonts opt-in there is never a remote
+	// URL, bundled or not.
+	if url := remoteFontURL(testTheme("Crimson Pro", "Inter", "JetBrains Mono")); url != "" {
+		t.Errorf("bundled families produced remote URL %q", url)
 	}
-	if !strings.Contains(url, "family=Inter") {
-		t.Error("should contain body font")
+	if url := remoteFontURL(testTheme("Lobster", "Inter", "Fira Code")); url != "" {
+		t.Errorf("unbundled families produced remote URL %q without opt-in", url)
+	}
+}
+
+func TestRemoteFontURL_OptInCoversOnlyUnbundled(t *testing.T) {
+	theme := testTheme("Crimson Pro", "Inter", "Fira Code")
+	theme.RemoteFonts = true
+	url := remoteFontURL(theme)
+	if strings.Contains(url, "Crimson+Pro") || strings.Contains(url, "family=Inter") {
+		t.Errorf("bundled families leaked into remote URL %q", url)
 	}
 	if !strings.Contains(url, "family=Fira+Code") {
-		t.Error("should contain mono font")
+		t.Error("should contain unbundled mono font")
 	}
 	if !strings.Contains(url, "display=swap") {
 		t.Error("should include display=swap")
 	}
-	// Should be a single URL
 	if strings.Count(url, "fonts.googleapis.com") != 1 {
 		t.Error("should be a single combined URL")
 	}
+
+	// Fully bundled theme yields no URL even when opted in.
+	allBundled := testTheme("Crimson Pro", "Inter", "JetBrains Mono")
+	allBundled.RemoteFonts = true
+	if url := remoteFontURL(allBundled); url != "" {
+		t.Errorf("fully bundled theme produced remote URL %q", url)
+	}
 }
 
-func TestCombinedFontURL_Dedup(t *testing.T) {
-	url := combinedFontURL("Inter", "Inter", "Fira Code")
-	if strings.Count(url, "Inter") != 1 {
+func TestRemoteFontURL_Dedup(t *testing.T) {
+	theme := testTheme("Lobster", "Lobster", "Fira Code")
+	theme.RemoteFonts = true
+	url := remoteFontURL(theme)
+	if strings.Count(url, "Lobster") != 1 {
 		t.Error("duplicate fonts should be deduplicated")
 	}
 }
 
-func TestCombinedFontURL_AllSame(t *testing.T) {
-	url := combinedFontURL("Inter", "Inter", "Inter")
-	if strings.Count(url, "family=") != 1 {
-		t.Error("all-same fonts should produce single family param")
+func TestUnhostedFamilies(t *testing.T) {
+	got := UnhostedFamilies(testTheme("Lobster", "Lobster", "JetBrains Mono"))
+	if len(got) != 1 || got[0] != "Lobster" {
+		t.Fatalf("UnhostedFamilies = %v, want [Lobster]", got)
+	}
+	if got := UnhostedFamilies(testTheme("Crimson Pro", "Inter", "JetBrains Mono")); len(got) != 0 {
+		t.Fatalf("fully bundled theme reported unhosted families: %v", got)
+	}
+}
+
+func TestUnhostedFamiliesExcludesDeclaredCustom(t *testing.T) {
+	theme := testTheme("Lobster", "My Serif", "JetBrains Mono")
+	theme.Fonts = []config.FontFace{{Family: "My Serif", File: "static/fonts/my.woff2"}}
+	got := UnhostedFamilies(theme)
+	if len(got) != 1 || got[0] != "Lobster" {
+		t.Fatalf("UnhostedFamilies = %v, want [Lobster] (declared custom family is hosted)", got)
+	}
+}
+
+func TestFontCSSIncludesBundledFamilies(t *testing.T) {
+	css := FontCSS(testTheme("Crimson Pro", "Inter", "JetBrains Mono"))
+	if !strings.Contains(css, `font-family: "Inter"`) || !strings.Contains(css, "@font-face") {
+		t.Error("FontCSS missing bundled @font-face rules")
+	}
+}
+
+func TestCustomFontCSS(t *testing.T) {
+	css := customFontCSS([]config.FontFace{
+		{Family: "My Serif", File: "static/fonts/my.woff2", Weight: "400 700", Style: "italic", Display: "optional"},
+		{Family: "Old", File: "static/fonts/old.ttf"},
+	})
+	if !strings.Contains(css, `font-family: "My Serif"`) {
+		t.Error("missing family")
+	}
+	// Stylesheet-relative URL: resolves against the style.css location, so
+	// no base path is baked in.
+	if !strings.Contains(css, `src: url("static/fonts/my.woff2") format("woff2")`) {
+		t.Errorf("missing site-relative src:\n%s", css)
+	}
+	if !strings.Contains(css, "font-weight: 400 700") || !strings.Contains(css, "font-style: italic") || !strings.Contains(css, "font-display: optional") {
+		t.Errorf("explicit fields not honored:\n%s", css)
+	}
+	// Defaults for the second face.
+	if !strings.Contains(css, "font-weight: 400;") || !strings.Contains(css, "font-style: normal") || !strings.Contains(css, "font-display: swap") {
+		t.Errorf("defaults not applied:\n%s", css)
+	}
+	if !strings.Contains(css, `format("truetype")`) {
+		t.Errorf("ttf format mapping missing:\n%s", css)
+	}
+}
+
+func TestFontCSSCombinesBuiltinAndCustom(t *testing.T) {
+	theme := testTheme("Crimson Pro", "My Serif", "JetBrains Mono")
+	theme.Fonts = []config.FontFace{{Family: "My Serif", File: "static/fonts/my.woff2"}}
+	css := FontCSS(theme)
+	if !strings.Contains(css, `font-family: "My Serif"`) {
+		t.Error("custom @font-face missing from FontCSS")
+	}
+	if !strings.Contains(css, `font-family: "Crimson Pro"`) {
+		t.Error("bundled @font-face missing from FontCSS")
+	}
+}
+
+func TestRemoteFontURL_ExcludesDeclaredCustomFamilies(t *testing.T) {
+	theme := testTheme("Lobster", "My Serif", "JetBrains Mono")
+	theme.Fonts = []config.FontFace{{Family: "My Serif", File: "static/fonts/my.woff2"}}
+	theme.RemoteFonts = true
+	url := remoteFontURL(theme)
+	if !strings.Contains(url, "family=Lobster") || strings.Contains(url, "My+Serif") {
+		t.Errorf("declared custom family must not appear in remote URL: %q", url)
 	}
 }

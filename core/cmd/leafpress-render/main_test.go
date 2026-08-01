@@ -117,7 +117,7 @@ func TestExitCodeMapping(t *testing.T) {
 }
 
 // TestBinarySmoke builds and execs the real binary once: the process-level
-// contract leafpad depends on, not just the in-process run function.
+// contract hosted consumers depend on, not just the in-process run function.
 func TestBinarySmoke(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping binary build in -short mode")

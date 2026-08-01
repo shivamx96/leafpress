@@ -60,7 +60,7 @@ Everything you need to build a digital garden, nothing you don't.
 
 ## Theming
 
-**Typography** — Choose from Google Fonts for headings, body, and code.
+**Typography** — Self-hosted fonts for headings, body, and code: bundled families (Crimson Pro, Inter, JetBrains Mono) ship with Leafpress, and you can add your own font files under `static/fonts/`. No third-party font requests.
 
 **Colors** — Set your accent color. Light and dark backgrounds with gradient support.
 

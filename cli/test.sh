@@ -871,8 +871,8 @@ fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR"
 
-# Test 42: Custom fonts are loaded
-test_case "Custom fonts are loaded from Google Fonts"
+# Test 42: Remote fonts require the deprecated opt-in
+test_case "Remote fonts load from Google Fonts only with theme.remoteFonts"
 TESTDIR=$(mktemp -d)
 cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
@@ -881,7 +881,8 @@ cat > leafpress.json << 'EOF'
   "title": "Test",
   "theme": {
     "fontHeading": "Playfair Display",
-    "fontBody": "Roboto"
+    "fontBody": "Roboto",
+    "remoteFonts": true
   }
 }
 EOF
@@ -889,7 +890,23 @@ EOF
 if grep -q 'fonts.googleapis.com.*Playfair' _site/index.html && grep -q 'fonts.googleapis.com.*Roboto' _site/index.html; then
     pass
 else
-    fail "Custom fonts not loaded"
+    fail "Opted-in remote fonts not loaded"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
+# Test 42b: Default build is self-hosted with no Google Fonts request
+test_case "Default fonts are self-hosted with no Google request"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -rq -e 'fonts.googleapis.com' -e 'fonts.gstatic.com' _site/; then
+    fail "Default build references Google Fonts"
+elif grep -q '@font-face' _site/style.css && ls _site/static/leafpress/fonts/*.woff2 > /dev/null 2>&1; then
+    pass
+else
+    fail "Self-hosted font files or @font-face rules missing"
 fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR"

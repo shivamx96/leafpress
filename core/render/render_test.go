@@ -1,12 +1,14 @@
 package render
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"regexp"
 	"strings"
 	"testing"
 
+	"github.com/shivamx96/leafpress/core/assets"
 	"github.com/shivamx96/leafpress/core/templates"
 )
 
@@ -165,8 +167,11 @@ func TestThemeReflectedInOutput(t *testing.T) {
 	if !strings.Contains(out.Index, "--lp-accent: #ff0000") {
 		t.Error("index HTML missing theme accent")
 	}
-	if out.CSS != templates.DefaultCSS {
-		t.Error("css output should be the leafpress default stylesheet")
+	if !strings.HasPrefix(out.CSS, templates.DefaultCSS) {
+		t.Error("css output should start with the leafpress default stylesheet")
+	}
+	if !strings.Contains(out.CSS, "@font-face") {
+		t.Error("css output should carry self-hosted @font-face rules for bundled families")
 	}
 }
 
@@ -697,7 +702,7 @@ func TestDeterministicOutputWithHostileContent(t *testing.T) {
 	}
 }
 
-// leafpad markdown links by display title ([[Beta Note]]), while public
+// Hosted authors link by display title ([[Beta Note]]), while public
 // slugs are hyphenated (beta-note). Titles register as resolver aliases.
 func TestWikilinkResolvesByPageTitle(t *testing.T) {
 	out := runJSON(t, `{
@@ -1034,5 +1039,356 @@ func TestAutoSectionTitleReadsHyphensAsSpaces(t *testing.T) {
 	}`)
 	if len(out.Sections) != 1 || !strings.Contains(out.Sections[0].HTML, "Field Notes") {
 		t.Errorf("auto section should be titled 'Field Notes', got: %v", out.Sections)
+	}
+}
+
+func TestSelfHostedFontsInStylesheet(t *testing.T) {
+	out := runJSON(t, twoLinkedPages)
+	html := pageHTML(t, out, "alpha")
+
+	// Default families are all bundled: @font-face rules live in the
+	// generated stylesheet with site-relative URLs (the stylesheet is
+	// served from the garden root, so they resolve under the base path).
+	if !strings.Contains(out.CSS, "@font-face") {
+		t.Error("stylesheet missing @font-face rules")
+	}
+	if !strings.Contains(out.CSS, `url("static/leafpress/fonts/inter-normal-latin.woff2")`) {
+		t.Error("font URLs must be site-relative in the stylesheet")
+	}
+	if strings.Contains(html, "@font-face") {
+		t.Error("@font-face must not be inlined into every page head")
+	}
+	if strings.Contains(html, "fonts.googleapis.com") || strings.Contains(html, "fonts.gstatic.com") {
+		t.Error("bundled default fonts must not reference Google Fonts")
+	}
+	// No warnings: every family is self-hosted.
+	for _, w := range out.Warnings {
+		if strings.Contains(w, "font family") {
+			t.Errorf("unexpected font warning: %s", w)
+		}
+	}
+}
+
+func TestUnbundledFontWarnsAndFallsBackLocally(t *testing.T) {
+	out := runJSON(t, `{
+	  "garden": {"slug": "g", "theme": {"fontBody": "Lobster"}},
+	  "pages": [{"slug": "note", "title": "Note", "markdown": "hi"}]
+	}`)
+	html := pageHTML(t, out, "note")
+
+	// Self-contained by default: no remote link, a warning instead, and
+	// the CSS variable fallback stack takes over in the browser.
+	if strings.Contains(html, "fonts.googleapis.com") {
+		t.Error("unbundled family must not load remotely by default")
+	}
+	var warned bool
+	for _, w := range out.Warnings {
+		if strings.Contains(w, `"Lobster"`) {
+			warned = true
+		}
+	}
+	if !warned {
+		t.Errorf("expected a fallback warning for Lobster, got %v", out.Warnings)
+	}
+	// Bundled heading/mono fonts still self-host.
+	if !strings.Contains(out.CSS, "@font-face") {
+		t.Error("bundled families should still emit @font-face rules")
+	}
+}
+
+func TestRemoteFontsIsDeprecatedOptIn(t *testing.T) {
+	out := runJSON(t, `{
+	  "garden": {"slug": "g", "theme": {"fontBody": "Lobster", "remoteFonts": true}},
+	  "pages": [{"slug": "note", "title": "Note", "markdown": "hi"}]
+	}`)
+	html := pageHTML(t, out, "note")
+
+	if !strings.Contains(html, "fonts.googleapis.com/css2?family=Lobster") {
+		t.Error("remoteFonts opt-in should keep the Google Fonts link")
+	}
+	if strings.Contains(html, "family=Crimson+Pro") || strings.Contains(html, "family=JetBrains+Mono") {
+		t.Error("bundled families must not appear in the remote URL")
+	}
+	for _, w := range out.Warnings {
+		if strings.Contains(w, `"Lobster"`) {
+			t.Errorf("explicit opt-in should not warn: %s", w)
+		}
+	}
+}
+
+func TestCustomLocalFontsRenderPortableCSS(t *testing.T) {
+	out := runJSON(t, `{
+	  "garden": {"slug": "g", "baseUrl": "/g/x"},
+	  "config": {
+	    "title": "G",
+	    "theme": {
+	      "fontBody": "My Serif",
+	      "fonts": [{"family": "My Serif", "file": "static/fonts/my.woff2", "weight": "400 700"}]
+	    }
+	  },
+	  "pages": [{"slug": "note", "title": "Note", "markdown": "hi"}]
+	}`)
+	// Font CSS lives in the shared stylesheet with stylesheet-relative
+	// URLs: url("static/...") resolves against {basePath}/style.css, so no
+	// base path is baked into the CSS itself.
+	if !strings.Contains(out.CSS, `font-family: "My Serif"`) {
+		t.Error("custom @font-face missing from stylesheet")
+	}
+	if !strings.Contains(out.CSS, `url("static/fonts/my.woff2")`) {
+		t.Error("custom font URL must be stylesheet-relative")
+	}
+	html := pageHTML(t, out, "note")
+	if strings.Contains(html, "fonts.googleapis.com") || strings.Contains(out.CSS, "fonts.googleapis.com") {
+		t.Error("declared custom family must not trigger a remote font link")
+	}
+}
+
+func TestInvalidCustomFontConfigRejected(t *testing.T) {
+	_, err := Run([]byte(`{
+	  "garden": {"slug": "g"},
+	  "config": {"theme": {"fonts": [{"family": "X", "file": "static/fonts/../../etc/passwd"}]}},
+	  "pages": []
+	}`))
+	var inputErr *InputError
+	if err == nil || !errors.As(err, &inputErr) {
+		t.Fatalf("traversal font file must be an input error, got %v", err)
+	}
+}
+
+func TestAssetManifestAlwaysEmitted(t *testing.T) {
+	out := runJSON(t, twoLinkedPages)
+
+	if out.AssetRegistryID != assets.RegistryID() {
+		t.Errorf("assetRegistryId = %q, want %q", out.AssetRegistryID, assets.RegistryID())
+	}
+	if err := out.AssetManifest.Validate(); err != nil {
+		t.Fatalf("asset manifest invalid: %v", err)
+	}
+	// Default families are all bundled: 3 favicons + 12 font faces + 3 OFL
+	// license texts.
+	if len(out.AssetManifest) != 18 {
+		t.Fatalf("manifest has %d entries, want 18", len(out.AssetManifest))
+	}
+	byPath := map[string]assets.Asset{}
+	for _, a := range out.AssetManifest {
+		byPath[a.LogicalPath] = a
+	}
+	if a, ok := byPath[assets.BuiltinFaviconICO]; !ok || a.OutputPath != "favicon.ico" {
+		t.Error("favicon.ico missing or missing root output path")
+	}
+	if _, ok := byPath["static/leafpress/fonts/inter-normal-latin.woff2"]; !ok {
+		t.Error("bundled font face missing from manifest")
+	}
+	if _, ok := byPath["static/leafpress/fonts/OFL-inter.txt"]; !ok {
+		t.Error("OFL license text missing from manifest")
+	}
+
+	// Without emitAssets no binary artifacts appear, and every artifact is utf8.
+	for _, a := range out.Artifacts {
+		if a.Encoding != "utf8" {
+			t.Errorf("artifact %s encoding = %q, want utf8", a.Path, a.Encoding)
+		}
+	}
+}
+
+func TestManifestSkipsFontsOfUnbundledFamilies(t *testing.T) {
+	out := runJSON(t, `{
+	  "garden": {"slug": "g", "theme": {"fontHeading": "Lobster", "fontBody": "Lobster", "fontMono": "Fira Code"}},
+	  "pages": [{"slug": "note", "title": "Note", "markdown": "hi"}]
+	}`)
+	for _, a := range out.AssetManifest {
+		if strings.HasPrefix(a.LogicalPath, assets.BuiltinPrefix+"fonts/") {
+			t.Errorf("unbundled theme should not require font asset %s", a.LogicalPath)
+		}
+	}
+	// Favicons are still required (every page head links them).
+	if len(out.AssetManifest) != 3 {
+		t.Errorf("manifest has %d entries, want 3 favicons", len(out.AssetManifest))
+	}
+}
+
+func TestEmitAssetsProducesBase64Artifacts(t *testing.T) {
+	out := runJSON(t, `{
+	  "garden": {"slug": "g"},
+	  "emitAssets": true,
+	  "pages": [{"slug": "note", "title": "Note", "markdown": "hi"}]
+	}`)
+
+	assetArtifacts := map[string]OutputArtifact{}
+	for _, a := range out.Artifacts {
+		if a.Encoding == "base64" {
+			assetArtifacts[a.Path] = a
+		}
+	}
+	if len(assetArtifacts) != len(out.AssetManifest) {
+		t.Fatalf("%d base64 artifacts, want %d (one per manifest entry)", len(assetArtifacts), len(out.AssetManifest))
+	}
+	for _, entry := range out.AssetManifest {
+		// Artifacts are keyed by the effective output path: the exact
+		// filename a CLI export serves (favicon.ico at the root, not its
+		// registry logical path).
+		artifact, ok := assetArtifacts[entry.EffectiveOutputPath()]
+		if !ok {
+			t.Errorf("no artifact for manifest entry %s at %s", entry.LogicalPath, entry.EffectiveOutputPath())
+			continue
+		}
+		raw, err := base64.StdEncoding.DecodeString(artifact.Content)
+		if err != nil {
+			t.Errorf("%s: content is not valid base64: %v", entry.LogicalPath, err)
+			continue
+		}
+		if got := assets.Sum(raw); got != entry.SHA256 {
+			t.Errorf("%s: decoded hash %s != manifest hash %s", entry.LogicalPath, got, entry.SHA256)
+		}
+		if int64(len(raw)) != entry.Size {
+			t.Errorf("%s: decoded size %d != manifest size %d", entry.LogicalPath, len(raw), entry.Size)
+		}
+		if artifact.ContentType != entry.ContentType {
+			t.Errorf("%s: artifact content type %q != manifest %q", entry.LogicalPath, artifact.ContentType, entry.ContentType)
+		}
+	}
+
+	// Text artifacts stay utf8 alongside.
+	if a := artifact(t, out, "robots.txt"); a.Encoding != "utf8" {
+		t.Errorf("robots.txt encoding = %q", a.Encoding)
+	}
+}
+
+func TestCallerAssetsMergeOverrideAndWarnings(t *testing.T) {
+	fontHash := assets.Sum([]byte("custom font bytes"))
+	faviconHash := assets.Sum([]byte("user favicon bytes"))
+	out := runJSON(t, `{
+	  "garden": {"slug": "g"},
+	  "config": {
+	    "title": "G",
+	    "theme": {
+	      "fontBody": "My Serif",
+	      "fonts": [{"family": "My Serif", "file": "static/fonts/my.woff2", "weight": "400 700"}]
+	    }
+	  },
+	  "assets": [
+	    {"logicalPath": "static/fonts/my.woff2", "contentType": "font/woff2", "sha256": "`+fontHash+`", "size": 17},
+	    {"logicalPath": "static/user-favicon.ico", "contentType": "image/x-icon", "sha256": "`+faviconHash+`", "size": 18, "outputPath": "favicon.ico"}
+	  ],
+	  "emitAssets": true,
+	  "pages": [{"slug": "note", "title": "Note", "markdown": "hi"}]
+	}`)
+
+	if err := out.AssetManifest.Validate(); err != nil {
+		t.Fatalf("combined manifest invalid: %v", err)
+	}
+	byOutput := map[string]assets.Asset{}
+	for _, a := range out.AssetManifest {
+		byOutput[a.EffectiveOutputPath()] = a
+	}
+
+	// The declared custom font joins the manifest, so hosts can pin it into
+	// the same publication snapshot as the HTML.
+	if a, ok := byOutput["static/fonts/my.woff2"]; !ok || a.SHA256 != fontHash {
+		t.Error("caller-declared custom font missing from combined manifest")
+	}
+	// The caller favicon replaces the built-in entry at favicon.ico.
+	if a, ok := byOutput["favicon.ico"]; !ok || a.SHA256 != faviconHash {
+		t.Errorf("caller favicon did not override the built-in entry: %+v", byOutput["favicon.ico"])
+	}
+	// A declared custom font produces no undeclared-font warning.
+	for _, w := range out.Warnings {
+		if strings.Contains(w, "caller asset manifest") {
+			t.Errorf("unexpected undeclared-font warning: %q", w)
+		}
+	}
+
+	// Byte emission: built-ins only, keyed by effective output path. The
+	// overridden favicon and the caller font must not be emitted — the
+	// renderer does not have those bytes.
+	emitted := map[string]bool{}
+	for _, a := range out.Artifacts {
+		if a.Encoding == "base64" {
+			emitted[a.Path] = true
+		}
+	}
+	if emitted["favicon.ico"] {
+		t.Error("overridden favicon bytes emitted from the registry")
+	}
+	if emitted["static/fonts/my.woff2"] {
+		t.Error("caller font bytes emitted — the renderer cannot have them")
+	}
+	if !emitted["favicon.svg"] {
+		t.Error("non-overridden built-in favicon.svg not emitted")
+	}
+}
+
+func TestUndeclaredCustomFontWarns(t *testing.T) {
+	out := runJSON(t, `{
+	  "garden": {"slug": "g"},
+	  "config": {
+	    "title": "G",
+	    "theme": {"fonts": [{"family": "My Serif", "file": "static/fonts/my.woff2"}]}
+	  },
+	  "pages": [{"slug": "note", "title": "Note", "markdown": "hi"}]
+	}`)
+	found := false
+	for _, w := range out.Warnings {
+		if strings.Contains(w, "static/fonts/my.woff2") && strings.Contains(w, "caller asset manifest") {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("expected undeclared-custom-font warning, got %v", out.Warnings)
+	}
+}
+
+func TestCallerAssetsRejectedWhenInvalid(t *testing.T) {
+	hash := assets.Sum([]byte("x"))
+	cases := map[string]string{
+		"reserved namespace":    `{"logicalPath": "static/leafpress/evil.woff2", "contentType": "font/woff2", "sha256": "` + hash + `", "size": 1}`,
+		"traversal":             `{"logicalPath": "static/../evil.woff2", "contentType": "font/woff2", "sha256": "` + hash + `", "size": 1}`,
+		"bad hash":              `{"logicalPath": "static/fonts/a.woff2", "contentType": "font/woff2", "sha256": "nope", "size": 1}`,
+		"style.css collision":   `{"logicalPath": "static/user.css", "contentType": "text/css", "sha256": "` + hash + `", "size": 1, "outputPath": "style.css"}`,
+		"index.html collision":  `{"logicalPath": "static/evil.html", "contentType": "text/html", "sha256": "` + hash + `", "size": 1, "outputPath": "index.html"}`,
+		"404.html collision":    `{"logicalPath": "static/evil404.html", "contentType": "text/html", "sha256": "` + hash + `", "size": 1, "outputPath": "404.html"}`,
+		"feed.xml collision":    `{"logicalPath": "static/evil.xml", "contentType": "application/xml", "sha256": "` + hash + `", "size": 1, "outputPath": "feed.xml"}`,
+		"arbitrary outputPath":  `{"logicalPath": "static/a.txt", "contentType": "text/plain", "sha256": "` + hash + `", "size": 1, "outputPath": "elsewhere.txt"}`,
+		"font outputPath drift": `{"logicalPath": "static/fonts/my.woff2", "contentType": "font/woff2", "sha256": "` + hash + `", "size": 1, "outputPath": "static/fonts/other.woff2"}`,
+		"duplicate output path": `{"logicalPath": "static/a.ico", "contentType": "image/x-icon", "sha256": "` + hash + `", "size": 1, "outputPath": "favicon.ico"},
+		{"logicalPath": "static/b.ico", "contentType": "image/x-icon", "sha256": "` + hash + `", "size": 1, "outputPath": "favicon.ico"}`,
+		"bare reserved dir": `{"logicalPath": "static/leafpress", "contentType": "text/plain", "sha256": "` + hash + `", "size": 1}`,
+	}
+	for name, entry := range cases {
+		_, err := Run([]byte(`{
+		  "garden": {"slug": "g"},
+		  "assets": [` + entry + `],
+		  "pages": []
+		}`))
+		var inputErr *InputError
+		if err == nil || !errors.As(err, &inputErr) {
+			t.Errorf("%s: want input error, got %v", name, err)
+		}
+	}
+}
+
+func TestWikilinkResolvesRawTitleWithEntities(t *testing.T) {
+	out := runJSON(t, `{
+	  "garden": {"slug": "g"},
+	  "pages": [
+	    {"slug": "target", "title": "Foo & Bar", "markdown": "content"},
+	    {"slug": "source", "title": "Source", "markdown": "See [[Foo & Bar]]."}
+	  ]
+	}`)
+	html := pageHTML(t, out, "source")
+	if !strings.Contains(html, `href="/target/"`) {
+		t.Errorf("raw title with & must resolve as a wikilink:\n%s", html)
+	}
+}
+
+func TestInvalidThemeFontFailsViaSharedValidation(t *testing.T) {
+	_, err := Run([]byte(`{
+	  "garden": {"slug": "g"},
+	  "config": {"theme": {"fontBody": "Evil\"; @import url(x); \""}},
+	  "pages": []
+	}`))
+	var inputErr *InputError
+	if err == nil || !errors.As(err, &inputErr) {
+		t.Fatalf("unsafe font name must fail as input error via config.Validate, got %v", err)
 	}
 }
