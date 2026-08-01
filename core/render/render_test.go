@@ -1175,7 +1175,7 @@ func TestAssetManifestAlwaysEmitted(t *testing.T) {
 		t.Fatalf("asset manifest invalid: %v", err)
 	}
 	// Default families are all bundled: 3 favicons + 12 font faces + 3 OFL
-	// license texts.
+	// license texts. Mermaid is content-optional and absent here.
 	if len(out.AssetManifest) != 18 {
 		t.Fatalf("manifest has %d entries, want 18", len(out.AssetManifest))
 	}
@@ -1214,6 +1214,51 @@ func TestManifestSkipsFontsOfUnbundledFamilies(t *testing.T) {
 	// Favicons are still required (every page head links them).
 	if len(out.AssetManifest) != 3 {
 		t.Errorf("manifest has %d entries, want 3 favicons", len(out.AssetManifest))
+	}
+}
+
+func TestMermaidSelfHostedInManifestAndHTML(t *testing.T) {
+	// JSON body built with a quoted string so mermaid fences do not break
+	// Go raw-string literals (which also use backticks).
+	const body = "```mermaid\ngraph TD\nA-->B\n```"
+	payload, err := json.Marshal(map[string]any{
+		"garden": map[string]any{"slug": "g", "baseUrl": "/g/g"},
+		"pages": []map[string]any{
+			{"slug": "diag", "title": "Diag", "markdown": body},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := runJSON(t, string(payload))
+	byPath := map[string]assets.Asset{}
+	for _, a := range out.AssetManifest {
+		byPath[a.LogicalPath] = a
+	}
+	if _, ok := byPath[assets.BuiltinMermaidJS]; !ok {
+		t.Error("mermaid script missing from asset manifest when diagrams are used")
+	}
+	if _, ok := byPath[assets.BuiltinMermaidLicense]; !ok {
+		t.Error("mermaid license missing from asset manifest when diagrams are used")
+	}
+	// Default fonts (15) + favicons (3) + mermaid (2) = 20
+	if len(out.AssetManifest) != 20 {
+		t.Fatalf("manifest has %d entries, want 20 with mermaid", len(out.AssetManifest))
+	}
+
+	html := pageHTML(t, out, "diag")
+	if strings.Contains(html, "cdn.jsdelivr") || strings.Contains(html, "unpkg.com") {
+		t.Error("rendered page must not load Mermaid from a CDN")
+	}
+	// Script src is composed at runtime: LP_BASE_PATH + '/static/leafpress/mermaid/…'
+	if !strings.Contains(html, `var LP_BASE_PATH = '/g/g'`) {
+		t.Error("page must set LP_BASE_PATH from garden baseUrl")
+	}
+	if !strings.Contains(html, `LP_BASE_PATH + '/static/leafpress/mermaid/mermaid.min.js'`) {
+		t.Error("page must load self-hosted mermaid via LP_BASE_PATH")
+	}
+	if !strings.Contains(html, `class="mermaid"`) {
+		t.Error("page body should contain mermaid diagram container")
 	}
 }
 

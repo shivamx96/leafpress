@@ -282,10 +282,10 @@ func (b *Builder) Build() (*Stats, error) {
 	}
 	b.logTiming("favicons", time.Since(t0))
 
-	// Materialize built-in fonts for the configured theme
+	// Materialize theme fonts and content-optional built-ins (e.g. Mermaid)
 	t0 = time.Now()
-	if err := b.materializeBuiltinFonts(); err != nil {
-		return nil, fmt.Errorf("failed to materialize built-in fonts: %w", err)
+	if err := b.materializeRequiredBuiltins(pages); err != nil {
+		return nil, fmt.Errorf("failed to materialize built-in assets: %w", err)
 	}
 	b.logTiming("fonts", time.Since(t0))
 
@@ -1146,19 +1146,15 @@ func (b *Builder) copyFavicons() error {
 	return nil
 }
 
-// materializeBuiltinFonts writes the bundled woff2 files for every configured
-// theme family covered by the built-in set into the output directory at their
-// logical paths (_site/static/leafpress/fonts/...), matching the @font-face
-// URLs the base template emits. Families outside the set load remotely and
-// need no files.
-func (b *Builder) materializeBuiltinFonts() error {
-	// One shared selection list with the renderer (assets.RequiredBuiltins):
-	// faces and OFL license texts of configured bundled families. Root
-	// built-ins from that list are copyFavicons' job; everything else lands
-	// at its logical path. Families outside the set get no files — they fall
-	// back to the system stacks (or load remotely only under the deprecated
-	// theme.remoteFonts opt-in).
-	for _, builtin := range assets.RequiredBuiltins(
+// materializeRequiredBuiltins writes non-root built-ins the site references:
+// theme font faces/licenses and, when any page contains a Mermaid diagram,
+// the self-hosted mermaid script (+ MIT license). Paths match the asset
+// manifest and template URLs (_site/static/leafpress/...). Root favicons are
+// copyFavicons' job.
+func (b *Builder) materializeRequiredBuiltins(pages []*content.Page) error {
+	// Shared selection list with the renderer (assets.RequiredBuiltinsFor).
+	for _, builtin := range assets.RequiredBuiltinsFor(
+		content.UsesMermaid(pages),
 		b.cfg.Theme.FontHeading, b.cfg.Theme.FontBody, b.cfg.Theme.FontMono,
 	) {
 		if builtin.Asset.OutputPath != "" {

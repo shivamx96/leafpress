@@ -283,6 +283,60 @@ func TestBuildRejectsUserFilesInReservedNamespace(t *testing.T) {
 	}
 }
 
+func TestBuildSelfHostsMermaidWhenUsed(t *testing.T) {
+	dir := newTestProject(t)
+	if err := os.WriteFile(filepath.Join(dir, "note.md"), []byte(""+
+		"# Note\n\n```mermaid\ngraph TD\n  A-->B\n```\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	b := New(config.Default(), Options{})
+	if _, err := b.Build(); err != nil {
+		t.Fatalf("Build: %v", err)
+	}
+
+	jsPath := filepath.Join(dir, "_site", "static", "leafpress", "mermaid", "mermaid.min.js")
+	got, err := os.ReadFile(jsPath)
+	if err != nil {
+		t.Fatalf("mermaid must materialize when diagrams are present: %v", err)
+	}
+	builtin, ok := assets.BuiltinByLogicalPath(assets.BuiltinMermaidJS)
+	if !ok {
+		t.Fatal("registry missing mermaid")
+	}
+	if !bytes.Equal(got, builtin.Content()) {
+		t.Error("materialized mermaid does not match registry bytes")
+	}
+	lic := filepath.Join(dir, "_site", "static", "leafpress", "mermaid", "LICENSE.txt")
+	if _, err := os.Stat(lic); err != nil {
+		t.Fatalf("mermaid license must materialize: %v", err)
+	}
+
+	page, err := os.ReadFile(filepath.Join(dir, "_site", "note", "index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	html := string(page)
+	if strings.Contains(html, "cdn.jsdelivr") || strings.Contains(html, "cdnjs") {
+		t.Error("page must not load Mermaid from a third-party CDN")
+	}
+	if !strings.Contains(html, "/static/leafpress/mermaid/mermaid.min.js") {
+		t.Error("page must load self-hosted mermaid path")
+	}
+}
+
+func TestBuildSkipsMermaidWhenUnused(t *testing.T) {
+	dir := newTestProject(t)
+	b := New(config.Default(), Options{})
+	if _, err := b.Build(); err != nil {
+		t.Fatalf("Build: %v", err)
+	}
+	jsPath := filepath.Join(dir, "_site", "static", "leafpress", "mermaid", "mermaid.min.js")
+	if _, err := os.Stat(jsPath); !os.IsNotExist(err) {
+		t.Error("mermaid must not materialize when no diagrams are present")
+	}
+}
+
 func TestBuildEmitsSearchIndexWhenSearchUIDisabled(t *testing.T) {
 	dir := newTestProject(t)
 	// Link target so the page has a wikilink for preview script attachment.

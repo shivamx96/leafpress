@@ -13,7 +13,7 @@ Everything you need to build a digital garden, nothing you don't.
 
 **Tags** — Add `tags: [idea, project]` to frontmatter. Get tag pages automatically.
 
-**Mermaid Diagrams** — Fenced `mermaid` code blocks render as interactive diagrams. Supports flowcharts, sequence diagrams, Gantt charts, and more. Dark mode compatible.
+**Mermaid Diagrams** — Fenced `mermaid` code blocks render as interactive diagrams. Supports flowcharts, sequence diagrams, Gantt charts, and more. Dark mode compatible. Self-hosted (no CDN).
 
 **Callouts** — Obsidian-compatible admonitions for notes, warnings, tips, and more.
 

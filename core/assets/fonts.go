@@ -106,9 +106,18 @@ var builtinFontLicenses = map[string]string{
 // RequiredBuiltins returns every built-in a rendered site references for the
 // given theme families: all root built-ins (favicons, linked from every page
 // head) plus the faces and OFL license texts of families covered by the
-// bundled set. This is the single selection list — CLI materialization and
-// the renderer's asset manifest must both use it, never private copies.
+// bundled set. Content-optional built-ins such as Mermaid are omitted — use
+// RequiredBuiltinsFor when diagram presence is known. This is the single
+// selection list — CLI materialization and the renderer's asset manifest must
+// both use it (via RequiredBuiltinsFor), never private copies.
 func RequiredBuiltins(families ...string) []Builtin {
+	return RequiredBuiltinsFor(false, families...)
+}
+
+// RequiredBuiltinsFor is RequiredBuiltins plus content-optional built-ins.
+// Pass includeMermaid when any page's rendered HTML contains a Mermaid diagram
+// so the script (and its MIT license text) land in the site manifest.
+func RequiredBuiltinsFor(includeMermaid bool, families ...string) []Builtin {
 	want := map[string]bool{}
 	for _, family := range families {
 		want[family] = true
@@ -131,7 +140,11 @@ func RequiredBuiltins(families ...string) []Builtin {
 
 	var out []Builtin
 	for _, b := range builtins {
-		if fontOwned[b.Asset.LogicalPath] && !include[b.Asset.LogicalPath] {
+		path := b.Asset.LogicalPath
+		if isContentOptional(path) && !includeMermaid {
+			continue
+		}
+		if fontOwned[path] && !include[path] {
 			continue
 		}
 		out = append(out, b)

@@ -40,6 +40,14 @@ var pinnedBuiltins = map[string]struct {
 	"static/leafpress/fonts/OFL-crimson-pro.txt":                   {sha256: "1820869bd5baa1c2d88fa87c89eea532cf9442d841008acab720654b7f82823d"},
 	"static/leafpress/fonts/OFL-inter.txt":                         {sha256: "5b9321a4298cfeb6b34354164a1c3afc3db114569984c502b9b35d988fd58c57"},
 	"static/leafpress/fonts/OFL-jetbrains-mono.txt":                {sha256: "b2fe5e8987594e9ffd1d2ca52a2f5d73eb8335243893c5d6254b5ad69269591d"},
+	BuiltinMermaidJS: {
+		sha256:      "a43bc1afd446f9c4cc66ac5dd45d02e8d65e26fc5344ec0ef787f88d6ddb6f9e",
+		contentType: "text/javascript; charset=utf-8",
+	},
+	BuiltinMermaidLicense: {
+		sha256:      "ec9fb67dcb25eccc416ed56e1aab819222c805a2a4bfe4cb19e7556bf2ffde80",
+		contentType: "text/plain; charset=utf-8",
+	},
 }
 
 func TestBuiltinRegistryPinned(t *testing.T) {
