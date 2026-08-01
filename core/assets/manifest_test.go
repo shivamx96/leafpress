@@ -31,6 +31,7 @@ func TestValidateLogicalPath(t *testing.T) {
 		"static/leafpress/fonts/crimson-pro-700.woff2",
 		"static/images/photo.JPG",
 		"static/a/b/c/d.txt",
+		"static/tilde~file.txt",
 	}
 	for _, p := range valid {
 		if err := ValidateLogicalPath(p); err != nil {
@@ -55,6 +56,15 @@ func TestValidateLogicalPath(t *testing.T) {
 		"static/C:/fonts/a.woff2": "embedded colon",
 		"../static/fonts/a.woff2": "leading traversal",
 		"static/fonts/..":         "trailing traversal",
+		// Paths are not URLs: values that parse differently as URLs or
+		// after percent-decoding must be rejected, not deduplicated wrong.
+		"static/image.png?variant=1": "query syntax",
+		"static/image.png#fragment":  "fragment syntax",
+		"static/%2e%2e/secret":       "percent-encoded traversal",
+		"static/a%2fb.png":           "percent-encoded slash",
+		"static/a%20b.png":           "any percent escape",
+		"static/fo\u0085nt.woff2":    "C1 control (NEL)",
+		"static/fo\u009cnt.woff2":    "C1 control (ST)",
 	}
 	for p, why := range invalid {
 		if err := ValidateLogicalPath(p); err == nil {
@@ -63,17 +73,29 @@ func TestValidateLogicalPath(t *testing.T) {
 	}
 }
 
-func TestValidatePublicPath(t *testing.T) {
-	valid := []string{"/favicon.ico", "/static/fonts/inter-400.woff2", "/a/b/c"}
+func TestValidateOutputPath(t *testing.T) {
+	valid := []string{"favicon.ico", "static/fonts/inter-400.woff2", "a/b/c"}
 	for _, p := range valid {
-		if err := ValidatePublicPath(p); err != nil {
-			t.Errorf("ValidatePublicPath(%q) = %v, want nil", p, err)
+		if err := ValidateOutputPath(p); err != nil {
+			t.Errorf("ValidateOutputPath(%q) = %v, want nil", p, err)
 		}
 	}
-	invalid := []string{"favicon.ico", "/a//b", "/a/../b", "/a/./b", "/a\\b", "/a\x00b", "/"}
+	invalid := []string{
+		"",
+		"/favicon.ico", // site-relative, not absolute
+		"a//b",
+		"a/../b",
+		"a/./b",
+		"a\\b",
+		"a\x00b",
+		"a?x=1",
+		"a#frag",
+		"%2e%2e/b",
+		"a\u0085b",
+	}
 	for _, p := range invalid {
-		if err := ValidatePublicPath(p); err == nil {
-			t.Errorf("ValidatePublicPath(%q) = nil, want error", p)
+		if err := ValidateOutputPath(p); err == nil {
+			t.Errorf("ValidateOutputPath(%q) = nil, want error", p)
 		}
 	}
 }
@@ -88,6 +110,7 @@ func TestAssetValidate(t *testing.T) {
 		mutate func(*Asset)
 	}{
 		{"traversal path", func(a *Asset) { a.LogicalPath = "static/../a.woff2" }},
+		{"query in path", func(a *Asset) { a.LogicalPath = "static/a.woff2?v=1" }},
 		{"empty content type", func(a *Asset) { a.ContentType = "" }},
 		{"junk content type", func(a *Asset) { a.ContentType = "not a mime" }},
 		{"bare content type", func(a *Asset) { a.ContentType = "woff2" }},
@@ -95,8 +118,9 @@ func TestAssetValidate(t *testing.T) {
 		{"short hash", func(a *Asset) { a.SHA256 = "abc123" }},
 		{"empty hash", func(a *Asset) { a.SHA256 = "" }},
 		{"negative size", func(a *Asset) { a.Size = -1 }},
-		{"relative public path", func(a *Asset) { a.PublicPath = "favicon.ico" }},
-		{"traversal public path", func(a *Asset) { a.PublicPath = "/../favicon.ico" }},
+		{"absolute output path", func(a *Asset) { a.OutputPath = "/favicon.ico" }},
+		{"traversal output path", func(a *Asset) { a.OutputPath = "../favicon.ico" }},
+		{"fragment output path", func(a *Asset) { a.OutputPath = "favicon.ico#x" }},
 	}
 	for _, tt := range tests {
 		a := validAsset()
@@ -115,53 +139,119 @@ func TestAssetValidateAllowsContentTypeParams(t *testing.T) {
 	}
 }
 
-func TestEffectivePublicPath(t *testing.T) {
+func TestEffectiveOutputPath(t *testing.T) {
 	a := validAsset()
-	if got := a.EffectivePublicPath(); got != "/static/fonts/inter-400.woff2" {
-		t.Fatalf("default public path = %q", got)
+	if got := a.EffectiveOutputPath(); got != "static/fonts/inter-400.woff2" {
+		t.Fatalf("default output path = %q", got)
 	}
-	a.PublicPath = "/favicon.ico"
-	if got := a.EffectivePublicPath(); got != "/favicon.ico" {
-		t.Fatalf("explicit public path = %q", got)
+	a.OutputPath = "favicon.ico"
+	if got := a.EffectiveOutputPath(); got != "favicon.ico" {
+		t.Fatalf("explicit output path = %q", got)
 	}
 }
 
-func TestManifestValidate(t *testing.T) {
+func TestNewManifestCanonicalizes(t *testing.T) {
 	a := validAsset()
 	b := validAsset()
-	b.LogicalPath = "static/fonts/inter-700.woff2"
+	b.LogicalPath = "static/a.txt"
 
-	if err := (Manifest{a, b}).Validate(); err != nil {
-		t.Fatalf("valid manifest rejected: %v", err)
+	m, err := NewManifest(a, b)
+	if err != nil {
+		t.Fatalf("NewManifest: %v", err)
 	}
+	if m[0].LogicalPath != "static/a.txt" {
+		t.Fatalf("NewManifest must sort; got %q first", m[0].LogicalPath)
+	}
+	if err := m.Validate(); err != nil {
+		t.Fatalf("canonical manifest failed validation: %v", err)
+	}
+	// The input slice is not mutated.
+	if a.LogicalPath != "static/fonts/inter-400.woff2" {
+		t.Error("NewManifest mutated its input")
+	}
+}
+
+func TestManifestValidateRequiresCanonicalOrder(t *testing.T) {
+	a := validAsset()
+	b := validAsset()
+	b.LogicalPath = "static/a.txt"
+
+	// Descending order is individually valid but not canonical.
+	if err := (Manifest{a, b}).Validate(); err == nil {
+		t.Error("unsorted manifest accepted: a deterministic manifest must be sorted")
+	}
+	if err := (Manifest{b, a}).Validate(); err != nil {
+		t.Errorf("sorted manifest rejected: %v", err)
+	}
+}
+
+func TestManifestValidateDuplicates(t *testing.T) {
+	a := validAsset()
 
 	if err := (Manifest{a, a}).Validate(); err == nil {
 		t.Error("duplicate logical path accepted")
 	}
 
-	// Distinct logical paths colliding on the served path.
+	// Distinct logical paths colliding on the effective output path.
 	c := validAsset()
-	c.LogicalPath = "static/fonts/other.woff2"
-	c.PublicPath = "/static/fonts/inter-400.woff2"
-	if err := (Manifest{a, c}).Validate(); err == nil {
-		t.Error("duplicate public path accepted")
+	c.LogicalPath = "static/other.woff2"
+	c.OutputPath = "static/fonts/inter-400.woff2"
+	if _, err := NewManifest(a, c); err == nil {
+		t.Error("duplicate output path accepted")
 	}
 
 	bad := validAsset()
 	bad.SHA256 = "nope"
-	if err := (Manifest{bad}).Validate(); err == nil {
+	if _, err := NewManifest(bad); err == nil {
 		t.Error("manifest with invalid asset accepted")
 	}
 }
 
-func TestManifestSort(t *testing.T) {
-	a := validAsset()
-	b := validAsset()
-	b.LogicalPath = "static/a.txt"
-	m := Manifest{a, b}
-	m.Sort()
-	if m[0].LogicalPath != "static/a.txt" {
-		t.Fatalf("Sort order wrong: %q first", m[0].LogicalPath)
+func TestMergeOverridesByOutputPath(t *testing.T) {
+	builtin := validAsset()
+	builtin.LogicalPath = BuiltinPrefix + "favicon.ico"
+	builtin.OutputPath = "favicon.ico"
+
+	font := validAsset()
+
+	base, err := NewManifest(builtin, font)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// A user favicon on the same output path replaces the built-in entry.
+	userFavicon := Asset{
+		LogicalPath: "static/user-favicon.ico",
+		ContentType: "image/x-icon",
+		SHA256:      Sum([]byte("user bytes")),
+		Size:        10,
+		OutputPath:  "favicon.ico",
+	}
+	extra := Asset{
+		LogicalPath: "static/fonts/custom.woff2",
+		ContentType: "font/woff2",
+		SHA256:      Sum([]byte("custom")),
+		Size:        6,
+	}
+
+	merged, err := Merge(base, Manifest{userFavicon, extra})
+	if err != nil {
+		t.Fatalf("Merge: %v", err)
+	}
+	if len(merged) != 3 {
+		t.Fatalf("merged has %d entries, want 3 (override replaced, extra appended)", len(merged))
+	}
+	var atFavicon *Asset
+	for i := range merged {
+		if merged[i].EffectiveOutputPath() == "favicon.ico" {
+			atFavicon = &merged[i]
+		}
+	}
+	if atFavicon == nil || atFavicon.SHA256 != userFavicon.SHA256 {
+		t.Error("override did not replace the built-in favicon entry")
+	}
+	if err := merged.Validate(); err != nil {
+		t.Fatalf("merged manifest not canonical: %v", err)
 	}
 }
 

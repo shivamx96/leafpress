@@ -2,8 +2,8 @@
 // CLI and the embedded renderer (docs/07_ASSET_ARCHITECTURE.md). An Asset is
 // metadata only — logical path, content type, hash, size — never bytes. The
 // CLI materializes assets from disk; hosted consumers resolve them through
-// their own storage manifest. This package therefore performs no filesystem
-// or network access, preserving the renderer's purity boundary.
+// their own storage. This package therefore performs no filesystem or network
+// access, preserving the renderer's purity boundary.
 package assets
 
 import (
@@ -14,6 +14,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"unicode"
 )
 
 // BuiltinPrefix is the logical-path namespace reserved for assets Leafpress
@@ -27,18 +28,21 @@ type Asset struct {
 	LogicalPath string `json:"logicalPath"`
 	// ContentType is the MIME type the asset must be served with.
 	ContentType string `json:"contentType"`
-	// SHA256 is the lowercase-hex SHA-256 of the asset content. It doubles
-	// as the content-addressed storage key for hosted consumers.
+	// SHA256 is the lowercase-hex SHA-256 of the asset content.
 	SHA256 string `json:"sha256"`
 	// Size is the content length in bytes.
 	Size int64 `json:"size"`
-	// PublicPath optionally overrides where the asset is served when that
-	// differs from "/" + LogicalPath (e.g. root-level favicons).
-	PublicPath string `json:"publicPath,omitempty"`
+	// OutputPath optionally overrides where the asset lands relative to the
+	// site root when that differs from LogicalPath (e.g. "favicon.ico").
+	// It is site-relative, never an absolute URL: the CLI writes it under
+	// _site/, templates prefix it with BasePath, and hosts map it inside
+	// the garden's own route.
+	OutputPath string `json:"outputPath,omitempty"`
 }
 
-// Manifest is a set of assets. A valid manifest has no duplicate logical or
-// public paths; Sort makes its order deterministic.
+// Manifest is a set of assets. A valid manifest is in canonical form:
+// strictly ascending by logical path with no duplicate logical or effective
+// output paths. Use NewManifest to canonicalize arbitrary input.
 type Manifest []Asset
 
 var sha256Regex = regexp.MustCompile(`^[0-9a-f]{64}$`)
@@ -55,72 +59,67 @@ func IsBuiltinPath(logicalPath string) bool {
 	return strings.HasPrefix(logicalPath, BuiltinPrefix)
 }
 
-// ValidateLogicalPath enforces the canonical logical-path rules: relative,
-// forward-slash, rooted under "static/", with clean segments. Logical paths
-// become output file paths (CLI) and storage keys (hosted), so absolute and
-// traversal shapes are rejected as a security boundary.
-func ValidateLogicalPath(logicalPath string) error {
-	if logicalPath == "" {
-		return fmt.Errorf("logical path is empty")
+// validatePathShape enforces the single canonical path representation shared
+// by logical and output paths: relative, forward-slash, clean file-path
+// segments, and no characters that would let one manifest value mean
+// different things before and after URL parsing or percent-decoding.
+func validatePathShape(kind, p string) error {
+	if p == "" {
+		return fmt.Errorf("%s path is empty", kind)
 	}
-	if strings.HasPrefix(logicalPath, "/") {
-		return fmt.Errorf("logical path %q must be relative, not absolute", logicalPath)
+	if strings.HasPrefix(p, "/") {
+		return fmt.Errorf("%s path %q must be site-relative, not absolute", kind, p)
 	}
-	if strings.Contains(logicalPath, "\\") {
-		return fmt.Errorf("logical path %q must use forward slashes", logicalPath)
+	if strings.Contains(p, "\\") {
+		return fmt.Errorf("%s path %q must use forward slashes", kind, p)
 	}
-	for _, r := range logicalPath {
-		if r < 0x20 || r == 0x7f {
-			return fmt.Errorf("logical path %q contains control characters", logicalPath)
-		}
+	// Paths are literal file paths, not URLs: query/fragment syntax and
+	// percent escapes are rejected outright so validation and duplicate
+	// detection cannot be bypassed by values that collide after URL
+	// parsing or proxy-side percent-decoding (e.g. "a?x", "%2e%2e", "%2f").
+	if i := strings.IndexAny(p, "?#%"); i >= 0 {
+		return fmt.Errorf("%s path %q must not contain %q: paths are not URLs", kind, p, string(p[i]))
 	}
 	// Windows drive letters ("C:/...") would escape the site root when the
 	// path is joined on that platform.
-	if strings.Contains(logicalPath, ":") {
-		return fmt.Errorf("logical path %q must not contain ':'", logicalPath)
+	if strings.Contains(p, ":") {
+		return fmt.Errorf("%s path %q must not contain ':'", kind, p)
 	}
-	if !strings.HasPrefix(logicalPath, "static/") {
-		return fmt.Errorf("logical path %q must be under static/", logicalPath)
-	}
-	segments := strings.Split(logicalPath, "/")
-	for _, segment := range segments {
-		switch segment {
-		case "":
-			return fmt.Errorf("logical path %q has an empty segment", logicalPath)
-		case ".", "..":
-			return fmt.Errorf("logical path %q contains a traversal segment", logicalPath)
+	for _, r := range p {
+		// unicode.IsControl covers C0, DEL, and the C1 range (U+0080–U+009F).
+		if unicode.IsControl(r) {
+			return fmt.Errorf("%s path %q contains control characters", kind, p)
 		}
 	}
-	if segments[len(segments)-1] == "static" || len(segments) < 2 {
-		return fmt.Errorf("logical path %q must name a file under static/", logicalPath)
+	for _, segment := range strings.Split(p, "/") {
+		switch segment {
+		case "":
+			return fmt.Errorf("%s path %q has an empty segment", kind, p)
+		case ".", "..":
+			return fmt.Errorf("%s path %q contains a traversal segment", kind, p)
+		}
 	}
 	return nil
 }
 
-// ValidatePublicPath enforces the shape of an explicit public path: a clean
-// absolute URL path.
-func ValidatePublicPath(publicPath string) error {
-	if !strings.HasPrefix(publicPath, "/") {
-		return fmt.Errorf("public path %q must start with /", publicPath)
+// ValidateLogicalPath enforces the canonical logical-path rules: the shared
+// path shape, rooted under "static/". Logical paths become output file paths
+// and storage keys, so this is a security boundary.
+func ValidateLogicalPath(logicalPath string) error {
+	if err := validatePathShape("logical", logicalPath); err != nil {
+		return err
 	}
-	if strings.Contains(publicPath, "\\") {
-		return fmt.Errorf("public path %q must use forward slashes", publicPath)
-	}
-	for _, r := range publicPath {
-		if r < 0x20 || r == 0x7f {
-			return fmt.Errorf("public path %q contains control characters", publicPath)
-		}
-	}
-	segments := strings.Split(publicPath[1:], "/")
-	for _, segment := range segments {
-		switch segment {
-		case "":
-			return fmt.Errorf("public path %q has an empty segment", publicPath)
-		case ".", "..":
-			return fmt.Errorf("public path %q contains a traversal segment", publicPath)
-		}
+	if !strings.HasPrefix(logicalPath, "static/") {
+		return fmt.Errorf("logical path %q must be under static/", logicalPath)
 	}
 	return nil
+}
+
+// ValidateOutputPath enforces the shape of an explicit output path: the same
+// canonical rules as logical paths, site-relative, but allowed anywhere in
+// the site (root favicons live outside static/).
+func ValidateOutputPath(outputPath string) error {
+	return validatePathShape("output", outputPath)
 }
 
 // Validate checks a single asset against the manifest contract.
@@ -144,45 +143,77 @@ func (a Asset) Validate() error {
 	if a.Size < 0 {
 		return fmt.Errorf("asset %q has negative size %d", a.LogicalPath, a.Size)
 	}
-	if a.PublicPath != "" {
-		if err := ValidatePublicPath(a.PublicPath); err != nil {
+	if a.OutputPath != "" {
+		if err := ValidateOutputPath(a.OutputPath); err != nil {
 			return fmt.Errorf("asset %q: %w", a.LogicalPath, err)
 		}
 	}
 	return nil
 }
 
-// EffectivePublicPath returns where the asset is served: the explicit
-// PublicPath when set, otherwise "/" + LogicalPath.
-func (a Asset) EffectivePublicPath() string {
-	if a.PublicPath != "" {
-		return a.PublicPath
+// EffectiveOutputPath returns where the asset lands relative to the site
+// root: the explicit OutputPath when set, otherwise the logical path.
+func (a Asset) EffectiveOutputPath() string {
+	if a.OutputPath != "" {
+		return a.OutputPath
 	}
-	return "/" + a.LogicalPath
+	return a.LogicalPath
 }
 
-// Validate checks every asset and rejects duplicate logical or public paths.
+// NewManifest canonicalizes and validates a set of assets: the result is
+// sorted ascending by logical path and free of duplicates. This is the way
+// callers should build manifests; Validate deliberately rejects
+// non-canonical order so "validated" always implies "deterministic".
+func NewManifest(list ...Asset) (Manifest, error) {
+	m := make(Manifest, len(list))
+	copy(m, list)
+	sort.Slice(m, func(i, j int) bool { return m[i].LogicalPath < m[j].LogicalPath })
+	if err := m.Validate(); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// Validate checks every asset, rejects duplicate logical or effective output
+// paths, and requires canonical (strictly ascending) order so a valid
+// manifest has exactly one form.
 func (m Manifest) Validate() error {
-	logical := make(map[string]bool, len(m))
-	public := make(map[string]bool, len(m))
-	for _, a := range m {
+	output := make(map[string]bool, len(m))
+	for i, a := range m {
 		if err := a.Validate(); err != nil {
 			return err
 		}
-		if logical[a.LogicalPath] {
-			return fmt.Errorf("duplicate logical path %q", a.LogicalPath)
+		if i > 0 {
+			switch {
+			case m[i-1].LogicalPath == a.LogicalPath:
+				return fmt.Errorf("duplicate logical path %q", a.LogicalPath)
+			case m[i-1].LogicalPath > a.LogicalPath:
+				return fmt.Errorf("manifest is not in canonical order: %q after %q (use NewManifest)", a.LogicalPath, m[i-1].LogicalPath)
+			}
 		}
-		logical[a.LogicalPath] = true
-		pub := a.EffectivePublicPath()
-		if public[pub] {
-			return fmt.Errorf("duplicate public path %q", pub)
+		out := a.EffectiveOutputPath()
+		if output[out] {
+			return fmt.Errorf("duplicate output path %q", out)
 		}
-		public[pub] = true
+		output[out] = true
 	}
 	return nil
 }
 
-// Sort orders the manifest deterministically by logical path.
-func (m Manifest) Sort() {
-	sort.Slice(m, func(i, j int) bool { return m[i].LogicalPath < m[j].LogicalPath })
+// Merge overlays overrides onto base: an override whose effective output
+// path matches a base entry replaces it (the favicon-override rule from the
+// ADR); other overrides are appended. The result is canonical and validated.
+func Merge(base Manifest, overrides Manifest) (Manifest, error) {
+	overridden := make(map[string]bool, len(overrides))
+	for _, o := range overrides {
+		overridden[o.EffectiveOutputPath()] = true
+	}
+	merged := make([]Asset, 0, len(base)+len(overrides))
+	for _, a := range base {
+		if !overridden[a.EffectiveOutputPath()] {
+			merged = append(merged, a)
+		}
+	}
+	merged = append(merged, overrides...)
+	return NewManifest(merged...)
 }
