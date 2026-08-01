@@ -11,10 +11,10 @@ import (
 	"encoding/hex"
 	"fmt"
 	"mime"
+	"net/url"
 	"regexp"
 	"sort"
 	"strings"
-	"unicode"
 )
 
 // BuiltinPrefix is the logical-path namespace reserved for assets Leafpress
@@ -26,7 +26,11 @@ type Asset struct {
 	// LogicalPath is the canonical identity of the asset: a clean,
 	// forward-slash, relative path under "static/".
 	LogicalPath string `json:"logicalPath"`
-	// ContentType is the MIME type the asset must be served with.
+	// ContentType is the MIME type the asset must be served with. Callers
+	// must pass one canonical spelling (lowercase type/subtype, single
+	// space before parameters): manifests are compared and hashed as JSON,
+	// so equivalent-but-differently-spelled MIME strings would break
+	// equality and registry-ID determinism.
 	ContentType string `json:"contentType"`
 	// SHA256 is the lowercase-hex SHA-256 of the asset content.
 	SHA256 string `json:"sha256"`
@@ -53,16 +57,26 @@ func Sum(data []byte) string {
 	return hex.EncodeToString(digest[:])
 }
 
-// IsBuiltinPath reports whether a logical path lies in the namespace reserved
-// for Leafpress-owned built-in assets.
+// IsBuiltinPath reports whether a logical path lies in (or is exactly) the
+// namespace reserved for Leafpress-owned built-in assets. The bare directory
+// path matches too: a user file named "static/leafpress" would shadow the
+// reserved directory. It assumes a path that already passed
+// ValidateLogicalPath; it is a namespace classifier, not a standalone
+// security boundary (non-canonical shapes like "static/leafpress/../x" must
+// be rejected by validation first).
 func IsBuiltinPath(logicalPath string) bool {
-	return strings.HasPrefix(logicalPath, BuiltinPrefix)
+	return strings.HasPrefix(logicalPath, BuiltinPrefix) ||
+		logicalPath == strings.TrimSuffix(BuiltinPrefix, "/")
 }
 
 // validatePathShape enforces the single canonical path representation shared
 // by logical and output paths: relative, forward-slash, clean file-path
-// segments, and no characters that would let one manifest value mean
-// different things before and after URL parsing or percent-decoding.
+// segments, with segment characters restricted to the URL unreserved set so
+// a path spells itself identically in a filesystem, a URL, and a quoted CSS
+// url() context. The whitelist implicitly rejects query/fragment syntax and
+// percent escapes (URL-parse/decode ambiguity), quotes and parentheses (CSS
+// delimiters), backslashes, drive-letter colons, spaces, and all control
+// characters (C0, DEL, and C1 alike).
 func validatePathShape(kind, p string) error {
 	if p == "" {
 		return fmt.Errorf("%s path is empty", kind)
@@ -70,26 +84,10 @@ func validatePathShape(kind, p string) error {
 	if strings.HasPrefix(p, "/") {
 		return fmt.Errorf("%s path %q must be site-relative, not absolute", kind, p)
 	}
-	if strings.Contains(p, "\\") {
-		return fmt.Errorf("%s path %q must use forward slashes", kind, p)
-	}
-	// Paths are literal file paths, not URLs: query/fragment syntax and
-	// percent escapes are rejected outright so validation and duplicate
-	// detection cannot be bypassed by values that collide after URL
-	// parsing or proxy-side percent-decoding (e.g. "a?x", "%2e%2e", "%2f").
+	// Targeted message for the URL-shaped mistakes people actually make;
+	// the whitelist below would catch these too.
 	if i := strings.IndexAny(p, "?#%"); i >= 0 {
 		return fmt.Errorf("%s path %q must not contain %q: paths are not URLs", kind, p, string(p[i]))
-	}
-	// Windows drive letters ("C:/...") would escape the site root when the
-	// path is joined on that platform.
-	if strings.Contains(p, ":") {
-		return fmt.Errorf("%s path %q must not contain ':'", kind, p)
-	}
-	for _, r := range p {
-		// unicode.IsControl covers C0, DEL, and the C1 range (U+0080–U+009F).
-		if unicode.IsControl(r) {
-			return fmt.Errorf("%s path %q contains control characters", kind, p)
-		}
 	}
 	for _, segment := range strings.Split(p, "/") {
 		switch segment {
@@ -98,8 +96,65 @@ func validatePathShape(kind, p string) error {
 		case ".", "..":
 			return fmt.Errorf("%s path %q contains a traversal segment", kind, p)
 		}
+		for _, r := range segment {
+			if !isUnreservedChar(r) {
+				return fmt.Errorf("%s path %q contains %q: segments may only use A-Z a-z 0-9 - . _ ~", kind, p, r)
+			}
+		}
+		if err := validateWindowsPortableSegment(segment); err != nil {
+			return fmt.Errorf("%s path %q: %w", kind, p, err)
+		}
 	}
 	return nil
+}
+
+// windowsDeviceNames are segment base names Windows reserves regardless of
+// extension ("CON", "con.txt", and "COM1.woff2" all name devices). Leafpress
+// publishes Windows binaries, so canonical paths must stay writable there.
+var windowsDeviceNames = map[string]bool{
+	"CON": true, "PRN": true, "AUX": true, "NUL": true,
+	"COM1": true, "COM2": true, "COM3": true, "COM4": true, "COM5": true,
+	"COM6": true, "COM7": true, "COM8": true, "COM9": true,
+	"LPT1": true, "LPT2": true, "LPT3": true, "LPT4": true, "LPT5": true,
+	"LPT6": true, "LPT7": true, "LPT8": true, "LPT9": true,
+}
+
+func validateWindowsPortableSegment(segment string) error {
+	// Windows silently strips trailing dots, so "a." and "a" collide.
+	if strings.HasSuffix(segment, ".") {
+		return fmt.Errorf("segment %q ends with a dot", segment)
+	}
+	base := segment
+	if i := strings.IndexByte(base, '.'); i >= 0 {
+		base = base[:i]
+	}
+	if windowsDeviceNames[strings.ToUpper(base)] {
+		return fmt.Errorf("segment %q is a reserved Windows device name", segment)
+	}
+	return nil
+}
+
+// isUnreservedChar reports whether r is in RFC 3986's unreserved set.
+func isUnreservedChar(r rune) bool {
+	switch {
+	case r >= 'a' && r <= 'z', r >= 'A' && r <= 'Z', r >= '0' && r <= '9':
+		return true
+	case r == '-' || r == '.' || r == '_' || r == '~':
+		return true
+	}
+	return false
+}
+
+// EscapedURLPath returns the path with each segment URL-escaped, for
+// interpolation into URLs or CSS url() values. Valid canonical paths are
+// escape-free, so this is normally the identity — it exists as defense in
+// depth for renderers, never as a substitute for validation.
+func EscapedURLPath(p string) string {
+	segments := strings.Split(p, "/")
+	for i, segment := range segments {
+		segments[i] = url.PathEscape(segment)
+	}
+	return strings.Join(segments, "/")
 }
 
 // ValidateLogicalPath enforces the canonical logical-path rules: the shared
@@ -176,26 +231,32 @@ func NewManifest(list ...Asset) (Manifest, error) {
 
 // Validate checks every asset, rejects duplicate logical or effective output
 // paths, and requires canonical (strictly ascending) order so a valid
-// manifest has exactly one form.
+// manifest has exactly one form. Duplicate detection is case-folded: paths
+// are case-sensitive identifiers, but the default macOS and Windows
+// filesystems are case-insensitive, so entries differing only by case would
+// materialize to one file on the CLI while a case-sensitive hosted store
+// keeps both — a guaranteed cross-interface divergence.
 func (m Manifest) Validate() error {
-	output := make(map[string]bool, len(m))
+	logical := make(map[string]string, len(m))
+	output := make(map[string]string, len(m))
 	for i, a := range m {
 		if err := a.Validate(); err != nil {
 			return err
 		}
-		if i > 0 {
-			switch {
-			case m[i-1].LogicalPath == a.LogicalPath:
-				return fmt.Errorf("duplicate logical path %q", a.LogicalPath)
-			case m[i-1].LogicalPath > a.LogicalPath:
-				return fmt.Errorf("manifest is not in canonical order: %q after %q (use NewManifest)", a.LogicalPath, m[i-1].LogicalPath)
-			}
+		if i > 0 && m[i-1].LogicalPath > a.LogicalPath {
+			return fmt.Errorf("manifest is not in canonical order: %q after %q (use NewManifest)", a.LogicalPath, m[i-1].LogicalPath)
 		}
+		logicalFold := strings.ToLower(a.LogicalPath)
+		if prev, ok := logical[logicalFold]; ok {
+			return fmt.Errorf("logical paths %q and %q collide on case-insensitive filesystems", prev, a.LogicalPath)
+		}
+		logical[logicalFold] = a.LogicalPath
 		out := a.EffectiveOutputPath()
-		if output[out] {
-			return fmt.Errorf("duplicate output path %q", out)
+		outFold := strings.ToLower(out)
+		if prev, ok := output[outFold]; ok {
+			return fmt.Errorf("output paths %q and %q collide on case-insensitive filesystems", prev, out)
 		}
-		output[out] = true
+		output[outFold] = out
 	}
 	return nil
 }

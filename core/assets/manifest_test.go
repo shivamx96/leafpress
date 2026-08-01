@@ -65,6 +65,14 @@ func TestValidateLogicalPath(t *testing.T) {
 		"static/a%20b.png":           "any percent escape",
 		"static/fo\u0085nt.woff2":    "C1 control (NEL)",
 		"static/fo\u009cnt.woff2":    "C1 control (ST)",
+		// CSS url("...") delimiters and other non-unreserved characters:
+		// these would break or escape a quoted CSS context when rendered.
+		"static/fonts/custom\").woff2": "double quote and paren",
+		"static/fonts/custom'.woff2":   "single quote",
+		"static/fonts/my font.woff2":   "space",
+		"static/fonts/a(b).woff2":      "parentheses",
+		"static/fonts/a&b.woff2":       "ampersand",
+		"static/fonts/a;b.woff2":       "semicolon",
 	}
 	for p, why := range invalid {
 		if err := ValidateLogicalPath(p); err == nil {
@@ -261,5 +269,74 @@ func TestIsBuiltinPath(t *testing.T) {
 	}
 	if IsBuiltinPath("static/fonts/inter-400.woff2") {
 		t.Error("user path misclassified as builtin")
+	}
+}
+
+func TestEscapedURLPath(t *testing.T) {
+	// Canonical paths are escape-free: identity.
+	if got := EscapedURLPath("static/fonts/inter-400.woff2"); got != "static/fonts/inter-400.woff2" {
+		t.Fatalf("EscapedURLPath changed a canonical path: %q", got)
+	}
+	// Defense in depth: a hostile segment renders inert, slashes preserved.
+	got := EscapedURLPath(`static/fonts/a").woff2`)
+	if strings.Contains(got, `"`) {
+		t.Fatalf("EscapedURLPath left a quote unescaped: %q", got)
+	}
+	if strings.Count(got, "/") != 2 {
+		t.Fatalf("EscapedURLPath must preserve segment separators: %q", got)
+	}
+}
+
+func TestValidatePathWindowsPortability(t *testing.T) {
+	invalid := map[string]string{
+		"static/CON":             "bare device name",
+		"static/con.woff2":       "device name with extension, lowercase",
+		"static/fonts/COM1.txt":  "COM device with extension",
+		"static/NUL/a.woff2":     "device name as directory",
+		"static/fonts/aux":       "aux lowercase",
+		"static/fonts/font.":     "trailing dot",
+		"static/trailing./a.txt": "trailing dot in directory",
+	}
+	for p, why := range invalid {
+		if err := ValidateLogicalPath(p); err == nil {
+			t.Errorf("ValidateLogicalPath(%q) = nil, want error (%s)", p, why)
+		}
+	}
+	// Names merely containing device substrings are fine.
+	valid := []string{"static/fonts/console.woff2", "static/fonts/communal.txt", "static/nullable.md"}
+	for _, p := range valid {
+		if err := ValidateLogicalPath(p); err != nil {
+			t.Errorf("ValidateLogicalPath(%q) = %v, want nil", p, err)
+		}
+	}
+}
+
+func TestIsBuiltinPathMatchesBareDirectory(t *testing.T) {
+	if !IsBuiltinPath("static/leafpress") {
+		t.Error("bare static/leafpress must count as the reserved namespace")
+	}
+	if IsBuiltinPath("static/leafpress-extras/a.txt") {
+		t.Error("sibling directory misclassified as reserved")
+	}
+}
+
+func TestManifestValidateRejectsCaseFoldCollisions(t *testing.T) {
+	a := validAsset()
+	b := validAsset()
+	b.LogicalPath = "static/fonts/Inter-400.woff2" // differs only by case
+
+	if _, err := NewManifest(a, b); err == nil {
+		t.Error("case-fold logical collision accepted: macOS/Windows would materialize one file")
+	}
+
+	// Distinct logical paths whose effective output paths case-collide.
+	c := validAsset()
+	c.LogicalPath = "static/other.ico"
+	c.OutputPath = "Favicon.ico"
+	d := validAsset()
+	d.LogicalPath = "static/another.ico"
+	d.OutputPath = "favicon.ico"
+	if _, err := NewManifest(c, d); err == nil {
+		t.Error("case-fold output collision accepted")
 	}
 }
