@@ -1385,7 +1385,8 @@ const baseTemplate = `<!DOCTYPE html>
       })();
       {{end}}
 
-      // Link preview on hover
+      // Link preview on hover. Uses search-index.json (always emitted) so
+      // previews keep working when the search UI is disabled.
       (function() {
         var previewEl = null;
         var previewIndex = null;

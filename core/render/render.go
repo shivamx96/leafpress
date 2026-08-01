@@ -752,8 +752,10 @@ func renderArtifacts(
 	rawSite.BaseURL = cfg.BaseURL
 	rawSite.Image = html.UnescapeString(rawSite.Image)
 
+	// search-index.json is always emitted: full-text search UI and hover link
+	// previews share it. cfg.Search only controls the search UI chrome/JS.
 	graphJSON, searchJSON, err := sitegen.GraphSearch(
-		artifactPages, resolver, safeSite.BasePath, cfg.Graph, cfg.Search,
+		artifactPages, resolver, safeSite.BasePath, cfg.Graph, true,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate graph/search artifacts: %w", err)

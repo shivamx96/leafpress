@@ -282,3 +282,46 @@ func TestBuildRejectsUserFilesInReservedNamespace(t *testing.T) {
 		t.Fatalf("error must name the reserved namespace, got: %v", err)
 	}
 }
+
+func TestBuildEmitsSearchIndexWhenSearchUIDisabled(t *testing.T) {
+	dir := newTestProject(t)
+	// Link target so the page has a wikilink for preview script attachment.
+	if err := os.WriteFile(filepath.Join(dir, "other.md"), []byte("# Other\n\nbody\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "note.md"), []byte("# Note\n\nSee [[other]].\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := config.Default()
+	cfg.Search = false
+	cfg.Graph = false
+	b := New(cfg, Options{})
+	if _, err := b.Build(); err != nil {
+		t.Fatalf("Build: %v", err)
+	}
+
+	indexPath := filepath.Join(dir, "_site", "search-index.json")
+	data, err := os.ReadFile(indexPath)
+	if err != nil {
+		t.Fatalf("search-index.json must be emitted when search UI is off: %v", err)
+	}
+	if !strings.Contains(string(data), `"title": "Note"`) || !strings.Contains(string(data), `/note/`) {
+		t.Errorf("search-index.json missing expected page entries: %s", data)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "_site", "graph.json")); !os.IsNotExist(err) {
+		t.Error("graph.json must not be emitted when graph is disabled")
+	}
+
+	page, err := os.ReadFile(filepath.Join(dir, "_site", "note", "index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	html := string(page)
+	if strings.Contains(html, `class="lp-search-toggle"`) {
+		t.Error("search UI toggle must stay off when search is false")
+	}
+	if !strings.Contains(html, "search-index.json") {
+		t.Error("link preview script must still reference search-index.json")
+	}
+}
