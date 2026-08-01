@@ -4,11 +4,13 @@ date: 2025-01-06
 toc: false
 ---
 
-## Unreleased
+## v1.0.0-beta.12
+*August 1, 2026*
 
-- **Mermaid is self-hosted.** Diagram pages load a pinned `mermaid.min.js` from `static/leafpress/mermaid/` instead of jsDelivr; the script is only materialized when a page contains a diagram. MIT license text ships alongside the file.
-- Link previews keep working when `search` is false: `search-index.json` is always emitted (the search flag only controls the search UI).
-- Documentation fixes: `style.css` is appended (not a full replace); bare video/audio paths; full callout type/alias list.
+- **Mermaid is self-hosted.** Diagram pages load a pinned `mermaid.min.js` (v11.4.1) from `static/leafpress/mermaid/` instead of jsDelivr. The script and its MIT license are only materialized when a page contains a diagram. See `docs/MAINTENANCE.md` for how to bump the vendored copy.
+- **Link previews no longer depend on the search UI.** `search-index.json` is always emitted so hover previews keep working when `"search": false`; that flag only toggles the search overlay and ⌘K UI.
+- Documentation aligned with runtime behavior: `style.css` is **appended** after defaults (not a full replace); bare video/audio embeds resolve to `static/video/` and `static/audio/`; writing guide lists the full callout type set and Obsidian aliases.
+- Added `docs/MAINTENANCE.md` for release smoke checks and built-in asset chores (fonts, favicons, Mermaid).
 
 ## v1.0.0-beta.11
 *August 1, 2026*
