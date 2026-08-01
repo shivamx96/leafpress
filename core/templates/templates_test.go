@@ -217,9 +217,65 @@ func TestUnhostedFamilies(t *testing.T) {
 	}
 }
 
+func TestUnhostedFamiliesExcludesDeclaredCustom(t *testing.T) {
+	theme := testTheme("Lobster", "My Serif", "JetBrains Mono")
+	theme.Fonts = []config.FontFace{{Family: "My Serif", File: "static/fonts/my.woff2"}}
+	got := UnhostedFamilies(theme)
+	if len(got) != 1 || got[0] != "Lobster" {
+		t.Fatalf("UnhostedFamilies = %v, want [Lobster] (declared custom family is hosted)", got)
+	}
+}
+
 func TestFontCSSIncludesBundledFamilies(t *testing.T) {
 	css := FontCSS(testTheme("Crimson Pro", "Inter", "JetBrains Mono"))
 	if !strings.Contains(css, `font-family: "Inter"`) || !strings.Contains(css, "@font-face") {
 		t.Error("FontCSS missing bundled @font-face rules")
+	}
+}
+
+func TestCustomFontCSS(t *testing.T) {
+	css := customFontCSS([]config.FontFace{
+		{Family: "My Serif", File: "static/fonts/my.woff2", Weight: "400 700", Style: "italic", Display: "optional"},
+		{Family: "Old", File: "static/fonts/old.ttf"},
+	})
+	if !strings.Contains(css, `font-family: "My Serif"`) {
+		t.Error("missing family")
+	}
+	// Stylesheet-relative URL: resolves against the style.css location, so
+	// no base path is baked in.
+	if !strings.Contains(css, `src: url("static/fonts/my.woff2") format("woff2")`) {
+		t.Errorf("missing site-relative src:\n%s", css)
+	}
+	if !strings.Contains(css, "font-weight: 400 700") || !strings.Contains(css, "font-style: italic") || !strings.Contains(css, "font-display: optional") {
+		t.Errorf("explicit fields not honored:\n%s", css)
+	}
+	// Defaults for the second face.
+	if !strings.Contains(css, "font-weight: 400;") || !strings.Contains(css, "font-style: normal") || !strings.Contains(css, "font-display: swap") {
+		t.Errorf("defaults not applied:\n%s", css)
+	}
+	if !strings.Contains(css, `format("truetype")`) {
+		t.Errorf("ttf format mapping missing:\n%s", css)
+	}
+}
+
+func TestFontCSSCombinesBuiltinAndCustom(t *testing.T) {
+	theme := testTheme("Crimson Pro", "My Serif", "JetBrains Mono")
+	theme.Fonts = []config.FontFace{{Family: "My Serif", File: "static/fonts/my.woff2"}}
+	css := FontCSS(theme)
+	if !strings.Contains(css, `font-family: "My Serif"`) {
+		t.Error("custom @font-face missing from FontCSS")
+	}
+	if !strings.Contains(css, `font-family: "Crimson Pro"`) {
+		t.Error("bundled @font-face missing from FontCSS")
+	}
+}
+
+func TestRemoteFontURL_ExcludesDeclaredCustomFamilies(t *testing.T) {
+	theme := testTheme("Lobster", "My Serif", "JetBrains Mono")
+	theme.Fonts = []config.FontFace{{Family: "My Serif", File: "static/fonts/my.woff2"}}
+	theme.RemoteFonts = true
+	url := remoteFontURL(theme)
+	if !strings.Contains(url, "family=Lobster") || strings.Contains(url, "My+Serif") {
+		t.Errorf("declared custom family must not appear in remote URL: %q", url)
 	}
 }

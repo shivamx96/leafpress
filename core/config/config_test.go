@@ -322,3 +322,72 @@ func TestWrite_RoundTrip(t *testing.T) {
 		t.Errorf("Title = %q, want %q", loaded.Title, "Round Trip Test")
 	}
 }
+
+func TestCustomFontFaceValidation(t *testing.T) {
+	valid := []FontFace{
+		{Family: "My Serif", File: "static/fonts/my-serif.woff2"},
+		{Family: "My Serif", File: "static/fonts/my-serif-italic.woff2", Weight: "400 700", Style: "italic", Display: "swap"},
+		{Family: "Mono_2", File: "static/fonts/sub/dir/mono.otf", Weight: "650"},
+		{Family: "Old", File: "static/fonts/old.TTF"},
+	}
+	for _, f := range valid {
+		cfg := Default()
+		cfg.Theme.Fonts = []FontFace{f}
+		if err := cfg.Validate(); err != nil {
+			t.Errorf("valid declaration %+v rejected: %v", f, err)
+		}
+	}
+
+	invalid := []struct {
+		name string
+		face FontFace
+	}{
+		{"missing family", FontFace{File: "static/fonts/a.woff2"}},
+		{"unsafe family", FontFace{Family: "Evil\"><script>", File: "static/fonts/a.woff2"}},
+		{"missing file", FontFace{Family: "A"}},
+		{"outside fonts dir", FontFace{Family: "A", File: "static/other/a.woff2"}},
+		{"builtin namespace", FontFace{Family: "A", File: "static/leafpress/fonts/a.woff2"}},
+		{"absolute path", FontFace{Family: "A", File: "/static/fonts/a.woff2"}},
+		{"traversal", FontFace{Family: "A", File: "static/fonts/../../etc/passwd"}},
+		{"remote-ish file", FontFace{Family: "A", File: "static/fonts/https://evil.example/x.woff2"}},
+		{"bad extension", FontFace{Family: "A", File: "static/fonts/a.exe"}},
+		{"no extension", FontFace{Family: "A", File: "static/fonts/afont"}},
+		{"bad weight", FontFace{Family: "A", File: "static/fonts/a.woff2", Weight: "bold"}},
+		{"zero weight", FontFace{Family: "A", File: "static/fonts/a.woff2", Weight: "0"}},
+		{"huge weight", FontFace{Family: "A", File: "static/fonts/a.woff2", Weight: "1001"}},
+		{"inverted range", FontFace{Family: "A", File: "static/fonts/a.woff2", Weight: "700 400"}},
+		{"bad style", FontFace{Family: "A", File: "static/fonts/a.woff2", Style: "cursive"}},
+		{"bad display", FontFace{Family: "A", File: "static/fonts/a.woff2", Display: "eager"}},
+	}
+	for _, tt := range invalid {
+		cfg := Default()
+		cfg.Theme.Fonts = []FontFace{tt.face}
+		if err := cfg.Validate(); err == nil {
+			t.Errorf("%s: accepted", tt.name)
+		}
+	}
+}
+
+func TestCustomFontsParsedFromJSON(t *testing.T) {
+	cfg, err := Parse([]byte(`{
+		"theme": {
+			"fontBody": "My Serif",
+			"fonts": [{"family": "My Serif", "file": "static/fonts/my.woff2", "weight": "400 700"}]
+		}
+	}`))
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+	if len(cfg.Theme.Fonts) != 1 || cfg.Theme.Fonts[0].Family != "My Serif" {
+		t.Fatalf("fonts not parsed: %+v", cfg.Theme.Fonts)
+	}
+	if !cfg.Theme.DeclaresFamily("My Serif") || cfg.Theme.DeclaresFamily("Other") {
+		t.Error("DeclaresFamily wrong")
+	}
+
+	if _, err := Parse([]byte(`{
+		"theme": {"fonts": [{"family": "X", "file": "static/evil/../../x.woff2"}]}
+	}`)); err == nil {
+		t.Error("invalid font declaration accepted by Parse")
+	}
+}

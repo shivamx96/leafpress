@@ -1113,3 +1113,42 @@ func TestRemoteFontsIsDeprecatedOptIn(t *testing.T) {
 		}
 	}
 }
+
+func TestCustomLocalFontsRenderPortableCSS(t *testing.T) {
+	out := runJSON(t, `{
+	  "garden": {"slug": "g", "baseUrl": "/g/x"},
+	  "config": {
+	    "title": "G",
+	    "theme": {
+	      "fontBody": "My Serif",
+	      "fonts": [{"family": "My Serif", "file": "static/fonts/my.woff2", "weight": "400 700"}]
+	    }
+	  },
+	  "pages": [{"slug": "note", "title": "Note", "markdown": "hi"}]
+	}`)
+	// Font CSS lives in the shared stylesheet with stylesheet-relative
+	// URLs: url("static/...") resolves against {basePath}/style.css, so no
+	// base path is baked into the CSS itself.
+	if !strings.Contains(out.CSS, `font-family: "My Serif"`) {
+		t.Error("custom @font-face missing from stylesheet")
+	}
+	if !strings.Contains(out.CSS, `url("static/fonts/my.woff2")`) {
+		t.Error("custom font URL must be stylesheet-relative")
+	}
+	html := pageHTML(t, out, "note")
+	if strings.Contains(html, "fonts.googleapis.com") || strings.Contains(out.CSS, "fonts.googleapis.com") {
+		t.Error("declared custom family must not trigger a remote font link")
+	}
+}
+
+func TestInvalidCustomFontConfigRejected(t *testing.T) {
+	_, err := Run([]byte(`{
+	  "garden": {"slug": "g"},
+	  "config": {"theme": {"fonts": [{"family": "X", "file": "static/fonts/../../etc/passwd"}]}},
+	  "pages": []
+	}`))
+	var inputErr *InputError
+	if err == nil || !errors.As(err, &inputErr) {
+		t.Fatalf("traversal font file must be an input error, got %v", err)
+	}
+}

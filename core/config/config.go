@@ -6,7 +6,10 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
+
+	"github.com/shivamx96/leafpress/core/assets"
 )
 
 // Background represents background configuration that can be a string or object
@@ -54,6 +57,8 @@ type Theme struct {
 	FontHeading string `json:"fontHeading"`
 	FontBody    string `json:"fontBody"`
 	FontMono    string `json:"fontMono"`
+	// Fonts declares custom local font files under static/fonts/.
+	Fonts []FontFace `json:"fonts,omitempty"`
 	// RemoteFonts is a deprecated compatibility escape hatch: when true,
 	// families outside the bundled set load from Google Fonts as before.
 	// The default is self-contained output — unknown families produce a
@@ -64,6 +69,29 @@ type Theme struct {
 	Background     Background `json:"-"`              // Custom unmarshaling
 	NavStyle       string     `json:"navStyle"`       // "base", "sticky", or "glassy"
 	NavActiveStyle string     `json:"navActiveStyle"` // "base", "box", or "underlined"
+}
+
+// FontFace declares one custom local font file under static/fonts/. Families
+// declared here are self-hosted: they never load from a remote provider.
+// Weight, Style, and Display are optional; consumers treat empty values as
+// "400", "normal", and "swap".
+type FontFace struct {
+	Family  string `json:"family"`            // CSS font-family name
+	File    string `json:"file"`              // logical path under static/fonts/
+	Weight  string `json:"weight,omitempty"`  // "400" or a variable range "400 700"
+	Style   string `json:"style,omitempty"`   // "normal", "italic", or "oblique"
+	Display string `json:"display,omitempty"` // CSS font-display value
+}
+
+// DeclaresFamily reports whether the theme declares family as a custom
+// local font.
+func (t Theme) DeclaresFamily(family string) bool {
+	for _, f := range t.Fonts {
+		if f.Family == family {
+			return true
+		}
+	}
+	return false
 }
 
 // UnmarshalJSON implements custom JSON unmarshaling for Theme
@@ -151,6 +179,77 @@ func validateBackground(bg string) error {
 	}
 
 	return fmt.Errorf("invalid CSS background value: %s (must be a hex color, rgb/rgba, gradient, or color keyword)", bg)
+}
+
+// CustomFontDir is the logical-path prefix custom font files must live under.
+const CustomFontDir = "static/fonts/"
+
+var (
+	// fontFamilyRegex matches the safe font-name charset also enforced at
+	// the renderer boundary; family names are interpolated into CSS.
+	fontFamilyRegex = regexp.MustCompile(`^[A-Za-z0-9 _-]+$`)
+	fontWeightRegex = regexp.MustCompile(`^[0-9]{1,4}( [0-9]{1,4})?$`)
+)
+
+// fontFileExtensions are the allowed custom font formats.
+var fontFileExtensions = map[string]bool{
+	".woff2": true,
+	".woff":  true,
+	".ttf":   true,
+	".otf":   true,
+}
+
+// validateFontFace checks one custom font declaration. Only the declaration
+// shape is validated here — file existence is a CLI concern (the renderer has
+// no filesystem; hosted consumers resolve files via their storage manifest).
+func validateFontFace(f FontFace) error {
+	if f.Family == "" {
+		return fmt.Errorf("family is required")
+	}
+	if !fontFamilyRegex.MatchString(f.Family) {
+		return fmt.Errorf("family %q may only contain letters, digits, spaces, hyphens, and underscores", f.Family)
+	}
+	if f.File == "" {
+		return fmt.Errorf("file is required")
+	}
+	if err := assets.ValidateLogicalPath(f.File); err != nil {
+		return fmt.Errorf("file: %w", err)
+	}
+	if !strings.HasPrefix(f.File, CustomFontDir) {
+		return fmt.Errorf("file %q must be under %s", f.File, CustomFontDir)
+	}
+	ext := strings.ToLower(filepath.Ext(f.File))
+	if !fontFileExtensions[ext] {
+		return fmt.Errorf("file %q must be a .woff2, .woff, .ttf, or .otf font", f.File)
+	}
+	if f.Weight != "" {
+		if !fontWeightRegex.MatchString(f.Weight) {
+			return fmt.Errorf("weight %q must be a number (e.g. 400) or range (e.g. 400 700)", f.Weight)
+		}
+		parts := strings.Fields(f.Weight)
+		values := make([]int, len(parts))
+		for i, part := range parts {
+			n, err := strconv.Atoi(part)
+			if err != nil || n < 1 || n > 1000 {
+				return fmt.Errorf("weight %q values must be between 1 and 1000", f.Weight)
+			}
+			values[i] = n
+		}
+		if len(values) == 2 && values[0] > values[1] {
+			return fmt.Errorf("weight range %q must be low-to-high", f.Weight)
+		}
+	}
+	switch f.Style {
+	case "", "normal", "italic", "oblique":
+	default:
+		return fmt.Errorf("style must be normal, italic, or oblique, got %q", f.Style)
+	}
+	switch f.Display {
+	case "", "auto", "block", "swap", "fallback", "optional":
+	default:
+		return fmt.Errorf("display must be auto, block, swap, fallback, or optional, got %q", f.Display)
+	}
+	return nil
 }
 
 // Default returns a Config with default values
@@ -304,6 +403,13 @@ func (c *Config) Validate() error {
 	validNavActiveStyles := map[string]bool{"base": true, "box": true, "underlined": true}
 	if !validNavActiveStyles[c.Theme.NavActiveStyle] {
 		return fmt.Errorf("navActiveStyle must be 'base', 'box', or 'underlined', got '%s'", c.Theme.NavActiveStyle)
+	}
+
+	// Validate custom font declarations
+	for i, face := range c.Theme.Fonts {
+		if err := validateFontFace(face); err != nil {
+			return fmt.Errorf("theme.fonts[%d]: %w", i, err)
+		}
 	}
 
 	// Validate nav paths are well-formed

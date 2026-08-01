@@ -79,6 +79,22 @@ func (b *Builder) Build() (*Stats, error) {
 	stats := &Stats{}
 	var t0 time.Time
 
+	// Verify custom font files exist as regular files. Config validation
+	// covers only the declaration shape; checking the filesystem is the
+	// CLI's job.
+	for _, face := range b.cfg.Theme.Fonts {
+		fontPath := filepath.Join(b.rootDir, filepath.FromSlash(face.File))
+		info, err := os.Stat(fontPath)
+		switch {
+		case err != nil && os.IsNotExist(err):
+			return nil, fmt.Errorf("custom font %q: %s does not exist", face.Family, face.File)
+		case err != nil:
+			return nil, fmt.Errorf("custom font %q (%s): %w", face.Family, face.File, err)
+		case !info.Mode().IsRegular():
+			return nil, fmt.Errorf("custom font %q: %s is not a regular file", face.Family, face.File)
+		}
+	}
+
 	// Self-contained output is the default: warn about families that have
 	// no self-hosted source instead of silently reaching for Google Fonts.
 	if !b.cfg.Theme.RemoteFonts {

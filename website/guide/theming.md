@@ -56,6 +56,37 @@ have two options:
    and will be removed; names are matched exactly, and bundled families are
    always self-hosted regardless.
 
+### Custom local fonts
+
+Ship your own font files under `static/fonts/` and declare them in `theme`:
+
+```json
+{
+  "theme": {
+    "fontBody": "My Serif",
+    "fonts": [
+      {
+        "family": "My Serif",
+        "file": "static/fonts/my-serif.woff2",
+        "weight": "400 700",
+        "style": "normal",
+        "display": "swap"
+      }
+    ]
+  }
+}
+```
+
+- `family` and `file` are required; `weight` (a number or a variable range),
+  `style` (`normal`/`italic`/`oblique`), and `display` default to `400`,
+  `normal`, and `swap`.
+- Files must live under `static/fonts/` with a `.woff2`, `.woff`, `.ttf`, or
+  `.otf` extension, and file names may only use letters, digits, `-`, `.`,
+  `_`, and `~`. The build fails if a declared file is missing.
+- Family names are matched **exactly** (case-sensitive) against
+  `fontHeading`/`fontBody`/`fontMono`. Declared families are self-hosted:
+  they never load remotely, even under `remoteFonts`.
+
 ## Colors
 
 ### Accent Color

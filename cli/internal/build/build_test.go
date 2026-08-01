@@ -203,3 +203,61 @@ func TestBuildRemoteFontsOptIn(t *testing.T) {
 		t.Errorf("bundled font not materialized under remoteFonts: %v", err)
 	}
 }
+
+func TestBuildWithCustomLocalFont(t *testing.T) {
+	dir := newTestProject(t)
+	fontDir := filepath.Join(dir, "static", "fonts")
+	if err := os.MkdirAll(fontDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	fontBytes := []byte("wOF2fakefont")
+	if err := os.WriteFile(filepath.Join(fontDir, "my.woff2"), fontBytes, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := config.Default()
+	cfg.Theme.FontBody = "My Serif"
+	cfg.Theme.Fonts = []config.FontFace{{Family: "My Serif", File: "static/fonts/my.woff2", Weight: "400 700"}}
+	b := New(cfg, Options{})
+	if _, err := b.Build(); err != nil {
+		t.Fatalf("Build: %v", err)
+	}
+
+	// copyStatic ships the font file; the page references it locally.
+	copied, err := os.ReadFile(filepath.Join(dir, "_site", "static", "fonts", "my.woff2"))
+	if err != nil {
+		t.Fatalf("custom font not copied: %v", err)
+	}
+	if !bytes.Equal(copied, fontBytes) {
+		t.Error("copied font differs")
+	}
+	// @font-face rules live in the shared stylesheet, not page heads.
+	css, err := os.ReadFile(filepath.Join(dir, "_site", "style.css"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(css, []byte(`font-family: "My Serif"`)) {
+		t.Error("custom @font-face missing from style.css")
+	}
+	if !bytes.Contains(css, []byte(`url("static/fonts/my.woff2")`)) {
+		t.Error("custom font URL must be stylesheet-relative")
+	}
+	page, err := os.ReadFile(filepath.Join(dir, "_site", "note", "index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Contains(page, []byte("My+Serif")) || bytes.Contains(css, []byte("My+Serif")) {
+		t.Error("declared family leaked into a remote font URL")
+	}
+}
+
+func TestBuildFailsWhenCustomFontFileMissing(t *testing.T) {
+	newTestProject(t)
+
+	cfg := config.Default()
+	cfg.Theme.Fonts = []config.FontFace{{Family: "Ghost", File: "static/fonts/ghost.woff2"}}
+	b := New(cfg, Options{})
+	if _, err := b.Build(); err == nil {
+		t.Fatal("Build must fail when a declared font file does not exist")
+	}
+}

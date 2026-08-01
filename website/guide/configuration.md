@@ -95,6 +95,7 @@ That's it. Everything else has sensible defaults.
 | `fontBody` | `"Inter"` | Body font (bundled families are self-hosted) |
 | `fontMono` | `"JetBrains Mono"` | Code font (bundled families are self-hosted) |
 | `remoteFonts` | `false` | Deprecated: load unbundled families from Google Fonts |
+| `fonts` | `[]` | Custom local font declarations (family, file under `static/fonts/`, weight, style, display) — see [Theming](/guide/theming/) |
 | `accent` | `"#50ac00"` | Accent color for links and highlights |
 | `background.light` | `"#ffffff"` | Light mode background (color or gradient) |
 | `background.dark` | `"#1a1a1a"` | Dark mode background (color or gradient) |

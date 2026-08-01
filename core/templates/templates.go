@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html"
 	"io"
+	"path"
 	"regexp"
 	"strconv"
 	"strings"
@@ -251,11 +252,59 @@ func fontURL(font string) string {
 	return fontParam + ":wght@400;500;600;700"
 }
 
-// FontCSS returns every self-hosted @font-face rule for the theme. It is
-// composed into the generated stylesheet (site.Styles), not inlined per
-// page, so browsers download the rules once.
+// FontCSS returns every self-hosted @font-face rule for the theme — bundled
+// built-in families plus custom static/fonts/ declarations. It is composed
+// into the generated stylesheet (site.Styles), not inlined per page, so
+// browsers download the rules once.
 func FontCSS(theme config.Theme) string {
-	return assets.FontFaceCSS(theme.FontHeading, theme.FontBody, theme.FontMono)
+	return assets.FontFaceCSS(theme.FontHeading, theme.FontBody, theme.FontMono) +
+		customFontCSS(theme.Fonts)
+}
+
+// fontFormats maps custom font file extensions to CSS src format() names.
+var fontFormats = map[string]string{
+	".woff2": "woff2",
+	".woff":  "woff",
+	".ttf":   "truetype",
+	".otf":   "opentype",
+}
+
+// customFontCSS renders @font-face rules for the theme's custom local font
+// declarations. URLs are site-relative like the built-in faces (the rules
+// live in the root-served stylesheet) with segments escaped as defense in
+// depth. Empty weight/style/display fall back to "400", "normal", and
+// "swap" (the same defaults config validation documents).
+func customFontCSS(faces []config.FontFace) string {
+	var sb strings.Builder
+	for _, face := range faces {
+		weight := face.Weight
+		if weight == "" {
+			weight = "400"
+		}
+		style := face.Style
+		if style == "" {
+			style = "normal"
+		}
+		display := face.Display
+		if display == "" {
+			display = "swap"
+		}
+		format := fontFormats[strings.ToLower(path.Ext(face.File))]
+		if format == "" {
+			// Validation rejects unknown extensions; never emit format("")
+			// if an unvalidated Theme reaches this point.
+			continue
+		}
+		fmt.Fprintf(&sb, `@font-face {
+  font-family: "%s";
+  font-style: %s;
+  font-weight: %s;
+  font-display: %s;
+  src: url("%s") format("%s");
+}
+`, face.Family, style, weight, display, assets.EscapedURLPath(face.File), format)
+	}
+	return sb.String()
 }
 
 // UnhostedFontWarning is the canonical author-facing message for a family
@@ -263,19 +312,19 @@ func FontCSS(theme config.Theme) string {
 // this string so warnings stay greppable and support-friendly.
 func UnhostedFontWarning(family string) string {
 	return fmt.Sprintf(
-		"font family %q is not bundled; falling back to system fonts (set theme.remoteFonts to temporarily keep Google Fonts)",
+		"font family %q is not bundled or declared; falling back to system fonts (declare it under theme.fonts, or set theme.remoteFonts to temporarily keep Google Fonts)",
 		family)
 }
 
 // UnhostedFamilies returns the configured families that have no self-hosted
-// source: not in the bundled set. With the deprecated remoteFonts escape
-// hatch off, these fall back to the CSS system stacks and callers should
-// warn the author.
+// source: neither in the bundled set nor declared as custom local fonts.
+// With the deprecated remoteFonts escape hatch off, these fall back to the
+// CSS system stacks and callers should warn the author.
 func UnhostedFamilies(theme config.Theme) []string {
 	var out []string
 	seen := map[string]bool{}
 	for _, font := range []string{theme.FontHeading, theme.FontBody, theme.FontMono} {
-		if font == "" || assets.IsBuiltinFontFamily(font) || seen[font] {
+		if font == "" || assets.IsBuiltinFontFamily(font) || theme.DeclaresFamily(font) || seen[font] {
 			continue
 		}
 		seen[font] = true
