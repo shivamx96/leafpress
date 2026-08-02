@@ -306,3 +306,9 @@ func TestRemoteFontURL_ExcludesDeclaredCustomFamilies(t *testing.T) {
 		t.Errorf("declared custom family must not appear in remote URL: %q", url)
 	}
 }
+
+func TestMermaidUsesStrictSecurityLevel(t *testing.T) {
+	if !strings.Contains(baseTemplate, "securityLevel: 'strict'") {
+		t.Fatal("Mermaid initialization must explicitly use strict security")
+	}
+}

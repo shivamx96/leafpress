@@ -160,6 +160,9 @@ func (r *Renderer) Render(content string) (string, []string) {
 	}
 	if err := md.Convert([]byte(processed), buf); err != nil {
 		warnings = append(warnings, "markdown conversion error: "+err.Error())
+		if r.escapeRawHTML {
+			return stdhtml.EscapeString(content), warnings
+		}
 		return content, warnings
 	}
 
@@ -680,6 +683,9 @@ func processMermaidBlocks(html string, unescapeEntities bool) string {
 			content = strings.ReplaceAll(content, "&gt;", ">")
 			content = strings.ReplaceAll(content, "&#34;", `"`)
 			content = strings.ReplaceAll(content, "&quot;", `"`)
+			content = strings.ReplaceAll(content, "&#39;", `'`)
+			content = strings.ReplaceAll(content, "&#x27;", `'`)
+			content = strings.ReplaceAll(content, "&apos;", `'`)
 		}
 		return `<div class="mermaid">` + content + `</div>`
 	})
