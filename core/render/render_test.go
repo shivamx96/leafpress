@@ -175,6 +175,45 @@ func TestThemeReflectedInOutput(t *testing.T) {
 	}
 }
 
+func TestLegacyGardenIdentityAndFooterAttribution(t *testing.T) {
+	out := runJSON(t, `{
+	  "garden": {
+	    "slug": "hosted",
+	    "title": "Field Notes",
+	    "description": "A garden about patient ideas.",
+	    "author": "Garden Author",
+	    "footerAttribution": {"name": "Leafyard", "url": "https://leafyard.in"}
+	  },
+	  "pages": [{"slug": "welcome", "title": "Welcome", "markdown": "hello"}]
+	}`)
+
+	for _, document := range []string{out.Index, pageHTML(t, out, "welcome")} {
+		for _, want := range []string{
+			"&copy; Garden Author. All rights reserved.",
+			`href="https://leafyard.in" target="_blank" rel="noopener noreferrer">Leafyard</a>`,
+		} {
+			if !strings.Contains(document, want) {
+				t.Errorf("hosted identity output missing %q", want)
+			}
+		}
+		if strings.Contains(document, "leafpress.in") {
+			t.Error("custom hosted attribution should replace the default Leafpress attribution")
+		}
+	}
+	if !strings.Contains(pageHTML(t, out, "welcome"), `href="/welcome/">Welcome</a>`) {
+		t.Error("hosted identity fields should preserve fallback automatic navigation")
+	}
+	for _, want := range []string{
+		`<meta name="description" content="A garden about patient ideas.">`,
+		`<meta property="og:description" content="A garden about patient ideas.">`,
+		`<meta name="twitter:description" content="A garden about patient ideas.">`,
+	} {
+		if !strings.Contains(out.Index, want) {
+			t.Errorf("garden home metadata missing %q", want)
+		}
+	}
+}
+
 func TestCanonicalSiteConfigAndStyleMatchLeafpressSemantics(t *testing.T) {
 	out := runJSON(t, `{
 	  "garden": {"slug":"hosted", "baseUrl":"/legacy-hosted"},
@@ -232,6 +271,9 @@ func TestCanonicalSiteConfigAndStyleMatchLeafpressSemantics(t *testing.T) {
 	}
 	if strings.Contains(alpha, `href="/notes/beta/">Beta</a></div>`) {
 		t.Error("canonical nav should not be replaced by derived root-note nav")
+	}
+	if !strings.Contains(out.Index, `<meta name="description" content="Site description">`) {
+		t.Error("canonical site description should supply garden-home metadata")
 	}
 	if !strings.Contains(out.CSS, "/* User Styles */") ||
 		!strings.Contains(out.CSS, ".custom-rule { color: rebeccapurple; }") {
@@ -411,6 +453,8 @@ func TestInvalidInput(t *testing.T) {
 		{"bad accent", `{"garden": {"slug": "g", "theme": {"accent": "red;}</style>"}}, "pages": []}`},
 		{"bad font", `{"garden": {"slug": "g", "theme": {"fontBody": "Inter\"><script>"}}, "pages": []}`},
 		{"bad baseUrl", `{"garden": {"slug": "g", "baseUrl": "g/shivam"}, "pages": []}`},
+		{"attribution without name", `{"garden": {"slug": "g", "footerAttribution": {"url": "https://leafyard.in"}}, "pages": []}`},
+		{"unsafe attribution URL", `{"garden": {"slug": "g", "footerAttribution": {"name": "Leafyard", "url": "javascript:alert(1)"}}, "pages": []}`},
 		{"unsafe slug", `{"garden": {"slug": "g"}, "pages": [{"slug": "a\"b", "markdown": "x"}]}`},
 	}
 
@@ -434,6 +478,9 @@ func TestOptionalFieldsDefaulted(t *testing.T) {
 	// Garden title defaults to slug.
 	if !strings.Contains(out.Index, "<title>shivam | shivam</title>") {
 		t.Error("index title should default to garden slug")
+	}
+	if !strings.Contains(out.Index, `href="https://leafpress.in"`) {
+		t.Error("renderer output should retain the default Leafpress attribution")
 	}
 	// Page title defaults to slug; reading time computed.
 	html := pageHTML(t, out, "my-note")
@@ -551,6 +598,48 @@ func TestXSSBodyAndMetadataEscaped(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestLegacyGardenIdentityAndAttributionEscaped(t *testing.T) {
+	out := runJSON(t, `{
+	  "garden": {
+	    "slug": "g",
+	    "description": "say \"><script>alert(1)</script> & leave",
+	    "author": "<img src=x onerror=alert(2)>",
+	    "footerAttribution": {
+	      "name": "<script>alert(3)</script>",
+	      "url": "https://example.com/?one=1&two=2"
+	    }
+	  },
+	  "pages": [{"slug": "p", "title": "P", "markdown": "body"}]
+	}`)
+
+	for _, document := range []string{out.Index, pageHTML(t, out, "p")} {
+		for _, raw := range []string{
+			"<script>alert(1)</script>",
+			"<img src=x onerror=alert(2)>",
+			"<script>alert(3)</script>",
+		} {
+			if strings.Contains(document, raw) {
+				t.Errorf("hosted identity output contains unescaped fragment %q", raw)
+			}
+		}
+		for _, want := range []string{
+			"&copy; &lt;img src=x onerror=alert(2)&gt;. All rights reserved.",
+			`href="https://example.com/?one=1&amp;two=2"`,
+			"&lt;script&gt;alert(3)&lt;/script&gt;",
+		} {
+			if !strings.Contains(document, want) {
+				t.Errorf("hosted identity output missing escaped fragment %q", want)
+			}
+		}
+	}
+	if !strings.Contains(
+		out.Index,
+		`content="say &#34;&gt;&lt;script&gt;alert(1)&lt;/script&gt; &amp; leave"`,
+	) {
+		t.Error("garden description is not safely escaped in home metadata")
 	}
 }
 

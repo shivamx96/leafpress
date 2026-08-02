@@ -4,6 +4,15 @@ date: 2025-01-06
 toc: false
 ---
 
+## v1.0.0-beta.13
+
+- Hosted fallback renders now accept site `description` and `author` without
+  requiring canonical config; the description supplies garden-home SEO
+  metadata and the author supplies the existing copyright footer.
+- Renderer consumers can replace “Grown with leafpress” using the structured,
+  escaped `garden.footerAttribution` name and validated HTTP(S) URL. The CLI
+  default is unchanged and raw footer HTML/scripts remain unsupported.
+
 ## v1.0.0-beta.12
 *August 1, 2026*
 

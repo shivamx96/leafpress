@@ -11,8 +11,15 @@ code; the transport is the only difference.
 {
   "garden": {
     "slug": "hosted-garden",
+    "title": "My Garden",
+    "description": "Notes grown in public",
+    "author": "Garden Author",
     "baseUrl": "/hosted-fallback",
-    "showTagsInNav": true
+    "showTagsInNav": true,
+    "footerAttribution": {
+      "name": "Leafyard",
+      "url": "https://leafyard.in"
+    }
   },
   "config": {
     "title": "My Garden",
@@ -51,7 +58,14 @@ code; the transport is the only difference.
   the same default overlay and validation as `config.Load` in the CLI.
 - `garden.slug` remains required because hosted-garden identity is not a
   `leafpress.json` concern. Existing `garden.title`, `baseUrl`, `sort`, and
-  `theme` inputs remain supported when `config` is absent.
+  `theme` inputs remain supported when `config` is absent; hosted callers may
+  also provide `garden.description` and `garden.author` without opting into
+  canonical navigation or reader-feature defaults.
+- `garden.footerAttribution` is renderer-only host branding. Its required
+  `name` is rendered after “Grown with”; its optional `url` must be an absolute
+  HTTP(S) URL. It replaces the default “Grown with leafpress” footer without
+  accepting raw HTML or scripts and applies in both fallback and canonical
+  config modes.
 - `garden.showTagsInNav` is a hosted fallback convenience when `config` is
   absent. It appends a native Tags item only when tagged pages generate a Tags
   index. Canonical `config.nav` remains authoritative; CLI projects add
