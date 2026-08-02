@@ -4,6 +4,13 @@ date: 2025-01-06
 toc: false
 ---
 
+## v1.0.0-beta.15
+*August 2, 2026*
+
+- **Unknown or misplaced config fields are now rejected.** A `leafpress.json` typo (or a wrongly-nested key), and any unknown field in the renderer input, now fail with a clear error instead of being silently ignored — closing a gap where a v1-shaped payload rendered an empty site.
+- Fixed `leafpress deploy` writing `baseURL` at the top level for GitHub Pages; it now writes `site.baseURL`, so project-site (subdirectory) hosting gets the correct base path.
+- Documentation corrected for the v2 config schema: `leafpress init` takes no directory argument and scaffolds at the project root (there is no `content/` directory); sitemap.xml and RSS require `site.baseURL`; deploy and status guides updated.
+
 ## v1.0.0-beta.14
 *August 2, 2026*
 
