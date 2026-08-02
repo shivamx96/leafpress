@@ -1,6 +1,7 @@
 package content
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -173,6 +174,18 @@ func TestBuildBacklinks_NoDuplicates(t *testing.T) {
 
 	if len(pageB.Backlinks) != 1 {
 		t.Errorf("page-b should have 1 backlink, got %d", len(pageB.Backlinks))
+	}
+}
+
+func TestPopulateOutLinksWithoutBacklinks(t *testing.T) {
+	page := &Page{RawContent: "Links to [[one]] and [[two|Two]]."}
+	PopulateOutLinks([]*Page{page})
+
+	if got := strings.Join(page.OutLinks, ","); got != "one,two" {
+		t.Errorf("outlinks = %q, want one,two", got)
+	}
+	if page.Backlinks != nil {
+		t.Errorf("backlinks = %v, want nil", page.Backlinks)
 	}
 }
 

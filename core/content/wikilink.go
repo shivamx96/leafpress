@@ -146,8 +146,21 @@ func (r *LinkResolver) AddAlias(name string, page *Page) {
 	r.aliasMap[key] = page
 }
 
-// BuildBacklinks populates the Backlinks field on all pages
-// If resolver is nil, a new one will be created
+// PopulateOutLinks extracts each page's wiki-link targets independently of
+// whether backlinks are enabled. Duplicate targets are retained here because
+// distinct aliases may resolve differently; artifact builders deduplicate
+// after resolution.
+func PopulateOutLinks(pages []*Page) {
+	for _, page := range pages {
+		page.OutLinks = nil
+		for _, link := range ExtractWikiLinks(page.RawContent) {
+			page.OutLinks = append(page.OutLinks, link.Target)
+		}
+	}
+}
+
+// BuildBacklinks populates the Backlinks and OutLinks fields on all pages.
+// If resolver is nil, a new one will be created.
 func BuildBacklinks(pages []*Page, resolver ...*LinkResolver) {
 	var r *LinkResolver
 	if len(resolver) > 0 && resolver[0] != nil {
@@ -156,19 +169,11 @@ func BuildBacklinks(pages []*Page, resolver ...*LinkResolver) {
 		r = NewLinkResolver(pages)
 	}
 
-	// Clear existing backlinks and outlinks to avoid duplicates on rebuild
+	// Clear existing backlinks to avoid duplicates on rebuild.
 	for _, page := range pages {
 		page.Backlinks = nil
-		page.OutLinks = nil
 	}
-
-	// First, extract outlinks for all pages
-	for _, page := range pages {
-		links := ExtractWikiLinks(page.RawContent)
-		for _, link := range links {
-			page.OutLinks = append(page.OutLinks, link.Target)
-		}
-	}
+	PopulateOutLinks(pages)
 
 	// Track which pages have already been added as backlinks to avoid duplicates
 	backlinkSeen := make(map[*Page]map[*Page]bool)

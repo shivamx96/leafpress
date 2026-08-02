@@ -73,8 +73,13 @@ func GraphSearch(
 				Growth: page.Growth,
 				Tags:   page.Tags,
 			})
+			seenTargets := make(map[string]struct{})
 			for _, target := range page.OutLinks {
-				if result := resolver.Resolve(target); result.Page != nil {
+				if result := resolver.Resolve(target); result.Page != nil && result.Page != page {
+					if _, seen := seenTargets[result.Page.Slug]; seen {
+						continue
+					}
+					seenTargets[result.Page.Slug] = struct{}{}
 					graph.Edges = append(graph.Edges, GraphEdge{
 						Source: page.Slug,
 						Target: result.Page.Slug,

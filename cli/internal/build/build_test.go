@@ -388,3 +388,31 @@ func TestBuildEmitsSearchIndexWhenSearchUIDisabled(t *testing.T) {
 		t.Error("link preview script must still reference search-index.json")
 	}
 }
+
+func TestBuildGraphEdgesDoNotDependOnBacklinks(t *testing.T) {
+	dir := newTestProject(t)
+	if err := os.WriteFile(filepath.Join(dir, "note.md"), []byte("# Note\n\n[[other]] and [[Other]]\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "other.md"), []byte("# Other\n\nbody\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := config.Default()
+	cfg.Features.Graph = true
+	cfg.Features.Backlinks = false
+	if _, err := New(cfg, Options{}).Build(); err != nil {
+		t.Fatalf("Build: %v", err)
+	}
+	data, err := os.ReadFile(filepath.Join(dir, "_site", "graph.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	graph := string(data)
+	if got := strings.Count(graph, `"source": "note"`); got != 1 {
+		t.Fatalf("note edge count = %d, want 1: %s", got, graph)
+	}
+	if !strings.Contains(graph, `"target": "other"`) {
+		t.Fatalf("graph is missing note -> other: %s", graph)
+	}
+}
