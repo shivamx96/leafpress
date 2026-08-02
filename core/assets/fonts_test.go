@@ -7,7 +7,25 @@ import (
 
 func TestBuiltinFontFamilies(t *testing.T) {
 	families := BuiltinFontFamilies()
-	want := []string{"Bricolage Grotesque", "Inter", "JetBrains Mono"}
+	want := []string{
+		"Atkinson Hyperlegible Mono",
+		"Atkinson Hyperlegible Next",
+		"Bricolage Grotesque",
+		"Crimson Pro",
+		"Fira Code",
+		"Fraunces",
+		"Geist",
+		"Geist Mono",
+		"IBM Plex Mono",
+		"IBM Plex Sans",
+		"Inter",
+		"JetBrains Mono",
+		"Lora",
+		"Newsreader",
+		"Source Code Pro",
+		"Source Serif 4",
+		"Space Grotesk",
+	}
 	if len(families) != len(want) {
 		t.Fatalf("families = %v, want %v", families, want)
 	}
@@ -87,6 +105,32 @@ func TestBricolageGrotesqueFontFaceCSS(t *testing.T) {
 	}
 	if got := strings.Count(css, "@font-face"); got != 2 {
 		t.Errorf("Bricolage Grotesque faces = %d, want 2 latin subsets", got)
+	}
+}
+
+func TestNewsreaderFontFaceCSS(t *testing.T) {
+	css := FontFaceCSS("Newsreader")
+	if !strings.Contains(css, `font-family: "Newsreader"`) {
+		t.Error("missing Newsreader @font-face")
+	}
+	if !strings.Contains(css, "font-weight: 200 800") {
+		t.Error("missing Newsreader variable weight range")
+	}
+	if !strings.Contains(css, "font-style: italic") {
+		t.Error("missing Newsreader italic face")
+	}
+	if got := strings.Count(css, "@font-face"); got != 4 {
+		t.Errorf("Newsreader faces = %d, want 4 (2 styles x 2 latin subsets)", got)
+	}
+}
+
+func TestStaticFontFaceCSS(t *testing.T) {
+	css := FontFaceCSS("IBM Plex Mono")
+	if !strings.Contains(css, "font-weight: 400") || !strings.Contains(css, "font-weight: 700") {
+		t.Error("missing IBM Plex Mono static weights")
+	}
+	if got := strings.Count(css, "@font-face"); got != 8 {
+		t.Errorf("IBM Plex Mono faces = %d, want 8 (2 weights x 2 styles x 2 subsets)", got)
 	}
 }
 

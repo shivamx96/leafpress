@@ -7,52 +7,94 @@ import (
 )
 
 // BuiltinFontFace is one @font-face of the curated self-hosted font set:
-// a variable-weight woff2 covering one style and unicode subset of a family.
+// a woff2 covering one weight/style and unicode subset of a family.
 type BuiltinFontFace struct {
 	Family       string // CSS font-family name, e.g. "Inter"
 	Style        string // "normal" or "italic"
-	WeightRange  string // CSS font-weight range, e.g. "400 700"
+	WeightRange  string // CSS font-weight or range, e.g. "400" or "400 700"
 	Subset       string // "latin" or "latin-ext"
 	LogicalPath  string // registry logical path of the woff2
 	UnicodeRange string // CSS unicode-range of the subset
 }
 
-// builtinFontFaces is the curated set used by the default theme. It is
+// builtinFontFamily describes one curated family. Variable families emit one
+// face per style/subset; static families emit one face for each listed weight.
+// Files follow a deterministic naming convention so the face, license, and
+// registry tables cannot silently drift apart.
+type builtinFontFamily struct {
+	Family        string
+	Slug          string
+	WeightRange   string
+	Italic        bool
+	StaticWeights []string
+}
+
+// builtinFontCatalog is the self-hosted catalog available to themes. It is
 // deliberately Latin-focused — other scripts fall back to the system stack or
 // to declared custom fonts. Faces are sourced from Google Fonts under SIL OFL
 // 1.1; full license texts ship as registry assets.
-var builtinFontFaces = []BuiltinFontFace{
-	{Family: "Bricolage Grotesque", Style: "normal", WeightRange: "200 800", Subset: "latin-ext",
-		LogicalPath:  BuiltinPrefix + "fonts/bricolage-grotesque-normal-latin-ext.woff2",
-		UnicodeRange: "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"},
-	{Family: "Bricolage Grotesque", Style: "normal", WeightRange: "200 800", Subset: "latin",
-		LogicalPath:  BuiltinPrefix + "fonts/bricolage-grotesque-normal-latin.woff2",
-		UnicodeRange: "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},
-	{Family: "Inter", Style: "italic", WeightRange: "400 700", Subset: "latin-ext",
-		LogicalPath:  BuiltinPrefix + "fonts/inter-italic-latin-ext.woff2",
-		UnicodeRange: "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"},
-	{Family: "Inter", Style: "italic", WeightRange: "400 700", Subset: "latin",
-		LogicalPath:  BuiltinPrefix + "fonts/inter-italic-latin.woff2",
-		UnicodeRange: "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},
-	{Family: "Inter", Style: "normal", WeightRange: "400 700", Subset: "latin-ext",
-		LogicalPath:  BuiltinPrefix + "fonts/inter-normal-latin-ext.woff2",
-		UnicodeRange: "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"},
-	{Family: "Inter", Style: "normal", WeightRange: "400 700", Subset: "latin",
-		LogicalPath:  BuiltinPrefix + "fonts/inter-normal-latin.woff2",
-		UnicodeRange: "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},
-	{Family: "JetBrains Mono", Style: "italic", WeightRange: "400 700", Subset: "latin-ext",
-		LogicalPath:  BuiltinPrefix + "fonts/jetbrains-mono-italic-latin-ext.woff2",
-		UnicodeRange: "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"},
-	{Family: "JetBrains Mono", Style: "italic", WeightRange: "400 700", Subset: "latin",
-		LogicalPath:  BuiltinPrefix + "fonts/jetbrains-mono-italic-latin.woff2",
-		UnicodeRange: "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},
-	{Family: "JetBrains Mono", Style: "normal", WeightRange: "400 700", Subset: "latin-ext",
-		LogicalPath:  BuiltinPrefix + "fonts/jetbrains-mono-normal-latin-ext.woff2",
-		UnicodeRange: "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"},
-	{Family: "JetBrains Mono", Style: "normal", WeightRange: "400 700", Subset: "latin",
-		LogicalPath:  BuiltinPrefix + "fonts/jetbrains-mono-normal-latin.woff2",
-		UnicodeRange: "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},
+var builtinFontCatalog = []builtinFontFamily{
+	{Family: "Atkinson Hyperlegible Mono", Slug: "atkinson-hyperlegible-mono", WeightRange: "200 800", Italic: true},
+	{Family: "Atkinson Hyperlegible Next", Slug: "atkinson-hyperlegible-next", WeightRange: "200 800", Italic: true},
+	{Family: "Bricolage Grotesque", Slug: "bricolage-grotesque", WeightRange: "200 800"},
+	{Family: "Crimson Pro", Slug: "crimson-pro", WeightRange: "200 900", Italic: true},
+	{Family: "Fira Code", Slug: "fira-code", WeightRange: "300 700"},
+	{Family: "Fraunces", Slug: "fraunces", WeightRange: "100 900", Italic: true},
+	{Family: "Geist", Slug: "geist", WeightRange: "100 900", Italic: true},
+	{Family: "Geist Mono", Slug: "geist-mono", WeightRange: "100 900", Italic: true},
+	{Family: "IBM Plex Mono", Slug: "ibm-plex-mono", StaticWeights: []string{"400", "700"}, Italic: true},
+	{Family: "IBM Plex Sans", Slug: "ibm-plex-sans", WeightRange: "100 700", Italic: true},
+	{Family: "Inter", Slug: "inter", WeightRange: "400 700", Italic: true},
+	{Family: "JetBrains Mono", Slug: "jetbrains-mono", WeightRange: "400 700", Italic: true},
+	{Family: "Lora", Slug: "lora", WeightRange: "400 700", Italic: true},
+	{Family: "Newsreader", Slug: "newsreader", WeightRange: "200 800", Italic: true},
+	{Family: "Source Code Pro", Slug: "source-code-pro", WeightRange: "200 900", Italic: true},
+	{Family: "Source Serif 4", Slug: "source-serif-4", WeightRange: "200 900", Italic: true},
+	{Family: "Space Grotesk", Slug: "space-grotesk", WeightRange: "300 700"},
 }
+
+var builtinFontSubsets = []struct {
+	Name         string
+	UnicodeRange string
+}{
+	{Name: "latin-ext", UnicodeRange: "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"},
+	{Name: "latin", UnicodeRange: "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},
+}
+
+func buildBuiltinFontFaces() []BuiltinFontFace {
+	var faces []BuiltinFontFace
+	for _, family := range builtinFontCatalog {
+		styles := []string{"normal"}
+		if family.Italic {
+			styles = append(styles, "italic")
+		}
+		weights := family.StaticWeights
+		if len(weights) == 0 {
+			weights = []string{family.WeightRange}
+		}
+		for _, style := range styles {
+			for _, subset := range builtinFontSubsets {
+				for _, weight := range weights {
+					filename := fmt.Sprintf("%s-%s-%s.woff2", family.Slug, style, subset.Name)
+					if len(family.StaticWeights) > 0 {
+						filename = fmt.Sprintf("%s-%s-%s-%s.woff2", family.Slug, style, subset.Name, weight)
+					}
+					faces = append(faces, BuiltinFontFace{
+						Family:       family.Family,
+						Style:        style,
+						WeightRange:  weight,
+						Subset:       subset.Name,
+						LogicalPath:  BuiltinPrefix + "fonts/" + filename,
+						UnicodeRange: subset.UnicodeRange,
+					})
+				}
+			}
+		}
+	}
+	return faces
+}
+
+var builtinFontFaces = buildBuiltinFontFaces()
 
 // BuiltinFontFaces returns the curated face set in deterministic order.
 func BuiltinFontFaces() []BuiltinFontFace {
@@ -63,13 +105,9 @@ func BuiltinFontFaces() []BuiltinFontFace {
 
 // BuiltinFontFamilies returns the family names of the curated set, sorted.
 func BuiltinFontFamilies() []string {
-	seen := map[string]bool{}
-	var out []string
-	for _, f := range builtinFontFaces {
-		if !seen[f.Family] {
-			seen[f.Family] = true
-			out = append(out, f.Family)
-		}
+	out := make([]string, 0, len(builtinFontCatalog))
+	for _, family := range builtinFontCatalog {
+		out = append(out, family.Family)
 	}
 	sort.Strings(out)
 	return out
@@ -78,22 +116,12 @@ func BuiltinFontFamilies() []string {
 // IsBuiltinFontFamily reports whether a family is covered by the curated
 // self-hosted set (exact, case-sensitive CSS family name).
 func IsBuiltinFontFamily(family string) bool {
-	for _, f := range builtinFontFaces {
-		if f.Family == family {
+	for _, candidate := range builtinFontCatalog {
+		if candidate.Family == family {
 			return true
 		}
 	}
 	return false
-}
-
-// builtinFontLicenses maps each curated family to the registry asset holding
-// its full SIL OFL 1.1 license text. The OFL requires redistributed copies to
-// carry the copyright notice and license, so these materialize into exported
-// sites alongside the woff2 files.
-var builtinFontLicenses = map[string]string{
-	"Bricolage Grotesque": BuiltinPrefix + "fonts/OFL-bricolage-grotesque.txt",
-	"Inter":               BuiltinPrefix + "fonts/OFL-inter.txt",
-	"JetBrains Mono":      BuiltinPrefix + "fonts/OFL-jetbrains-mono.txt",
 }
 
 // RequiredBuiltins returns every built-in a rendered site references for the
@@ -124,9 +152,10 @@ func RequiredBuiltinsFor(includeMermaid bool, families ...string) []Builtin {
 			include[face.LogicalPath] = true
 		}
 	}
-	for family, licensePath := range builtinFontLicenses {
+	for _, family := range builtinFontCatalog {
+		licensePath := BuiltinPrefix + "fonts/OFL-" + family.Slug + ".txt"
 		fontOwned[licensePath] = true
-		if want[family] {
+		if want[family.Family] {
 			include[licensePath] = true
 		}
 	}
@@ -148,8 +177,12 @@ func RequiredBuiltinsFor(includeMermaid bool, families ...string) []Builtin {
 // BuiltinFontLicense returns the logical path of the OFL license asset for a
 // curated family.
 func BuiltinFontLicense(family string) (string, bool) {
-	p, ok := builtinFontLicenses[family]
-	return p, ok
+	for _, candidate := range builtinFontCatalog {
+		if candidate.Family == family {
+			return BuiltinPrefix + "fonts/OFL-" + candidate.Slug + ".txt", true
+		}
+	}
+	return "", false
 }
 
 // FontFaceCSS returns @font-face rules for every requested family that is in

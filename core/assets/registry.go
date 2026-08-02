@@ -75,7 +75,7 @@ func mustBuiltins() []Builtin {
 		{BuiltinMermaidLicense, "text/plain; charset=utf-8", "", mermaidLicense},
 	}
 
-	out := make([]Builtin, 0, len(entries)+len(builtinFontFaces)+len(builtinFontLicenses))
+	out := make([]Builtin, 0, len(entries)+len(builtinFontFaces)+len(builtinFontCatalog))
 	for _, e := range entries {
 		out = append(out, Builtin{
 			Asset: Asset{

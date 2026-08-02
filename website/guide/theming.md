@@ -22,9 +22,19 @@ Set options in `leafpress.json`:
 ## Fonts
 
 Leafpress sites are **self-hosted by default**: no request ever leaves your
-site for a font. Three families ship bundled with Leafpress — **Bricolage
-Grotesque** (headings), **Inter** (body), and **JetBrains Mono** (code) — and are served
-from your own site as `@font-face` rules in the generated stylesheet:
+site for a font. The curated catalog contains 17 families and serves only the
+families selected by your theme as `@font-face` rules in the generated
+stylesheet:
+
+- Headings and display: **Bricolage Grotesque**, **Crimson Pro**,
+  **Fraunces**, **Geist**, **Space Grotesk**, **Lora**, **Newsreader**
+- Long-form text: **Inter**, **Atkinson Hyperlegible Next**,
+  **IBM Plex Sans**, **Geist**, **Lora**, **Source Serif 4**, **Newsreader**
+- Code: **JetBrains Mono**, **Geist Mono**, **IBM Plex Mono**,
+  **Fira Code**, **Source Code Pro**, **Atkinson Hyperlegible Mono**
+
+These groups are recommendations, not validation restrictions; any bundled
+family can be assigned to any theme role:
 
 ```json
 {

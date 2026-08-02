@@ -1432,7 +1432,7 @@ func TestAssetManifestAlwaysEmitted(t *testing.T) {
 func TestManifestSkipsFontsOfUnbundledFamilies(t *testing.T) {
 	out := runJSON(t, `{
 	  "render": {"slug": "g"},
-	  "config": {"theme": {"fontHeading": "Lobster", "fontBody": "Lobster", "fontMono": "Fira Code"}},
+	  "config": {"theme": {"fontHeading": "Lobster", "fontBody": "Lobster", "fontMono": "Roboto Mono"}},
 	  "content": {"pages": [{"slug": "note", "title": "Note", "markdown": "hi"}]}
 	}`)
 	for _, a := range out.AssetManifest {

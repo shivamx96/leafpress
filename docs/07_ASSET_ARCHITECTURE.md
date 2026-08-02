@@ -210,11 +210,12 @@ valid skip signal on its own.
 
 Font sources are a closed set; this is an explicit product decision:
 
-1. **Bundled built-in family** (the default theme families — Bricolage
-   Grotesque, Inter, and JetBrains Mono — shipped in the registry as
-   woff2): self-hosted via generated `@font-face` rules. The registry is
-   the sole membership list; both interfaces must consult it, never a
-   private copy.
+1. **Bundled built-in family** (the curated 17-family catalog, including the
+   Bricolage Grotesque, Inter, and JetBrains Mono defaults, shipped in the
+   registry as woff2): self-hosted via generated `@font-face` rules. The
+   registry is the sole membership list; both interfaces must consult it,
+   never a private copy. A build selects only the configured families and
+   their license artifacts from the full registry.
 2. **Declared custom family** (`theme.fonts` entries referencing
    `static/fonts/` files, with family, file, weight, style, display):
    self-hosted via generated `@font-face`. Files are validated as asset
