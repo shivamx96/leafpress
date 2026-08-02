@@ -1,6 +1,7 @@
 package config
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -171,7 +172,12 @@ func (t *Theme) UnmarshalJSON(data []byte) error {
 		Alias: (*Alias)(t),
 	}
 
-	if err := json.Unmarshal(data, &aux); err != nil {
+	// Reject unknown theme keys (e.g. a misspelled "acent"): DisallowUnknownFields
+	// on the parent config decoder does not propagate into this custom
+	// unmarshaler, so enforce the same strictness here.
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&aux); err != nil {
 		return err
 	}
 
@@ -372,7 +378,12 @@ func Load(path string) (*Config, error) {
 func Parse(data []byte) (*Config, error) {
 	cfg := Default()
 
-	if err := json.Unmarshal(data, cfg); err != nil {
+	// Reject unknown/misplaced keys (typos, wrong nesting) rather than
+	// silently ignoring them. This applies to every nested section; Theme has
+	// a custom UnmarshalJSON that enforces the same strictness itself.
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(cfg); err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 

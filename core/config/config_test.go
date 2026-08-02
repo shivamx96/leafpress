@@ -149,6 +149,27 @@ func TestParse_InvalidNavigationMode(t *testing.T) {
 	}
 }
 
+// Unknown / misspelled keys must be rejected at every nesting level rather
+// than silently ignored, so leafpress.json typos surface as build errors.
+func TestParse_RejectsUnknownFields(t *testing.T) {
+	cases := map[string]string{
+		"top-level":  `{"nope": 1}`,
+		"site":       `{"site": {"titel": "T"}}`,
+		"features":   `{"features": {"grph": true}}`,
+		"navigation": `{"navigation": {"modee": "automatic"}}`,
+		"build":      `{"build": {"prt": 8080}}`,
+		"theme":      `{"theme": {"acent": "#ffffff"}}`,
+		"deploy":     `{"deploy": {"provder": "github-pages"}}`,
+	}
+	for name, in := range cases {
+		t.Run(name, func(t *testing.T) {
+			if _, err := Parse([]byte(in)); err == nil {
+				t.Errorf("unknown %s field should be rejected", name)
+			}
+		})
+	}
+}
+
 // --- Validation ---
 
 func TestValidate_ValidConfig(t *testing.T) {
