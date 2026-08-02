@@ -50,7 +50,7 @@ Everything you need to build a digital garden, nothing you don't.
 
 **SEO Ready** — Automatic sitemap.xml, robots.txt, Open Graph tags, Twitter cards.
 
-**RSS Feed** — Auto-generated feed.xml with nav icon. Toggle with `"rss": true/false` in config.
+**RSS Feed** — Auto-generated feed.xml with nav icon. Toggle with `features.rss` in config (requires `site.baseURL`).
 
 **Custom 404** — Styled error page, ready for any hosting platform.
 

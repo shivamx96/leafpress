@@ -3,35 +3,35 @@ title: "Configuration"
 date: 2025-12-21
 ---
 
-Configure leafpress through `leafpress.json` in your site root.
+Configure leafpress through `leafpress.json` in your site root. Settings are
+grouped into sections — `site`, `theme`, `features`, `navigation`, `build`, and
+`deploy`. Every field is optional and has a sensible default, so a tiny config
+goes a long way.
 
 ## Minimal Config
 
 ```json
 {
-  "title": "My Garden"
+  "site": { "title": "My Garden" }
 }
 ```
 
-That's it. Everything else has sensible defaults.
+That's it. Everything else uses defaults — in fact an empty `{}` builds a valid
+default site.
 
 ## Full Reference
 
 ```json
 {
-  "title": "My Digital Garden",
-  "author": "Your Name",
-  "baseURL": "https://example.com",
-  "description": "A collection of thoughts and ideas",
-  "image": "/static/images/og-image.png",
-  "outputDir": "_site",
-  "port": 3000,
-  
-  "nav": [
-    { "label": "About", "path": "/about" },
-    { "label": "Projects", "path": "/projects/" }
-  ],
-  
+  "site": {
+    "title": "My Digital Garden",
+    "author": "Your Name",
+    "baseURL": "https://example.com",
+    "description": "A collection of thoughts and ideas",
+    "image": "/static/images/og-image.png",
+    "headExtra": "<script defer data-domain=\"example.com\" src=\"https://plausible.io/js/script.js\"></script>"
+  },
+
   "theme": {
     "fontHeading": "Crimson Pro",
     "fontBody": "Inter",
@@ -44,50 +44,43 @@ That's it. Everything else has sensible defaults.
     "navStyle": "base",
     "navActiveStyle": "base"
   },
-  
-  "graph": true,
-  "toc": true,
-  "search": true,
-  "wikilinks": true,
-  "backlinks": true,
-  "rss": true,
-  
-  "headExtra": "<script defer data-domain=\"example.com\" src=\"https://plausible.io/js/script.js\"></script>"
+
+  "features": {
+    "graph": true,
+    "toc": true,
+    "search": true,
+    "wikilinks": true,
+    "backlinks": true,
+    "rss": true
+  },
+
+  "navigation": {
+    "mode": "automatic",
+    "includeTags": false
+  },
+
+  "build": {
+    "outputDir": "_site",
+    "port": 3000,
+    "ignore": ["drafts/**", "*.draft.md"]
+  }
 }
 ```
 
 ## Options
 
-### Site Metadata
+### `site` — identity & SEO
 
 | Option | Default | Description |
 |--------|---------|-------------|
 | `title` | `"My Garden"` | Site title, shown in nav and browser tab |
-| `author` | `""` | Author name for RSS feed |
-| `baseURL` | `""` | Production URL for sitemap and canonical links |
+| `author` | `""` | Author name for RSS feed and footer copyright |
+| `baseURL` | `""` | Canonical **absolute** URL (e.g. `https://example.com` or `https://example.com/notes`). Used for canonical links, and required for `sitemap.xml` and the RSS feed (see below). The internal link path is derived from its path component. |
 | `description` | `""` | Site description for SEO |
 | `image` | `""` | Default OG image for social sharing |
+| `headExtra` | `""` | Custom HTML injected into `<head>` (see [Custom Head Content](#custom-head-content)) |
 
-### Build Options
-
-| Option | Default | Description |
-|--------|---------|-------------|
-| `outputDir` | `"_site"` | Build output directory |
-| `port` | `3000` | Dev server port |
-| `headExtra` | `""` | Custom HTML to inject in `<head>` |
-
-### Navigation
-
-```json
-{
-  "nav": [
-    { "label": "Home", "path": "/" },
-    { "label": "Docs", "path": "/docs/" }
-  ]
-}
-```
-
-### Theme
+### `theme`
 
 | Option | Default | Description |
 |--------|---------|-------------|
@@ -114,7 +107,7 @@ Gradients work too:
 }
 ```
 
-### Features
+### `features`
 
 | Option | Default | Description |
 |--------|---------|-------------|
@@ -123,25 +116,75 @@ Gradients work too:
 | `search` | `true` | Enable the full-text search UI (⌘K). The page index used by search and link previews is always generated |
 | `wikilinks` | `true` | Enable wiki-link processing |
 | `backlinks` | `true` | Show backlinks section on pages |
-| `rss` | `true` | Generate RSS feed and show feed icon in nav |
+| `rss` | `true` | Generate RSS feed and show feed icon in nav (requires `site.baseURL`) |
 
-### Ignore Patterns
+### `navigation`
 
-Exclude files from builds using glob patterns:
+Choose how the top nav bar is built with `mode`:
+
+**Automatic** (default) derives the nav from your top-level content — root notes
+and section homes. The home page itself is reached via the site title, so it is
+not repeated as a nav link.
 
 ```json
 {
-  "ignore": ["drafts/**", "*.draft.md", "private/**"]
+  "navigation": {
+    "mode": "automatic",
+    "includeTags": true
+  }
 }
 ```
 
-## Custom Head Content
+- `includeTags` (default `false`) appends a **Tags** item when tagged pages
+  produce a tags index.
 
-Use `headExtra` to inject custom HTML into `<head>`. Useful for analytics, verification tags, or additional scripts.
+**Explicit** uses exactly the items you list:
 
 ```json
 {
-  "headExtra": "<script defer data-domain=\"example.com\" src=\"https://plausible.io/js/script.js\"></script>"
+  "navigation": {
+    "mode": "explicit",
+    "items": [
+      { "label": "Home", "path": "/" },
+      { "label": "Docs", "path": "/docs/" },
+      { "label": "Tags", "path": "/tags/" }
+    ]
+  }
+}
+```
+
+Nav paths must start with `/`.
+
+### `build`
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `outputDir` | `"_site"` | Build output directory |
+| `port` | `3000` | Dev server port |
+| `ignore` | `[]` | Glob patterns to exclude from builds, e.g. `["drafts/**", "*.draft.md", "private/**"]` |
+
+### `deploy`
+
+Deployment settings (provider and provider-specific options) are stored under
+`deploy` and managed by `leafpress deploy` — see the deploy guides.
+
+## A note on `baseURL`, sitemap & RSS
+
+`sitemap.xml`, the RSS feed (`feed.xml`), and the `Sitemap:` line in
+`robots.txt` all need an absolute origin. If `site.baseURL` is empty, leafpress
+**skips** those artifacts (and prints a warning) rather than emitting invalid
+relative URLs. Set `site.baseURL` to your production URL to enable them.
+
+## Custom Head Content
+
+Use `site.headExtra` to inject custom HTML into `<head>`. Useful for analytics,
+verification tags, or additional scripts.
+
+```json
+{
+  "site": {
+    "headExtra": "<script defer data-domain=\"example.com\" src=\"https://plausible.io/js/script.js\"></script>"
+  }
 }
 ```
 
@@ -150,21 +193,27 @@ Use `headExtra` to inject custom HTML into `<head>`. Useful for analytics, verif
 Plausible Analytics:
 ```json
 {
-  "headExtra": "<script defer data-domain=\"example.com\" src=\"https://plausible.io/js/script.js\"></script>"
+  "site": {
+    "headExtra": "<script defer data-domain=\"example.com\" src=\"https://plausible.io/js/script.js\"></script>"
+  }
 }
 ```
 
 Umami Analytics:
 ```json
 {
-  "headExtra": "<script defer src=\"https://analytics.example.com/script.js\" data-website-id=\"xxx\"></script>"
+  "site": {
+    "headExtra": "<script defer src=\"https://analytics.example.com/script.js\" data-website-id=\"xxx\"></script>"
+  }
 }
 ```
 
 Google Site Verification:
 ```json
 {
-  "headExtra": "<meta name=\"google-site-verification\" content=\"xxx\" />"
+  "site": {
+    "headExtra": "<meta name=\"google-site-verification\" content=\"xxx\" />"
+  }
 }
 ```
 
@@ -181,8 +230,7 @@ toc: true
 
 ```yaml
 ---
-title: "Short Note"  
+title: "Short Note"
 toc: false
 ---
 ```
-

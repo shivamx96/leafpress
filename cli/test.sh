@@ -66,13 +66,25 @@ GARDEN=$(mktemp -d)
 cd "$GARDEN"
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test Garden",
-  "author": "Test Author",
-  "toc": true,
-  "graph": true,
-  "search": true,
-  "backlinks": true,
-  "nav": [{"label": "Notes", "path": "/notes/"}],
+  "site": {
+    "title": "Test Garden",
+    "author": "Test Author"
+  },
+  "features": {
+    "toc": true,
+    "graph": true,
+    "search": true,
+    "backlinks": true
+  },
+  "navigation": {
+    "mode": "explicit",
+    "items": [
+      {
+        "label": "Notes",
+        "path": "/notes/"
+      }
+    ]
+  },
   "theme": {
     "accent": "#6366f1",
     "background": {
@@ -160,6 +172,34 @@ if grep -q '<code>\[\[wiki-link\]\]</code>' _site/test/index.html; then
     pass
 else
     fail "Wiki links in code were processed"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
+# Test 5b: Wiki links survive nested/4-backtick code fences (regression)
+test_case "Wiki links preserved after nested code fences"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > test.md << 'EOF'
+---
+title: Test
+---
+
+````markdown
+```mermaid
+graph TD
+```
+````
+
+Link: `[[projects/website]]`
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+# The inline wiki-link after a nested fence must stay literal, not become a link/broken-link span.
+if grep -q '<code>\[\[projects/website\]\]</code>' _site/test/index.html && ! grep -q 'lp-broken-link' _site/test/index.html; then
+    pass
+else
+    fail "Inline wiki-link leaked through nested code fences"
 fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR"
@@ -333,8 +373,12 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "theme": { "navStyle": "glassy" }
+  "site": {
+    "title": "Test"
+  },
+  "theme": {
+    "navStyle": "glassy"
+  }
 }
 EOF
 "$LEAFPRESS" build > /dev/null 2>&1
@@ -353,8 +397,12 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "theme": { "navStyle": "sticky" }
+  "site": {
+    "title": "Test"
+  },
+  "theme": {
+    "navStyle": "sticky"
+  }
 }
 EOF
 "$LEAFPRESS" build > /dev/null 2>&1
@@ -380,9 +428,21 @@ Notes section
 EOF
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "nav": [{"label": "Notes", "path": "/notes/"}],
-  "theme": { "navActiveStyle": "base" }
+  "site": {
+    "title": "Test"
+  },
+  "navigation": {
+    "mode": "explicit",
+    "items": [
+      {
+        "label": "Notes",
+        "path": "/notes/"
+      }
+    ]
+  },
+  "theme": {
+    "navActiveStyle": "base"
+  }
 }
 EOF
 "$LEAFPRESS" build > /dev/null 2>&1
@@ -408,9 +468,21 @@ Notes section
 EOF
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "nav": [{"label": "Notes", "path": "/notes/"}],
-  "theme": { "navActiveStyle": "box" }
+  "site": {
+    "title": "Test"
+  },
+  "navigation": {
+    "mode": "explicit",
+    "items": [
+      {
+        "label": "Notes",
+        "path": "/notes/"
+      }
+    ]
+  },
+  "theme": {
+    "navActiveStyle": "box"
+  }
 }
 EOF
 "$LEAFPRESS" build > /dev/null 2>&1
@@ -436,9 +508,21 @@ Notes section
 EOF
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "nav": [{"label": "Notes", "path": "/notes/"}],
-  "theme": { "navActiveStyle": "underlined" }
+  "site": {
+    "title": "Test"
+  },
+  "navigation": {
+    "mode": "explicit",
+    "items": [
+      {
+        "label": "Notes",
+        "path": "/notes/"
+      }
+    ]
+  },
+  "theme": {
+    "navActiveStyle": "underlined"
+  }
 }
 EOF
 "$LEAFPRESS" build > /dev/null 2>&1
@@ -487,7 +571,9 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "My Test Garden"
+  "site": {
+    "title": "My Test Garden"
+  }
 }
 EOF
 "$LEAFPRESS" build > /dev/null 2>&1
@@ -587,8 +673,12 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "toc": true
+  "site": {
+    "title": "Test"
+  },
+  "features": {
+    "toc": true
+  }
 }
 EOF
 cat > test.md << 'EOF'
@@ -618,8 +708,12 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "theme": { "navStyle": "base" }
+  "site": {
+    "title": "Test"
+  },
+  "theme": {
+    "navStyle": "base"
+  }
 }
 EOF
 "$LEAFPRESS" build > /dev/null 2>&1
@@ -639,8 +733,12 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "theme": { "navStyle": "invalid" }
+  "site": {
+    "title": "Test"
+  },
+  "theme": {
+    "navStyle": "invalid"
+  }
 }
 EOF
 if "$LEAFPRESS" build 2>&1 | grep -q "navStyle must be"; then
@@ -658,8 +756,12 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "theme": { "navActiveStyle": "invalid" }
+  "site": {
+    "title": "Test"
+  },
+  "theme": {
+    "navActiveStyle": "invalid"
+  }
 }
 EOF
 if "$LEAFPRESS" build 2>&1 | grep -q "navActiveStyle must be"; then
@@ -878,7 +980,9 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
+  "site": {
+    "title": "Test"
+  },
   "theme": {
     "fontHeading": "Playfair Display",
     "fontBody": "Roboto",
@@ -932,8 +1036,10 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test Garden",
-  "author": "John Doe"
+  "site": {
+    "title": "Test Garden",
+    "author": "John Doe"
+  }
 }
 EOF
 "$LEAFPRESS" build > /dev/null 2>&1
@@ -950,6 +1056,10 @@ test_case "Backlinks are deduplicated"
 TESTDIR=$(mktemp -d)
 cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
+# Explicit (empty) nav so automatic nav doesn't list page titles and skew the count.
+cat > leafpress.json << 'EOF'
+{ "navigation": { "mode": "explicit" } }
+EOF
 cat > page-a.md << 'EOF'
 ---
 title: Page A
@@ -1034,8 +1144,12 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "graph": true
+  "site": {
+    "title": "Test"
+  },
+  "features": {
+    "graph": true
+  }
 }
 EOF
 "$LEAFPRESS" build > /dev/null 2>&1
@@ -1054,8 +1168,12 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "graph": false
+  "site": {
+    "title": "Test"
+  },
+  "features": {
+    "graph": false
+  }
 }
 EOF
 "$LEAFPRESS" build > /dev/null 2>&1
@@ -1074,8 +1192,12 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "graph": true
+  "site": {
+    "title": "Test"
+  },
+  "features": {
+    "graph": true
+  }
 }
 EOF
 "$LEAFPRESS" build > /dev/null 2>&1
@@ -1094,8 +1216,12 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "graph": false
+  "site": {
+    "title": "Test"
+  },
+  "features": {
+    "graph": false
+  }
 }
 EOF
 "$LEAFPRESS" build > /dev/null 2>&1
@@ -1114,8 +1240,12 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "graph": true
+  "site": {
+    "title": "Test"
+  },
+  "features": {
+    "graph": true
+  }
 }
 EOF
 cat > test.md << 'EOF'
@@ -1142,8 +1272,12 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "graph": true
+  "site": {
+    "title": "Test"
+  },
+  "features": {
+    "graph": true
+  }
 }
 EOF
 cat > page-a.md << 'EOF'
@@ -1175,8 +1309,12 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "graph": true
+  "site": {
+    "title": "Test"
+  },
+  "features": {
+    "graph": true
+  }
 }
 EOF
 cat > test.md << 'EOF'
@@ -1202,8 +1340,12 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "graph": true
+  "site": {
+    "title": "Test"
+  },
+  "features": {
+    "graph": true
+  }
 }
 EOF
 cat > test.md << 'EOF'
@@ -1229,8 +1371,12 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "graph": false
+  "site": {
+    "title": "Test"
+  },
+  "features": {
+    "graph": false
+  }
 }
 EOF
 "$LEAFPRESS" build > /dev/null 2>&1
@@ -1429,7 +1575,9 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
+  "site": {
+    "title": "Test"
+  },
   "theme": {
     "accent": "not-a-color"
   }
@@ -1545,8 +1693,10 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "baseURL": "/blog"
+  "site": {
+    "title": "Test",
+    "baseURL": "/blog"
+  }
 }
 EOF
 cat > test.md << 'EOF'
@@ -1568,11 +1718,21 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "nav": [{"label": "Notes", "path": "notes/"}]
+  "site": {
+    "title": "Test"
+  },
+  "navigation": {
+    "mode": "explicit",
+    "items": [
+      {
+        "label": "Notes",
+        "path": "notes/"
+      }
+    ]
+  }
 }
 EOF
-if "$LEAFPRESS" build 2>&1 | grep -iq "nav path must start with"; then
+if "$LEAFPRESS" build 2>&1 | grep -iq "navigation path must start with"; then
     pass
 else
     fail "Invalid nav path not rejected"
@@ -1587,8 +1747,18 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "nav": [{"label": "", "path": "/notes/"}]
+  "site": {
+    "title": "Test"
+  },
+  "navigation": {
+    "mode": "explicit",
+    "items": [
+      {
+        "label": "",
+        "path": "/notes/"
+      }
+    ]
+  }
 }
 EOF
 if "$LEAFPRESS" build 2>&1 | grep -iq "empty label"; then
@@ -1626,8 +1796,15 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "ignore": ["drafts", "private"]
+  "site": {
+    "title": "Test"
+  },
+  "build": {
+    "ignore": [
+      "drafts",
+      "private"
+    ]
+  }
 }
 EOF
 mkdir -p drafts private notes
@@ -1709,8 +1886,12 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "graph": true
+  "site": {
+    "title": "Test"
+  },
+  "features": {
+    "graph": true
+  }
 }
 EOF
 echo -e "---\ntitle: Node A\n---\nLinks to [[node-b]]" > node-a.md
@@ -1758,8 +1939,12 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "search": true
+  "site": {
+    "title": "Test"
+  },
+  "features": {
+    "search": true
+  }
 }
 EOF
 "$LEAFPRESS" build > /dev/null 2>&1
@@ -1779,8 +1964,12 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "search": false
+  "site": {
+    "title": "Test"
+  },
+  "features": {
+    "search": false
+  }
 }
 EOF
 cat > note.md << 'EOF'
@@ -1814,8 +2003,12 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "search": true
+  "site": {
+    "title": "Test"
+  },
+  "features": {
+    "search": true
+  }
 }
 EOF
 cat > test.md << 'EOF'
@@ -1845,8 +2038,12 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "search": true
+  "site": {
+    "title": "Test"
+  },
+  "features": {
+    "search": true
+  }
 }
 EOF
 cat > test.md << 'EOF'
@@ -1872,8 +2069,12 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "search": true
+  "site": {
+    "title": "Test"
+  },
+  "features": {
+    "search": true
+  }
 }
 EOF
 mkdir notes
@@ -1906,8 +2107,12 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "search": true
+  "site": {
+    "title": "Test"
+  },
+  "features": {
+    "search": true
+  }
 }
 EOF
 "$LEAFPRESS" build > /dev/null 2>&1
@@ -1926,8 +2131,12 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "search": false
+  "site": {
+    "title": "Test"
+  },
+  "features": {
+    "search": false
+  }
 }
 EOF
 "$LEAFPRESS" build > /dev/null 2>&1
@@ -1946,8 +2155,12 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "search": false
+  "site": {
+    "title": "Test"
+  },
+  "features": {
+    "search": false
+  }
 }
 EOF
 "$LEAFPRESS" build > /dev/null 2>&1
@@ -1967,9 +2180,13 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "graph": true,
-  "search": true
+  "site": {
+    "title": "Test"
+  },
+  "features": {
+    "graph": true,
+    "search": true
+  }
 }
 EOF
 cat > test.md << 'EOF'
@@ -1995,8 +2212,12 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "search": true
+  "site": {
+    "title": "Test"
+  },
+  "features": {
+    "search": true
+  }
 }
 EOF
 # Create a page with more than 5000 chars of content
@@ -2027,8 +2248,12 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "backlinks": true
+  "site": {
+    "title": "Test"
+  },
+  "features": {
+    "backlinks": true
+  }
 }
 EOF
 # Create two pages that link to each other
@@ -2065,8 +2290,12 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "backlinks": true
+  "site": {
+    "title": "Test"
+  },
+  "features": {
+    "backlinks": true
+  }
 }
 EOF
 cat > page1.md << 'EOF'
@@ -2114,8 +2343,15 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "backlinks": true
+  "site": {
+    "title": "Test"
+  },
+  "features": {
+    "backlinks": true
+  },
+  "navigation": {
+    "mode": "explicit"
+  }
 }
 EOF
 cat > target.md << 'EOF'
@@ -2351,8 +2587,12 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "toc": true
+  "site": {
+    "title": "Test"
+  },
+  "features": {
+    "toc": true
+  }
 }
 EOF
 cat > page.md << 'EOF'
@@ -2380,8 +2620,12 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "toc": true
+  "site": {
+    "title": "Test"
+  },
+  "features": {
+    "toc": true
+  }
 }
 EOF
 cat > page.md << 'EOF'
@@ -2568,8 +2812,12 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "backlinks": true
+  "site": {
+    "title": "Test"
+  },
+  "features": {
+    "backlinks": true
+  }
 }
 EOF
 cat > a.md << 'EOF'
@@ -2728,8 +2976,12 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "toc": false
+  "site": {
+    "title": "Test"
+  },
+  "features": {
+    "toc": false
+  }
 }
 EOF
 cat > test.md << 'EOF'
@@ -2791,8 +3043,12 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "toc": true
+  "site": {
+    "title": "Test"
+  },
+  "features": {
+    "toc": true
+  }
 }
 EOF
 cat > test.md << 'EOF'
@@ -2825,8 +3081,12 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "toc": true
+  "site": {
+    "title": "Test"
+  },
+  "features": {
+    "toc": true
+  }
 }
 EOF
 cat > test.md << 'EOF'
@@ -2859,7 +3119,9 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
+  "site": {
+    "title": "Test"
+  },
   "theme": {
     "background": {
       "light": "#f5f5f5",
@@ -2907,8 +3169,12 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "toc": false
+  "site": {
+    "title": "Test"
+  },
+  "features": {
+    "toc": false
+  }
 }
 EOF
 cat > test.md << 'EOF'
@@ -2952,8 +3218,10 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "baseURL": "https://example.com"
+  "site": {
+    "title": "Test",
+    "baseURL": "https://example.com"
+  }
 }
 EOF
 "$LEAFPRESS" build > /dev/null 2>&1
@@ -2970,6 +3238,9 @@ test_case "sitemap.xml is generated"
 TESTDIR=$(mktemp -d)
 cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{ "site": { "baseURL": "https://example.com" } }
+EOF
 "$LEAFPRESS" build > /dev/null 2>&1
 if [ -f "_site/sitemap.xml" ] && grep -q '<urlset' _site/sitemap.xml && grep -q '<loc>' _site/sitemap.xml; then
     pass
@@ -2986,8 +3257,10 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "baseURL": "https://example.com"
+  "site": {
+    "title": "Test",
+    "baseURL": "https://example.com"
+  }
 }
 EOF
 "$LEAFPRESS" build > /dev/null 2>&1
@@ -3010,6 +3283,9 @@ title: Test
 date: 2025-06-15
 ---
 Content
+EOF
+cat > leafpress.json << 'EOF'
+{ "site": { "baseURL": "https://example.com" } }
 EOF
 "$LEAFPRESS" build > /dev/null 2>&1
 if grep -q '<lastmod>2025-06-15</lastmod>' _site/sitemap.xml; then
@@ -3053,6 +3329,9 @@ test_case "RSS feed.xml is generated"
 TESTDIR=$(mktemp -d)
 cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{ "site": { "baseURL": "https://example.com" } }
+EOF
 "$LEAFPRESS" build > /dev/null 2>&1
 if [ -f "_site/feed.xml" ] && grep -q '<rss version="2.0"' _site/feed.xml; then
     pass
@@ -3073,6 +3352,9 @@ title: Test Page
 date: 2025-06-15
 ---
 This is test content.
+EOF
+cat > leafpress.json << 'EOF'
+{ "site": { "baseURL": "https://example.com" } }
 EOF
 "$LEAFPRESS" build > /dev/null 2>&1
 if grep -q '<item>' _site/feed.xml && grep -q '<title>Test Page</title>' _site/feed.xml; then
@@ -3167,8 +3449,10 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "baseURL": "https://example.com"
+  "site": {
+    "title": "Test",
+    "baseURL": "https://example.com"
+  }
 }
 EOF
 cat > test.md << 'EOF'
@@ -3431,8 +3715,10 @@ cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 cat > leafpress.json << 'EOF'
 {
-  "title": "Test",
-  "headExtra": "<script defer data-domain=\"example.com\" src=\"https://plausible.io/js/script.js\"></script>"
+  "site": {
+    "title": "Test",
+    "headExtra": "<script defer data-domain=\"example.com\" src=\"https://plausible.io/js/script.js\"></script>"
+  }
 }
 EOF
 "$LEAFPRESS" build > /dev/null 2>&1

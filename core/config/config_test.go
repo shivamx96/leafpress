@@ -13,16 +13,22 @@ import (
 func TestDefault(t *testing.T) {
 	cfg := Default()
 
-	if cfg.Title != "My Garden" {
-		t.Errorf("Title = %q, want %q", cfg.Title, "My Garden")
+	if cfg.ContractVersion != ContractVersionLatest {
+		t.Errorf("ContractVersion = %d, want %d", cfg.ContractVersion, ContractVersionLatest)
 	}
-	if cfg.OutputDir != "_site" {
-		t.Errorf("OutputDir = %q, want %q", cfg.OutputDir, "_site")
+	if cfg.Site.Title != "My Garden" {
+		t.Errorf("Title = %q, want %q", cfg.Site.Title, "My Garden")
 	}
-	if cfg.Port != 3000 {
-		t.Errorf("Port = %d, want 3000", cfg.Port)
+	if cfg.Build.OutputDir != "_site" {
+		t.Errorf("OutputDir = %q, want %q", cfg.Build.OutputDir, "_site")
 	}
-	if !cfg.Graph || !cfg.Search || !cfg.TOC || !cfg.Backlinks || !cfg.Wikilinks || !cfg.RSS {
+	if cfg.Build.Port != 3000 {
+		t.Errorf("Port = %d, want 3000", cfg.Build.Port)
+	}
+	if cfg.Navigation.Mode != NavAutomatic {
+		t.Errorf("Navigation.Mode = %q, want %q", cfg.Navigation.Mode, NavAutomatic)
+	}
+	if !cfg.Features.Graph || !cfg.Features.Search || !cfg.Features.TOC || !cfg.Features.Backlinks || !cfg.Features.Wikilinks || !cfg.Features.RSS {
 		t.Error("all features should be enabled by default")
 	}
 	if cfg.Theme.Accent != "#50ac00" {
@@ -37,7 +43,7 @@ func TestLoad_NoFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("should not error on missing file, got: %v", err)
 	}
-	if cfg.Title != "My Garden" {
+	if cfg.Site.Title != "My Garden" {
 		t.Error("should return defaults when file missing")
 	}
 }
@@ -45,18 +51,18 @@ func TestLoad_NoFile(t *testing.T) {
 func TestLoad_MinimalConfig(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "leafpress.json")
-	os.WriteFile(path, []byte(`{"title": "My Site"}`), 0644)
+	os.WriteFile(path, []byte(`{"site": {"title": "My Site"}}`), 0644)
 
 	cfg, err := Load(path)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if cfg.Title != "My Site" {
-		t.Errorf("Title = %q, want %q", cfg.Title, "My Site")
+	if cfg.Site.Title != "My Site" {
+		t.Errorf("Title = %q, want %q", cfg.Site.Title, "My Site")
 	}
 	// Defaults should still apply
-	if cfg.Port != 3000 {
-		t.Errorf("Port = %d, want 3000", cfg.Port)
+	if cfg.Build.Port != 3000 {
+		t.Errorf("Port = %d, want 3000", cfg.Build.Port)
 	}
 	if cfg.Theme.FontBody != "Inter" {
 		t.Errorf("FontBody = %q, want %q", cfg.Theme.FontBody, "Inter")
@@ -66,19 +72,19 @@ func TestLoad_MinimalConfig(t *testing.T) {
 func TestLoad_DisableFeatures(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "leafpress.json")
-	os.WriteFile(path, []byte(`{"title": "Test", "graph": false, "rss": false}`), 0644)
+	os.WriteFile(path, []byte(`{"site": {"title": "Test"}, "features": {"graph": false, "rss": false}}`), 0644)
 
 	cfg, err := Load(path)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if cfg.Graph {
+	if cfg.Features.Graph {
 		t.Error("Graph should be false")
 	}
-	if cfg.RSS {
+	if cfg.Features.RSS {
 		t.Error("RSS should be false")
 	}
-	if !cfg.Search {
+	if !cfg.Features.Search {
 		t.Error("Search should still be true (default)")
 	}
 }
@@ -96,24 +102,50 @@ func TestLoad_InvalidJSON(t *testing.T) {
 
 func TestParse_MatchesLoadDefaultsAndOverrides(t *testing.T) {
 	raw := []byte(`{
-		"title":"Rendered Site","graph":false,"rss":false,
+		"site":{"title":"Rendered Site"},
+		"features":{"graph":false,"rss":false},
 		"theme":{"accent":"#123456","navStyle":"sticky"}
 	}`)
 	cfg, err := Parse(raw)
 	if err != nil {
 		t.Fatalf("Parse: %v", err)
 	}
-	if cfg.Title != "Rendered Site" || cfg.Graph || cfg.RSS {
+	if cfg.Site.Title != "Rendered Site" || cfg.Features.Graph || cfg.Features.RSS {
 		t.Fatalf("overrides not preserved: %+v", cfg)
 	}
-	if !cfg.Search || !cfg.TOC || !cfg.Backlinks || !cfg.Wikilinks {
+	if !cfg.Features.Search || !cfg.Features.TOC || !cfg.Features.Backlinks || !cfg.Features.Wikilinks {
 		t.Fatal("omitted feature flags should retain CLI defaults")
 	}
 	if cfg.Theme.Accent != "#123456" || cfg.Theme.NavStyle != "sticky" {
 		t.Fatalf("theme overrides not preserved: %+v", cfg.Theme)
 	}
-	if cfg.Theme.FontBody != "Inter" || cfg.Port != 3000 || cfg.OutputDir != "_site" {
+	if cfg.Theme.FontBody != "Inter" || cfg.Build.Port != 3000 || cfg.Build.OutputDir != "_site" {
 		t.Fatal("omitted config fields should retain CLI defaults")
+	}
+	if cfg.Navigation.Mode != NavAutomatic {
+		t.Fatalf("omitted navigation.mode should default to %q, got %q", NavAutomatic, cfg.Navigation.Mode)
+	}
+}
+
+func TestParse_MinimalEmptyConfig(t *testing.T) {
+	cfg, err := Parse([]byte(`{}`))
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+	if cfg.Site.Title != "My Garden" {
+		t.Errorf("empty config should yield default site, got Title = %q", cfg.Site.Title)
+	}
+}
+
+func TestParse_UnsupportedContractVersion(t *testing.T) {
+	if _, err := Parse([]byte(`{"contractVersion": 3}`)); err == nil {
+		t.Error("contractVersion 3 should be rejected")
+	}
+}
+
+func TestParse_InvalidNavigationMode(t *testing.T) {
+	if _, err := Parse([]byte(`{"navigation": {"mode": "sideways"}}`)); err == nil {
+		t.Error("navigation mode 'sideways' should be rejected")
 	}
 }
 
@@ -129,17 +161,17 @@ func TestValidate_ValidConfig(t *testing.T) {
 func TestValidate_PortRange(t *testing.T) {
 	cfg := Default()
 
-	cfg.Port = 0
+	cfg.Build.Port = 0
 	if err := cfg.Validate(); err == nil {
 		t.Error("port 0 should be invalid")
 	}
 
-	cfg.Port = 65536
+	cfg.Build.Port = 65536
 	if err := cfg.Validate(); err == nil {
 		t.Error("port 65536 should be invalid")
 	}
 
-	cfg.Port = 8080
+	cfg.Build.Port = 8080
 	if err := cfg.Validate(); err != nil {
 		t.Errorf("port 8080 should be valid, got: %v", err)
 	}
@@ -204,22 +236,22 @@ func TestValidate_NavActiveStyle(t *testing.T) {
 func TestValidate_NavItems(t *testing.T) {
 	cfg := Default()
 
-	cfg.Nav = []NavItem{{Label: "Home", Path: "/home"}}
+	cfg.Navigation.Items = []NavItem{{Label: "Home", Path: "/home"}}
 	if err := cfg.Validate(); err != nil {
 		t.Errorf("valid nav should pass, got: %v", err)
 	}
 
-	cfg.Nav = []NavItem{{Label: "", Path: "/home"}}
+	cfg.Navigation.Items = []NavItem{{Label: "", Path: "/home"}}
 	if err := cfg.Validate(); err == nil {
 		t.Error("empty label should fail")
 	}
 
-	cfg.Nav = []NavItem{{Label: "Home", Path: ""}}
+	cfg.Navigation.Items = []NavItem{{Label: "Home", Path: ""}}
 	if err := cfg.Validate(); err == nil {
 		t.Error("empty path should fail")
 	}
 
-	cfg.Nav = []NavItem{{Label: "Home", Path: "home"}}
+	cfg.Navigation.Items = []NavItem{{Label: "Home", Path: "home"}}
 	if err := cfg.Validate(); err == nil {
 		t.Error("path without leading / should fail")
 	}
@@ -260,7 +292,7 @@ func TestTheme_BackgroundObject(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "leafpress.json")
 	os.WriteFile(path, []byte(`{
-		"title": "Test",
+		"site": {"title": "Test"},
 		"theme": {
 			"background": {
 				"light": "#ffffff",
@@ -285,7 +317,7 @@ func TestTheme_BackgroundString(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "leafpress.json")
 	os.WriteFile(path, []byte(`{
-		"title": "Test",
+		"site": {"title": "Test"},
 		"theme": {
 			"background": "#f0f0f0"
 		}
@@ -310,7 +342,7 @@ func TestWrite_RoundTrip(t *testing.T) {
 	path := filepath.Join(dir, "leafpress.json")
 
 	cfg := Default()
-	cfg.Title = "Round Trip Test"
+	cfg.Site.Title = "Round Trip Test"
 
 	if err := Write(path, cfg); err != nil {
 		t.Fatalf("Write failed: %v", err)
@@ -320,8 +352,21 @@ func TestWrite_RoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load failed: %v", err)
 	}
-	if loaded.Title != "Round Trip Test" {
-		t.Errorf("Title = %q, want %q", loaded.Title, "Round Trip Test")
+	if loaded.Site.Title != "Round Trip Test" {
+		t.Errorf("Title = %q, want %q", loaded.Site.Title, "Round Trip Test")
+	}
+	// Nested sections must survive the flat->nested JSON round trip.
+	if loaded.ContractVersion != cfg.ContractVersion {
+		t.Errorf("ContractVersion = %d, want %d", loaded.ContractVersion, cfg.ContractVersion)
+	}
+	if loaded.Features != cfg.Features {
+		t.Errorf("Features = %+v, want %+v", loaded.Features, cfg.Features)
+	}
+	if loaded.Navigation.Mode != cfg.Navigation.Mode {
+		t.Errorf("Navigation.Mode = %q, want %q", loaded.Navigation.Mode, cfg.Navigation.Mode)
+	}
+	if loaded.Build.OutputDir != cfg.Build.OutputDir || loaded.Build.Port != cfg.Build.Port {
+		t.Errorf("Build = %+v, want %+v", loaded.Build, cfg.Build)
 	}
 }
 

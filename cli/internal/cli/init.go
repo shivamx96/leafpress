@@ -43,7 +43,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 	if _, err := os.Stat(stylePath); os.IsNotExist(err) {
 		styleContent := `/* leafpress Custom Styles
  * Override CSS variables or add custom rules below.
- * See: https://leafpress.dev/docs/theming
+ * See: https://leafpress.in/docs/theming
  *
  * Available variables:
  * --lp-font, --lp-font-mono, --lp-accent, --lp-bg, --lp-text,

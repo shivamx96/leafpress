@@ -37,14 +37,19 @@ import (
 //     warning as a publish blocker.
 
 const parityConfig = `{
-  "title": "Parity Garden",
-  "description": "Cross-interface parity fixture",
-  "author": "Shivam",
-  "baseURL": "https://example.com/garden",
-  "nav": [
-    {"label": "Home", "path": "/"},
-    {"label": "Essays", "path": "/essays/"}
-  ],
+  "site": {
+    "title": "Parity Garden",
+    "description": "Cross-interface parity fixture",
+    "author": "Shivam",
+    "baseURL": "https://example.com/garden"
+  },
+  "navigation": {
+    "mode": "explicit",
+    "items": [
+      {"label": "Home", "path": "/"},
+      {"label": "Essays", "path": "/essays/"}
+    ]
+  },
   "theme": {
     "accent": "#336699",
     "background": {"light": "#fdf6e3", "dark": "#002b36"},
@@ -53,12 +58,14 @@ const parityConfig = `{
       {"family": "My Serif", "file": "static/fonts/my-serif.woff2", "weight": "400 700"}
     ]
   },
-  "graph": true,
-  "search": true,
-  "toc": true,
-  "backlinks": true,
-  "wikilinks": true,
-  "rss": true
+  "features": {
+    "graph": true,
+    "search": true,
+    "toc": true,
+    "backlinks": true,
+    "wikilinks": true,
+    "rss": true
+  }
 }`
 
 // noteABody links to the same page in all three wikilink forms — display
@@ -117,38 +124,41 @@ func buildParityProject(t *testing.T) string {
 func renderParityGarden(t *testing.T) *render.Output {
 	t.Helper()
 	input := map[string]any{
-		"garden":     map[string]any{"slug": "parity"},
-		"config":     json.RawMessage(parityConfig),
-		"styleCSS":   parityStyleCSS,
-		"emitAssets": true,
-		"assets": []map[string]any{
-			{
-				"logicalPath": "static/fonts/my-serif.woff2",
-				"contentType": "font/woff2",
-				"sha256":      assets.Sum([]byte(parityCustomFontBytes)),
-				"size":        len(parityCustomFontBytes),
+		"contractVersion": 2,
+		"config":          json.RawMessage(parityConfig),
+		"render":          map[string]any{"slug": "parity"},
+		"options":         map[string]any{"emitAssets": true},
+		"content": map[string]any{
+			"styleCSS": parityStyleCSS,
+			"assets": []map[string]any{
+				{
+					"logicalPath": "static/fonts/my-serif.woff2",
+					"contentType": "font/woff2",
+					"sha256":      assets.Sum([]byte(parityCustomFontBytes)),
+					"size":        len(parityCustomFontBytes),
+				},
+				{
+					"logicalPath": "static/user-favicon.ico",
+					"contentType": "image/x-icon",
+					"sha256":      assets.Sum([]byte(parityUserFaviconBytes)),
+					"size":        len(parityUserFaviconBytes),
+					"outputPath":  "favicon.ico",
+				},
 			},
-			{
-				"logicalPath": "static/user-favicon.ico",
-				"contentType": "image/x-icon",
-				"sha256":      assets.Sum([]byte(parityUserFaviconBytes)),
-				"size":        len(parityUserFaviconBytes),
-				"outputPath":  "favicon.ico",
-			},
-		},
-		"pages": []map[string]any{
-			{
-				"slug":      "note-a",
-				"title":     "Note A",
-				"markdown":  noteABody,
-				"tags":      []string{"systems"},
-				"createdAt": "2026-01-05T00:00:00Z",
-			},
-			{
-				"slug":      "essays/note-b",
-				"title":     "Note B",
-				"markdown":  noteBBody,
-				"createdAt": "2026-02-10T00:00:00Z",
+			"pages": []map[string]any{
+				{
+					"slug":      "note-a",
+					"title":     "Note A",
+					"markdown":  noteABody,
+					"tags":      []string{"systems"},
+					"createdAt": "2026-01-05T00:00:00Z",
+				},
+				{
+					"slug":      "essays/note-b",
+					"title":     "Note B",
+					"markdown":  noteBBody,
+					"createdAt": "2026-02-10T00:00:00Z",
+				},
 			},
 		},
 	}
@@ -586,7 +596,7 @@ func TestParityPageHTMLStructure(t *testing.T) {
 func fontParityCase(t *testing.T, themeJSON string) (string, string, string, string) {
 	t.Helper()
 	dir := t.TempDir()
-	cfgJSON := `{"title": "Fonts", "theme": ` + themeJSON + `}`
+	cfgJSON := `{"site": {"title": "Fonts"}, "theme": ` + themeJSON + `}`
 	if err := os.WriteFile(filepath.Join(dir, "leafpress.json"), []byte(cfgJSON), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -611,9 +621,10 @@ func fontParityCase(t *testing.T, themeJSON string) (string, string, string, str
 	}
 
 	out, err := render.Run([]byte(`{
-	  "garden": {"slug": "fonts"},
+	  "contractVersion": 2,
+	  "render": {"slug": "fonts"},
 	  "config": ` + cfgJSON + `,
-	  "pages": [{"slug": "note", "title": "Note", "markdown": "hi"}]
+	  "content": {"pages": [{"slug": "note", "title": "Note", "markdown": "hi"}]}
 	}`))
 	if err != nil {
 		t.Fatalf("render.Run: %v", err)

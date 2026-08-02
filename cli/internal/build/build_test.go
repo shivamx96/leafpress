@@ -348,8 +348,8 @@ func TestBuildEmitsSearchIndexWhenSearchUIDisabled(t *testing.T) {
 	}
 
 	cfg := config.Default()
-	cfg.Search = false
-	cfg.Graph = false
+	cfg.Features.Search = false
+	cfg.Features.Graph = false
 	b := New(cfg, Options{})
 	if _, err := b.Build(); err != nil {
 		t.Fatalf("Build: %v", err)

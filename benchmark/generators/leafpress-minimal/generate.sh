@@ -10,13 +10,17 @@ cd "$DIR"
 # Disable all extra features to match Hugo/Zola baseline
 cat > leafpress.json << 'EOF'
 {
-  "title": "Benchmark Test",
-  "graph": false,
-  "search": false,
-  "toc": false,
-  "backlinks": false,
-  "wikilinks": false,
-  "rss": false
+  "site": {
+    "title": "Benchmark Test"
+  },
+  "features": {
+    "graph": false,
+    "search": false,
+    "toc": false,
+    "backlinks": false,
+    "wikilinks": false,
+    "rss": false
+  }
 }
 EOF
 

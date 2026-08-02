@@ -17,12 +17,12 @@ import (
 // hostileGarden carries author-controlled HTML/script in every field that
 // reaches output, so stdout-purity assertions run against worst-case input.
 const hostileGarden = `{
-  "garden": {
-    "slug": "shivam",
+  "render": {"slug": "shivam"},
+  "config": {"site": {
     "title": "<script>alert('t')</script> Garden",
-    "baseUrl": "/g/shivam"
-  },
-  "pages": [
+    "baseURL": "https://example.com/g/shivam"
+  }},
+  "content": {"pages": [
     {
       "slug": "alpha",
       "title": "Alpha </textarea><img src=x onerror=alert(1)>",
@@ -35,7 +35,7 @@ const hostileGarden = `{
       "title": "Beta",
       "markdown": "# Heading\n\nBeta content."
     }
-  ]
+  ]}
 }`
 
 // decodeSingleJSON asserts stdout holds exactly one JSON object and nothing
@@ -82,13 +82,24 @@ func TestMalformedJSONExitsOne(t *testing.T) {
 	}
 }
 
-func TestInvalidGardenExitsOne(t *testing.T) {
-	var stdout, stderr bytes.Buffer
-	if code := run(strings.NewReader(`{"garden": {}, "pages": []}`), &stdout, &stderr); code != 1 {
-		t.Fatalf("exit code = %d, want 1; stderr: %q", code, stderr.String())
+func TestInvalidInputExitsOne(t *testing.T) {
+	// render.slug now defaults with a warning, so the exit-1 contract is
+	// exercised with genuinely invalid input: an unsupported contract version
+	// and a page slug that escapes the garden route via a "." path segment.
+	cases := map[string]string{
+		"unsupported contractVersion": `{"contractVersion": 3, "render": {"slug": "g"}, "content": {"pages": []}}`,
+		"dot-segment page slug":       `{"render": {"slug": "g"}, "content": {"pages": [{"slug": "essays/../secret", "markdown": "x"}]}}`,
 	}
-	if stdout.Len() != 0 {
-		t.Fatalf("stdout not empty on failure: %q", stdout.String())
+	for name, input := range cases {
+		t.Run(name, func(t *testing.T) {
+			var stdout, stderr bytes.Buffer
+			if code := run(strings.NewReader(input), &stdout, &stderr); code != 1 {
+				t.Fatalf("exit code = %d, want 1; stderr: %q", code, stderr.String())
+			}
+			if stdout.Len() != 0 {
+				t.Fatalf("stdout not empty on failure: %q", stdout.String())
+			}
+		})
 	}
 }
 

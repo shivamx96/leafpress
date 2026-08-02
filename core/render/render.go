@@ -2,6 +2,10 @@
 // stdin→stdout JSON transform that renders a set of published pages
 // (a "garden") into full HTML documents, an index page, and theme CSS.
 // It performs no filesystem, network, or database access.
+//
+// The input is one envelope: a shared `config` object (identical to the CLI's
+// leafpress.json), a `render` block of host-only concerns, the `content` to
+// render, and `options`. See docs/05_RENDERER_CONTRACT.md.
 package render
 
 import (
@@ -17,9 +21,6 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
-
 	"github.com/shivamx96/leafpress/core/assets"
 	"github.com/shivamx96/leafpress/core/config"
 	"github.com/shivamx96/leafpress/core/content"
@@ -29,41 +30,55 @@ import (
 
 // Input is the top-level JSON object read from stdin.
 type Input struct {
-	Garden Garden      `json:"garden"`
-	Pages  []InputPage `json:"pages"`
-	// Config accepts the canonical leafpress.json object. It overlays the same
-	// defaults and uses the same validation as the CLI. Garden remains the
-	// bridge envelope (and backwards-compatible fallback) because Slug is a
-	// hosted-garden identity rather than a leafpress.json field.
+	// ContractVersion is optional; 0 means latest. An unknown version is
+	// rejected rather than guessed at.
+	ContractVersion int `json:"contractVersion"`
+	// Config is the shared configuration object — the same schema the CLI
+	// reads from leafpress.json. Absent/empty renders the default site.
 	Config json.RawMessage `json:"config"`
-	// StyleCSS is the in-memory counterpart of the CLI project's style.css.
-	StyleCSS string `json:"styleCSS"`
-	// Assets optionally declares the user assets the caller will serve
-	// alongside the rendered site (custom font files under static/fonts/,
-	// and in the future other referenced static files). Entries are
-	// validated with the shared manifest rules and merged into the output
-	// manifest; an entry whose effective output path collides with a
-	// built-in's replaces that built-in (the favicon-override rule).
-	Assets []assets.Asset `json:"assets"`
-	// EmitAssets requests base64 artifacts for the built-in assets the
-	// rendered site requires. The asset manifest is always emitted; bytes
-	// are opt-in so routine renders stay small. Synchronization is
-	// hash-driven per manifest entry — the registry ID alone is never a
-	// valid skip signal, because the manifest is a theme-dependent subset.
-	EmitAssets bool `json:"emitAssets"`
+	// Render holds the only host-only concerns: the garden identity slug and
+	// optional white-label footer attribution.
+	Render RenderOpts `json:"render"`
+	// Content carries the in-memory equivalents of the filesystem inputs a
+	// CLI build reads: the pages, the stylesheet, and declared user assets.
+	Content Content `json:"content"`
+	// Options carries render toggles.
+	Options Options `json:"options"`
 }
 
-// Garden describes the garden being rendered.
-type Garden struct {
-	Slug              string             `json:"slug"`
-	Title             string             `json:"title"`       // optional; defaults to Slug
-	Description       string             `json:"description"` // optional site-wide meta description
-	Author            string             `json:"author"`      // optional public author/copyright name
-	BaseURL           string             `json:"baseUrl"`     // optional URL path prefix, e.g. "/g/shivam"
-	Sort              string             `json:"sort"`        // optional: date (default) | title | growth
-	ShowTagsInNav     bool               `json:"showTagsInNav"`
-	Theme             json.RawMessage    `json:"theme"` // optional; maps onto config.Theme
+// RenderOpts holds renderer/hosting concerns that a filesystem build never
+// needs.
+type RenderOpts struct {
+	// Slug is the hosted garden's identity/routing key. It has no natural
+	// default; when omitted it defaults to "garden" with a warning.
+	Slug string `json:"slug"`
+	// FooterAttribution is renderer-only white-label branding, deliberately
+	// structured instead of accepting raw HTML or script content.
 	FooterAttribution *FooterAttribution `json:"footerAttribution,omitempty"`
+}
+
+// Content is the renderable input a CLI build would read from disk.
+type Content struct {
+	Pages []InputPage `json:"pages"`
+	// StyleCSS is the in-memory counterpart of the CLI project's style.css.
+	StyleCSS string `json:"styleCSS"`
+	// Assets declares the user assets the caller will serve alongside the
+	// rendered site (custom font files under static/fonts/, and in the future
+	// other referenced static files). Entries are validated with the shared
+	// manifest rules and merged into the output manifest; an entry whose
+	// effective output path collides with a built-in replaces it (the
+	// favicon-override rule).
+	Assets []assets.Asset `json:"assets"`
+}
+
+// Options carries render toggles.
+type Options struct {
+	// EmitAssets requests base64 artifacts for the built-in assets the
+	// rendered site requires. The asset manifest is always emitted; bytes are
+	// opt-in so routine renders stay small. Synchronization is hash-driven per
+	// manifest entry — the registry ID alone is never a valid skip signal,
+	// because the manifest is a theme-dependent subset.
+	EmitAssets bool `json:"emitAssets"`
 }
 
 // FooterAttribution is renderer-only host branding. It is deliberately
@@ -112,7 +127,7 @@ type Output struct {
 	// caller entries replacing built-ins on output-path collision. Metadata
 	// only, never bytes. Hosted consumers materialize each entry through
 	// their own storage using the content hash; built-in entries also
-	// appear as base64 artifacts when the input sets emitAssets.
+	// appear as base64 artifacts when the input sets options.emitAssets.
 	AssetManifest assets.Manifest `json:"assetManifest"`
 	// AssetRegistryID identifies the built-in registry snapshot the manifest
 	// came from (content-derived). It is a change signal only — the manifest
@@ -131,8 +146,8 @@ type OutputArtifact struct {
 	ContentType string `json:"contentType"`
 	// Encoding says how Content encodes the file bytes and is authoritative
 	// (never sniff): generated site artifacts are always "utf8"; asset
-	// artifacts emitted under emitAssets are always "base64" regardless of
-	// MIME type (OFL license texts included).
+	// artifacts emitted under options.emitAssets are always "base64" regardless
+	// of MIME type (OFL license texts included).
 	Encoding string `json:"encoding"`
 }
 
@@ -198,28 +213,33 @@ func Run(raw []byte) (*Output, error) {
 
 // Render validates the input and produces rendered output.
 func Render(in *Input) (*Output, error) {
-	if in.Garden.Slug == "" {
-		return nil, inputErrorf("garden.slug is required")
+	if in.ContractVersion != 0 && in.ContractVersion != config.ContractVersionLatest {
+		return nil, inputErrorf("unsupported contractVersion %d (this build supports %d)", in.ContractVersion, config.ContractVersionLatest)
 	}
 
-	cfg, site, canonicalConfig, err := resolveSiteInput(in)
+	warnings := []string{}
+
+	slug := strings.Trim(in.Render.Slug, "/")
+	if slug == "" {
+		slug = "garden"
+		warnings = append(warnings, `render.slug not provided; defaulting to "garden" (hosts should supply an explicit slug)`)
+	}
+	if strings.ContainsAny(slug, unsafeSlugChars) || hasDotSegment(slug) {
+		return nil, inputErrorf("render.slug is invalid: %q", in.Render.Slug)
+	}
+
+	if err := validateFooterAttribution(in.Render.FooterAttribution); err != nil {
+		return nil, err
+	}
+
+	cfg, site, err := resolveConfig(in)
 	if err != nil {
 		return nil, err
 	}
 	title := site.Title
 	basePath := site.BasePath
 
-	sortMode := in.Garden.Sort
-	if sortMode == "" {
-		sortMode = "date"
-	}
-	switch sortMode {
-	case "date", "title", "growth":
-	default:
-		return nil, inputErrorf("garden.sort must be one of date, title, growth; got %q", sortMode)
-	}
-
-	pages, err := buildPages(in.Pages)
+	pages, err := buildPages(in.Content.Pages)
 	if err != nil {
 		return nil, err
 	}
@@ -233,19 +253,18 @@ func Render(in *Input) (*Output, error) {
 	// the raw input titles too; for titles without special characters this
 	// second registration is a no-op. buildPages preserves input order, so
 	// zip by index.
-	for i, ip := range in.Pages {
+	for i, ip := range in.Content.Pages {
 		resolver.AddAlias(ip.Title, pages[i])
 	}
-	if cfg.Backlinks {
+	if cfg.Features.Backlinks {
 		content.BuildBacklinks(pages, resolver)
 	}
-	renderer := content.NewRenderer(resolver, cfg.Wikilinks, basePath)
+	renderer := content.NewRenderer(resolver, cfg.Features.Wikilinks, basePath)
 	renderer.SetPlainBrokenLinks(true)
 	// Raw HTML in author markdown renders as visibly escaped text; this
 	// bridge serves multi-tenant user content to third parties.
 	renderer.SetEscapeRawHTML(true)
 
-	warnings := []string{}
 	for _, p := range pages {
 		rendered, warns := renderer.Render(p.RawContent)
 		p.HTMLContent = rendered
@@ -276,27 +295,12 @@ func Render(in *Input) (*Output, error) {
 	// Section membership derives from slug paths, exactly like the CLI:
 	// a page "essays/my-post" is a direct child of section "essays", and
 	// an index page's slug *is* its section path ("" = the garden home).
-	children := make(map[string][]*content.Page)
-	indexBySection := make(map[string]*content.Page)
-	for _, p := range pages {
-		if p.IsIndex {
-			indexBySection[p.Slug] = p
-		} else {
-			dir := sectionOf(p.Slug)
-			children[dir] = append(children[dir], p)
-		}
-	}
+	children, indexBySection := sitegen.GroupSections(pages)
 
 	// Root notes and sections are the garden's public top level. Use that
-	// same projection for both the home listing and site-wide navigation;
-	// pages nested inside a section remain ordinary notes.
-	homeEntries := rootEntries(children, indexBySection)
-	if !canonicalConfig {
-		site.Nav = navItems(homeEntries)
-		if in.Garden.ShowTagsInNav && pagesHaveTags(pages) {
-			site.Nav = append(site.Nav, config.NavItem{Label: "Tags", Path: "/tags/"})
-		}
-	}
+	// same projection for both the home listing and site-wide navigation.
+	homeEntries := sitegen.RootEntries(children, indexBySection)
+	site.Nav = sitegen.BuildNavigation(pages, cfg.Navigation)
 
 	outPages := make([]OutputPage, 0, len(pages))
 	for _, p := range pages {
@@ -348,7 +352,7 @@ func Render(in *Input) (*Output, error) {
 		var buf bytes.Buffer
 		if err := tmpl.RenderIndex(&buf, templates.IndexData{
 			Site:        site,
-			Title:       titleCase(path.Base(dir)),
+			Title:       sitegen.TitleCase(path.Base(dir)),
 			Pages:       sorted,
 			ShowList:    true,
 			CurrentPath: "/" + dir + "/",
@@ -373,7 +377,7 @@ func Render(in *Input) (*Output, error) {
 	} else {
 		sorted := make([]*content.Page, len(homeEntries))
 		copy(sorted, homeEntries)
-		sortPages(sorted, sortMode)
+		sortPages(sorted, "date")
 		if err := tmpl.RenderIndex(&idx, templates.IndexData{
 			Site:        site,
 			Title:       title,
@@ -390,7 +394,11 @@ func Render(in *Input) (*Output, error) {
 		return nil, err
 	}
 
-	artifacts, err := renderArtifacts(tmpl, site, cfg, pages, resolver)
+	hasOrigin := sitegen.HasOrigin(cfg.Site.BaseURL)
+	if !hasOrigin {
+		warnings = append(warnings, "site.baseURL is empty; skipping sitemap.xml, feed.xml, and the robots Sitemap directive (they require an absolute origin)")
+	}
+	artifacts, err := renderArtifacts(tmpl, site, cfg, pages, resolver, hasOrigin)
 	if err != nil {
 		return nil, err
 	}
@@ -408,7 +416,7 @@ func Render(in *Input) (*Output, error) {
 		return nil, err
 	}
 	warnings = append(warnings, assetWarnings...)
-	if in.EmitAssets {
+	if in.Options.EmitAssets {
 		artifacts = append(artifacts, builtinAssetArtifacts(manifest)...)
 	}
 
@@ -417,7 +425,7 @@ func Render(in *Input) (*Output, error) {
 		Index:           idx.String(),
 		Sections:        sections,
 		Tags:            tags,
-		CSS:             sitegen.Styles(in.StyleCSS, cfg.Theme),
+		CSS:             sitegen.Styles(in.Content.StyleCSS, cfg.Theme),
 		AssetManifest:   manifest,
 		AssetRegistryID: assets.RegistryID(),
 		Artifacts:       artifacts,
@@ -425,23 +433,35 @@ func Render(in *Input) (*Output, error) {
 	}, nil
 }
 
+// hasDotSegment reports whether a slash-separated path contains a "." or ".."
+// segment. Such segments are rejected: the renderer emits slugs and output
+// paths that hosts materialize, so a dot segment could escape a garden's route.
+func hasDotSegment(p string) bool {
+	for _, seg := range strings.Split(p, "/") {
+		if seg == "." || seg == ".." {
+			return true
+		}
+	}
+	return false
+}
+
 // callerAssets validates the caller-supplied asset manifest: the declaration
 // of user files (custom fonts today) the caller will serve alongside the
 // rendered site. A pure renderer cannot discover uploads, so this input is
 // how they enter the asset contract.
 func callerAssets(in *Input) (assets.Manifest, error) {
-	if len(in.Assets) == 0 {
+	if len(in.Content.Assets) == 0 {
 		return nil, nil
 	}
 	// Policy (reserved namespace, outputPath restricted to built-in
 	// overrides) is shared with the CLI via assets.ValidateUserAsset, so
 	// the two interfaces cannot drift on what a legal user asset is.
-	for i, a := range in.Assets {
+	for i, a := range in.Content.Assets {
 		if err := assets.ValidateUserAsset(a); err != nil {
 			return nil, inputErrorf("assets[%d]: %v", i, err)
 		}
 	}
-	m, err := assets.NewManifest(in.Assets...)
+	m, err := assets.NewManifest(in.Content.Assets...)
 	if err != nil {
 		return nil, inputErrorf("assets: %v", err)
 	}
@@ -515,16 +535,6 @@ func builtinAssetArtifacts(manifest assets.Manifest) []OutputArtifact {
 	return out
 }
 
-// sectionOf returns the section path a slug belongs to ("" for root),
-// mirroring the CLI's filepath.Dir-based grouping.
-func sectionOf(slug string) string {
-	dir := path.Dir(slug)
-	if dir == "." {
-		return ""
-	}
-	return dir
-}
-
 // renderSectionHome renders an index page as its section's home, mirroring
 // the CLI's renderSectionIndex: the page body becomes the intro above the
 // child listing, sorted by the page's sort key (default date), with the
@@ -550,52 +560,6 @@ func renderSectionHome(buf *bytes.Buffer, tmpl *templates.Templates, site templa
 		ShowList:    showList,
 		CurrentPath: currentPath,
 	})
-}
-
-// rootEntries returns the garden's public top level: root notes plus one
-// entry per section. Nested notes belong to their section home and never
-// appear directly at the root.
-func rootEntries(children map[string][]*content.Page, indexBySection map[string]*content.Page) []*content.Page {
-	sectionDirs := make([]string, 0, len(children)+len(indexBySection))
-	for dir := range children {
-		if dir != "" {
-			sectionDirs = append(sectionDirs, dir)
-		}
-	}
-	for dir := range indexBySection {
-		if dir != "" && children[dir] == nil {
-			sectionDirs = append(sectionDirs, dir) // index page of an empty section
-		}
-	}
-	sort.Strings(sectionDirs)
-
-	entries := make([]*content.Page, 0, len(children[""])+len(sectionDirs))
-	entries = append(entries, children[""]...)
-	for _, dir := range sectionDirs {
-		if p := indexBySection[dir]; p != nil {
-			entries = append(entries, p)
-		} else {
-			entries = append(entries, autoSectionEntry(dir, children[dir]))
-		}
-	}
-	return entries
-}
-
-func navItems(entries []*content.Page) []config.NavItem {
-	nav := make([]config.NavItem, 0, len(entries))
-	for _, entry := range entries {
-		nav = append(nav, config.NavItem{Label: entry.Title, Path: entry.Permalink})
-	}
-	return nav
-}
-
-func pagesHaveTags(pages []*content.Page) bool {
-	for _, page := range pages {
-		if len(page.Tags) > 0 {
-			return true
-		}
-	}
-	return false
 }
 
 // renderTagPages renders the tags index and one page per tag, matching the
@@ -661,88 +625,81 @@ func renderTagPages(tmpl *templates.Templates, site templates.SiteData, pages []
 	return out, nil
 }
 
-// resolveSiteInput turns either the canonical leafpress.json object or the
-// legacy garden bridge fields into template data. Canonical config is parsed
-// by core/config, so the CLI and renderer share defaults and validation.
-func resolveSiteInput(in *Input) (*config.Config, templates.SiteData, bool, error) {
-	if err := validateFooterAttribution(in.Garden.FooterAttribution); err != nil {
-		return nil, templates.SiteData{}, false, err
+// resolveConfig parses the shared config object into template data. Canonical
+// config is parsed by core/config, so the CLI and renderer share defaults and
+// validation. Explicit nav items are escaped here at the config trust
+// boundary; automatic nav is assembled later from already-escaped page titles.
+func resolveConfig(in *Input) (*config.Config, templates.SiteData, error) {
+	cfg, err := parseConfig(in.Config)
+	if err != nil {
+		return nil, templates.SiteData{}, err
 	}
-	canonical := len(bytes.TrimSpace(in.Config)) > 0 && string(bytes.TrimSpace(in.Config)) != "null"
-	var cfg *config.Config
-	var basePath string
-	if canonical {
-		var err error
-		cfg, err = config.Parse(in.Config)
-		if err != nil {
-			return nil, templates.SiteData{}, true, inputErrorf("invalid config: %v", err)
-		}
-		if cfg.BaseURL != "" {
-			parsed, err := url.Parse(cfg.BaseURL)
-			if err != nil {
-				return nil, templates.SiteData{}, true, inputErrorf("invalid config.baseURL: %v", err)
-			}
-			basePath = strings.TrimSuffix(parsed.Path, "/")
-		} else {
-			var err error
-			basePath, err = normalizeBasePath(in.Garden.BaseURL)
-			if err != nil {
-				return nil, templates.SiteData{}, true, err
-			}
-		}
-	} else {
-		theme, err := resolveTheme(in.Garden.Theme)
-		if err != nil {
-			return nil, templates.SiteData{}, false, err
-		}
-		basePath, err = normalizeBasePath(in.Garden.BaseURL)
-		if err != nil {
-			return nil, templates.SiteData{}, false, err
-		}
-		cfg = config.Default()
-		cfg.Title = in.Garden.Title
-		if cfg.Title == "" {
-			cfg.Title = in.Garden.Slug
-		}
-		cfg.Description = in.Garden.Description
-		cfg.Author = in.Garden.Author
-		cfg.Theme = theme
-		// Preserve the original bridge contract: rich site artifacts and their
-		// controls activate only through canonical config.
-		cfg.Graph = false
-		cfg.Search = false
-		cfg.RSS = false
+	basePath, err := basePathFromURL(cfg.Site.BaseURL)
+	if err != nil {
+		return nil, templates.SiteData{}, err
+	}
+
+	for i := range cfg.Navigation.Items {
+		cfg.Navigation.Items[i].Label = html.EscapeString(cfg.Navigation.Items[i].Label)
+		cfg.Navigation.Items[i].Path = html.EscapeString(cfg.Navigation.Items[i].Path)
 	}
 
 	var footerAttribution *templates.FooterAttribution
-	if in.Garden.FooterAttribution != nil {
+	if in.Render.FooterAttribution != nil {
 		footerAttribution = &templates.FooterAttribution{
-			Name: in.Garden.FooterAttribution.Name,
-			URL:  in.Garden.FooterAttribution.URL,
+			Name: in.Render.FooterAttribution.Name,
+			URL:  in.Render.FooterAttribution.URL,
 		}
 	}
 	rawSite := templates.SiteData{
-		Title:             cfg.Title,
-		Description:       cfg.Description,
-		Author:            cfg.Author,
-		Nav:               cfg.Nav,
+		Title:             cfg.Site.Title,
+		Description:       cfg.Site.Description,
+		Author:            cfg.Site.Author,
 		Theme:             cfg.Theme,
-		BaseURL:           cfg.BaseURL,
+		BaseURL:           cfg.Site.BaseURL,
 		BasePath:          basePath,
-		Image:             cfg.Image,
-		TOC:               cfg.TOC,
-		Graph:             cfg.Graph,
-		Search:            cfg.Search,
-		RSS:               cfg.RSS,
-		HeadExtra:         cfg.HeadExtra,
+		Image:             cfg.Site.Image,
+		TOC:               cfg.Features.TOC,
+		Graph:             cfg.Features.Graph,
+		Search:            cfg.Features.Search,
+		RSS:               cfg.Features.RSS,
+		HeadExtra:         cfg.Site.HeadExtra,
 		FooterAttribution: footerAttribution,
 	}
-	return cfg, safeSiteData(rawSite), canonical, nil
+	return cfg, safeSiteData(rawSite), nil
+}
+
+// parseConfig turns the optional shared config object into a validated Config,
+// falling back to defaults when absent. An empty or null object renders the
+// default site.
+func parseConfig(raw json.RawMessage) (*config.Config, error) {
+	if len(bytes.TrimSpace(raw)) == 0 || string(bytes.TrimSpace(raw)) == "null" {
+		return config.Default(), nil
+	}
+	cfg, err := config.Parse(raw)
+	if err != nil {
+		return nil, inputErrorf("invalid config: %v", err)
+	}
+	return cfg, nil
+}
+
+// basePathFromURL derives the internal link base path ("" or "/prefix" with no
+// trailing slash) from the canonical absolute baseURL's path component.
+func basePathFromURL(baseURL string) (string, error) {
+	if baseURL == "" {
+		return "", nil
+	}
+	parsed, err := url.Parse(baseURL)
+	if err != nil {
+		return "", inputErrorf("invalid config.site.baseURL: %v", err)
+	}
+	return strings.TrimSuffix(parsed.Path, "/"), nil
 }
 
 // safeSiteData protects text/template interpolation at the renderer trust
 // boundary. headExtra deliberately remains raw because it is an explicit
-// trusted Leafpress configuration escape hatch, matching the CLI.
+// trusted Leafpress configuration escape hatch, matching the CLI. Nav is set
+// later from BuildNavigation, whose parts are already escaped.
 func safeSiteData(site templates.SiteData) templates.SiteData {
 	site.Title = html.EscapeString(site.Title)
 	site.Description = html.EscapeString(site.Description)
@@ -755,10 +712,6 @@ func safeSiteData(site templates.SiteData) templates.SiteData {
 		copy.URL = html.EscapeString(copy.URL)
 		site.FooterAttribution = &copy
 	}
-	for i := range site.Nav {
-		site.Nav[i].Label = html.EscapeString(site.Nav[i].Label)
-		site.Nav[i].Path = html.EscapeString(site.Nav[i].Path)
-	}
 	return site
 }
 
@@ -767,14 +720,14 @@ func validateFooterAttribution(attribution *FooterAttribution) error {
 		return nil
 	}
 	if strings.TrimSpace(attribution.Name) == "" {
-		return inputErrorf("garden.footerAttribution.name is required")
+		return inputErrorf("render.footerAttribution.name is required")
 	}
 	if attribution.URL == "" {
 		return nil
 	}
 	parsed, err := url.Parse(attribution.URL)
 	if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
-		return inputErrorf("garden.footerAttribution.url must be an absolute http(s) URL")
+		return inputErrorf("render.footerAttribution.url must be an absolute http(s) URL")
 	}
 	return nil
 }
@@ -785,6 +738,7 @@ func renderArtifacts(
 	cfg *config.Config,
 	pages []*content.Page,
 	resolver *content.LinkResolver,
+	hasOrigin bool,
 ) ([]OutputArtifact, error) {
 	artifactPages := make([]*content.Page, 0, len(pages))
 	for _, page := range pages {
@@ -798,13 +752,13 @@ func renderArtifacts(
 	rawSite.Title = html.UnescapeString(rawSite.Title)
 	rawSite.Description = html.UnescapeString(rawSite.Description)
 	rawSite.Author = html.UnescapeString(rawSite.Author)
-	rawSite.BaseURL = cfg.BaseURL
+	rawSite.BaseURL = cfg.Site.BaseURL
 	rawSite.Image = html.UnescapeString(rawSite.Image)
 
 	// search-index.json is always emitted: full-text search UI and hover link
-	// previews share it. cfg.Search only controls the search UI chrome/JS.
+	// previews share it. cfg.Features.Search only controls the search UI chrome/JS.
 	graphJSON, searchJSON, err := sitegen.GraphSearch(
-		artifactPages, resolver, safeSite.BasePath, cfg.Graph, true,
+		artifactPages, resolver, safeSite.BasePath, cfg.Features.Graph, true,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate graph/search artifacts: %w", err)
@@ -820,10 +774,16 @@ func renderArtifacts(
 			Path: "search-index.json", Content: searchJSON, ContentType: "application/json",
 		})
 	}
+	// robots.txt is always emitted; Robots() omits the Sitemap directive when
+	// baseURL is empty. sitemap.xml and feed.xml require an absolute origin.
 	artifacts = append(artifacts,
-		OutputArtifact{Path: "robots.txt", Content: sitegen.Robots(cfg.BaseURL), ContentType: "text/plain; charset=utf-8"},
-		OutputArtifact{Path: "sitemap.xml", Content: sitegen.Sitemap(artifactPages, cfg.BaseURL), ContentType: "application/xml"},
+		OutputArtifact{Path: "robots.txt", Content: sitegen.Robots(cfg.Site.BaseURL), ContentType: "text/plain; charset=utf-8"},
 	)
+	if hasOrigin {
+		artifacts = append(artifacts,
+			OutputArtifact{Path: "sitemap.xml", Content: sitegen.Sitemap(artifactPages, cfg.Site.BaseURL), ContentType: "application/xml"},
+		)
+	}
 	notFound, err := sitegen.NotFound(tmpl, safeSite)
 	if err != nil {
 		return nil, fmt.Errorf("failed to render 404 artifact: %w", err)
@@ -831,10 +791,10 @@ func renderArtifacts(
 	artifacts = append(artifacts, OutputArtifact{
 		Path: "404.html", Content: notFound, ContentType: "text/html; charset=utf-8",
 	})
-	if cfg.RSS {
+	if cfg.Features.RSS && hasOrigin {
 		artifacts = append(artifacts, OutputArtifact{
 			Path:        "feed.xml",
-			Content:     sitegen.RSS(artifactPages, rawSite, cfg.BaseURL, time.Time{}),
+			Content:     sitegen.RSS(artifactPages, rawSite, cfg.Site.BaseURL, time.Time{}),
 			ContentType: "application/rss+xml",
 		})
 	}
@@ -844,62 +804,6 @@ func renderArtifacts(
 		artifacts[i].Encoding = "utf8"
 	}
 	return artifacts, nil
-}
-
-// normalizeBasePath validates and normalizes the garden baseUrl into a URL
-// path prefix ("" or "/prefix" with no trailing slash).
-func normalizeBasePath(baseURL string) (string, error) {
-	if baseURL == "" || baseURL == "/" {
-		return "", nil
-	}
-	if strings.ContainsAny(baseURL, unsafeSlugChars) {
-		return "", inputErrorf("garden.baseUrl contains invalid characters: %q", baseURL)
-	}
-	if !strings.HasPrefix(baseURL, "/") {
-		return "", inputErrorf("garden.baseUrl must start with /, got %q", baseURL)
-	}
-	return strings.TrimSuffix(baseURL, "/"), nil
-}
-
-// resolveTheme starts from the default theme and overlays any provided
-// fields, then validates the result (theme values are interpolated into
-// the inline <style> block, so they must be safe).
-func resolveTheme(raw json.RawMessage) (config.Theme, error) {
-	theme := config.Default().Theme
-	if len(raw) > 0 && string(raw) != "null" {
-		if err := json.Unmarshal(raw, &theme); err != nil {
-			return theme, inputErrorf("invalid garden.theme: %v", err)
-		}
-	}
-	// Restore defaults for fields explicitly set to empty.
-	def := config.Default().Theme
-	if theme.FontHeading == "" {
-		theme.FontHeading = def.FontHeading
-	}
-	if theme.FontBody == "" {
-		theme.FontBody = def.FontBody
-	}
-	if theme.FontMono == "" {
-		theme.FontMono = def.FontMono
-	}
-	if theme.Accent == "" {
-		theme.Accent = def.Accent
-	}
-	if theme.NavStyle == "" {
-		theme.NavStyle = def.NavStyle
-	}
-	if theme.NavActiveStyle == "" {
-		theme.NavActiveStyle = def.NavActiveStyle
-	}
-
-	// Reuse config validation (accent hex, backgrounds, nav styles, font
-	// names, custom font declarations).
-	cfg := config.Default()
-	cfg.Theme = theme
-	if err := cfg.Validate(); err != nil {
-		return theme, inputErrorf("invalid garden.theme: %v", err)
-	}
-	return theme, nil
 }
 
 // buildPages converts input pages into content pages.
@@ -913,7 +817,7 @@ func buildPages(in []InputPage) ([]*content.Page, error) {
 		if slug == "" && !ip.IsIndex {
 			return nil, inputErrorf("pages[%d].slug is required", i)
 		}
-		if strings.ContainsAny(slug, unsafeSlugChars) {
+		if strings.ContainsAny(slug, unsafeSlugChars) || hasDotSegment(slug) {
 			return nil, inputErrorf("pages[%d].slug is invalid: %q", i, ip.Slug)
 		}
 		if seen[slug] {
@@ -994,38 +898,6 @@ func buildPages(in []InputPage) ([]*content.Page, error) {
 		})
 	}
 	return pages, nil
-}
-
-// titleCase title-cases an auto-index section name, matching the CLI's
-// generateAutoIndexes. Hyphens read as word separators ("field-notes" →
-// "Field Notes"), consistent with titleFromSlug below.
-func titleCase(s string) string {
-	return cases.Title(language.English).String(strings.ReplaceAll(s, "-", " "))
-}
-
-// autoSectionEntry is the single homepage link for a section that has no
-// explicit index page. The section's real children remain on its generated
-// section home instead of being flattened into the garden home.
-func autoSectionEntry(slug string, children []*content.Page) *content.Page {
-	entry := &content.Page{
-		Title:     titleCase(path.Base(slug)),
-		Slug:      slug,
-		Permalink: "/" + slug + "/",
-		IsIndex:   true,
-	}
-
-	// Give the section the date of its most recently changed child so a
-	// date-sorted homepage places the folder alongside current root notes.
-	for _, child := range children {
-		date := child.Date
-		if child.HasModified() {
-			date = child.Modified
-		}
-		if date.After(entry.Date) {
-			entry.Date = date
-		}
-	}
-	return entry
 }
 
 // titleFromSlug turns a slug segment into a display title, matching the

@@ -145,7 +145,9 @@ To use a custom domain with your Netlify site:
 
 ```json
 {
-  "baseURL": "https://yourdomain.com"
+  "site": {
+    "baseURL": "https://yourdomain.com"
+  }
 }
 ```
 

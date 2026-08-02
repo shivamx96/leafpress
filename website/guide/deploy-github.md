@@ -140,7 +140,9 @@ To use a custom domain with GitHub Pages:
 
 ```json
 {
-  "baseURL": "https://yourdomain.com"
+  "site": {
+    "baseURL": "https://yourdomain.com"
+  }
 }
 ```
 

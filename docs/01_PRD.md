@@ -84,32 +84,36 @@ These are hardcoded. Any markdown outside these paths is content.
 
 ```json
 {
-  "title": "My Garden",
-  "baseURL": "https://example.com",
-  "outputDir": "_site",
-  "port": 3000,
-  "nav": [
-    { "label": "Now", "path": "/now" },
-    { "label": "Projects", "path": "/projects" }
-  ],
+  "site": {
+    "title": "My Garden",
+    "baseURL": "https://example.com"
+  },
+  "navigation": {
+    "mode": "explicit",
+    "items": [
+      { "label": "Now", "path": "/now" },
+      { "label": "Projects", "path": "/projects" }
+    ]
+  },
   "theme": {
-    "font": "Inter",
+    "fontBody": "Inter",
     "accent": "#4a9eff"
   },
-  "graph": false
+  "features": { "graph": false },
+  "build": { "outputDir": "_site", "port": 3000 }
 }
 ```
 
 | Field | Default | Description |
 |-------|---------|-------------|
-| `title` | `"My Garden"` | Site title, shown in nav and `<title>` |
-| `baseURL` | `""` | Production URL, used for absolute links |
-| `outputDir` | `"_site"` | Build output directory |
-| `port` | `3000` | Dev server port |
-| `nav` | `[]` | Top navigation links |
-| `theme.font` | `"Inter"` | Primary font family |
-| `theme.accent` | `"#4a9eff"` | Accent color for links |
-| `graph` | `false` | Enable graph.json generation |
+| `site.title` | `"My Garden"` | Site title, shown in nav and `<title>` |
+| `site.baseURL` | `""` | Canonical absolute URL; required for sitemap/RSS |
+| `build.outputDir` | `"_site"` | Build output directory |
+| `build.port` | `3000` | Dev server port |
+| `navigation.mode` | `"automatic"` | `"automatic"` (derive nav) or `"explicit"` (`navigation.items`) |
+| `theme.fontBody` | `"Inter"` | Primary font family |
+| `theme.accent` | `"#50ac00"` | Accent color for links |
+| `features.graph` | `true` | Enable graph.json generation |
 
 ---
 
@@ -373,16 +377,17 @@ _site/
 
 ```json
 {
-  "title": "My Garden",
-  "baseURL": "",
-  "outputDir": "_site",
-  "port": 3000,
-  "nav": [],
+  "site": {
+    "title": "My Garden",
+    "baseURL": ""
+  },
+  "navigation": { "mode": "automatic" },
   "theme": {
-    "font": "Inter",
+    "fontBody": "Inter",
     "accent": "#4a9eff"
   },
-  "graph": false
+  "features": { "graph": false },
+  "build": { "outputDir": "_site", "port": 3000 }
 }
 ```
 
@@ -391,7 +396,7 @@ _site/
 ```css
 /* leafpress Custom Styles
  * Override CSS variables or add custom rules below.
- * See: https://leafpress.dev/docs/theming
+ * See: https://leafpress.in/docs/theming
  */
 ```
 

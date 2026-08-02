@@ -10,9 +10,13 @@ cd "$DIR"
 # Create config with all features enabled
 cat > leafpress.json << 'EOF'
 {
-  "title": "Benchmark Test",
-  "graph": true,
-  "toc": true
+  "site": {
+    "title": "Benchmark Test"
+  },
+  "features": {
+    "graph": true,
+    "toc": true
+  }
 }
 EOF
 
