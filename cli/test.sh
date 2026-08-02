@@ -1695,7 +1695,7 @@ cat > leafpress.json << 'EOF'
 {
   "site": {
     "title": "Test",
-    "baseURL": "/blog"
+    "baseURL": "https://example.com/blog"
   }
 }
 EOF
@@ -1706,8 +1706,11 @@ title: Test Page
 Content
 EOF
 "$LEAFPRESS" build > /dev/null 2>&1
-# baseURL should be available (used for absolute URLs in templates if needed)
-pass
+if grep -q 'href="/blog/style.css"' _site/test/index.html; then
+    pass
+else
+    fail "baseURL path was not applied to generated URLs"
+fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR"
 

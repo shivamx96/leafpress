@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -431,6 +432,10 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("unsupported contractVersion %d (this build supports %d)", c.ContractVersion, ContractVersionLatest)
 	}
 
+	if err := validateBaseURL(c.Site.BaseURL); err != nil {
+		return fmt.Errorf("site.baseURL: %w", err)
+	}
+
 	// Validate port range
 	if c.Build.Port < 1 || c.Build.Port > 65535 {
 		return fmt.Errorf("port must be between 1 and 65535, got %d", c.Build.Port)
@@ -523,5 +528,38 @@ func (c *Config) Validate() error {
 		}
 	}
 
+	return nil
+}
+
+// validateBaseURL enforces the canonical URL shape promised by the shared
+// config contract. Its path is reused in raw HTML attributes and JavaScript,
+// so accepting relative URLs, opaque schemes, or delimiter characters would
+// turn site configuration into a renderer escape hatch.
+func validateBaseURL(raw string) error {
+	if raw == "" {
+		return nil
+	}
+	if strings.ContainsAny(raw, "\"'<>\\\r\n\t") {
+		return fmt.Errorf("must not contain markup or control characters")
+	}
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		return fmt.Errorf("must be a valid absolute URL: %w", err)
+	}
+	if scheme := strings.ToLower(parsed.Scheme); scheme != "http" && scheme != "https" {
+		return fmt.Errorf("must use http or https")
+	}
+	if parsed.Host == "" || parsed.Hostname() == "" || parsed.Opaque != "" {
+		return fmt.Errorf("must include an absolute host")
+	}
+	if parsed.User != nil {
+		return fmt.Errorf("must not include user information")
+	}
+	if parsed.RawQuery != "" || parsed.Fragment != "" {
+		return fmt.Errorf("must not include a query or fragment")
+	}
+	if strings.HasPrefix(parsed.EscapedPath(), "//") {
+		return fmt.Errorf("path must not begin with //")
+	}
 	return nil
 }

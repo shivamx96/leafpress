@@ -281,6 +281,37 @@ func TestValidate_NavItems(t *testing.T) {
 	}
 }
 
+func TestValidateBaseURL(t *testing.T) {
+	valid := []string{
+		"",
+		"https://example.com",
+		"https://example.com/garden/",
+		"http://localhost:3000/notes",
+		"https://example.com/%22encoded",
+	}
+	for _, baseURL := range valid {
+		if err := validateBaseURL(baseURL); err != nil {
+			t.Errorf("validateBaseURL(%q) should pass: %v", baseURL, err)
+		}
+	}
+
+	invalid := []string{
+		"/garden",
+		"javascript:alert(1)",
+		"https://",
+		"https://user@example.com/garden",
+		"https://example.com/garden?preview=true",
+		"https://example.com/garden#top",
+		`https://example.com/"/><input autofocus onfocus=alert(1)>`,
+		"https://example.com//evil.example",
+	}
+	for _, baseURL := range invalid {
+		if err := validateBaseURL(baseURL); err == nil {
+			t.Errorf("validateBaseURL(%q) should fail", baseURL)
+		}
+	}
+}
+
 // --- Background ---
 
 func TestValidateBackground(t *testing.T) {

@@ -677,6 +677,37 @@ func TestXSSThemeBackgroundBreakoutRejected(t *testing.T) {
 	}
 }
 
+func TestXSSBaseURLBreakoutRejected(t *testing.T) {
+	_, err := Run([]byte(`{
+	  "render": {"slug": "g"},
+	  "config": {"site": {
+	    "baseURL": "https://example.com/\"/><input autofocus onfocus=alert(1)>"
+	  }}
+	}`))
+	if err == nil {
+		t.Fatal("expected markup-bearing baseURL to be rejected")
+	}
+	var inputErr *InputError
+	if !errors.As(err, &inputErr) {
+		t.Fatalf("expected *InputError, got %T: %v", err, err)
+	}
+}
+
+func TestBasePathUsesURLPathEscaping(t *testing.T) {
+	out := runJSON(t, `{
+	  "render": {"slug": "g"},
+	  "config": {"site": {"baseURL": "https://example.com/%22garden"}},
+	  "content": {"pages": [{"slug": "p", "title": "P", "markdown": "body"}]}
+	}`)
+	html := pageHTML(t, out, "p")
+	if !strings.Contains(html, `href="/%22garden/style.css"`) {
+		t.Fatalf("base path should retain URL escaping: %s", html)
+	}
+	if strings.Contains(html, `href="/"garden`) {
+		t.Fatal("base path was decoded into an HTML attribute delimiter")
+	}
+}
+
 func TestSiteIdentityAndAttributionEscaped(t *testing.T) {
 	out := runJSON(t, `{
 	  "render": {

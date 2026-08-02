@@ -699,7 +699,7 @@ func basePathFromURL(baseURL string) (string, error) {
 	if err != nil {
 		return "", inputErrorf("invalid config.site.baseURL: %v", err)
 	}
-	return strings.TrimSuffix(parsed.Path, "/"), nil
+	return strings.TrimSuffix(parsed.EscapedPath(), "/"), nil
 }
 
 // safeSiteData protects text/template interpolation at the renderer trust
