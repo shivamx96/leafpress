@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"syscall"
@@ -33,6 +34,7 @@ type Server struct {
 	// WebSocket connections for live reload
 	clients   map[*websocket.Conn]bool
 	clientsMu sync.Mutex
+	rebuildMu sync.Mutex
 
 	// File watcher
 	watcher *fsnotify.Watcher
@@ -269,11 +271,12 @@ func (s *Server) notifyClients() {
 
 // watchFiles watches for file changes and triggers rebuilds
 func (s *Server) watchFiles() {
-	// Debounce timer and pending changes
+	// Keep every path observed during the debounce window. The watcher loop
+	// performs rebuilds serially, and rebuildMu also protects against rebuilds
+	// initiated elsewhere.
 	var timer *time.Timer
-	var mu sync.Mutex
-	var pendingPath string
-	var pendingChangeType build.ChangeType
+	var timerC <-chan time.Time
+	pending := make(map[string]build.ChangeType)
 
 	// Get working directory for relative path calculation
 	cwd, _ := os.Getwd()
@@ -282,6 +285,9 @@ func (s *Server) watchFiles() {
 		select {
 		case event, ok := <-s.watcher.Events:
 			if !ok {
+				if timer != nil {
+					timer.Stop()
+				}
 				return
 			}
 
@@ -295,6 +301,15 @@ func (s *Server) watchFiles() {
 				changeType = build.ChangeModify
 			} else {
 				continue
+			}
+
+			if changeType == build.ChangeCreate {
+				if info, err := os.Stat(event.Name); err == nil && info.IsDir() {
+					if err := s.addWatchDirs(event.Name); err != nil && s.opts.Verbose {
+						log.Printf("Failed to watch new directory %s: %v", event.Name, err)
+					}
+					continue
+				}
 			}
 
 			// Get relative path for checking
@@ -315,21 +330,31 @@ func (s *Server) watchFiles() {
 				log.Printf("File changed: %s (type: %d)", relPath, changeType)
 			}
 
-			// Debounce
-			mu.Lock()
-			pendingPath = event.Name
-			pendingChangeType = changeType
-			if timer != nil {
-				timer.Stop()
+			pending[event.Name] = mergeChangeType(pending[event.Name], changeType)
+			if timer == nil {
+				timer = time.NewTimer(100 * time.Millisecond)
+			} else {
+				if !timer.Stop() {
+					select {
+					case <-timer.C:
+					default:
+					}
+				}
+				timer.Reset(100 * time.Millisecond)
 			}
-			timer = time.AfterFunc(100*time.Millisecond, func() {
-				mu.Lock()
-				path := pendingPath
-				ct := pendingChangeType
-				mu.Unlock()
-				s.rebuildIncremental(path, ct)
-			})
-			mu.Unlock()
+			timerC = timer.C
+
+		case <-timerC:
+			paths := make([]string, 0, len(pending))
+			for path := range pending {
+				paths = append(paths, path)
+			}
+			sort.Strings(paths)
+			for _, path := range paths {
+				s.rebuildIncremental(path, pending[path])
+			}
+			clear(pending)
+			timerC = nil
 
 		case err, ok := <-s.watcher.Errors:
 			if !ok {
@@ -340,8 +365,21 @@ func (s *Server) watchFiles() {
 	}
 }
 
+func mergeChangeType(previous, next build.ChangeType) build.ChangeType {
+	if next == build.ChangeDelete || next == build.ChangeCreate {
+		return next
+	}
+	if previous == build.ChangeCreate || previous == build.ChangeDelete {
+		return previous
+	}
+	return build.ChangeModify
+}
+
 // rebuild rebuilds the site and notifies clients
 func (s *Server) rebuild() {
+	s.rebuildMu.Lock()
+	defer s.rebuildMu.Unlock()
+
 	fmt.Println("Rebuilding...")
 	start := time.Now()
 
@@ -360,6 +398,9 @@ func (s *Server) rebuild() {
 }
 
 func (s *Server) rebuildIncremental(changedPath string, changeType build.ChangeType) {
+	s.rebuildMu.Lock()
+	defer s.rebuildMu.Unlock()
+
 	// Get relative path for display
 	cwd, _ := os.Getwd()
 	relPath, _ := filepath.Rel(cwd, changedPath)

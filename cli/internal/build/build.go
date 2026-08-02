@@ -400,8 +400,18 @@ func (b *Builder) RebuildIncremental(changedPath string, changeType ChangeType) 
 	isStaticFile := strings.HasPrefix(relPath, "static/") || strings.HasPrefix(relPath, "static"+string(filepath.Separator))
 	if isStaticFile {
 		t0 = time.Now()
-		if err := b.copyStatic(); err != nil {
-			return nil, err
+		if changeType == ChangeDelete {
+			staticRel, err := filepath.Rel("static", relPath)
+			if err != nil || staticRel == "." || staticRel == ".." || strings.HasPrefix(staticRel, ".."+string(filepath.Separator)) {
+				return nil, fmt.Errorf("invalid static path %q", relPath)
+			}
+			if err := os.RemoveAll(filepath.Join(b.outputDir, "static", staticRel)); err != nil {
+				return nil, fmt.Errorf("failed to remove deleted static output: %w", err)
+			}
+		} else {
+			if err := b.copyStatic(); err != nil {
+				return nil, err
+			}
 		}
 		b.logTiming("static", time.Since(t0))
 		return stats, nil
@@ -469,6 +479,11 @@ func (b *Builder) rebuildMarkdownFile(relPath string, changeType ChangeType) (*I
 		if oldPage.Slug != changedPage.Slug {
 			delete(b.pagesBySlug, oldPage.Slug)
 		}
+		if oldPage.OutputPath != changedPage.OutputPath {
+			oldOutput := filepath.Join(b.outputDir, oldPage.OutputPath)
+			_ = os.Remove(oldOutput)
+			_ = os.Remove(filepath.Dir(oldOutput))
+		}
 		// Replace old page with new one in the slice
 		for i, p := range b.pages {
 			if p.SourcePath == relPath {
@@ -482,23 +497,23 @@ func (b *Builder) rebuildMarkdownFile(relPath string, changeType ChangeType) (*I
 	}
 	b.pagesByPath[relPath] = changedPage
 	b.pagesBySlug[changedPage.Slug] = changedPage
+	b.pagesBySection = buildSectionIndex(b.pages)
+	b.siteData.Nav = sitegen.BuildNavigation(b.pages, b.cfg.Navigation)
 
 	// Determine what needs rebuilding
 	pagesToRebuild := make(map[string]*content.Page)
 	tagsToRebuild := make(map[string]bool)
-	rebuildSectionIndex := false
-	var sectionSlug string
+	sectionsToRebuild := make(map[string]bool)
 
 	pagesToRebuild[changedPage.SourcePath] = changedPage
 
 	// Get section for this page
-	sectionSlug = filepath.Dir(changedPage.Slug)
-	if sectionSlug == "." {
-		sectionSlug = ""
-	}
+	sectionSlug := listingSection(changedPage)
+	sectionsToRebuild[sectionSlug] = true
 
 	// If old page existed, check what changed
 	if oldPage != nil {
+		sectionsToRebuild[listingSection(oldPage)] = true
 		// Rebuild pages that had backlinks to this page (their backlinks section changed)
 		for _, backlinker := range oldPage.Backlinks {
 			pagesToRebuild[backlinker.SourcePath] = backlinker
@@ -520,8 +535,6 @@ func (b *Builder) rebuildMarkdownFile(relPath string, changeType ChangeType) (*I
 			tagsToRebuild[t] = true // Removed tag
 		}
 	} else {
-		// New file - rebuild section index
-		rebuildSectionIndex = true
 		// All tags are new
 		for _, t := range changedPage.Tags {
 			tagsToRebuild[strings.ToLower(t)] = true
@@ -579,21 +592,11 @@ func (b *Builder) rebuildMarkdownFile(relPath string, changeType ChangeType) (*I
 	}
 	b.logTiming("render", time.Since(t0))
 
-	// Rebuild section index if needed
-	if rebuildSectionIndex && sectionSlug != "" {
+	// Rebuild section listings after the cached section index has been refreshed.
+	for sectionSlug := range sectionsToRebuild {
 		t0 = time.Now()
-		// Check if there's a manual _index.md
-		hasManualIndex := false
-		for _, p := range b.pages {
-			if p.IsIndex && p.Slug == sectionSlug {
-				hasManualIndex = true
-				break
-			}
-		}
-		if !hasManualIndex {
-			if err := b.rebuildAutoIndex(sectionSlug, b.pages); err != nil {
-				return nil, err
-			}
+		if err := b.rebuildSectionListing(sectionSlug); err != nil {
+			return nil, err
 		}
 		b.logTiming("auto-index", time.Since(t0))
 	}
@@ -633,10 +636,23 @@ func (b *Builder) handleDeletedFile(relPath string) (*IncrementalStats, error) {
 	// Also try to remove the parent directory if empty
 	os.Remove(filepath.Dir(outPath))
 
-	// Rebuild pages that had backlinks to this page
+	// Rebuild pages that linked to this page. This is required for broken-link
+	// rendering even when the backlinks UI is disabled.
 	pagesToRebuild := make([]*content.Page, 0)
-	for _, backlinker := range oldPage.Backlinks {
-		pagesToRebuild = append(pagesToRebuild, backlinker)
+	seenRebuild := make(map[*content.Page]bool)
+	for _, page := range b.pages {
+		if page == oldPage {
+			continue
+		}
+		for _, target := range page.OutLinks {
+			if result := b.linkResolver.Resolve(target); result.Page == oldPage {
+				if !seenRebuild[page] {
+					seenRebuild[page] = true
+					pagesToRebuild = append(pagesToRebuild, page)
+				}
+				break
+			}
+		}
 	}
 
 	// Remove from cached state
@@ -651,6 +667,8 @@ func (b *Builder) handleDeletedFile(relPath string) (*IncrementalStats, error) {
 		}
 	}
 	b.pages = newPages
+	b.pagesBySection = buildSectionIndex(b.pages)
+	b.siteData.Nav = sitegen.BuildNavigation(b.pages, b.cfg.Navigation)
 
 	// Update resolver and rebuild backlinks
 	b.linkResolver = content.NewLinkResolver(b.pages)
@@ -688,11 +706,9 @@ func (b *Builder) handleDeletedFile(relPath string) (*IncrementalStats, error) {
 	}
 
 	// Rebuild section index
-	sectionSlug := filepath.Dir(oldPage.Slug)
-	if sectionSlug != "." && sectionSlug != "" {
-		if err := b.rebuildAutoIndex(sectionSlug, b.pages); err != nil {
-			return nil, err
-		}
+	sectionSlug := listingSection(oldPage)
+	if err := b.rebuildSectionListing(sectionSlug); err != nil {
+		return nil, err
 	}
 
 	// Regenerate JSON files (search-index always; graph when enabled)
@@ -701,6 +717,37 @@ func (b *Builder) handleDeletedFile(relPath string) (*IncrementalStats, error) {
 	}
 
 	return stats, nil
+}
+
+func listingSection(page *content.Page) string {
+	if page.IsIndex {
+		return page.Slug
+	}
+	section := filepath.Dir(page.Slug)
+	if section == "." {
+		return ""
+	}
+	return section
+}
+
+func (b *Builder) rebuildSectionListing(sectionSlug string) error {
+	for _, page := range b.pages {
+		if page.IsIndex && page.Slug == sectionSlug {
+			return b.renderSectionIndex(page, b.pages, b.siteData)
+		}
+	}
+
+	// Root has no generated listing without a hand-authored index.
+	if sectionSlug == "" {
+		return nil
+	}
+	if len(b.pagesBySection[sectionSlug]) == 0 {
+		outPath := filepath.Join(b.outputDir, sectionSlug, "index.html")
+		_ = os.Remove(outPath)
+		_ = os.Remove(filepath.Dir(outPath))
+		return nil
+	}
+	return b.rebuildAutoIndex(sectionSlug, b.pages)
 }
 
 // rebuildAutoIndex rebuilds a single auto-generated index
