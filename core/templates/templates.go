@@ -1251,7 +1251,7 @@ const baseTemplate = `<!DOCTYPE html>
           overlay.setAttribute('aria-hidden', 'false');
           document.body.style.overflow = 'hidden';
           input.value = '';
-          results.innerHTML = '';
+          results.textContent = '';
           selectedIndex = -1;
 
           // Focus input - immediate focus for mobile touch events
@@ -1274,7 +1274,7 @@ const baseTemplate = `<!DOCTYPE html>
 
         function search(query) {
           if (!searchIndex || !query.trim()) {
-            results.innerHTML = '';
+            results.textContent = '';
             selectedIndex = -1;
             return;
           }
@@ -1315,18 +1315,37 @@ const baseTemplate = `<!DOCTYPE html>
           var matches = scored.slice(0, 10).map(function(s) { return s.item; });
 
           if (matches.length === 0) {
-            results.innerHTML = '<div class="lp-search-empty">No results found</div>';
+            results.textContent = '';
+            var empty = document.createElement('div');
+            empty.className = 'lp-search-empty';
+            empty.textContent = 'No results found';
+            results.appendChild(empty);
             selectedIndex = -1;
             return;
           }
 
-          results.innerHTML = matches.map(function(item, i) {
+          results.textContent = '';
+          matches.forEach(function(item, i) {
             var snippet = getSnippet(item.content, q);
-            return '<a class="lp-search-result" href="' + item.url + '" data-index="' + i + '">' +
-              '<span class="lp-search-result-title">' + highlightMatch(item.title, q) + '</span>' +
-              (snippet ? '<span class="lp-search-result-snippet">' + highlightMatch(snippet, q) + '</span>' : '') +
-              '</a>';
-          }).join('');
+            var link = document.createElement('a');
+            link.className = 'lp-search-result';
+            link.setAttribute('href', item.url);
+            link.dataset.index = String(i);
+
+            var title = document.createElement('span');
+            title.className = 'lp-search-result-title';
+            appendHighlightedText(title, item.title, q);
+            link.appendChild(title);
+
+            if (snippet) {
+              var snippetEl = document.createElement('span');
+              snippetEl.className = 'lp-search-result-snippet';
+              appendHighlightedText(snippetEl, snippet, q);
+              link.appendChild(snippetEl);
+            }
+
+            results.appendChild(link);
+          });
           selectedIndex = -1;
         }
 
@@ -1341,9 +1360,21 @@ const baseTemplate = `<!DOCTYPE html>
           return snippet;
         }
 
-        function highlightMatch(text, query) {
-          var regex = new RegExp('(' + query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
-          return text.replace(regex, '<mark>$1</mark>');
+        function appendHighlightedText(parent, text, query) {
+          text = String(text || '');
+          var lowerText = text.toLowerCase();
+          var lowerQuery = query.toLowerCase();
+          var offset = 0;
+          var match;
+
+          while ((match = lowerText.indexOf(lowerQuery, offset)) !== -1) {
+            parent.appendChild(document.createTextNode(text.substring(offset, match)));
+            var mark = document.createElement('mark');
+            mark.textContent = text.substring(match, match + query.length);
+            parent.appendChild(mark);
+            offset = match + query.length;
+          }
+          parent.appendChild(document.createTextNode(text.substring(offset)));
         }
 
         function updateSelection() {

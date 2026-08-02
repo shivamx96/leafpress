@@ -164,6 +164,21 @@ func TestExtractTOC_NoHeadings(t *testing.T) {
 	}
 }
 
+func TestSearchResultsDoNotInterpolateIndexHTML(t *testing.T) {
+	if strings.Contains(baseTemplate, "results.innerHTML") {
+		t.Fatal("search results must not interpolate index fields through innerHTML")
+	}
+	for _, want := range []string{
+		"appendHighlightedText(title, item.title, q)",
+		"appendHighlightedText(snippetEl, snippet, q)",
+		"mark.textContent = text.substring",
+	} {
+		if !strings.Contains(baseTemplate, want) {
+			t.Errorf("search template missing DOM-safe rendering fragment %q", want)
+		}
+	}
+}
+
 // --- Fonts ---
 
 func testTheme(heading, body, mono string) config.Theme {
