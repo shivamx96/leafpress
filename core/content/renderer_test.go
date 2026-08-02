@@ -1,9 +1,22 @@
 package content
 
 import (
+	"errors"
+	"io"
 	"strings"
 	"testing"
+
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/parser"
 )
+
+type failingMarkdown struct {
+	goldmark.Markdown
+}
+
+func (failingMarkdown) Convert([]byte, io.Writer, ...parser.ParseOption) error {
+	return errors.New("forced conversion failure")
+}
 
 // --- Media type detection ---
 
@@ -385,6 +398,28 @@ func TestRender_RawHTMLEscaping(t *testing.T) {
 				t.Errorf("escape mode should show escaped text, not goldmark's omission comment:\n%s", escapedOut)
 			}
 		})
+	}
+}
+
+func TestRender_ConversionErrorEscapesHostedFallback(t *testing.T) {
+	r := escapingRenderer(nil, false, "")
+	r.mdEscaped = failingMarkdown{Markdown: r.mdEscaped}
+	got, warnings := r.Render(`<img src=x onerror=alert(1)>`)
+	if got != `&lt;img src=x onerror=alert(1)&gt;` {
+		t.Fatalf("fallback = %q, want escaped source", got)
+	}
+	if len(warnings) != 1 || !strings.Contains(warnings[0], "forced conversion failure") {
+		t.Fatalf("warnings = %v", warnings)
+	}
+}
+
+func TestProcessMermaidBlocksUnescapesApostrophes(t *testing.T) {
+	input := `<pre><code class="language-mermaid">A[&#39;quoted&#39;]</code></pre>`
+	if got := processMermaidBlocks(input, true); got != `<div class="mermaid">A['quoted']</div>` {
+		t.Fatalf("trusted Mermaid = %q", got)
+	}
+	if got := processMermaidBlocks(input, false); strings.Contains(got, "A['quoted']") {
+		t.Fatalf("hosted Mermaid unexpectedly unescaped entities: %q", got)
 	}
 }
 

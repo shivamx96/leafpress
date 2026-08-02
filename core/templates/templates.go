@@ -1544,7 +1544,7 @@ const baseTemplate = `<!DOCTYPE html>
       var s = document.createElement('script');
       s.src = LP_BASE_PATH + '/static/leafpress/mermaid/mermaid.min.js';
       s.onload = function() {
-        mermaid.initialize({ startOnLoad: false, theme: 'default', htmlLabels: false, flowchart: { htmlLabels: false, useHtmlLabels: false }, sequence: { useHtmlLabels: false } });
+        mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: 'default', htmlLabels: false, flowchart: { htmlLabels: false, useHtmlLabels: false }, sequence: { useHtmlLabels: false } });
         mermaid.run();
       };
       document.body.appendChild(s);
