@@ -230,6 +230,39 @@ func TestRender_WikilinkInCodeWithFencedBlockOnSamePage(t *testing.T) {
 	}
 }
 
+// Regression: a 4-backtick fence containing a nested 3-backtick fence (used in
+// docs to show code-fence examples) must not desync code protection for the
+// inline wiki-link that follows. The old fixed-length fence regex mis-parsed
+// this, leaking the inline `[[...]]` into wiki-link processing.
+func TestRender_WikilinkInInlineCodeAfterNestedFence(t *testing.T) {
+	r := NewRenderer(NewLinkResolver(nil), true, "")
+	input := "````markdown\n```mermaid\ngraph TD\n```\n````\n\nLink: `[[projects/website]]`"
+	html, warnings := r.Render(input)
+	if strings.Contains(html, "lp-wikilink") || strings.Contains(html, "lp-broken-link") {
+		t.Errorf("wiki-link inside inline code after a nested fence should not be processed:\n%s", html)
+	}
+	if !strings.Contains(html, "<code>[[projects/website]]</code>") {
+		t.Errorf("inline code wiki-link should render literally, got:\n%s", html)
+	}
+	for _, w := range warnings {
+		if strings.Contains(w, "projects/website") {
+			t.Errorf("inline-code wiki-link should not warn as a broken link, got: %q", w)
+		}
+	}
+}
+
+// Regression: a wiki-link inside a 4-backtick fenced block must be preserved.
+func TestRender_WikilinkInQuadFencedCode(t *testing.T) {
+	r := NewRenderer(NewLinkResolver(nil), true, "")
+	html, warnings := r.Render("````\n[[inside-quad]]\n````")
+	if strings.Contains(html, "lp-wikilink") || strings.Contains(html, "lp-broken-link") {
+		t.Errorf("wiki-link inside a 4-backtick fence should not be processed:\n%s", html)
+	}
+	if len(warnings) != 0 {
+		t.Errorf("no warnings expected for wiki-link inside a fence, got %v", warnings)
+	}
+}
+
 // --- Broken wikilinks ---
 
 func TestRender_BrokenWikilinkDefault(t *testing.T) {

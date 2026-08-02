@@ -114,7 +114,7 @@ func (r *Renderer) Render(content string) (string, []string) {
 	var warnings []string
 
 	// Extract fenced code blocks first, then inline code from the remainder
-	fencedBlocks := codeBlockRegex.FindAllString(content, -1)
+	fencedBlocks := findFencedBlocks(content)
 	protected := content
 	for i, block := range fencedBlocks {
 		placeholder := fmt.Sprintf("___CODE_BLOCK_%d___", i)
@@ -177,7 +177,6 @@ func (r *Renderer) Render(content string) (string, []string) {
 // Pre-compiled regexes (compiled once at startup)
 var (
 	obsidianImageRegex = regexp.MustCompile(`!\[\[([^\]|]+?)(?:\|([^\]]+))?\]\]`)
-	codeBlockRegex     = regexp.MustCompile("(?s)```[^`]*```")
 	inlineCodeRegex    = regexp.MustCompile("`[^`]+`")
 	externalLinkRegex  = regexp.MustCompile(`<a\s+href="(https?://[^"]+)"([^>]*)>([^<]+)</a>`)
 	// YouTube URL patterns for auto-embed
@@ -551,11 +550,78 @@ func (r *Renderer) processWikiLinks(content string, warnings *[]string) string {
 }
 
 // extractCodeBlocks extracts code blocks and inline code from markdown
+// findFencedBlocks returns the fenced code blocks in content, in order,
+// following CommonMark fence rules: an opening fence of three or more backticks
+// or tildes is closed by a line with at least as many of the same character.
+// This correctly spans 4+ backtick fences and nested fences (used to document
+// code fences), which a fixed-length regex cannot match — a misparse there
+// would leak protection and let wiki-links inside later inline code resolve.
+func findFencedBlocks(content string) []string {
+	lines := strings.Split(content, "\n")
+	var blocks []string
+	for i := 0; i < len(lines); {
+		char, n, ok := fenceOpen(lines[i])
+		if !ok {
+			i++
+			continue
+		}
+		start := i
+		i++
+		for i < len(lines) && !fenceClose(lines[i], char, n) {
+			i++
+		}
+		if i < len(lines) {
+			i++ // include the closing fence line
+		}
+		blocks = append(blocks, strings.Join(lines[start:i], "\n"))
+	}
+	return blocks
+}
+
+// fenceOpen reports whether line opens a fenced code block, returning the fence
+// character ('`' or '~') and its run length. Up to three leading spaces are
+// allowed; a backtick fence's info string may not contain a backtick.
+func fenceOpen(line string) (byte, int, bool) {
+	s := strings.TrimLeft(line, " ")
+	if len(line)-len(s) > 3 || len(s) < 3 {
+		return 0, 0, false
+	}
+	c := s[0]
+	if c != '`' && c != '~' {
+		return 0, 0, false
+	}
+	n := 0
+	for n < len(s) && s[n] == c {
+		n++
+	}
+	if n < 3 {
+		return 0, 0, false
+	}
+	if c == '`' && strings.ContainsRune(s[n:], '`') {
+		return 0, 0, false
+	}
+	return c, n, true
+}
+
+// fenceClose reports whether line closes a fence of char c opened with n
+// characters: at least n of the same character, then only spaces.
+func fenceClose(line string, c byte, n int) bool {
+	s := strings.TrimLeft(line, " ")
+	if len(line)-len(s) > 3 {
+		return false
+	}
+	m := 0
+	for m < len(s) && s[m] == c {
+		m++
+	}
+	return m >= n && strings.TrimRight(s[m:], " ") == ""
+}
+
 func extractCodeBlocks(content string) []string {
 	var blocks []string
 
 	// Extract fenced code blocks (```...```)
-	blocks = append(blocks, codeBlockRegex.FindAllString(content, -1)...)
+	blocks = append(blocks, findFencedBlocks(content)...)
 
 	// Extract inline code (`...`)
 	blocks = append(blocks, inlineCodeRegex.FindAllString(content, -1)...)

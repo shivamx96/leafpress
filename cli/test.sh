@@ -176,6 +176,34 @@ fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR"
 
+# Test 5b: Wiki links survive nested/4-backtick code fences (regression)
+test_case "Wiki links preserved after nested code fences"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > test.md << 'EOF'
+---
+title: Test
+---
+
+````markdown
+```mermaid
+graph TD
+```
+````
+
+Link: `[[projects/website]]`
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+# The inline wiki-link after a nested fence must stay literal, not become a link/broken-link span.
+if grep -q '<code>\[\[projects/website\]\]</code>' _site/test/index.html && ! grep -q 'lp-broken-link' _site/test/index.html; then
+    pass
+else
+    fail "Inline wiki-link leaked through nested code fences"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
 # Test 6: TOC generation
 test_case "Table of contents is generated"
 if grep -q 'class="lp-toc"' "$GARDEN/_site/notes/systems-thinking/index.html"; then
