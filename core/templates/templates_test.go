@@ -102,8 +102,8 @@ func TestExtractTOC_SpecialChars(t *testing.T) {
 	if toc[0].ID != "video-audio" {
 		t.Errorf("toc[0].ID = %q, want \"video-audio\"", toc[0].ID)
 	}
-	if toc[0].Text != "Video & Audio" {
-		t.Errorf("toc[0].Text = %q, want \"Video & Audio\"", toc[0].Text)
+	if toc[0].Text != "Video &amp; Audio" {
+		t.Errorf("toc[0].Text = %q, want \"Video &amp; Audio\"", toc[0].Text)
 	}
 
 	// Heading ID and TOC href must match
@@ -137,6 +137,18 @@ func TestExtractTOC_HTMLInHeading(t *testing.T) {
 	}
 	if toc[0].Text != "func main" {
 		t.Errorf("toc text should strip HTML tags, got %q", toc[0].Text)
+	}
+}
+
+func TestExtractTOC_EscapesDecodedAuthorHTML(t *testing.T) {
+	input := `<h2>&lt;input autofocus onfocus=alert(1)&gt;</h2>`
+	_, toc := ExtractTOC(input)
+
+	if len(toc) != 1 {
+		t.Fatalf("got %d TOC items, want 1", len(toc))
+	}
+	if toc[0].Text != "&lt;input autofocus onfocus=alert(1)&gt;" {
+		t.Errorf("toc text resurrected author HTML: %q", toc[0].Text)
 	}
 }
 

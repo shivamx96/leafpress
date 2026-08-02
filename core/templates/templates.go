@@ -403,8 +403,12 @@ func ExtractTOC(htmlContent string) (string, []TOCItem) {
 			levelInt = 3
 		}
 		toc = append(toc, TOCItem{
-			ID:    id,
-			Text:  plainText,
+			ID: id,
+			// Templates use text/template because rendered markdown is inserted
+			// deliberately. Escape TOC labels before they cross that raw boundary:
+			// hosted markdown is escaped first, and UnescapeString above must not
+			// resurrect author HTML as live markup in the generated TOC.
+			Text:  html.EscapeString(plainText),
 			Level: levelInt,
 		})
 

@@ -641,6 +641,25 @@ func TestXSSBodyAndMetadataEscaped(t *testing.T) {
 	}
 }
 
+func TestXSSTOCHeadingTextRemainsEscaped(t *testing.T) {
+	out := runJSON(t, `{
+	  "render": {"slug": "g"},
+	  "content": {"pages": [{
+	    "slug": "p",
+	    "title": "P",
+	    "markdown": "## <input autofocus onfocus=alert(1)>"
+	  }]}
+	}`)
+	html := pageHTML(t, out, "p")
+
+	if strings.Contains(html, `<input autofocus onfocus=alert(1)>`) {
+		t.Fatal("TOC rendered escaped author HTML as a live input element")
+	}
+	if !strings.Contains(html, `&lt;input autofocus onfocus=alert(1)&gt;`) {
+		t.Fatal("page should preserve the hostile heading as visibly escaped text")
+	}
+}
+
 func TestSiteIdentityAndAttributionEscaped(t *testing.T) {
 	out := runJSON(t, `{
 	  "render": {
