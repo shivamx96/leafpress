@@ -99,7 +99,9 @@ Set `baseURL` in `leafpress.json` for correct sitemap and canonical URLs:
 
 ```json
 {
-  "baseURL": "https://yourdomain.com"
+  "site": {
+    "baseURL": "https://yourdomain.com"
+  }
 }
 ```
 

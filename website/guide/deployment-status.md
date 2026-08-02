@@ -56,7 +56,7 @@ The status command tracks **source files** (what you actually changed):
 
 **Excluded:**
 - Build output (`_site/` directory and everything in it)
-- Ignored directories (defined in `leafpress.json`'s `ignore` field)
+- Ignored directories (defined in `leafpress.json`'s `build.ignore` field)
 - System/metadata files (`.obsidian/`, `.git/`, `node_modules/`, `.DS_Store`, `Thumbs.db`)
 - Deployment manifest (`.leafpress-deploy-state.json`)
 
@@ -64,7 +64,7 @@ This means you see exactly what **you** changed, not auto-generated files. Perfe
 
 ## Deployment Manifest
 
-Leafpress stores a `.leafpress-deploy-state.json` file in your project root (added to `.gitignore`). This file tracks:
+Leafpress stores a `.leafpress-deploy-state.json` file in your project root. Add it to your `.gitignore` (see [Files to Ignore](#files-to-ignore) below). This file tracks:
 
 - Last deployment timestamp
 - Deployed provider and URL

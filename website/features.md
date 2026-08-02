@@ -48,7 +48,7 @@ Everything you need to build a digital garden, nothing you don't.
 
 **One-Command Deploy** — `leafpress deploy` handles authentication, building, and deployment to GitHub Pages, Vercel, Netlify, and more. No manual setup required.
 
-**SEO Ready** — Automatic sitemap.xml, robots.txt, Open Graph tags, Twitter cards.
+**SEO Ready** — Automatic robots.txt, Open Graph tags, Twitter cards, plus sitemap.xml when `site.baseURL` is set.
 
 **RSS Feed** — Auto-generated feed.xml with nav icon. Toggle with `features.rss` in config (requires `site.baseURL`).
 

@@ -49,7 +49,7 @@ During build, leafpress warns about broken links:
 Warning: broken link: [[nonexistent-page]]
 ```
 
-Broken links render as plain text with a visual indicator, so readers know something's missing.
+Broken links render with a subtle broken-link style, so readers know something's missing.
 
 ## Link Previews
 
