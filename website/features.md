@@ -60,7 +60,7 @@ Everything you need to build a digital garden, nothing you don't.
 
 ## Theming
 
-**Typography** — Self-hosted fonts for headings, body, and code: bundled families (Bricolage Grotesque, Inter, JetBrains Mono) ship with Leafpress, and you can add your own font files under `static/fonts/`. No third-party font requests.
+**Typography** — A curated 16-family catalog is self-hosted for headings, body, and code, and you can add your own font files under `static/fonts/`. Only selected families ship with the built site; no third-party font requests.
 
 **Colors** — Set your accent color. Light and dark backgrounds with gradient support.
 

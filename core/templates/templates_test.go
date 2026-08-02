@@ -168,19 +168,19 @@ func TestRemoteFontURL_OffByDefault(t *testing.T) {
 	if url := remoteFontURL(testTheme("Bricolage Grotesque", "Inter", "JetBrains Mono")); url != "" {
 		t.Errorf("bundled families produced remote URL %q", url)
 	}
-	if url := remoteFontURL(testTheme("Lobster", "Inter", "Fira Code")); url != "" {
+	if url := remoteFontURL(testTheme("Lobster", "Inter", "Roboto Mono")); url != "" {
 		t.Errorf("unbundled families produced remote URL %q without opt-in", url)
 	}
 }
 
 func TestRemoteFontURL_OptInCoversOnlyUnbundled(t *testing.T) {
-	theme := testTheme("Bricolage Grotesque", "Inter", "Fira Code")
+	theme := testTheme("Bricolage Grotesque", "Inter", "Roboto Mono")
 	theme.RemoteFonts = true
 	url := remoteFontURL(theme)
 	if strings.Contains(url, "Bricolage+Grotesque") || strings.Contains(url, "family=Inter") {
 		t.Errorf("bundled families leaked into remote URL %q", url)
 	}
-	if !strings.Contains(url, "family=Fira+Code") {
+	if !strings.Contains(url, "family=Roboto+Mono") {
 		t.Error("should contain unbundled mono font")
 	}
 	if !strings.Contains(url, "display=swap") {
@@ -199,7 +199,7 @@ func TestRemoteFontURL_OptInCoversOnlyUnbundled(t *testing.T) {
 }
 
 func TestRemoteFontURL_Dedup(t *testing.T) {
-	theme := testTheme("Lobster", "Lobster", "Fira Code")
+	theme := testTheme("Lobster", "Lobster", "Roboto Mono")
 	theme.RemoteFonts = true
 	url := remoteFontURL(theme)
 	if strings.Count(url, "Lobster") != 1 {

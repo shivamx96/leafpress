@@ -157,7 +157,7 @@ func TestBuildUnbundledFamiliesWarnAndStayLocal(t *testing.T) {
 	cfg := config.Default()
 	cfg.Theme.FontHeading = "Lobster"
 	cfg.Theme.FontBody = "Lobster"
-	cfg.Theme.FontMono = "Fira Code"
+	cfg.Theme.FontMono = "Roboto Mono"
 	b := New(cfg, Options{})
 	stats, err := b.Build()
 	if err != nil {
@@ -176,7 +176,7 @@ func TestBuildUnbundledFamiliesWarnAndStayLocal(t *testing.T) {
 		t.Error("unbundled families must not load remotely without the opt-in")
 	}
 	if stats.WarningCount < 2 {
-		t.Errorf("expected fallback warnings for Lobster and Fira Code, got %d", stats.WarningCount)
+		t.Errorf("expected fallback warnings for Lobster and Roboto Mono, got %d", stats.WarningCount)
 	}
 }
 
