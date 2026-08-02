@@ -17,23 +17,16 @@ type BuiltinFontFace struct {
 	UnicodeRange string // CSS unicode-range of the subset
 }
 
-// builtinFontFaces is the curated set: the default theme families, variable
-// 400–700, normal+italic, latin and latin-ext subsets. The set is
-// deliberately Latin-focused — other scripts fall back to the system stack
-// or to declared custom fonts. Sourced from Google Fonts (all three families
-// are SIL OFL 1.1; full license texts ship as registry assets).
+// builtinFontFaces is the curated set used by the default theme. It is
+// deliberately Latin-focused — other scripts fall back to the system stack or
+// to declared custom fonts. Faces are sourced from Google Fonts under SIL OFL
+// 1.1; full license texts ship as registry assets.
 var builtinFontFaces = []BuiltinFontFace{
-	{Family: "Crimson Pro", Style: "italic", WeightRange: "400 700", Subset: "latin-ext",
-		LogicalPath:  BuiltinPrefix + "fonts/crimson-pro-italic-latin-ext.woff2",
+	{Family: "Bricolage Grotesque", Style: "normal", WeightRange: "200 800", Subset: "latin-ext",
+		LogicalPath:  BuiltinPrefix + "fonts/bricolage-grotesque-normal-latin-ext.woff2",
 		UnicodeRange: "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"},
-	{Family: "Crimson Pro", Style: "italic", WeightRange: "400 700", Subset: "latin",
-		LogicalPath:  BuiltinPrefix + "fonts/crimson-pro-italic-latin.woff2",
-		UnicodeRange: "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},
-	{Family: "Crimson Pro", Style: "normal", WeightRange: "400 700", Subset: "latin-ext",
-		LogicalPath:  BuiltinPrefix + "fonts/crimson-pro-normal-latin-ext.woff2",
-		UnicodeRange: "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"},
-	{Family: "Crimson Pro", Style: "normal", WeightRange: "400 700", Subset: "latin",
-		LogicalPath:  BuiltinPrefix + "fonts/crimson-pro-normal-latin.woff2",
+	{Family: "Bricolage Grotesque", Style: "normal", WeightRange: "200 800", Subset: "latin",
+		LogicalPath:  BuiltinPrefix + "fonts/bricolage-grotesque-normal-latin.woff2",
 		UnicodeRange: "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"},
 	{Family: "Inter", Style: "italic", WeightRange: "400 700", Subset: "latin-ext",
 		LogicalPath:  BuiltinPrefix + "fonts/inter-italic-latin-ext.woff2",
@@ -98,9 +91,9 @@ func IsBuiltinFontFamily(family string) bool {
 // carry the copyright notice and license, so these materialize into exported
 // sites alongside the woff2 files.
 var builtinFontLicenses = map[string]string{
-	"Crimson Pro":    BuiltinPrefix + "fonts/OFL-crimson-pro.txt",
-	"Inter":          BuiltinPrefix + "fonts/OFL-inter.txt",
-	"JetBrains Mono": BuiltinPrefix + "fonts/OFL-jetbrains-mono.txt",
+	"Bricolage Grotesque": BuiltinPrefix + "fonts/OFL-bricolage-grotesque.txt",
+	"Inter":               BuiltinPrefix + "fonts/OFL-inter.txt",
+	"JetBrains Mono":      BuiltinPrefix + "fonts/OFL-jetbrains-mono.txt",
 }
 
 // RequiredBuiltins returns every built-in a rendered site references for the

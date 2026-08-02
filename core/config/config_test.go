@@ -34,6 +34,9 @@ func TestDefault(t *testing.T) {
 	if cfg.Theme.Accent != "#50ac00" {
 		t.Errorf("Accent = %q, want %q", cfg.Theme.Accent, "#50ac00")
 	}
+	if cfg.Theme.FontHeading != "Bricolage Grotesque" {
+		t.Errorf("FontHeading = %q, want %q", cfg.Theme.FontHeading, "Bricolage Grotesque")
+	}
 }
 
 // --- Load ---

@@ -7,7 +7,7 @@ import (
 
 func TestBuiltinFontFamilies(t *testing.T) {
 	families := BuiltinFontFamilies()
-	want := []string{"Crimson Pro", "Inter", "JetBrains Mono"}
+	want := []string{"Bricolage Grotesque", "Inter", "JetBrains Mono"}
 	if len(families) != len(want) {
 		t.Fatalf("families = %v, want %v", families, want)
 	}
@@ -68,12 +68,25 @@ func TestFontFaceCSS(t *testing.T) {
 	if !strings.Contains(css, "unicode-range:") {
 		t.Error("missing unicode-range")
 	}
-	if strings.Contains(css, "Crimson Pro") {
+	if strings.Contains(css, "Bricolage Grotesque") {
 		t.Error("unrequested family emitted")
 	}
 	// 2 styles x 2 subsets for one family.
 	if got := strings.Count(css, "@font-face"); got != 4 {
 		t.Errorf("Inter faces = %d, want 4", got)
+	}
+}
+
+func TestBricolageGrotesqueFontFaceCSS(t *testing.T) {
+	css := FontFaceCSS("Bricolage Grotesque")
+	if !strings.Contains(css, `font-family: "Bricolage Grotesque"`) {
+		t.Error("missing Bricolage Grotesque @font-face")
+	}
+	if !strings.Contains(css, "font-weight: 200 800") {
+		t.Error("missing Bricolage Grotesque variable weight range")
+	}
+	if got := strings.Count(css, "@font-face"); got != 2 {
+		t.Errorf("Bricolage Grotesque faces = %d, want 2 latin subsets", got)
 	}
 }
 

@@ -1311,10 +1311,10 @@ func TestAssetManifestAlwaysEmitted(t *testing.T) {
 	if err := out.AssetManifest.Validate(); err != nil {
 		t.Fatalf("asset manifest invalid: %v", err)
 	}
-	// Default families are all bundled: 3 favicons + 12 font faces + 3 OFL
+	// Default families are all bundled: 3 favicons + 10 font faces + 3 OFL
 	// license texts. Mermaid is content-optional and absent here.
-	if len(out.AssetManifest) != 18 {
-		t.Fatalf("manifest has %d entries, want 18", len(out.AssetManifest))
+	if len(out.AssetManifest) != 16 {
+		t.Fatalf("manifest has %d entries, want 16", len(out.AssetManifest))
 	}
 	byPath := map[string]assets.Asset{}
 	for _, a := range out.AssetManifest {
@@ -1380,9 +1380,9 @@ func TestMermaidSelfHostedInManifestAndHTML(t *testing.T) {
 	if _, ok := byPath[assets.BuiltinMermaidLicense]; !ok {
 		t.Error("mermaid license missing from asset manifest when diagrams are used")
 	}
-	// Default fonts (15) + favicons (3) + mermaid (2) = 20
-	if len(out.AssetManifest) != 20 {
-		t.Fatalf("manifest has %d entries, want 20 with mermaid", len(out.AssetManifest))
+	// Default fonts (13) + favicons (3) + mermaid (2) = 18
+	if len(out.AssetManifest) != 18 {
+		t.Fatalf("manifest has %d entries, want 18 with mermaid", len(out.AssetManifest))
 	}
 
 	html := pageHTML(t, out, "diag")

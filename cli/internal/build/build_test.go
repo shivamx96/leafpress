@@ -95,9 +95,18 @@ func TestBuildMaterializesBuiltinFonts(t *testing.T) {
 		t.Fatalf("Build: %v", err)
 	}
 
-	// Default theme uses the three bundled families: every face file must be
-	// on disk at its logical path with registry content.
+	// Every face used by the default theme must be on disk at its logical path
+	// with registry content. Retained built-ins that are not selected are not
+	// materialized.
+	defaultFamilies := map[string]bool{
+		config.Default().Theme.FontHeading: true,
+		config.Default().Theme.FontBody:    true,
+		config.Default().Theme.FontMono:    true,
+	}
 	for _, face := range assets.BuiltinFontFaces() {
+		if !defaultFamilies[face.Family] {
+			continue
+		}
 		builtin, _ := assets.BuiltinByLogicalPath(face.LogicalPath)
 		got, err := os.ReadFile(filepath.Join(dir, "_site", filepath.FromSlash(face.LogicalPath)))
 		if err != nil {
@@ -109,7 +118,7 @@ func TestBuildMaterializesBuiltinFonts(t *testing.T) {
 	}
 
 	// Each used family's OFL license text is exported alongside the fonts.
-	for _, family := range []string{"Crimson Pro", "Inter", "JetBrains Mono"} {
+	for _, family := range []string{"Bricolage Grotesque", "Inter", "JetBrains Mono"} {
 		licensePath, ok := assets.BuiltinFontLicense(family)
 		if !ok {
 			t.Fatalf("no license asset for %s", family)
@@ -190,17 +199,17 @@ func TestBuildRemoteFontsOptIn(t *testing.T) {
 	}
 	// Bundled heading/mono stay self-hosted even under the opt-in: never in
 	// the remote URL, still present as @font-face with files on disk.
-	if bytes.Contains(page, []byte("family=Crimson+Pro")) || bytes.Contains(page, []byte("family=JetBrains+Mono")) {
+	if bytes.Contains(page, []byte("family=Bricolage+Grotesque")) || bytes.Contains(page, []byte("family=JetBrains+Mono")) {
 		t.Error("bundled families leaked into the remote font URL")
 	}
 	css, err := os.ReadFile(filepath.Join(dir, "_site", "style.css"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !bytes.Contains(css, []byte(`font-family: "Crimson Pro"`)) || !bytes.Contains(css, []byte(`font-family: "JetBrains Mono"`)) {
+	if !bytes.Contains(css, []byte(`font-family: "Bricolage Grotesque"`)) || !bytes.Contains(css, []byte(`font-family: "JetBrains Mono"`)) {
 		t.Error("bundled families missing self-hosted @font-face under remoteFonts")
 	}
-	if _, err := os.Stat(filepath.Join(dir, "_site", "static", "leafpress", "fonts", "crimson-pro-normal-latin.woff2")); err != nil {
+	if _, err := os.Stat(filepath.Join(dir, "_site", "static", "leafpress", "fonts", "bricolage-grotesque-normal-latin.woff2")); err != nil {
 		t.Errorf("bundled font not materialized under remoteFonts: %v", err)
 	}
 }

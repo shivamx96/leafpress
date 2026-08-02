@@ -210,8 +210,8 @@ valid skip signal on its own.
 
 Font sources are a closed set; this is an explicit product decision:
 
-1. **Bundled built-in family** (the default theme families — initially
-   Crimson Pro, Inter, and JetBrains Mono — shipped in the registry as
+1. **Bundled built-in family** (the default theme families — Bricolage
+   Grotesque, Inter, and JetBrains Mono — shipped in the registry as
    woff2): self-hosted via generated `@font-face` rules. The registry is
    the sole membership list; both interfaces must consult it, never a
    private copy.

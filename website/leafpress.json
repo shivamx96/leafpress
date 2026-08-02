@@ -32,15 +32,6 @@
     "port": 3000
   },
   "theme": {
-    "accent": "#16a34a",
-    "background": {
-      "dark": "linear-gradient(135deg, #0a0a0a 0%, #14532d 100%)",
-      "light": "linear-gradient(135deg, #ffffff 0%, #dcfce7 100%)"
-    },
-    "fontBody": "Geist",
-    "fontHeading": "Sora",
-    "fontMono": "JetBrains Mono",
-    "remoteFonts": true,
     "navActiveStyle": "base",
     "navStyle": "base"
   }

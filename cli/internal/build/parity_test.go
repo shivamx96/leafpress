@@ -396,7 +396,7 @@ func TestParityExportContainsManifestAssets(t *testing.T) {
 	}
 
 	// The manifest must cover exactly the bundled families the theme uses:
-	// body is a custom font, so only Crimson Pro + JetBrains Mono faces and
+	// body is a custom font, so only Bricolage Grotesque + JetBrains Mono faces and
 	// their two OFL license texts.
 	fontEntries := 0
 	for _, entry := range out.AssetManifest {
@@ -407,8 +407,8 @@ func TestParityExportContainsManifestAssets(t *testing.T) {
 			}
 		}
 	}
-	if fontEntries != 10 {
-		t.Errorf("manifest has %d font entries, want 10 (2 families x 2 styles x 2 subsets + 2 OFL texts)", fontEntries)
+	if fontEntries != 8 {
+		t.Errorf("manifest has %d font entries, want 8 (2 Bricolage subsets + 4 JetBrains Mono faces + 2 OFL texts)", fontEntries)
 	}
 
 	// The caller-declared user assets are in the same manifest, so a host
@@ -491,7 +491,7 @@ func TestParityStylesheetFonts(t *testing.T) {
 	// TestParityCSSAndTextArtifacts.
 	for _, ref := range []string{
 		`url("static/fonts/my-serif.woff2")`,
-		`url("static/leafpress/fonts/crimson-pro-normal-latin.woff2")`,
+		`url("static/leafpress/fonts/bricolage-grotesque-normal-latin.woff2")`,
 	} {
 		if !strings.Contains(string(cliCSS), ref) {
 			t.Errorf("CLI stylesheet missing font reference %s", ref)

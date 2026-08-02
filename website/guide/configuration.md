@@ -33,7 +33,7 @@ default site.
   },
 
   "theme": {
-    "fontHeading": "Crimson Pro",
+    "fontHeading": "Bricolage Grotesque",
     "fontBody": "Inter",
     "fontMono": "JetBrains Mono",
     "accent": "#50ac00",
@@ -84,7 +84,7 @@ default site.
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `fontHeading` | `"Crimson Pro"` | Heading font (bundled families are self-hosted) |
+| `fontHeading` | `"Bricolage Grotesque"` | Heading font (bundled families are self-hosted) |
 | `fontBody` | `"Inter"` | Body font (bundled families are self-hosted) |
 | `fontMono` | `"JetBrains Mono"` | Code font (bundled families are self-hosted) |
 | `remoteFonts` | `false` | Deprecated: load unbundled families from Google Fonts |

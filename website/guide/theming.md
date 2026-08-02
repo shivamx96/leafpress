@@ -12,7 +12,7 @@ Set options in `leafpress.json`:
 ```json
 {
   "theme": {
-    "fontHeading": "Crimson Pro",
+    "fontHeading": "Bricolage Grotesque",
     "fontBody": "Inter",
     "accent": "#e11d48"
   }
@@ -22,14 +22,14 @@ Set options in `leafpress.json`:
 ## Fonts
 
 Leafpress sites are **self-hosted by default**: no request ever leaves your
-site for a font. Three families ship bundled with Leafpress — **Crimson Pro**
-(headings), **Inter** (body), and **JetBrains Mono** (code) — and are served
+site for a font. Three families ship bundled with Leafpress — **Bricolage
+Grotesque** (headings), **Inter** (body), and **JetBrains Mono** (code) — and are served
 from your own site as `@font-face` rules in the generated stylesheet:
 
 ```json
 {
   "theme": {
-    "fontHeading": "Crimson Pro",
+    "fontHeading": "Bricolage Grotesque",
     "fontBody": "Inter",
     "fontMono": "JetBrains Mono"
   }
@@ -245,4 +245,3 @@ Key classes you might want to customize:
 - `.lp-callout` — Callout boxes
 - `.lp-graph` — Graph container
 - `.lp-search` — Search component
-

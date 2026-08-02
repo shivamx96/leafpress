@@ -60,7 +60,7 @@ Everything you need to build a digital garden, nothing you don't.
 
 ## Theming
 
-**Typography** — Self-hosted fonts for headings, body, and code: bundled families (Crimson Pro, Inter, JetBrains Mono) ship with Leafpress, and you can add your own font files under `static/fonts/`. No third-party font requests.
+**Typography** — Self-hosted fonts for headings, body, and code: bundled families (Bricolage Grotesque, Inter, JetBrains Mono) ship with Leafpress, and you can add your own font files under `static/fonts/`. No third-party font requests.
 
 **Colors** — Set your accent color. Light and dark backgrounds with gradient support.
 
@@ -79,4 +79,3 @@ leafpress is intentionally minimal. These are out of scope:
 - **CMS** — Edit markdown files directly
 - **Image optimization** — Use a CDN or external tool for advanced needs (lazy loading is built-in)
 - **Pagination** — Digital gardens are relational, not chronological
-

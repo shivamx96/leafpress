@@ -28,7 +28,7 @@ func TestSum(t *testing.T) {
 func TestValidateLogicalPath(t *testing.T) {
 	valid := []string{
 		"static/fonts/inter-400.woff2",
-		"static/leafpress/fonts/crimson-pro-700.woff2",
+		"static/leafpress/fonts/example-serif-700.woff2",
 		"static/images/photo.JPG",
 		"static/a/b/c/d.txt",
 		"static/tilde~file.txt",
