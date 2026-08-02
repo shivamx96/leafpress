@@ -35,7 +35,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 
 	// Override port if specified
 	if servePort > 0 {
-		cfg.Port = servePort
+		cfg.Build.Port = servePort
 	}
 
 	// Create builder

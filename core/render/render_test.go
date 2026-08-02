@@ -45,28 +45,26 @@ func artifact(t *testing.T, out *Output, path string) OutputArtifact {
 }
 
 const twoLinkedPages = `{
-  "garden": {
-    "slug": "shivam",
-    "title": "Shivam's Garden",
-    "baseUrl": "/g/shivam",
-    "sort": "date"
-  },
-  "pages": [
-    {
-      "slug": "alpha",
-      "title": "Alpha",
-      "markdown": "Linking to [[beta|the beta note]] here.",
-      "tags": ["systems"],
-      "createdAt": "2026-05-16T10:00:00Z",
-      "updatedAt": "2026-07-11T09:30:00Z"
-    },
-    {
-      "slug": "beta",
-      "title": "Beta",
-      "markdown": "# Heading\n\nBeta content.",
-      "createdAt": "2026-06-01T10:00:00Z"
-    }
-  ]
+  "render": {"slug": "shivam"},
+  "config": {"site": {"title": "Shivam's Garden", "baseURL": "https://example.com/g/shivam"}},
+  "content": {
+    "pages": [
+      {
+        "slug": "alpha",
+        "title": "Alpha",
+        "markdown": "Linking to [[beta|the beta note]] here.",
+        "tags": ["systems"],
+        "createdAt": "2026-05-16T10:00:00Z",
+        "updatedAt": "2026-07-11T09:30:00Z"
+      },
+      {
+        "slug": "beta",
+        "title": "Beta",
+        "markdown": "# Heading\n\nBeta content.",
+        "createdAt": "2026-06-01T10:00:00Z"
+      }
+    ]
+  }
 }`
 
 func TestWikilinkCarriesBaseURL(t *testing.T) {
@@ -108,10 +106,10 @@ func TestWikilinkCarriesBaseURL(t *testing.T) {
 
 func TestBrokenWikilinkDegradesToPlainText(t *testing.T) {
 	out := runJSON(t, `{
-	  "garden": {"slug": "g"},
-	  "pages": [
+	  "render": {"slug": "g"},
+	  "content": {"pages": [
 	    {"slug": "solo", "title": "Solo", "markdown": "See [[Private Note|my secret]] for more."}
-	  ]
+	  ]}
 	}`)
 
 	html := pageHTML(t, out, "solo")
@@ -142,15 +140,15 @@ func TestBrokenWikilinkDegradesToPlainText(t *testing.T) {
 
 func TestThemeReflectedInOutput(t *testing.T) {
 	out := runJSON(t, `{
-	  "garden": {
-	    "slug": "g",
+	  "render": {"slug": "g"},
+	  "config": {
 	    "theme": {
 	      "accent": "#ff0000",
 	      "fontHeading": "Lora",
 	      "background": {"light": "#fafafa", "dark": "#101010"}
 	    }
 	  },
-	  "pages": [{"slug": "p", "title": "P", "markdown": "hello"}]
+	  "content": {"pages": [{"slug": "p", "title": "P", "markdown": "hello"}]}
 	}`)
 
 	html := pageHTML(t, out, "p")
@@ -175,16 +173,18 @@ func TestThemeReflectedInOutput(t *testing.T) {
 	}
 }
 
-func TestLegacyGardenIdentityAndFooterAttribution(t *testing.T) {
+func TestSiteIdentityAndFooterAttribution(t *testing.T) {
 	out := runJSON(t, `{
-	  "garden": {
+	  "render": {
 	    "slug": "hosted",
-	    "title": "Field Notes",
-	    "description": "A garden about patient ideas.",
-	    "author": "Garden Author",
 	    "footerAttribution": {"name": "Leafyard", "url": "https://leafyard.in"}
 	  },
-	  "pages": [{"slug": "welcome", "title": "Welcome", "markdown": "hello"}]
+	  "config": {"site": {
+	    "title": "Field Notes",
+	    "description": "A garden about patient ideas.",
+	    "author": "Garden Author"
+	  }},
+	  "content": {"pages": [{"slug": "welcome", "title": "Welcome", "markdown": "hello"}]}
 	}`)
 
 	for _, document := range []string{out.Index, pageHTML(t, out, "welcome")} {
@@ -201,7 +201,7 @@ func TestLegacyGardenIdentityAndFooterAttribution(t *testing.T) {
 		}
 	}
 	if !strings.Contains(pageHTML(t, out, "welcome"), `href="/welcome/">Welcome</a>`) {
-		t.Error("hosted identity fields should preserve fallback automatic navigation")
+		t.Error("site identity fields should preserve automatic navigation")
 	}
 	for _, want := range []string{
 		`<meta name="description" content="A garden about patient ideas.">`,
@@ -214,35 +214,36 @@ func TestLegacyGardenIdentityAndFooterAttribution(t *testing.T) {
 	}
 }
 
-func TestCanonicalSiteConfigAndStyleMatchLeafpressSemantics(t *testing.T) {
+func TestSiteConfigAndStyleMatchLeafpressSemantics(t *testing.T) {
 	out := runJSON(t, `{
-	  "garden": {"slug":"hosted", "baseUrl":"/legacy-hosted"},
 	  "config": {
-	    "title":"Configured Garden",
-	    "description":"Site description",
-	    "author":"Garden Author",
-	    "baseURL":"https://example.com/notes",
-	    "image":"/og-default.png",
-	    "outputDir":"ignored-by-renderer",
-	    "port":4444,
-	    "nav":[{"label":"Start Here","path":"/alpha/"}],
+	    "site": {
+	      "title":"Configured Garden",
+	      "description":"Site description",
+	      "author":"Garden Author",
+	      "baseURL":"https://example.com/notes",
+	      "image":"/og-default.png",
+	      "headExtra":"<meta name=\"configured\" content=\"yes\">"
+	    },
+	    "navigation":{"mode":"explicit","items":[{"label":"Start Here","path":"/alpha/"}]},
 	    "theme":{
 	      "fontHeading":"Fraunces","fontBody":"Atkinson Hyperlegible",
 	      "fontMono":"IBM Plex Mono","accent":"#123456",
 	      "background":{"light":"#fafafa","dark":"#101010"},
 	      "navStyle":"sticky","navActiveStyle":"underlined"
 	    },
-	    "graph":true,"search":true,"toc":false,"backlinks":true,
-	    "wikilinks":true,"rss":true,
-	    "ignore":["private/**"],
-	    "headExtra":"<meta name=\"configured\" content=\"yes\">",
+	    "features":{"graph":true,"search":true,"toc":false,"backlinks":true,"wikilinks":true,"rss":true},
+	    "build":{"outputDir":"ignored-by-renderer","port":4444,"ignore":["private/**"]},
 	    "deploy":{"provider":"netlify","settings":{"site":"demo"}}
 	  },
-	  "styleCSS":".custom-rule { color: rebeccapurple; }",
-	  "pages":[
-	    {"slug":"alpha","title":"Alpha","markdown":"## Heading\n\nSee [[beta]].","createdAt":"2026-01-01T00:00:00Z"},
-	    {"slug":"beta","title":"Beta","markdown":"Beta body.","createdAt":"2026-01-02T00:00:00Z"}
-	  ]
+	  "render": {"slug":"hosted"},
+	  "content": {
+	    "styleCSS":".custom-rule { color: rebeccapurple; }",
+	    "pages":[
+	      {"slug":"alpha","title":"Alpha","markdown":"## Heading\n\nSee [[beta]].","createdAt":"2026-01-01T00:00:00Z"},
+	      {"slug":"beta","title":"Beta","markdown":"Beta body.","createdAt":"2026-01-02T00:00:00Z"}
+	    ]
+	  }
 	}`)
 
 	alpha := pageHTML(t, out, "alpha")
@@ -270,10 +271,10 @@ func TestCanonicalSiteConfigAndStyleMatchLeafpressSemantics(t *testing.T) {
 		t.Error("site toc=false should suppress a page TOC without an override")
 	}
 	if strings.Contains(alpha, `href="/notes/beta/">Beta</a></div>`) {
-		t.Error("canonical nav should not be replaced by derived root-note nav")
+		t.Error("explicit nav should not be replaced by derived root-note nav")
 	}
 	if !strings.Contains(out.Index, `<meta name="description" content="Site description">`) {
-		t.Error("canonical site description should supply garden-home metadata")
+		t.Error("site description should supply garden-home metadata")
 	}
 	if !strings.Contains(out.CSS, "/* User Styles */") ||
 		!strings.Contains(out.CSS, ".custom-rule { color: rebeccapurple; }") {
@@ -293,7 +294,7 @@ func TestCanonicalSiteConfigAndStyleMatchLeafpressSemantics(t *testing.T) {
 	}
 	if feed := artifact(t, out, "feed.xml"); !strings.Contains(feed.Content, "<title>Configured Garden</title>") ||
 		!strings.Contains(feed.Content, "https://example.com/notes/feed.xml") {
-		t.Errorf("feed artifact missing canonical site config: %s", feed.Content)
+		t.Errorf("feed artifact missing site config: %s", feed.Content)
 	}
 	if sitemap := artifact(t, out, "sitemap.xml"); !strings.Contains(sitemap.Content, "https://example.com/notes/alpha/") {
 		t.Errorf("sitemap artifact missing canonical URL: %s", sitemap.Content)
@@ -306,16 +307,16 @@ func TestCanonicalSiteConfigAndStyleMatchLeafpressSemantics(t *testing.T) {
 	}
 }
 
-func TestCanonicalConfigDefaultsAndFeatureDisables(t *testing.T) {
-	// Empty canonical config uses exactly the CLI defaults, including enabled
-	// graph/search/TOC/backlinks/wikilinks/RSS and an intentionally empty nav.
+func TestConfigDefaultsAndFeatureDisables(t *testing.T) {
+	// Empty config uses exactly the CLI defaults, including enabled
+	// graph/search/TOC/backlinks/wikilinks/RSS and automatic navigation.
 	defaults := runJSON(t, `{
-	  "garden":{"slug":"g","baseUrl":"/g/g"},
-	  "config":{},
-	  "pages":[
+	  "render":{"slug":"g"},
+	  "config":{"site":{"baseURL":"https://example.com/g/g"}},
+	  "content":{"pages":[
 	    {"slug":"one","title":"One","markdown":"## Heading\n\n[[two]]"},
 	    {"slug":"two","title":"Two","markdown":"body"}
-	  ]
+	  ]}
 	}`)
 	one := pageHTML(t, defaults, "one")
 	for _, want := range []string{
@@ -324,23 +325,24 @@ func TestCanonicalConfigDefaultsAndFeatureDisables(t *testing.T) {
 	} {
 		combined := one + pageHTML(t, defaults, "two")
 		if !strings.Contains(combined, want) {
-			t.Errorf("canonical defaults missing %q", want)
+			t.Errorf("config defaults missing %q", want)
 		}
 	}
 	artifact(t, defaults, "graph.json")
 	artifact(t, defaults, "search-index.json")
 	artifact(t, defaults, "feed.xml")
-	if strings.Contains(one, `class="lp-nav-link"`) {
-		t.Error("an empty canonical nav must stay empty")
+	// Automatic navigation (the default mode) lists the garden's root notes.
+	if !strings.Contains(one, `class="lp-nav-link"`) {
+		t.Error("automatic navigation should list root notes by default")
 	}
 
 	disabled := runJSON(t, `{
-	  "garden":{"slug":"g"},
-	  "config":{"graph":false,"search":false,"toc":false,"backlinks":false,"wikilinks":false,"rss":false},
-	  "pages":[
+	  "render":{"slug":"g"},
+	  "config":{"features":{"graph":false,"search":false,"toc":false,"backlinks":false,"wikilinks":false,"rss":false}},
+	  "content":{"pages":[
 	    {"slug":"one","title":"One","markdown":"## Heading\n\n[[two]]"},
 	    {"slug":"two","title":"Two","markdown":"body"}
-	  ]
+	  ]}
 	}`)
 	combined := pageHTML(t, disabled, "one") + pageHTML(t, disabled, "two")
 	for _, absent := range []string{
@@ -368,23 +370,22 @@ func TestCanonicalConfigDefaultsAndFeatureDisables(t *testing.T) {
 	}
 }
 
-func TestCanonicalConfigRejectsInvalidCLIValues(t *testing.T) {
+func TestConfigRejectsInvalidValues(t *testing.T) {
 	_, err := Run([]byte(`{
-	  "garden":{"slug":"g"},
+	  "render":{"slug":"g"},
 	  "config":{"theme":{"accent":"red"}},
-	  "pages":[]
+	  "content":{"pages":[]}
 	}`))
 	if err == nil || !strings.Contains(err.Error(), "accent color") {
-		t.Fatalf("expected canonical config validation error, got %v", err)
+		t.Fatalf("expected config validation error, got %v", err)
 	}
 }
 
 func TestIndexSortOrder(t *testing.T) {
-	const pagesJSON = `[
+	const pageItems = `
 	  {"slug": "b-old", "title": "Zebra", "growth": "evergreen", "markdown": "x", "createdAt": "2026-01-01T00:00:00Z"},
 	  {"slug": "a-new", "title": "Apple", "growth": "seedling", "markdown": "x", "createdAt": "2026-03-01T00:00:00Z"},
-	  {"slug": "c-mid", "title": "Mango", "growth": "budding", "markdown": "x", "createdAt": "2026-02-01T00:00:00Z"}
-	]`
+	  {"slug": "c-mid", "title": "Mango", "growth": "budding", "markdown": "x", "createdAt": "2026-02-01T00:00:00Z"}`
 
 	tests := []struct {
 		sort string
@@ -399,7 +400,13 @@ func TestIndexSortOrder(t *testing.T) {
 	linkRegex := regexp.MustCompile(`class="lp-index-link" href="([^"]+)"`)
 	for _, tt := range tests {
 		t.Run("sort="+tt.sort, func(t *testing.T) {
-			out := runJSON(t, `{"garden": {"slug": "g", "sort": "`+tt.sort+`"}, "pages": `+pagesJSON+`}`)
+			// The garden home defaults to date order. A non-date home ordering
+			// is expressed by a root index page carrying the sort key.
+			pages := "[" + pageItems + "]"
+			if tt.sort != "" && tt.sort != "date" {
+				pages = `[{"slug":"","markdown":"","isIndex":true,"sort":"` + tt.sort + `"},` + pageItems + `]`
+			}
+			out := runJSON(t, `{"render": {"slug": "g"}, "content": {"pages": `+pages+`}}`)
 			var got []string
 			for _, m := range linkRegex.FindAllStringSubmatch(out.Index, -1) {
 				got = append(got, m[1])
@@ -444,18 +451,18 @@ func TestInvalidInput(t *testing.T) {
 		name  string
 		input string
 	}{
-		{"malformed JSON", `{"garden": {`},
-		{"missing garden slug", `{"garden": {}, "pages": []}`},
-		{"missing page slug", `{"garden": {"slug": "g"}, "pages": [{"title": "T", "markdown": "x"}]}`},
-		{"duplicate page slugs", `{"garden": {"slug": "g"}, "pages": [{"slug": "a", "markdown": "x"}, {"slug": "a", "markdown": "y"}]}`},
-		{"bad createdAt", `{"garden": {"slug": "g"}, "pages": [{"slug": "a", "markdown": "x", "createdAt": "yesterday"}]}`},
-		{"bad sort", `{"garden": {"slug": "g", "sort": "popularity"}, "pages": []}`},
-		{"bad accent", `{"garden": {"slug": "g", "theme": {"accent": "red;}</style>"}}, "pages": []}`},
-		{"bad font", `{"garden": {"slug": "g", "theme": {"fontBody": "Inter\"><script>"}}, "pages": []}`},
-		{"bad baseUrl", `{"garden": {"slug": "g", "baseUrl": "g/shivam"}, "pages": []}`},
-		{"attribution without name", `{"garden": {"slug": "g", "footerAttribution": {"url": "https://leafyard.in"}}, "pages": []}`},
-		{"unsafe attribution URL", `{"garden": {"slug": "g", "footerAttribution": {"name": "Leafyard", "url": "javascript:alert(1)"}}, "pages": []}`},
-		{"unsafe slug", `{"garden": {"slug": "g"}, "pages": [{"slug": "a\"b", "markdown": "x"}]}`},
+		{"malformed JSON", `{"config": {`},
+		{"missing page slug", `{"render": {"slug": "g"}, "content": {"pages": [{"title": "T", "markdown": "x"}]}}`},
+		{"duplicate page slugs", `{"render": {"slug": "g"}, "content": {"pages": [{"slug": "a", "markdown": "x"}, {"slug": "a", "markdown": "y"}]}}`},
+		{"bad createdAt", `{"render": {"slug": "g"}, "content": {"pages": [{"slug": "a", "markdown": "x", "createdAt": "yesterday"}]}}`},
+		{"bad page sort", `{"render": {"slug": "g"}, "content": {"pages": [{"slug": "a", "markdown": "x", "sort": "popularity"}]}}`},
+		{"bad accent", `{"render": {"slug": "g"}, "config": {"theme": {"accent": "red;}</style>"}}, "content": {"pages": []}}`},
+		{"bad font", `{"render": {"slug": "g"}, "config": {"theme": {"fontBody": "Inter\"><script>"}}, "content": {"pages": []}}`},
+		{"unsupported contractVersion", `{"contractVersion": 3, "render": {"slug": "g"}, "content": {"pages": []}}`},
+		{"dot-segment slug", `{"render": {"slug": "g"}, "content": {"pages": [{"slug": "essays/../secret", "markdown": "x"}]}}`},
+		{"attribution without name", `{"render": {"slug": "g", "footerAttribution": {"url": "https://leafyard.in"}}, "content": {"pages": []}}`},
+		{"unsafe attribution URL", `{"render": {"slug": "g", "footerAttribution": {"name": "Leafyard", "url": "javascript:alert(1)"}}, "content": {"pages": []}}`},
+		{"unsafe slug", `{"render": {"slug": "g"}, "content": {"pages": [{"slug": "a\"b", "markdown": "x"}]}}`},
 	}
 
 	for _, tt := range tests {
@@ -473,11 +480,11 @@ func TestInvalidInput(t *testing.T) {
 }
 
 func TestOptionalFieldsDefaulted(t *testing.T) {
-	out := runJSON(t, `{"garden": {"slug": "shivam"}, "pages": [{"slug": "my-note", "markdown": "hi"}]}`)
+	out := runJSON(t, `{"render": {"slug": "shivam"}, "content": {"pages": [{"slug": "my-note", "markdown": "hi"}]}}`)
 
-	// Garden title defaults to slug.
-	if !strings.Contains(out.Index, "<title>shivam | shivam</title>") {
-		t.Error("index title should default to garden slug")
+	// Absent config renders the default site (title "My Garden").
+	if !strings.Contains(out.Index, "<title>My Garden | My Garden</title>") {
+		t.Error("index title should use the default site title")
 	}
 	if !strings.Contains(out.Index, `href="https://leafpress.in"`) {
 		t.Error("renderer output should retain the default Leafpress attribution")
@@ -492,7 +499,7 @@ func TestOptionalFieldsDefaulted(t *testing.T) {
 	}
 	// No base path: root-relative asset link.
 	if !strings.Contains(html, `href="/style.css"`) {
-		t.Error("page should link /style.css when baseUrl is empty")
+		t.Error("page should link /style.css when baseURL is empty")
 	}
 	if out.Warnings == nil {
 		t.Error("warnings should be an empty slice, not nil")
@@ -580,7 +587,7 @@ func TestXSSBodyAndMetadataEscaped(t *testing.T) {
 			if tt.name == "script tag in garden title" {
 				gardenTitle = `<script>alert(2)</script>`
 			}
-			input := `{"garden": {"slug": "g", "title": ` + jsonString(gardenTitle) + `}, "pages": [` + tt.page + `]}`
+			input := `{"render": {"slug": "g"}, "config": {"site": {"title": ` + jsonString(gardenTitle) + `}}, "content": {"pages": [` + tt.page + `]}}`
 			out := runJSON(t, input)
 			html := pageHTML(t, out, tt.slug)
 
@@ -601,18 +608,20 @@ func TestXSSBodyAndMetadataEscaped(t *testing.T) {
 	}
 }
 
-func TestLegacyGardenIdentityAndAttributionEscaped(t *testing.T) {
+func TestSiteIdentityAndAttributionEscaped(t *testing.T) {
 	out := runJSON(t, `{
-	  "garden": {
+	  "render": {
 	    "slug": "g",
-	    "description": "say \"><script>alert(1)</script> & leave",
-	    "author": "<img src=x onerror=alert(2)>",
 	    "footerAttribution": {
 	      "name": "<script>alert(3)</script>",
 	      "url": "https://example.com/?one=1&two=2"
 	    }
 	  },
-	  "pages": [{"slug": "p", "title": "P", "markdown": "body"}]
+	  "config": {"site": {
+	    "description": "say \"><script>alert(1)</script> & leave",
+	    "author": "<img src=x onerror=alert(2)>"
+	  }},
+	  "content": {"pages": [{"slug": "p", "title": "P", "markdown": "body"}]}
 	}`)
 
 	for _, document := range []string{out.Index, pageHTML(t, out, "p")} {
@@ -653,11 +662,11 @@ func TestXSSTitleNotUnescapedAnywhere(t *testing.T) {
 	// The hostile title flows into <title>, <h1>, og:/twitter: meta, the
 	// index listing, and backlink text — none may carry it unescaped.
 	out := runJSON(t, `{
-	  "garden": {"slug": "g"},
-	  "pages": [
+	  "render": {"slug": "g"},
+	  "content": {"pages": [
 	    {"slug": "evil", "title": "<script>alert(1)</script>", "markdown": "links to [[safe]]"},
 	    {"slug": "safe", "title": "Safe", "markdown": "plain"}
-	  ]
+	  ]}
 	}`)
 
 	for _, doc := range []string{pageHTML(t, out, "evil"), pageHTML(t, out, "safe"), out.Index} {
@@ -681,7 +690,7 @@ func TestInvalidTagsRejected(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			input := `{"garden": {"slug": "g"}, "pages": [{"slug": "p", "markdown": "x", "tags": ["` + tt.tag + `"]}]}`
+			input := `{"render": {"slug": "g"}, "content": {"pages": [{"slug": "p", "markdown": "x", "tags": ["` + tt.tag + `"]}]}}`
 			_, err := Run([]byte(input))
 			if err == nil {
 				t.Fatalf("tag %q should be rejected", tt.tag)
@@ -696,11 +705,12 @@ func TestInvalidTagsRejected(t *testing.T) {
 
 func TestTagPagesGenerated(t *testing.T) {
 	out := runJSON(t, `{
-	  "garden": {"slug": "g", "baseUrl": "/g/shivam"},
-	  "pages": [
+	  "render": {"slug": "g"},
+	  "config": {"site": {"baseURL": "https://example.com/g/shivam"}},
+	  "content": {"pages": [
 	    {"slug": "a", "title": "A", "markdown": "x", "tags": ["Systems", "go-lang"], "createdAt": "2026-01-02T00:00:00Z"},
 	    {"slug": "b", "title": "B", "markdown": "y", "tags": ["systems"], "createdAt": "2026-01-01T00:00:00Z"}
-	  ]
+	  ]}
 	}`)
 
 	// Index links every tag (lowercased, sorted) with the base path.
@@ -746,7 +756,7 @@ func TestTagPagesGenerated(t *testing.T) {
 }
 
 func TestNoTagsEmptyTagsOutput(t *testing.T) {
-	out := runJSON(t, `{"garden": {"slug": "g"}, "pages": [{"slug": "p", "markdown": "x"}]}`)
+	out := runJSON(t, `{"render": {"slug": "g"}, "content": {"pages": [{"slug": "p", "markdown": "x"}]}}`)
 
 	if out.Tags.Index != "" {
 		t.Error("tags index should be empty when no page has tags")
@@ -776,11 +786,12 @@ func TestDeterministicOutputWithHostileContent(t *testing.T) {
 	// Exercises the escape pipeline (random trusted-chunk nonces) plus tag
 	// pages: double-run must still be byte-identical.
 	input := `{
-	  "garden": {"slug": "g", "title": "T"},
-	  "pages": [
+	  "render": {"slug": "g"},
+	  "config": {"site": {"title": "T"}},
+	  "content": {"pages": [
 	    {"slug": "a", "title": "<script>x</script>", "markdown": "> [!note] Hi\n> body <script>alert(1)</script>\n\nlink [[b]] and ![[demo.mp4]]", "tags": ["one", "two"]},
 	    {"slug": "b", "title": "B", "markdown": "<div class=\"x\">\nraw\n</div>", "tags": ["one"]}
-	  ]
+	  ]}
 	}`
 	out1, err := Run([]byte(input))
 	if err != nil {
@@ -805,15 +816,16 @@ func TestDeterministicOutputWithHostileContent(t *testing.T) {
 // slugs are hyphenated (beta-note). Titles register as resolver aliases.
 func TestWikilinkResolvesByPageTitle(t *testing.T) {
 	out := runJSON(t, `{
-  "garden": {"slug": "shivam", "baseUrl": "/g/shivam"},
-  "pages": [
+  "render": {"slug": "shivam"},
+  "config": {"site": {"baseURL": "https://example.com/g/shivam"}},
+  "content": {"pages": [
     {
       "slug": "alpha-note",
       "title": "Alpha Note",
       "markdown": "See [[Beta Note]] and [[beta   NOTE|the beta one]] and [[Gamma Note]]."
     },
     {"slug": "beta-note", "title": "Beta Note", "markdown": "Beta content."}
-  ]
+  ]}
 }`)
 
 	alpha := pageHTML(t, out, "alpha-note")
@@ -841,14 +853,15 @@ func TestWikilinkResolvesByPageTitle(t *testing.T) {
 // ---- Sections (folder-path slugs, index pages, auto-indexes) ----
 
 const sectionedGarden = `{
-  "garden": {"slug": "shivam", "title": "Shivam's Garden", "baseUrl": "/g/shivam"},
-  "pages": [
+  "render": {"slug": "shivam"},
+  "config": {"site": {"title": "Shivam's Garden", "baseURL": "https://example.com/g/shivam"}},
+  "content": {"pages": [
     {"slug": "hello", "title": "Hello", "markdown": "Root note.", "createdAt": "2026-01-01T00:00:00Z"},
     {"slug": "essays/first", "title": "First Essay", "markdown": "One.", "createdAt": "2026-02-01T00:00:00Z"},
     {"slug": "essays/second", "title": "Second Essay", "markdown": "Two.", "createdAt": "2026-03-01T00:00:00Z"},
     {"slug": "essays", "title": "Essays", "markdown": "Long-form writing.", "isIndex": true},
     {"slug": "recipes/dal", "title": "Dal", "markdown": "Cook it.", "createdAt": "2026-04-01T00:00:00Z"}
-  ]
+  ]}
 }`
 
 func TestSectionHomeRendersIntroAndChildren(t *testing.T) {
@@ -912,17 +925,14 @@ func TestNavigationContainsRootNotesAndSectionsOnly(t *testing.T) {
 
 func TestHostedTagsNavigationIsOptInAndRequiresTags(t *testing.T) {
 	input := &Input{
-		Garden: Garden{
-			Slug:          "garden",
-			Title:         "Garden",
-			ShowTagsInNav: true,
-		},
-		Pages: []InputPage{{
+		Render: RenderOpts{Slug: "garden"},
+		Config: json.RawMessage(`{"site":{"title":"Garden"},"navigation":{"includeTags":true}}`),
+		Content: Content{Pages: []InputPage{{
 			Slug:     "tagged",
 			Title:    "Tagged",
 			Markdown: "Body",
 			Tags:     []string{"ideas"},
-		}},
+		}}},
 	}
 
 	out, err := Render(input)
@@ -934,7 +944,7 @@ func TestHostedTagsNavigationIsOptInAndRequiresTags(t *testing.T) {
 		t.Error("enabled tags navigation should link the generated tags index")
 	}
 
-	input.Garden.ShowTagsInNav = false
+	input.Config = json.RawMessage(`{"site":{"title":"Garden"},"navigation":{"includeTags":false}}`)
 	out, err = Render(input)
 	if err != nil {
 		t.Fatal(err)
@@ -943,8 +953,8 @@ func TestHostedTagsNavigationIsOptInAndRequiresTags(t *testing.T) {
 		t.Error("tags navigation should be opt-in")
 	}
 
-	input.Garden.ShowTagsInNav = true
-	input.Pages[0].Tags = nil
+	input.Config = json.RawMessage(`{"site":{"title":"Garden"},"navigation":{"includeTags":true}}`)
+	input.Content.Pages[0].Tags = nil
 	out, err = Render(input)
 	if err != nil {
 		t.Fatal(err)
@@ -958,8 +968,9 @@ func TestPageFrontmatterConfigMatchesNativeRendering(t *testing.T) {
 	showTOC := false
 	readingTime := 7
 	out, err := Render(&Input{
-		Garden: Garden{Slug: "g", Title: "Garden"},
-		Pages: []InputPage{{
+		Render: RenderOpts{Slug: "g"},
+		Config: json.RawMessage(`{"site":{"title":"Garden"}}`),
+		Content: Content{Pages: []InputPage{{
 			Slug:        "configured",
 			Title:       "Configured",
 			Markdown:    "## Hidden heading\n\nBody.",
@@ -968,7 +979,7 @@ func TestPageFrontmatterConfigMatchesNativeRendering(t *testing.T) {
 			TOC:         &showTOC,
 			Image:       "/images/card.png",
 			ReadingTime: &readingTime,
-		}},
+		}}},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -992,8 +1003,8 @@ func TestPageFrontmatterConfigMatchesNativeRendering(t *testing.T) {
 func TestPageReadingTimeRejectsNonPositiveOverride(t *testing.T) {
 	zero := 0
 	_, err := Render(&Input{
-		Garden: Garden{Slug: "g"},
-		Pages:  []InputPage{{Slug: "bad", ReadingTime: &zero}},
+		Render:  RenderOpts{Slug: "g"},
+		Content: Content{Pages: []InputPage{{Slug: "bad", ReadingTime: &zero}}},
 	})
 	if err == nil || !strings.Contains(err.Error(), "readingTime") {
 		t.Fatalf("expected readingTime validation error, got %v", err)
@@ -1002,12 +1013,13 @@ func TestPageReadingTimeRejectsNonPositiveOverride(t *testing.T) {
 
 func TestRootIndexReplacesGardenHome(t *testing.T) {
 	out := runJSON(t, `{
-	  "garden": {"slug": "g", "title": "My Garden"},
-	  "pages": [
+	  "render": {"slug": "g"},
+	  "config": {"site": {"title": "My Garden"}},
+	  "content": {"pages": [
 	    {"slug": "", "title": "", "markdown": "Welcome to my garden.", "isIndex": true},
 	    {"slug": "note", "title": "Note", "markdown": "n."},
 	    {"slug": "essays/one", "title": "One", "markdown": "o."}
-	  ]
+	  ]}
 	}`)
 
 	if !strings.Contains(out.Index, "Welcome to my garden.") {
@@ -1055,14 +1067,14 @@ func TestSyntheticHomeListsSectionsInsteadOfNestedPages(t *testing.T) {
 
 func TestSectionSortAndShowList(t *testing.T) {
 	out := runJSON(t, `{
-	  "garden": {"slug": "g"},
-	  "pages": [
+	  "render": {"slug": "g"},
+	  "content": {"pages": [
 	    {"slug": "s/b", "title": "Banana", "markdown": "x", "createdAt": "2026-03-01T00:00:00Z"},
 	    {"slug": "s/a", "title": "Apple", "markdown": "x", "createdAt": "2026-01-01T00:00:00Z"},
 	    {"slug": "s", "title": "S", "markdown": "intro", "isIndex": true, "sort": "title"},
 	    {"slug": "hidden/x", "title": "X", "markdown": "x"},
 	    {"slug": "hidden", "title": "Hidden", "markdown": "no list here", "isIndex": true, "showList": false}
-	  ]
+	  ]}
 	}`)
 
 	s := pageHTML(t, out, "s")
@@ -1080,11 +1092,12 @@ func TestSectionSortAndShowList(t *testing.T) {
 
 func TestWikilinkResolvesToNestedSlug(t *testing.T) {
 	out := runJSON(t, `{
-	  "garden": {"slug": "g", "baseUrl": "/g/me"},
-	  "pages": [
+	  "render": {"slug": "g"},
+	  "config": {"site": {"baseURL": "https://example.com/g/me"}},
+	  "content": {"pages": [
 	    {"slug": "essays/deep-note", "title": "Deep Note", "markdown": "x"},
 	    {"slug": "top", "title": "Top", "markdown": "See [[Deep Note]]."}
-	  ]
+	  ]}
 	}`)
 
 	top := pageHTML(t, out, "top")
@@ -1098,9 +1111,9 @@ func TestSectionInputValidation(t *testing.T) {
 		name  string
 		input string
 	}{
-		{"empty slug without isIndex", `{"garden": {"slug": "g"}, "pages": [{"slug": "", "markdown": "x"}]}`},
-		{"duplicate root index", `{"garden": {"slug": "g"}, "pages": [{"slug": "", "markdown": "x", "isIndex": true}, {"slug": "/", "markdown": "y", "isIndex": true}]}`},
-		{"bad section sort", `{"garden": {"slug": "g"}, "pages": [{"slug": "s", "markdown": "x", "isIndex": true, "sort": "random"}]}`},
+		{"empty slug without isIndex", `{"render": {"slug": "g"}, "content": {"pages": [{"slug": "", "markdown": "x"}]}}`},
+		{"duplicate root index", `{"render": {"slug": "g"}, "content": {"pages": [{"slug": "", "markdown": "x", "isIndex": true}, {"slug": "/", "markdown": "y", "isIndex": true}]}}`},
+		{"bad section sort", `{"render": {"slug": "g"}, "content": {"pages": [{"slug": "s", "markdown": "x", "isIndex": true, "sort": "random"}]}}`},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1118,11 +1131,11 @@ func TestSectionInputValidation(t *testing.T) {
 
 func TestUntitledIndexPageTitledFromSlug(t *testing.T) {
 	out := runJSON(t, `{
-	  "garden": {"slug": "g"},
-	  "pages": [
+	  "render": {"slug": "g"},
+	  "content": {"pages": [
 	    {"slug": "long-form-essays/one", "title": "One", "markdown": "x"},
 	    {"slug": "long-form-essays", "title": "", "markdown": "intro", "isIndex": true}
-	  ]
+	  ]}
 	}`)
 
 	home := pageHTML(t, out, "long-form-essays")
@@ -1133,8 +1146,8 @@ func TestUntitledIndexPageTitledFromSlug(t *testing.T) {
 
 func TestAutoSectionTitleReadsHyphensAsSpaces(t *testing.T) {
 	out := runJSON(t, `{
-	  "garden": {"slug": "g"},
-	  "pages": [{"slug": "field-notes/one", "title": "One", "markdown": "x"}]
+	  "render": {"slug": "g"},
+	  "content": {"pages": [{"slug": "field-notes/one", "title": "One", "markdown": "x"}]}
 	}`)
 	if len(out.Sections) != 1 || !strings.Contains(out.Sections[0].HTML, "Field Notes") {
 		t.Errorf("auto section should be titled 'Field Notes', got: %v", out.Sections)
@@ -1170,8 +1183,9 @@ func TestSelfHostedFontsInStylesheet(t *testing.T) {
 
 func TestUnbundledFontWarnsAndFallsBackLocally(t *testing.T) {
 	out := runJSON(t, `{
-	  "garden": {"slug": "g", "theme": {"fontBody": "Lobster"}},
-	  "pages": [{"slug": "note", "title": "Note", "markdown": "hi"}]
+	  "render": {"slug": "g"},
+	  "config": {"theme": {"fontBody": "Lobster"}},
+	  "content": {"pages": [{"slug": "note", "title": "Note", "markdown": "hi"}]}
 	}`)
 	html := pageHTML(t, out, "note")
 
@@ -1197,8 +1211,9 @@ func TestUnbundledFontWarnsAndFallsBackLocally(t *testing.T) {
 
 func TestRemoteFontsIsDeprecatedOptIn(t *testing.T) {
 	out := runJSON(t, `{
-	  "garden": {"slug": "g", "theme": {"fontBody": "Lobster", "remoteFonts": true}},
-	  "pages": [{"slug": "note", "title": "Note", "markdown": "hi"}]
+	  "render": {"slug": "g"},
+	  "config": {"theme": {"fontBody": "Lobster", "remoteFonts": true}},
+	  "content": {"pages": [{"slug": "note", "title": "Note", "markdown": "hi"}]}
 	}`)
 	html := pageHTML(t, out, "note")
 
@@ -1217,15 +1232,15 @@ func TestRemoteFontsIsDeprecatedOptIn(t *testing.T) {
 
 func TestCustomLocalFontsRenderPortableCSS(t *testing.T) {
 	out := runJSON(t, `{
-	  "garden": {"slug": "g", "baseUrl": "/g/x"},
+	  "render": {"slug": "g"},
 	  "config": {
-	    "title": "G",
+	    "site": {"title": "G"},
 	    "theme": {
 	      "fontBody": "My Serif",
 	      "fonts": [{"family": "My Serif", "file": "static/fonts/my.woff2", "weight": "400 700"}]
 	    }
 	  },
-	  "pages": [{"slug": "note", "title": "Note", "markdown": "hi"}]
+	  "content": {"pages": [{"slug": "note", "title": "Note", "markdown": "hi"}]}
 	}`)
 	// Font CSS lives in the shared stylesheet with stylesheet-relative
 	// URLs: url("static/...") resolves against {basePath}/style.css, so no
@@ -1244,9 +1259,9 @@ func TestCustomLocalFontsRenderPortableCSS(t *testing.T) {
 
 func TestInvalidCustomFontConfigRejected(t *testing.T) {
 	_, err := Run([]byte(`{
-	  "garden": {"slug": "g"},
+	  "render": {"slug": "g"},
 	  "config": {"theme": {"fonts": [{"family": "X", "file": "static/fonts/../../etc/passwd"}]}},
-	  "pages": []
+	  "content": {"pages": []}
 	}`))
 	var inputErr *InputError
 	if err == nil || !errors.As(err, &inputErr) {
@@ -1292,8 +1307,9 @@ func TestAssetManifestAlwaysEmitted(t *testing.T) {
 
 func TestManifestSkipsFontsOfUnbundledFamilies(t *testing.T) {
 	out := runJSON(t, `{
-	  "garden": {"slug": "g", "theme": {"fontHeading": "Lobster", "fontBody": "Lobster", "fontMono": "Fira Code"}},
-	  "pages": [{"slug": "note", "title": "Note", "markdown": "hi"}]
+	  "render": {"slug": "g"},
+	  "config": {"theme": {"fontHeading": "Lobster", "fontBody": "Lobster", "fontMono": "Fira Code"}},
+	  "content": {"pages": [{"slug": "note", "title": "Note", "markdown": "hi"}]}
 	}`)
 	for _, a := range out.AssetManifest {
 		if strings.HasPrefix(a.LogicalPath, assets.BuiltinPrefix+"fonts/") {
@@ -1311,10 +1327,11 @@ func TestMermaidSelfHostedInManifestAndHTML(t *testing.T) {
 	// Go raw-string literals (which also use backticks).
 	const body = "```mermaid\ngraph TD\nA-->B\n```"
 	payload, err := json.Marshal(map[string]any{
-		"garden": map[string]any{"slug": "g", "baseUrl": "/g/g"},
-		"pages": []map[string]any{
+		"render": map[string]any{"slug": "g"},
+		"config": map[string]any{"site": map[string]any{"baseURL": "https://example.com/g/g"}},
+		"content": map[string]any{"pages": []map[string]any{
 			{"slug": "diag", "title": "Diag", "markdown": body},
-		},
+		}},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -1341,7 +1358,7 @@ func TestMermaidSelfHostedInManifestAndHTML(t *testing.T) {
 	}
 	// Script src is composed at runtime: LP_BASE_PATH + '/static/leafpress/mermaid/…'
 	if !strings.Contains(html, `var LP_BASE_PATH = '/g/g'`) {
-		t.Error("page must set LP_BASE_PATH from garden baseUrl")
+		t.Error("page must set LP_BASE_PATH from garden baseURL")
 	}
 	if !strings.Contains(html, `LP_BASE_PATH + '/static/leafpress/mermaid/mermaid.min.js'`) {
 		t.Error("page must load self-hosted mermaid via LP_BASE_PATH")
@@ -1353,9 +1370,9 @@ func TestMermaidSelfHostedInManifestAndHTML(t *testing.T) {
 
 func TestEmitAssetsProducesBase64Artifacts(t *testing.T) {
 	out := runJSON(t, `{
-	  "garden": {"slug": "g"},
-	  "emitAssets": true,
-	  "pages": [{"slug": "note", "title": "Note", "markdown": "hi"}]
+	  "render": {"slug": "g"},
+	  "options": {"emitAssets": true},
+	  "content": {"pages": [{"slug": "note", "title": "Note", "markdown": "hi"}]}
 	}`)
 
 	assetArtifacts := map[string]OutputArtifact{}
@@ -1402,20 +1419,22 @@ func TestCallerAssetsMergeOverrideAndWarnings(t *testing.T) {
 	fontHash := assets.Sum([]byte("custom font bytes"))
 	faviconHash := assets.Sum([]byte("user favicon bytes"))
 	out := runJSON(t, `{
-	  "garden": {"slug": "g"},
+	  "render": {"slug": "g"},
 	  "config": {
-	    "title": "G",
+	    "site": {"title": "G"},
 	    "theme": {
 	      "fontBody": "My Serif",
 	      "fonts": [{"family": "My Serif", "file": "static/fonts/my.woff2", "weight": "400 700"}]
 	    }
 	  },
-	  "assets": [
-	    {"logicalPath": "static/fonts/my.woff2", "contentType": "font/woff2", "sha256": "`+fontHash+`", "size": 17},
-	    {"logicalPath": "static/user-favicon.ico", "contentType": "image/x-icon", "sha256": "`+faviconHash+`", "size": 18, "outputPath": "favicon.ico"}
-	  ],
-	  "emitAssets": true,
-	  "pages": [{"slug": "note", "title": "Note", "markdown": "hi"}]
+	  "options": {"emitAssets": true},
+	  "content": {
+	    "assets": [
+	      {"logicalPath": "static/fonts/my.woff2", "contentType": "font/woff2", "sha256": "`+fontHash+`", "size": 17},
+	      {"logicalPath": "static/user-favicon.ico", "contentType": "image/x-icon", "sha256": "`+faviconHash+`", "size": 18, "outputPath": "favicon.ico"}
+	    ],
+	    "pages": [{"slug": "note", "title": "Note", "markdown": "hi"}]
+	  }
 	}`)
 
 	if err := out.AssetManifest.Validate(); err != nil {
@@ -1464,12 +1483,12 @@ func TestCallerAssetsMergeOverrideAndWarnings(t *testing.T) {
 
 func TestUndeclaredCustomFontWarns(t *testing.T) {
 	out := runJSON(t, `{
-	  "garden": {"slug": "g"},
+	  "render": {"slug": "g"},
 	  "config": {
-	    "title": "G",
+	    "site": {"title": "G"},
 	    "theme": {"fonts": [{"family": "My Serif", "file": "static/fonts/my.woff2"}]}
 	  },
-	  "pages": [{"slug": "note", "title": "Note", "markdown": "hi"}]
+	  "content": {"pages": [{"slug": "note", "title": "Note", "markdown": "hi"}]}
 	}`)
 	found := false
 	for _, w := range out.Warnings {
@@ -1500,9 +1519,8 @@ func TestCallerAssetsRejectedWhenInvalid(t *testing.T) {
 	}
 	for name, entry := range cases {
 		_, err := Run([]byte(`{
-		  "garden": {"slug": "g"},
-		  "assets": [` + entry + `],
-		  "pages": []
+		  "render": {"slug": "g"},
+		  "content": {"assets": [` + entry + `], "pages": []}
 		}`))
 		var inputErr *InputError
 		if err == nil || !errors.As(err, &inputErr) {
@@ -1513,11 +1531,11 @@ func TestCallerAssetsRejectedWhenInvalid(t *testing.T) {
 
 func TestWikilinkResolvesRawTitleWithEntities(t *testing.T) {
 	out := runJSON(t, `{
-	  "garden": {"slug": "g"},
-	  "pages": [
+	  "render": {"slug": "g"},
+	  "content": {"pages": [
 	    {"slug": "target", "title": "Foo & Bar", "markdown": "content"},
 	    {"slug": "source", "title": "Source", "markdown": "See [[Foo & Bar]]."}
-	  ]
+	  ]}
 	}`)
 	html := pageHTML(t, out, "source")
 	if !strings.Contains(html, `href="/target/"`) {
@@ -1527,9 +1545,9 @@ func TestWikilinkResolvesRawTitleWithEntities(t *testing.T) {
 
 func TestInvalidThemeFontFailsViaSharedValidation(t *testing.T) {
 	_, err := Run([]byte(`{
-	  "garden": {"slug": "g"},
+	  "render": {"slug": "g"},
 	  "config": {"theme": {"fontBody": "Evil\"; @import url(x); \""}},
-	  "pages": []
+	  "content": {"pages": []}
 	}`))
 	var inputErr *InputError
 	if err == nil || !errors.As(err, &inputErr) {

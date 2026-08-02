@@ -18,26 +18,68 @@ type Background struct {
 	Dark  string
 }
 
-// Config represents the leafpress.json configuration
+// Config is the leafpress.json configuration and the renderer's shared config
+// object. It is one schema with one set of defaults: the CLI reads it from
+// disk, and the renderer receives it on the wire (see
+// docs/05_RENDERER_CONTRACT.md). Every field is optional and has a default, so
+// an empty object renders the default site.
 type Config struct {
-	Title       string       `json:"title"`
-	Description string       `json:"description"` // Site-wide meta description
-	Author      string       `json:"author"`
-	BaseURL     string       `json:"baseURL"`
-	Image       string       `json:"image"` // Default OG image path (e.g., "/og-image.png")
-	OutputDir   string       `json:"outputDir"`
-	Port        int          `json:"port"`
-	Nav         []NavItem    `json:"nav"`
-	Theme       Theme        `json:"theme"`
-	Graph       bool         `json:"graph"`
-	Search      bool         `json:"search"`
-	TOC         bool         `json:"toc"`
-	Backlinks   bool         `json:"backlinks"`
-	Wikilinks   bool         `json:"wikilinks"`
-	RSS         bool         `json:"rss"`
-	Ignore      []string     `json:"ignore"`
-	HeadExtra   string       `json:"headExtra"` // Custom HTML to inject in <head>
-	Deploy      DeployConfig `json:"deploy"`    // Deployment configuration
+	ContractVersion int          `json:"contractVersion"`
+	Site            Site         `json:"site"`
+	Theme           Theme        `json:"theme"`
+	Features        Features     `json:"features"`
+	Navigation      Navigation   `json:"navigation"`
+	Build           Build        `json:"build"`
+	Deploy          DeployConfig `json:"deploy"`
+}
+
+// ContractVersionLatest is the current configuration schema version.
+const ContractVersionLatest = 2
+
+// Site holds identity and SEO metadata. BaseURL is the canonical absolute URL;
+// the internal base path used for links is derived from its path component.
+type Site struct {
+	Title       string `json:"title"`
+	Description string `json:"description"` // Site-wide meta description
+	Author      string `json:"author"`
+	BaseURL     string `json:"baseURL"`
+	Image       string `json:"image"`     // Default OG image path (e.g., "/og-image.png")
+	HeadExtra   string `json:"headExtra"` // Custom HTML to inject in <head>
+}
+
+// Features groups the reader-feature toggles. All default to true in both the
+// CLI and the renderer, so introducing a config never flips a feature relative
+// to omitting it.
+type Features struct {
+	Graph     bool `json:"graph"`
+	Search    bool `json:"search"`
+	TOC       bool `json:"toc"`
+	Backlinks bool `json:"backlinks"`
+	Wikilinks bool `json:"wikilinks"`
+	RSS       bool `json:"rss"`
+}
+
+// Navigation configures the site nav bar. Mode is chosen explicitly and
+// defaults to "automatic"; the presence of any other field never changes the
+// mode.
+type Navigation struct {
+	Mode        string    `json:"mode"`        // "automatic" | "explicit"
+	IncludeTags bool      `json:"includeTags"` // automatic mode: append a Tags item
+	Items       []NavItem `json:"items"`       // explicit mode: verbatim nav
+}
+
+// Navigation modes.
+const (
+	NavAutomatic = "automatic"
+	NavExplicit  = "explicit"
+)
+
+// Build holds operational settings. The CLI honors them; the renderer accepts
+// and validates them for shape parity but performs no I/O.
+type Build struct {
+	OutputDir string   `json:"outputDir"`
+	Port      int      `json:"port"`
+	Ignore    []string `json:"ignore"`
 }
 
 // DeployConfig holds deployment settings
@@ -276,14 +318,14 @@ func validateFontFace(f FontFace) error {
 	return nil
 }
 
-// Default returns a Config with default values
+// Default returns a Config with default values. Defaults are identical for the
+// CLI and the renderer so an empty config renders the same site either way.
 func Default() *Config {
 	return &Config{
-		Title:     "My Garden",
-		BaseURL:   "",
-		OutputDir: "_site",
-		Port:      3000,
-		Nav:       []NavItem{},
+		ContractVersion: ContractVersionLatest,
+		Site: Site{
+			Title: "My Garden",
+		},
 		Theme: Theme{
 			FontHeading:    "Crimson Pro",
 			FontBody:       "Inter",
@@ -292,12 +334,22 @@ func Default() *Config {
 			NavStyle:       "base",
 			NavActiveStyle: "base",
 		},
-		Graph:     true,
-		Search:    true,
-		TOC:       true,
-		Backlinks: true,
-		Wikilinks: true,
-		RSS:       true,
+		Features: Features{
+			Graph:     true,
+			Search:    true,
+			TOC:       true,
+			Backlinks: true,
+			Wikilinks: true,
+			RSS:       true,
+		},
+		Navigation: Navigation{
+			Mode:  NavAutomatic,
+			Items: []NavItem{},
+		},
+		Build: Build{
+			OutputDir: "_site",
+			Port:      3000,
+		},
 	}
 }
 
@@ -324,12 +376,15 @@ func Parse(data []byte) (*Config, error) {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	// Apply defaults for missing values
-	if cfg.OutputDir == "" {
-		cfg.OutputDir = "_site"
+	// Apply defaults for missing values. Starting from Default() and
+	// unmarshaling over it means omitted booleans (features) keep their
+	// defaults; these backfills restore defaults for fields explicitly set
+	// to their zero value.
+	if cfg.Build.OutputDir == "" {
+		cfg.Build.OutputDir = "_site"
 	}
-	if cfg.Port == 0 {
-		cfg.Port = 3000
+	if cfg.Build.Port == 0 {
+		cfg.Build.Port = 3000
 	}
 	if cfg.Theme.FontHeading == "" {
 		cfg.Theme.FontHeading = "Crimson Pro"
@@ -348,6 +403,9 @@ func Parse(data []byte) (*Config, error) {
 	}
 	if cfg.Theme.NavActiveStyle == "" {
 		cfg.Theme.NavActiveStyle = "base"
+	}
+	if cfg.Navigation.Mode == "" {
+		cfg.Navigation.Mode = NavAutomatic
 	}
 
 	// Validate configuration
@@ -374,13 +432,18 @@ func Write(path string, cfg *Config) error {
 
 // Validate checks if the configuration values are valid
 func (c *Config) Validate() error {
+	// Validate contract version (0 means unset → latest).
+	if c.ContractVersion != 0 && c.ContractVersion != ContractVersionLatest {
+		return fmt.Errorf("unsupported contractVersion %d (this build supports %d)", c.ContractVersion, ContractVersionLatest)
+	}
+
 	// Validate port range
-	if c.Port < 1 || c.Port > 65535 {
-		return fmt.Errorf("port must be between 1 and 65535, got %d", c.Port)
+	if c.Build.Port < 1 || c.Build.Port > 65535 {
+		return fmt.Errorf("port must be between 1 and 65535, got %d", c.Build.Port)
 	}
 
 	// Validate output directory is not a dangerous path
-	absPath, err := filepath.Abs(c.OutputDir)
+	absPath, err := filepath.Abs(c.Build.OutputDir)
 	if err != nil {
 		return fmt.Errorf("invalid output directory path: %w", err)
 	}
@@ -446,16 +509,23 @@ func (c *Config) Validate() error {
 		}
 	}
 
+	// Validate navigation mode.
+	switch c.Navigation.Mode {
+	case NavAutomatic, NavExplicit:
+	default:
+		return fmt.Errorf("navigation.mode must be %q or %q, got %q", NavAutomatic, NavExplicit, c.Navigation.Mode)
+	}
+
 	// Validate nav paths are well-formed
-	for i, nav := range c.Nav {
+	for i, nav := range c.Navigation.Items {
 		if nav.Label == "" {
-			return fmt.Errorf("nav item %d has empty label", i)
+			return fmt.Errorf("navigation item %d has empty label", i)
 		}
 		if nav.Path == "" {
-			return fmt.Errorf("nav item %d (%s) has empty path", i, nav.Label)
+			return fmt.Errorf("navigation item %d (%s) has empty path", i, nav.Label)
 		}
 		if !strings.HasPrefix(nav.Path, "/") {
-			return fmt.Errorf("nav path must start with /, got %s for %s", nav.Path, nav.Label)
+			return fmt.Errorf("navigation path must start with /, got %s for %s", nav.Path, nav.Label)
 		}
 	}
 

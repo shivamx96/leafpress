@@ -1,25 +1,36 @@
 {
-  "author": "Shivam Shekhar",
-  "baseURL": "https://leafpress.in",
-  "description": "A fast, opinionated static site generator for digital gardens",
-  "graph": false,
-  "nav": [
-    {
-      "label": "Guide",
-      "path": "/guide/"
-    },
-    {
-      "label": "Features",
-      "path": "/features/"
-    },
-    {
-      "label": "Changelog",
-      "path": "/changelog/"
-    }
-  ],
-  "outputDir": "_site",
-  "port": 3000,
-  "search": true,
+  "site": {
+    "title": "leafpress",
+    "description": "A fast, opinionated static site generator for digital gardens",
+    "author": "Shivam Shekhar",
+    "baseURL": "https://leafpress.in"
+  },
+  "features": {
+    "graph": false,
+    "search": true,
+    "toc": true
+  },
+  "navigation": {
+    "mode": "explicit",
+    "items": [
+      {
+        "label": "Guide",
+        "path": "/guide/"
+      },
+      {
+        "label": "Features",
+        "path": "/features/"
+      },
+      {
+        "label": "Changelog",
+        "path": "/changelog/"
+      }
+    ]
+  },
+  "build": {
+    "outputDir": "_site",
+    "port": 3000
+  },
   "theme": {
     "accent": "#16a34a",
     "background": {
@@ -32,7 +43,5 @@
     "remoteFonts": true,
     "navActiveStyle": "base",
     "navStyle": "base"
-  },
-  "title": "leafpress",
-  "toc": true
+  }
 }

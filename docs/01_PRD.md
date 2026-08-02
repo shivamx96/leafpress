@@ -84,19 +84,23 @@ These are hardcoded. Any markdown outside these paths is content.
 
 ```json
 {
-  "title": "My Garden",
-  "baseURL": "https://example.com",
-  "outputDir": "_site",
-  "port": 3000,
-  "nav": [
-    { "label": "Now", "path": "/now" },
-    { "label": "Projects", "path": "/projects" }
-  ],
+  "site": {
+    "title": "My Garden",
+    "baseURL": "https://example.com"
+  },
+  "navigation": {
+    "mode": "explicit",
+    "items": [
+      { "label": "Now", "path": "/now" },
+      { "label": "Projects", "path": "/projects" }
+    ]
+  },
   "theme": {
-    "font": "Inter",
+    "fontBody": "Inter",
     "accent": "#4a9eff"
   },
-  "graph": false
+  "features": { "graph": false },
+  "build": { "outputDir": "_site", "port": 3000 }
 }
 ```
 
@@ -373,16 +377,17 @@ _site/
 
 ```json
 {
-  "title": "My Garden",
-  "baseURL": "",
-  "outputDir": "_site",
-  "port": 3000,
-  "nav": [],
+  "site": {
+    "title": "My Garden",
+    "baseURL": ""
+  },
+  "navigation": { "mode": "automatic" },
   "theme": {
-    "font": "Inter",
+    "fontBody": "Inter",
     "accent": "#4a9eff"
   },
-  "graph": false
+  "features": { "graph": false },
+  "build": { "outputDir": "_site", "port": 3000 }
 }
 ```
 

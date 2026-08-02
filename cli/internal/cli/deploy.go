@@ -160,7 +160,7 @@ func runDeploy(providerFlag string, skipBuild, reconfigure, dryRun bool) error {
 	}
 
 	// Check build directory exists
-	buildDir := cfg.OutputDir
+	buildDir := cfg.Build.OutputDir
 	if buildDir == "" {
 		buildDir = "_site"
 	}
@@ -201,7 +201,7 @@ func runDeploy(providerFlag string, skipBuild, reconfigure, dryRun bool) error {
 			fmt.Printf("  Warning: couldn't load deployment manifest: %v\n", err)
 		} else {
 			// Collect current source files to store in manifest
-			sourceFiles, err := CollectSourceFilesWithHashes(cfg.OutputDir, cfg.Ignore)
+			sourceFiles, err := CollectSourceFilesWithHashes(cfg.Build.OutputDir, cfg.Build.Ignore)
 			if err != nil {
 				fmt.Printf("  Warning: couldn't collect source files for manifest: %v\n", err)
 				sourceFiles = make(map[string]string) // Use empty map if collection fails

@@ -58,7 +58,7 @@ func New(cfg *config.Config, opts Options) *Builder {
 		cfg:       cfg,
 		opts:      opts,
 		rootDir:   cwd,
-		outputDir: filepath.Join(cwd, cfg.OutputDir),
+		outputDir: filepath.Join(cwd, cfg.Build.OutputDir),
 	}
 }
 
@@ -127,7 +127,7 @@ func (b *Builder) Build() (*Stats, error) {
 
 	// Scan content
 	t0 = time.Now()
-	scanner := content.NewScanner(b.rootDir, b.cfg.Ignore)
+	scanner := content.NewScanner(b.rootDir, b.cfg.Build.Ignore)
 	pages, err := scanner.Scan()
 	if err != nil {
 		return nil, fmt.Errorf("failed to scan content: %w", err)
@@ -150,17 +150,17 @@ func (b *Builder) Build() (*Stats, error) {
 
 	// Build backlinks (if enabled)
 	t0 = time.Now()
-	if b.cfg.Backlinks {
+	if b.cfg.Features.Backlinks {
 		content.BuildBacklinks(pages, b.linkResolver)
 	}
 	b.logTiming("backlinks", time.Since(t0))
 
 	// Extract basePath early for use in rendering
-	basePath := extractBasePath(b.cfg.BaseURL)
+	basePath := extractBasePath(b.cfg.Site.BaseURL)
 
 	// Render markdown to HTML
 	t0 = time.Now()
-	warnings := content.RenderPages(pages, b.cfg.Wikilinks, b.linkResolver, basePath)
+	warnings := content.RenderPages(pages, b.cfg.Features.Wikilinks, b.linkResolver, basePath)
 	b.logTiming("markdown", time.Since(t0))
 	stats.WarningCount += len(warnings)
 
@@ -170,21 +170,22 @@ func (b *Builder) Build() (*Stats, error) {
 		}
 	}
 
-	// Generate site data
+	// Generate site data. Navigation is resolved by the shared builder so the
+	// CLI and renderer produce identical nav from identical config.
 	siteData := templates.SiteData{
-		Title:       b.cfg.Title,
-		Description: b.cfg.Description,
-		Author:      b.cfg.Author,
-		Nav:         b.cfg.Nav,
+		Title:       b.cfg.Site.Title,
+		Description: b.cfg.Site.Description,
+		Author:      b.cfg.Site.Author,
+		Nav:         sitegen.BuildNavigation(pages, b.cfg.Navigation),
 		Theme:       b.cfg.Theme,
-		BaseURL:     b.cfg.BaseURL,
+		BaseURL:     b.cfg.Site.BaseURL,
 		BasePath:    basePath,
-		Image:       b.cfg.Image,
-		TOC:         b.cfg.TOC,
-		Graph:       b.cfg.Graph,
-		Search:      b.cfg.Search,
-		RSS:         b.cfg.RSS,
-		HeadExtra:   b.cfg.HeadExtra,
+		Image:       b.cfg.Site.Image,
+		TOC:         b.cfg.Features.TOC,
+		Graph:       b.cfg.Features.Graph,
+		Search:      b.cfg.Features.Search,
+		RSS:         b.cfg.Features.RSS,
+		HeadExtra:   b.cfg.Site.HeadExtra,
 	}
 
 	// Cache state for incremental builds
@@ -292,7 +293,7 @@ func (b *Builder) Build() (*Stats, error) {
 	// graph.json is optional; search-index.json is always emitted so link
 	// previews work when the search UI is disabled (cfg.Search only gates UI).
 	t0 = time.Now()
-	if err := b.generateJSONFiles(pages, b.cfg.Graph, true); err != nil {
+	if err := b.generateJSONFiles(pages, b.cfg.Features.Graph, true); err != nil {
 		return nil, fmt.Errorf("failed to generate JSON files: %w", err)
 	}
 	b.logTiming("json", time.Since(t0))
@@ -304,10 +305,12 @@ func (b *Builder) Build() (*Stats, error) {
 	}
 	b.logTiming("robots.txt", time.Since(t0))
 
-	// Generate sitemap.xml
+	// Generate sitemap.xml (requires an absolute origin).
 	t0 = time.Now()
-	if err := b.generateSitemap(pages); err != nil {
-		return nil, fmt.Errorf("failed to generate sitemap.xml: %w", err)
+	if sitegen.HasOrigin(b.cfg.Site.BaseURL) {
+		if err := b.generateSitemap(pages); err != nil {
+			return nil, fmt.Errorf("failed to generate sitemap.xml: %w", err)
+		}
 	}
 	b.logTiming("sitemap", time.Since(t0))
 
@@ -318,9 +321,9 @@ func (b *Builder) Build() (*Stats, error) {
 	}
 	b.logTiming("404", time.Since(t0))
 
-	// Generate RSS feed
+	// Generate RSS feed (requires an absolute origin for item links).
 	t0 = time.Now()
-	if b.cfg.RSS {
+	if b.cfg.Features.RSS && sitegen.HasOrigin(b.cfg.Site.BaseURL) {
 		if err := b.generateRSS(pages, siteData); err != nil {
 			return nil, fmt.Errorf("failed to generate RSS feed: %w", err)
 		}
@@ -374,7 +377,7 @@ func (b *Builder) RebuildIncremental(changedPath string, changeType ChangeType) 
 			return nil, fmt.Errorf("failed to reload config: %w", err)
 		}
 		b.cfg = newCfg
-		b.outputDir = filepath.Join(b.rootDir, b.cfg.OutputDir)
+		b.outputDir = filepath.Join(b.rootDir, b.cfg.Build.OutputDir)
 
 		// Regenerate templates
 		newTemplates, err := templates.New()
@@ -432,7 +435,7 @@ func (b *Builder) rebuildMarkdownFile(relPath string, changeType ChangeType) (*I
 
 	// Check if file is in an ignored folder
 	topLevel := strings.Split(relPath, string(filepath.Separator))[0]
-	for _, ignored := range b.cfg.Ignore {
+	for _, ignored := range b.cfg.Build.Ignore {
 		if topLevel == ignored {
 			return stats, nil // File is in ignored folder, skip
 		}
@@ -528,7 +531,7 @@ func (b *Builder) rebuildMarkdownFile(relPath string, changeType ChangeType) (*I
 
 	// Rebuild backlinks with updated page set and fresh resolver
 	t0 = time.Now()
-	if b.cfg.Backlinks {
+	if b.cfg.Features.Backlinks {
 		content.BuildBacklinks(b.pages, b.linkResolver)
 	}
 	b.logTiming("backlinks", time.Since(t0))
@@ -553,7 +556,7 @@ func (b *Builder) rebuildMarkdownFile(relPath string, changeType ChangeType) (*I
 			}
 		}
 	}
-	content.RenderPages(pagesToRender, b.cfg.Wikilinks, b.linkResolver, b.siteData.BasePath)
+	content.RenderPages(pagesToRender, b.cfg.Features.Wikilinks, b.linkResolver, b.siteData.BasePath)
 	b.logTiming("markdown", time.Since(t0))
 
 	// Render the affected pages
@@ -603,7 +606,7 @@ func (b *Builder) rebuildMarkdownFile(relPath string, changeType ChangeType) (*I
 
 	// Regenerate JSON files (search-index always; graph when enabled)
 	t0 = time.Now()
-	if err := b.generateJSONFiles(b.pages, b.cfg.Graph, true); err != nil {
+	if err := b.generateJSONFiles(b.pages, b.cfg.Features.Graph, true); err != nil {
 		return nil, err
 	}
 	b.logTiming("json", time.Since(t0))
@@ -647,12 +650,12 @@ func (b *Builder) handleDeletedFile(relPath string) (*IncrementalStats, error) {
 
 	// Update resolver and rebuild backlinks
 	b.linkResolver = content.NewLinkResolver(b.pages)
-	if b.cfg.Backlinks {
+	if b.cfg.Features.Backlinks {
 		content.BuildBacklinks(b.pages, b.linkResolver)
 	}
 
 	// Re-render affected pages
-	content.RenderPages(pagesToRebuild, b.cfg.Wikilinks, b.linkResolver, b.siteData.BasePath)
+	content.RenderPages(pagesToRebuild, b.cfg.Features.Wikilinks, b.linkResolver, b.siteData.BasePath)
 	for _, page := range pagesToRebuild {
 		if page.IsIndex {
 			if err := b.renderSectionIndex(page, b.pages, b.siteData); err != nil {
@@ -687,7 +690,7 @@ func (b *Builder) handleDeletedFile(relPath string) (*IncrementalStats, error) {
 	}
 
 	// Regenerate JSON files (search-index always; graph when enabled)
-	if err := b.generateJSONFiles(b.pages, b.cfg.Graph, true); err != nil {
+	if err := b.generateJSONFiles(b.pages, b.cfg.Features.Graph, true); err != nil {
 		return nil, err
 	}
 
@@ -1186,13 +1189,13 @@ func (b *Builder) generateCSS() error {
 // generateRobotsTxt writes the robots.txt file
 func (b *Builder) generateRobotsTxt() error {
 	outPath := filepath.Join(b.outputDir, "robots.txt")
-	return os.WriteFile(outPath, []byte(sitegen.Robots(b.cfg.BaseURL)), 0644)
+	return os.WriteFile(outPath, []byte(sitegen.Robots(b.cfg.Site.BaseURL)), 0644)
 }
 
 // generateSitemap writes the sitemap.xml file
 func (b *Builder) generateSitemap(pages []*content.Page) error {
 	outPath := filepath.Join(b.outputDir, "sitemap.xml")
-	return os.WriteFile(outPath, []byte(sitegen.Sitemap(pages, b.cfg.BaseURL)), 0644)
+	return os.WriteFile(outPath, []byte(sitegen.Sitemap(pages, b.cfg.Site.BaseURL)), 0644)
 }
 
 // generate404 writes the 404.html file
@@ -1208,7 +1211,7 @@ func (b *Builder) generate404(siteData templates.SiteData) error {
 // generateRSS writes the feed.xml file
 func (b *Builder) generateRSS(pages []*content.Page, siteData templates.SiteData) error {
 	outPath := filepath.Join(b.outputDir, "feed.xml")
-	return os.WriteFile(outPath, []byte(sitegen.RSS(pages, siteData, b.cfg.BaseURL, time.Time{})), 0644)
+	return os.WriteFile(outPath, []byte(sitegen.RSS(pages, siteData, b.cfg.Site.BaseURL, time.Time{})), 0644)
 }
 
 // generateJSONFiles creates graph.json and/or search-index.json in a single pass.

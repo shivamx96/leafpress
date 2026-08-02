@@ -51,15 +51,15 @@ func New(cfg *config.Config, builder *build.Builder, opts Options) *Server {
 // Start starts the development server
 func (s *Server) Start() error {
 	// Find available port
-	port := s.cfg.Port
+	port := s.cfg.Build.Port
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
 		// Try to find another port
 		for i := 1; i <= 10; i++ {
-			port = s.cfg.Port + i
+			port = s.cfg.Build.Port + i
 			listener, err = net.Listen("tcp", fmt.Sprintf(":%d", port))
 			if err == nil {
-				fmt.Printf("Port %d in use, using %d instead\n", s.cfg.Port, port)
+				fmt.Printf("Port %d in use, using %d instead\n", s.cfg.Build.Port, port)
 				break
 			}
 		}
@@ -91,7 +91,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/_lr", s.handleWebSocket)
 
 	// Serve static files with live reload injection
-	outputDir := filepath.Join(cwd, s.cfg.OutputDir)
+	outputDir := filepath.Join(cwd, s.cfg.Build.OutputDir)
 	mux.HandleFunc("/", s.handleStatic(outputDir))
 
 	server := &http.Server{

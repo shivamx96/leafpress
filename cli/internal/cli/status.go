@@ -57,13 +57,13 @@ func runStatus() error {
 	}
 
 	// Get build directory (to exclude from source file tracking)
-	buildDir := cfg.OutputDir
+	buildDir := cfg.Build.OutputDir
 	if buildDir == "" {
 		buildDir = "_site"
 	}
 
 	// Collect current source files with hashes (respecting ignore patterns and excluding output dir)
-	currentFiles, err := CollectSourceFilesWithHashes(buildDir, cfg.Ignore)
+	currentFiles, err := CollectSourceFilesWithHashes(buildDir, cfg.Build.Ignore)
 	if err != nil {
 		return fmt.Errorf("failed to collect files: %w", err)
 	}
