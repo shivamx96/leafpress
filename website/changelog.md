@@ -11,6 +11,7 @@ toc: false
 - **Navigation is now explicit about how it's built.** `navigation.mode` is `"automatic"` (default — derives the nav from your top-level notes and sections; the home is reached via the site title and is no longer duplicated as a link) or `"explicit"` (`navigation.items`). Automatic navigation now works in the CLI too, not just hosted renders. Set `navigation.includeTags: true` to add a Tags item automatically.
 - **`baseURL` is a single, unambiguous canonical URL.** `sitemap.xml`, the RSS feed, and the `robots.txt` Sitemap line are generated only when `site.baseURL` is set; without it they're skipped with a warning instead of emitting invalid relative URLs.
 - **Renderer contract v2.** `leafpress-render` takes one versioned envelope — `config` (the shared leafpress.json object), `render` (host-only `slug` and `footerAttribution`), `content` (pages, styleCSS, assets), and `options` — replacing the previous `garden`/`config` dual mode. Slugs and output paths now reject `.`/`..` segments. See `docs/05_RENDERER_CONTRACT.md`.
+- Fixed wiki-links inside inline code leaking into processing on pages that use 4-backtick or nested code fences (e.g. docs that show code-fence examples); code protection now follows CommonMark fence rules.
 
 ## v1.0.0-beta.13
 *August 2, 2026*

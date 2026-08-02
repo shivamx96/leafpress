@@ -7,4 +7,4 @@ use (
 
 // Local-only module wiring. Unlike a replace in cli/go.mod, workspace
 // replacements are not part of the published module consumed by go install.
-replace github.com/shivamx96/leafpress/core v1.0.0-beta.12 => ./core
+replace github.com/shivamx96/leafpress/core v1.0.0-beta.14 => ./core
