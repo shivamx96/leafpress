@@ -264,6 +264,8 @@ func Render(in *Input) (*Output, error) {
 	}
 	if cfg.Features.Backlinks {
 		content.BuildBacklinks(pages, resolver)
+	} else {
+		content.PopulateOutLinks(pages)
 	}
 	renderer := content.NewRenderer(resolver, cfg.Features.Wikilinks, basePath)
 	renderer.SetPlainBrokenLinks(true)

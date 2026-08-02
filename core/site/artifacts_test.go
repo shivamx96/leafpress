@@ -77,6 +77,23 @@ func TestArtifactShapesAndOrdering(t *testing.T) {
 	}
 }
 
+func TestGraphDeduplicatesResolvedEdges(t *testing.T) {
+	pages := []*content.Page{
+		{Slug: "alpha", Title: "Alpha", OutLinks: []string{"beta", "Beta", "alpha"}},
+		{Slug: "beta", Title: "Beta"},
+	}
+	graph, _, err := GraphSearch(pages, content.NewLinkResolver(pages), "", true, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.Count(graph, `"source": "alpha"`); got != 1 {
+		t.Fatalf("alpha edge count = %d, want 1: %s", got, graph)
+	}
+	if strings.Contains(graph, `"target": "alpha"`) {
+		t.Fatalf("graph contains a self edge: %s", graph)
+	}
+}
+
 func TestXMLArtifactsEscapePageURLs(t *testing.T) {
 	pages := []*content.Page{{
 		Slug:        "r&d",

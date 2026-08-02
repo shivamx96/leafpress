@@ -152,6 +152,8 @@ func (b *Builder) Build() (*Stats, error) {
 	t0 = time.Now()
 	if b.cfg.Features.Backlinks {
 		content.BuildBacklinks(pages, b.linkResolver)
+	} else {
+		content.PopulateOutLinks(pages)
 	}
 	b.logTiming("backlinks", time.Since(t0))
 
@@ -533,6 +535,8 @@ func (b *Builder) rebuildMarkdownFile(relPath string, changeType ChangeType) (*I
 	t0 = time.Now()
 	if b.cfg.Features.Backlinks {
 		content.BuildBacklinks(b.pages, b.linkResolver)
+	} else {
+		content.PopulateOutLinks(b.pages)
 	}
 	b.logTiming("backlinks", time.Since(t0))
 
@@ -652,6 +656,8 @@ func (b *Builder) handleDeletedFile(relPath string) (*IncrementalStats, error) {
 	b.linkResolver = content.NewLinkResolver(b.pages)
 	if b.cfg.Features.Backlinks {
 		content.BuildBacklinks(b.pages, b.linkResolver)
+	} else {
+		content.PopulateOutLinks(b.pages)
 	}
 
 	// Re-render affected pages

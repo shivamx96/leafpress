@@ -137,6 +137,27 @@ func TestWikilinkCarriesBaseURL(t *testing.T) {
 	}
 }
 
+func TestGraphEdgesDoNotDependOnBacklinks(t *testing.T) {
+	out := runJSON(t, `{
+  "config": {"features": {"graph": true, "backlinks": false}},
+  "content": {"pages": [
+    {"slug": "alpha", "title": "Alpha", "markdown": "[[beta]] and [[Beta]]"},
+    {"slug": "beta", "title": "Beta", "markdown": "Body"}
+  ]}
+}`)
+
+	graph := artifact(t, out, "graph.json").Content
+	if got := strings.Count(graph, `"source": "alpha"`); got != 1 {
+		t.Fatalf("alpha edge count = %d, want 1: %s", got, graph)
+	}
+	if !strings.Contains(graph, `"target": "beta"`) {
+		t.Fatalf("graph is missing alpha -> beta: %s", graph)
+	}
+	if strings.Contains(pageHTML(t, out, "beta"), `class="lp-backlinks"`) {
+		t.Fatal("backlinks were rendered while the feature was disabled")
+	}
+}
+
 func TestBrokenWikilinkDegradesToPlainText(t *testing.T) {
 	out := runJSON(t, `{
 	  "render": {"slug": "g"},
