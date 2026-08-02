@@ -242,14 +242,12 @@ func saveDeployConfig(cfg *config.Config, deployConfig *deploy.ProviderConfig) e
 		"settings": deployConfig.Settings,
 	}
 
-	// Set baseURL for GitHub Pages if not already set
+	// Set baseURL for GitHub Pages if not already set. Under the v2 schema
+	// baseURL lives at site.baseURL; writing a top-level key would be silently
+	// ignored by the build (leaving subdirectory hosting with broken links).
 	if deployConfig.Provider == "github-pages" {
-		if currentBaseURL, _ := rawConfig["baseURL"].(string); currentBaseURL == "" {
-			baseURL := deploy.BuildGitHubPagesURL(deployConfig.Settings[deploy.SettingRepo])
-			if baseURL != "" {
-				rawConfig["baseURL"] = baseURL
-				fmt.Printf("  Setting baseURL to %s\n", baseURL)
-			}
+		if baseURL, set := applyGitHubPagesBaseURL(rawConfig, deployConfig.Settings[deploy.SettingRepo]); set {
+			fmt.Printf("  Setting baseURL to %s\n", baseURL)
 		}
 	}
 
@@ -260,4 +258,26 @@ func saveDeployConfig(cfg *config.Config, deployConfig *deploy.ProviderConfig) e
 	}
 
 	return os.WriteFile("leafpress.json", newData, 0644)
+}
+
+// applyGitHubPagesBaseURL sets site.baseURL in the raw config map (creating the
+// site section if needed) when it is not already set, deriving it from the
+// GitHub Pages repo. baseURL lives at site.baseURL under the v2 schema, so this
+// operates on the nested map rather than a top-level key. Returns the URL set
+// and whether a change was made.
+func applyGitHubPagesBaseURL(rawConfig map[string]interface{}, repo string) (string, bool) {
+	site, _ := rawConfig["site"].(map[string]interface{})
+	if current, _ := site["baseURL"].(string); current != "" {
+		return "", false
+	}
+	baseURL := deploy.BuildGitHubPagesURL(repo)
+	if baseURL == "" {
+		return "", false
+	}
+	if site == nil {
+		site = map[string]interface{}{}
+		rawConfig["site"] = site
+	}
+	site["baseURL"] = baseURL
+	return baseURL, true
 }
