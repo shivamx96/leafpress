@@ -590,6 +590,29 @@ func TestParityPageHTMLStructure(t *testing.T) {
 	}
 }
 
+func TestParityNavigationOutput(t *testing.T) {
+	siteDir := buildParityProject(t)
+	out := renderParityGarden(t)
+	cliPage, err := os.ReadFile(filepath.Join(siteDir, "note-a", "index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	renderedPage := pageBySlug(t, out, "note-a")
+	for _, marker := range []string{
+		`href="/garden/"`,
+		`class="lp-nav-link" href="/garden/essays/"`,
+		`>Home</a>`,
+		`>Essays</a>`,
+	} {
+		if !strings.Contains(string(cliPage), marker) {
+			t.Errorf("CLI navigation missing %q", marker)
+		}
+		if !strings.Contains(renderedPage, marker) {
+			t.Errorf("renderer navigation missing %q", marker)
+		}
+	}
+}
+
 // fontParityCase builds a minimal project + equivalent renderer input for a
 // given theme and returns the CLI page head, CLI stylesheet, renderer page
 // head, and renderer stylesheet.

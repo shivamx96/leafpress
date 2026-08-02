@@ -1,6 +1,14 @@
 package cli
 
-import "testing"
+import (
+	"encoding/json"
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/shivamx96/leafpress/cli/internal/deploy"
+	"github.com/shivamx96/leafpress/core/config"
+)
 
 func TestApplyGitHubPagesBaseURL(t *testing.T) {
 	t.Run("sets nested site.baseURL when absent", func(t *testing.T) {
@@ -43,4 +51,50 @@ func TestApplyGitHubPagesBaseURL(t *testing.T) {
 			t.Fatalf("got %q, want https://user.github.io", got)
 		}
 	})
+}
+
+func TestSaveDeployConfigRoundTrip(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	original := []byte(`{
+  "site": {"title": "Garden"},
+  "theme": {"accent": "#123456"}
+}`)
+	if err := os.WriteFile(filepath.Join(dir, "leafpress.json"), original, 0644); err != nil {
+		t.Fatal(err)
+	}
+	cfg := config.Default()
+	deployConfig := &deploy.ProviderConfig{
+		Provider: "github-pages",
+		Settings: map[string]string{
+			deploy.SettingRepo:   "example/garden",
+			deploy.SettingBranch: "gh-pages",
+		},
+	}
+	if err := saveDeployConfig(cfg, deployConfig); err != nil {
+		t.Fatal(err)
+	}
+
+	loaded, err := config.Load("leafpress.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if loaded.Site.Title != "Garden" || loaded.Site.BaseURL != "https://example.github.io/garden" {
+		t.Fatalf("site config = %+v", loaded.Site)
+	}
+	if loaded.Theme.Accent != "#123456" || loaded.Deploy.Provider != "github-pages" || loaded.Deploy.Settings[deploy.SettingBranch] != "gh-pages" {
+		t.Fatalf("round-tripped config = %+v", loaded)
+	}
+
+	var raw map[string]any
+	data, err := os.ReadFile("leafpress.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(data, &raw); err != nil {
+		t.Fatal(err)
+	}
+	if _, exists := raw["baseURL"]; exists {
+		t.Fatal("saveDeployConfig wrote obsolete top-level baseURL")
+	}
 }
