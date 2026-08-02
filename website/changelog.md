@@ -4,11 +4,20 @@ date: 2025-01-06
 toc: false
 ---
 
+## v1.0.0-beta.16
+*August 3, 2026*
+
+- **Hardened the multi-tenant renderer against stored XSS.** TOC headings are escaped, search results are built without unsafe `innerHTML`, theme backgrounds are validated end to end, renderer failures stay inside the escaping boundary, and sitemap/RSS URLs are XML-escaped.
+- **Secured `leafpress update`.** Release downloads are verified against `checksums.txt`, replacement uses a same-directory atomic rename, and accidental downgrades are rejected.
+- Fixed graph edges disappearing when backlinks were disabled, deduplicated repeated wikilinks, normalized case-variant tags, made RSS ordering deterministic, and made title/description truncation Unicode-safe.
+- Reworked incremental serving so rebuilds are serialized, bulk file changes are retained, new directories are watched, section listings refresh, removed static files disappear from `_site`, and authored section indexes are preserved.
+- Hardened deploy credentials and output: credential files use private permissions, GitHub commits supply an explicit CI identity, Netlify tokens are no longer echoed, and deploy status/change detection now has direct coverage.
+- Added integration coverage for the renderer bridge, scanner, navigation, server routing, deploy flows, and incremental parity; CI now enforces formatting, vet, coverage, and the full CLI suite with Go 1.25.5.
+- The default heading font is now self-hosted Bricolage Grotesque, and the built-in catalog now includes 17 curated proportional and monospace families with their OFL license texts.
+
 ## v1.0.0-beta.15
 *August 2, 2026*
 
-- The default heading font is now self-hosted Bricolage Grotesque, replacing Crimson Pro in the bundled font set.
-- The self-hosted font catalog now includes 17 curated proportional and monospace families, including Newsreader for editorial headings and long-form text. Builds and renderer manifests include only the selected families and their OFL license texts.
 - **Unknown or misplaced config fields are now rejected.** A `leafpress.json` typo (or a wrongly-nested key), and any unknown field in the renderer input, now fail with a clear error instead of being silently ignored — closing a gap where a v1-shaped payload rendered an empty site.
 - Fixed `leafpress deploy` writing `baseURL` at the top level for GitHub Pages; it now writes `site.baseURL`, so project-site (subdirectory) hosting gets the correct base path.
 - Documentation corrected for the v2 config schema: `leafpress init` takes no directory argument and scaffolds at the project root (there is no `content/` directory); sitemap.xml and RSS require `site.baseURL`; deploy and status guides updated.

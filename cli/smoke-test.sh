@@ -54,9 +54,9 @@ else
     echo -e "${GREEN}✓${NC} (no backlinks - expected)"
 fi
 
-# Test 5: Theme
-echo -n "Testing theme... "
-if grep -q 'linear-gradient' website/_site/index.html; then
+# Test 5: Default theme
+echo -n "Testing default theme... "
+if grep -q -- '--lp-accent: #50ac00;' website/_site/index.html; then
     echo -e "${GREEN}✓${NC}"
 else
     echo -e "${RED}✗${NC}"
