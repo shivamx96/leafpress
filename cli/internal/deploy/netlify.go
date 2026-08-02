@@ -14,6 +14,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"golang.org/x/term"
 )
 
 const (
@@ -75,14 +77,17 @@ func (n *NetlifyProvider) Authenticate(ctx context.Context) (*Credentials, error
 	fmt.Println()
 	fmt.Print("  Enter your Netlify Personal Access Token: ")
 
-	// Read token from stdin (will be hidden by terminal if called with getpass)
-	var token string
-	_, err := fmt.Scanln(&token)
+	stdinFD := int(os.Stdin.Fd())
+	if !term.IsTerminal(stdinFD) {
+		return nil, fmt.Errorf("cannot securely read a token from non-interactive input; set LEAFPRESS_NETLIFY_TOKEN instead")
+	}
+	tokenBytes, err := term.ReadPassword(stdinFD)
+	fmt.Println()
 	if err != nil {
-		return nil, fmt.Errorf("failed to read token: %w", err)
+		return nil, fmt.Errorf("failed to securely read token: %w", err)
 	}
 
-	token = strings.TrimSpace(token)
+	token := strings.TrimSpace(string(tokenBytes))
 	if token == "" {
 		return nil, fmt.Errorf("token cannot be empty")
 	}
