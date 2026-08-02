@@ -164,8 +164,13 @@ func RSS(pages []*content.Page, siteData templates.SiteData, baseURL string, now
 			feedPages = append(feedPages, page)
 		}
 	}
-	sort.Slice(feedPages, func(i, j int) bool {
-		return effectiveDate(feedPages[i]).After(effectiveDate(feedPages[j]))
+	sort.SliceStable(feedPages, func(i, j int) bool {
+		dateI := effectiveDate(feedPages[i])
+		dateJ := effectiveDate(feedPages[j])
+		if dateI.Equal(dateJ) {
+			return feedPages[i].Slug < feedPages[j].Slug
+		}
+		return dateI.After(dateJ)
 	})
 	if len(feedPages) > 20 {
 		feedPages = feedPages[:20]
@@ -214,8 +219,8 @@ func RSS(pages []*content.Page, siteData templates.SiteData, baseURL string, now
 			sb.WriteString(fmt.Sprintf("      <pubDate>%s</pubDate>\n", date.Format(time.RFC1123Z)))
 		}
 		description := page.PlainContent()
-		if len(description) > 300 {
-			description = description[:300] + "..."
+		if runes := []rune(description); len(runes) > 300 {
+			description = string(runes[:300]) + "..."
 		}
 		if description != "" {
 			sb.WriteString(fmt.Sprintf(

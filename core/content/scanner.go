@@ -6,6 +6,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"unicode"
 )
 
 // ReservedPaths contains paths that should be ignored during content scanning
@@ -208,7 +209,7 @@ func (s *Scanner) parsePage(absPath, relPath string, info os.FileInfo) (*Page, e
 		Date:                date,
 		Created:             created,
 		Modified:            modified,
-		Tags:                fm.Tags,
+		Tags:                NormalizeTags(fm.Tags),
 		Draft:               fm.Draft,
 		Growth:              fm.Growth,
 		TOC:                 fm.TOC,
@@ -290,8 +291,10 @@ func generateTitleFromSlug(slug string) string {
 	// Capitalize first letter of each word
 	words := strings.Fields(title)
 	for i, word := range words {
-		if len(word) > 0 {
-			words[i] = strings.ToUpper(string(word[0])) + word[1:]
+		runes := []rune(word)
+		if len(runes) > 0 {
+			runes[0] = unicode.ToUpper(runes[0])
+			words[i] = string(runes)
 		}
 	}
 
