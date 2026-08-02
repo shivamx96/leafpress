@@ -47,6 +47,7 @@ var builtinFontCatalog = []builtinFontFamily{
 	{Family: "Inter", Slug: "inter", WeightRange: "400 700", Italic: true},
 	{Family: "JetBrains Mono", Slug: "jetbrains-mono", WeightRange: "400 700", Italic: true},
 	{Family: "Lora", Slug: "lora", WeightRange: "400 700", Italic: true},
+	{Family: "Newsreader", Slug: "newsreader", WeightRange: "200 800", Italic: true},
 	{Family: "Source Code Pro", Slug: "source-code-pro", WeightRange: "200 900", Italic: true},
 	{Family: "Source Serif 4", Slug: "source-serif-4", WeightRange: "200 900", Italic: true},
 	{Family: "Space Grotesk", Slug: "space-grotesk", WeightRange: "300 700"},

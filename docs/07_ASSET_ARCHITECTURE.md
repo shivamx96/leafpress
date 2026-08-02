@@ -210,7 +210,7 @@ valid skip signal on its own.
 
 Font sources are a closed set; this is an explicit product decision:
 
-1. **Bundled built-in family** (the curated 16-family catalog, including the
+1. **Bundled built-in family** (the curated 17-family catalog, including the
    Bricolage Grotesque, Inter, and JetBrains Mono defaults, shipped in the
    registry as woff2): self-hosted via generated `@font-face` rules. The
    registry is the sole membership list; both interfaces must consult it,

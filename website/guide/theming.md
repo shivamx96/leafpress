@@ -22,14 +22,14 @@ Set options in `leafpress.json`:
 ## Fonts
 
 Leafpress sites are **self-hosted by default**: no request ever leaves your
-site for a font. The curated catalog contains 16 families and serves only the
+site for a font. The curated catalog contains 17 families and serves only the
 families selected by your theme as `@font-face` rules in the generated
 stylesheet:
 
 - Headings and display: **Bricolage Grotesque**, **Crimson Pro**,
-  **Fraunces**, **Geist**, **Space Grotesk**, **Lora**
+  **Fraunces**, **Geist**, **Space Grotesk**, **Lora**, **Newsreader**
 - Long-form text: **Inter**, **Atkinson Hyperlegible Next**,
-  **IBM Plex Sans**, **Geist**, **Lora**, **Source Serif 4**
+  **IBM Plex Sans**, **Geist**, **Lora**, **Source Serif 4**, **Newsreader**
 - Code: **JetBrains Mono**, **Geist Mono**, **IBM Plex Mono**,
   **Fira Code**, **Source Code Pro**, **Atkinson Hyperlegible Mono**
 

@@ -20,6 +20,8 @@ bundling and redistribution:
 - **JetBrains Mono** — Copyright 2020 The JetBrains Mono Project Authors
   (https://github.com/JetBrains/JetBrainsMono)
 - **Lora** — Copyright 2011 The Lora Project Authors
+- **Newsreader** — Copyright 2020 The Newsreader Project Authors
+  (http://github.com/productiontype/Newsreader)
 - **Source Code Pro / Source Serif 4** — Copyright Adobe / Google Inc.
 - **Space Grotesk** — Copyright 2020 The Space Grotesk Project Authors
 

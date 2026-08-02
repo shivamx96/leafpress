@@ -8,7 +8,7 @@ toc: false
 *August 2, 2026*
 
 - The default heading font is now self-hosted Bricolage Grotesque, replacing Crimson Pro in the bundled font set.
-- The self-hosted font catalog now includes 16 curated proportional and monospace families. Builds and renderer manifests include only the selected families and their OFL license texts.
+- The self-hosted font catalog now includes 17 curated proportional and monospace families, including Newsreader for editorial headings and long-form text. Builds and renderer manifests include only the selected families and their OFL license texts.
 - **Unknown or misplaced config fields are now rejected.** A `leafpress.json` typo (or a wrongly-nested key), and any unknown field in the renderer input, now fail with a clear error instead of being silently ignored — closing a gap where a v1-shaped payload rendered an empty site.
 - Fixed `leafpress deploy` writing `baseURL` at the top level for GitHub Pages; it now writes `site.baseURL`, so project-site (subdirectory) hosting gets the correct base path.
 - Documentation corrected for the v2 config schema: `leafpress init` takes no directory argument and scaffolds at the project root (there is no `content/` directory); sitemap.xml and RSS require `site.baseURL`; deploy and status guides updated.

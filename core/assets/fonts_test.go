@@ -21,6 +21,7 @@ func TestBuiltinFontFamilies(t *testing.T) {
 		"Inter",
 		"JetBrains Mono",
 		"Lora",
+		"Newsreader",
 		"Source Code Pro",
 		"Source Serif 4",
 		"Space Grotesk",
@@ -104,6 +105,22 @@ func TestBricolageGrotesqueFontFaceCSS(t *testing.T) {
 	}
 	if got := strings.Count(css, "@font-face"); got != 2 {
 		t.Errorf("Bricolage Grotesque faces = %d, want 2 latin subsets", got)
+	}
+}
+
+func TestNewsreaderFontFaceCSS(t *testing.T) {
+	css := FontFaceCSS("Newsreader")
+	if !strings.Contains(css, `font-family: "Newsreader"`) {
+		t.Error("missing Newsreader @font-face")
+	}
+	if !strings.Contains(css, "font-weight: 200 800") {
+		t.Error("missing Newsreader variable weight range")
+	}
+	if !strings.Contains(css, "font-style: italic") {
+		t.Error("missing Newsreader italic face")
+	}
+	if got := strings.Count(css, "@font-face"); got != 4 {
+		t.Errorf("Newsreader faces = %d, want 4 (2 styles x 2 latin subsets)", got)
 	}
 }
 
