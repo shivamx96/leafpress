@@ -1028,6 +1028,10 @@ test_case "Backlinks are deduplicated"
 TESTDIR=$(mktemp -d)
 cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
+# Explicit (empty) nav so automatic nav doesn't list page titles and skew the count.
+cat > leafpress.json << 'EOF'
+{ "navigation": { "mode": "explicit" } }
+EOF
 cat > page-a.md << 'EOF'
 ---
 title: Page A
@@ -1700,7 +1704,7 @@ cat > leafpress.json << 'EOF'
   }
 }
 EOF
-if "$LEAFPRESS" build 2>&1 | grep -iq "nav path must start with"; then
+if "$LEAFPRESS" build 2>&1 | grep -iq "navigation path must start with"; then
     pass
 else
     fail "Invalid nav path not rejected"
@@ -2316,6 +2320,9 @@ cat > leafpress.json << 'EOF'
   },
   "features": {
     "backlinks": true
+  },
+  "navigation": {
+    "mode": "explicit"
   }
 }
 EOF
@@ -3203,6 +3210,9 @@ test_case "sitemap.xml is generated"
 TESTDIR=$(mktemp -d)
 cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{ "site": { "baseURL": "https://example.com" } }
+EOF
 "$LEAFPRESS" build > /dev/null 2>&1
 if [ -f "_site/sitemap.xml" ] && grep -q '<urlset' _site/sitemap.xml && grep -q '<loc>' _site/sitemap.xml; then
     pass
@@ -3246,6 +3256,9 @@ date: 2025-06-15
 ---
 Content
 EOF
+cat > leafpress.json << 'EOF'
+{ "site": { "baseURL": "https://example.com" } }
+EOF
 "$LEAFPRESS" build > /dev/null 2>&1
 if grep -q '<lastmod>2025-06-15</lastmod>' _site/sitemap.xml; then
     pass
@@ -3288,6 +3301,9 @@ test_case "RSS feed.xml is generated"
 TESTDIR=$(mktemp -d)
 cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{ "site": { "baseURL": "https://example.com" } }
+EOF
 "$LEAFPRESS" build > /dev/null 2>&1
 if [ -f "_site/feed.xml" ] && grep -q '<rss version="2.0"' _site/feed.xml; then
     pass
@@ -3308,6 +3324,9 @@ title: Test Page
 date: 2025-06-15
 ---
 This is test content.
+EOF
+cat > leafpress.json << 'EOF'
+{ "site": { "baseURL": "https://example.com" } }
 EOF
 "$LEAFPRESS" build > /dev/null 2>&1
 if grep -q '<item>' _site/feed.xml && grep -q '<title>Test Page</title>' _site/feed.xml; then
