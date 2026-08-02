@@ -24,14 +24,18 @@ leafpress is a CLI-driven static site generator purpose-built for digital garden
 | `leafpress serve` | Starts dev server with live reload (default: `localhost:3000`) |
 | `leafpress build` | Generates static site into `_site/` |
 | `leafpress new <name>` | Creates a new page with frontmatter template |
+| `leafpress deploy` | Deploys to GitHub Pages, Netlify, or Vercel |
+| `leafpress status` | Shows changes since the last deployment |
+| `leafpress update` | Updates the CLI from the latest release |
+| `leafpress version` | Prints the installed version |
 
 ### Flags
 
 ```
---config, -c    Path to config file (default: ./leafpress.json)
---port, -p      Override serve port
---drafts, -d    Include draft pages in build/serve
---verbose, -v   Verbose logging
+--config, -c       Config file (global; default: ./leafpress.json)
+--verbose, -v      Verbose output (global)
+serve --port, -p   Override serve port
+build/serve -d     Include draft pages
 ```
 
 ---
@@ -56,10 +60,8 @@ my-garden/                      # User's garden root
 ├── notes/
 │   ├── go-learning.md
 │   └── systems-thinking.md
-├── _site/                      # Build output (gitignored)
-│   └── ...
-└── .leafpress/                 # Internal cache (gitignored)
-    └── cache.json
+└── _site/                      # Build output (gitignored)
+    └── ...
 ```
 
 ### Reserved Paths (Ignored During Content Scan)
@@ -69,7 +71,7 @@ leafpress.json
 style.css
 static/
 _site/
-.leafpress/
+.leafpress/         # Reserved internal namespace (not created by init)
 .git/
 .gitignore
 .obsidian/          # Common for Obsidian users migrating
@@ -97,9 +99,9 @@ These are hardcoded. Any markdown outside these paths is content.
   },
   "theme": {
     "fontBody": "Inter",
-    "accent": "#4a9eff"
+    "accent": "#50ac00"
   },
-  "features": { "graph": false },
+  "features": { "graph": true },
   "build": { "outputDir": "_site", "port": 3000 }
 }
 ```
@@ -282,7 +284,7 @@ Semantic HTML with `lp-` prefixed classes. User overrides via `style.css`.
 ```
 
 Renderer hosts may replace only the “Grown with” name and link through the
-structured `garden.footerAttribution` field. Raw footer HTML and scripts are
+structured `render.footerAttribution` field. Raw footer HTML and scripts are
 not accepted; CLI builds retain the Leafpress attribution.
 
 ---
@@ -295,7 +297,7 @@ not accepted; CLI builds retain the Leafpress attribution.
 :root {
   --lp-font: "Inter", system-ui, -apple-system, sans-serif;
   --lp-font-mono: "JetBrains Mono", "Fira Code", monospace;
-  --lp-accent: #4a9eff;
+  --lp-accent: #50ac00;
   --lp-bg: #ffffff;
   --lp-text: #1a1a1a;
   --lp-text-muted: #666666;
@@ -384,9 +386,16 @@ _site/
   "navigation": { "mode": "automatic" },
   "theme": {
     "fontBody": "Inter",
-    "accent": "#4a9eff"
+    "accent": "#50ac00"
   },
-  "features": { "graph": false },
+  "features": {
+    "graph": true,
+    "search": true,
+    "toc": true,
+    "backlinks": true,
+    "wikilinks": true,
+    "rss": true
+  },
   "build": { "outputDir": "_site", "port": 3000 }
 }
 ```
@@ -404,7 +413,6 @@ _site/
 
 ```
 _site/
-.leafpress/
 ```
 
 ---
@@ -444,23 +452,12 @@ func resolveWikiLink(link string, allPages []Page) (*Page, error) {
 }
 ```
 
-### Incremental Build Cache
+### Incremental Rebuild State
 
-`.leafpress/cache.json`:
-
-```json
-{
-  "version": 1,
-  "files": {
-    "projects/leafpress.md": {
-      "hash": "sha256:abc123...",
-      "lastBuild": "2025-01-15T10:30:00Z"
-    }
-  }
-}
-```
-
-Skip rebuild if content hash unchanged AND no inbound link changes.
+`leafpress serve` keeps parsed pages, section/tag indexes, and link resolution
+state in memory for the lifetime of the process. It does not create a
+`.leafpress/cache.json` file. File changes update the affected pages and shared
+artifacts; restarting `serve` performs a fresh scan.
 
 ### Live Reload
 
@@ -488,11 +485,7 @@ Server sends message on any `.md` or `style.css` change.
 
 ---
 
-## Future Considerations (Post v1)
+## Future Considerations
 
-- `leafpress publish` – Deploy to Netlify/Vercel/S3
-- RSS/Atom feed generation
-- Client-side search (lunr.js index generation)
-- Interactive graph visualization
 - Custom shortcodes/components
 - Multiple output formats (gemini, plain text)

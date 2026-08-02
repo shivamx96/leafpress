@@ -197,8 +197,9 @@ main() {
         echo "  Location: ${INSTALL_DIR}/${BINARY_NAME}"
         echo ""
         echo "Get started:"
-        echo "  ${BLUE}leafpress init my-garden${NC}"
+        echo "  ${BLUE}mkdir my-garden${NC}"
         echo "  ${BLUE}cd my-garden${NC}"
+        echo "  ${BLUE}leafpress init${NC}"
         echo "  ${BLUE}leafpress serve${NC}"
         echo ""
     else

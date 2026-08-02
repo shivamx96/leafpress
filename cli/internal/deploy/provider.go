@@ -36,10 +36,10 @@ type Provider interface {
 
 // Credentials holds authentication tokens for a provider
 type Credentials struct {
-	Provider    string    `toml:"provider"`
-	AccessToken string    `toml:"access_token"`
-	Username    string    `toml:"username,omitempty"`
-	ExpiresAt   time.Time `toml:"expires_at,omitempty"`
+	Provider    string    `json:"provider" toml:"provider"`
+	AccessToken string    `json:"accessToken" toml:"access_token"`
+	Username    string    `json:"username,omitempty" toml:"username,omitempty"`
+	ExpiresAt   time.Time `json:"expiresAt,omitempty" toml:"expires_at,omitempty"`
 }
 
 // ProviderConfig holds provider-specific deployment configuration

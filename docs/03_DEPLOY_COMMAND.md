@@ -1,277 +1,115 @@
-# Leafpress Deploy
+# Leafpress deploy command
 
-**Date:** January 2026
+`leafpress deploy` builds the current garden and publishes `_site/` to GitHub
+Pages, Netlify, or Vercel. First use runs an interactive configuration wizard;
+later deploys reuse the project configuration and credential store.
 
----
+## Commands and flags
 
-## Overview
-
-A single `leafpress deploy` command that enables one-command publishing to multiple hosting providers, with browser-based OAuth authentication for a frictionless setup experience.
-
----
-
-## Problem Statement
-
-Static site authors currently face a fragmented deployment experience: each hosting provider has its own CLI, authentication flow, and configuration. Non-technical users (especially Obsidian users wanting to publish digital gardens) find the terminal-to-dashboard context switching overwhelming.
-
----
-
-## Goals
-
-1. **Zero-config first deploy** - New users run `leafpress deploy` and get a live site in under 2 minutes
-2. **No CLI dependencies** - Authentication via browser OAuth, not `gh`/`netlify`/`vercel` CLIs
-3. **Provider flexibility** - Support 3 providers at launch; architecture supports adding more
-4. **Future-ready** - Clean abstraction layer for eventual Leafpress Cloud integration
-
----
-
-## User Experience
-
-### First-Time Deploy Flow
-
-```
-$ leafpress deploy
-
-No deploy configuration found. Let's set one up!
-
-? Select a deploy provider:
-  > GitHub Pages (free, works with any GitHub repo)
-    Netlify (free tier, deploy previews, easy custom domains)  
-    Vercel (free tier, fast edge network)
-
-? GitHub Pages selected. Let's authenticate.
-
-→ Opening browser to authorize Leafpress...
-  If browser doesn't open, visit: https://github.com/login/device
-  And enter code: ABCD-1234
-
-Waiting for authorization... ✓
-
-✓ Authenticated as shivam
-
-? Which repository?
-  > shivam/my-garden
-    shivam/notes
-    shivam/blog
-
-? Deploy branch: [gh-pages]
-
-✓ Configuration saved to leafpress.toml
-
-Building site...
-✓ Built 47 pages in 120ms
-
-Deploying to GitHub Pages...
-✓ Deployed! Live at https://shivam.github.io/my-garden
+```text
+leafpress deploy
+leafpress deploy --provider github-pages
+leafpress deploy --skip-build
+leafpress deploy --reconfigure
+leafpress deploy --dry-run
+leafpress status
 ```
 
-### Subsequent Deploys
+- `--provider` selects `github-pages`, `netlify`, or `vercel`.
+- `--skip-build` deploys the existing output directory.
+- `--reconfigure` reruns provider authentication and setup.
+- `--dry-run` builds and validates without publishing.
+- `status` compares current source hashes with the last deployment manifest.
 
-```
-$ leafpress deploy
+## Stored configuration
 
-Building site...
-✓ Built 47 pages in 118ms
+Provider selection and non-secret settings are part of `leafpress.json`:
 
-Deploying to GitHub Pages...
-✓ Deployed! Live at https://shivam.github.io/my-garden
-```
-
----
-
-## Supported Providers
-
-### Launch Providers
-
-| Provider | Auth Method | Free Tier | Best For |
-|----------|-------------|-----------|----------|
-| GitHub Pages | Device OAuth | Unlimited (public repos) | Developers already on GitHub |
-| Netlify | Device OAuth | 100GB bandwidth, 300 build min | Custom domains, deploy previews |
-| Vercel | Device OAuth | 100GB bandwidth | Speed-focused users |
-
-### Provider Selection Criteria
-
-- Established player with stable API
-- Generous free tier for hobbyist/personal sites
-- OAuth or device flow support (no manual token pasting)
-- Simple "upload a folder" deployment model
-
----
-
-## Technical Design
-
-### Configuration
-
-**Project config** (`leafpress.toml`):
-```toml
-[deploy]
-provider = "github-pages"
-repo = "shivam/my-garden"
-branch = "gh-pages"
-```
-
-**Credentials** (`~/.config/leafpress/credentials.toml`):
-```toml
-[github]
-access_token = "gho_xxxx"
-username = "shivam"
-
-[netlify]
-access_token = "xxxx"
-```
-
-Credentials are stored outside project directory to prevent accidental commits.
-
-### Authentication: OAuth Device Flow
-
-All providers use device flow where supported:
-
-```
-1. CLI requests device code from provider
-2. CLI displays URL + user code, opens browser
-3. User authorizes in browser
-4. CLI polls for access token
-5. Token stored in ~/.config/leafpress/credentials.toml
-```
-
-**Fallback:** If device flow unavailable (some Vercel configurations), prompt user to create token in dashboard and paste it.
-
-### Provider Interface
-
-```go
-type DeployProvider interface {
-    // Provider identity
-    Name() string
-    Description() string
-    
-    // Authentication
-    Authenticate(ctx context.Context) (*Credentials, error)
-    ValidateCredentials(creds *Credentials) error
-    
-    // Deployment
-    Deploy(ctx context.Context, buildDir string, opts DeployOpts) (*DeployResult, error)
-    
-    // Interactive setup
-    Configure(ctx context.Context, creds *Credentials) (*ProviderConfig, error)
-}
-
-type DeployResult struct {
-    URL        string
-    DeployID   string
-    DeployedAt time.Time
+```json
+{
+  "deploy": {
+    "provider": "github-pages",
+    "settings": {
+      "repo": "example/my-garden",
+      "branch": "gh-pages"
+    }
+  }
 }
 ```
 
-### CLI Flags
+Credentials are JSON outside the project directory. On macOS and Linux the
+default is `~/.config/leafpress/credentials.json`; on Windows it is under the
+user's roaming application-data directory. The file is written with owner-only
+permissions where the platform supports Unix modes.
 
-```
-leafpress deploy [flags]
-
-Flags:
-  --provider string      Deploy provider (github-pages|netlify|vercel)
-  --skip-build          Deploy existing build without rebuilding
-  --reconfigure         Re-run provider setup wizard
-  --dry-run             Build and validate without deploying
-```
-
-### CI/CD Support
-
-Detect non-interactive environments (`!isatty(stdout)`):
-- Require explicit `--provider` flag
-- Read tokens from environment variables: `LEAFPRESS_GITHUB_TOKEN`, `LEAFPRESS_NETLIFY_TOKEN`, etc.
-- Fail with clear error message if config missing
-
----
-
-## Edge Cases & Error Handling
-
-| Scenario | Handling |
-|----------|----------|
-| Browser doesn't open | Display manual URL prominently with copy-paste code |
-| OAuth timeout (5 min) | Cancel with message, suggest retry |
-| Token expired | Auto-detect on deploy failure, re-trigger auth flow |
-| Repo not found | List available repos, let user select |
-| Rate limited | Exponential backoff with user-friendly wait message |
-| Build fails | Stop before deploy, show build errors |
-| No git remote | Prompt for manual repo input |
-
----
-
-## Future: Obsidian Plugin
-
-Phase 2 will introduce an Obsidian plugin that wraps this functionality:
-
-- Plugin bundles platform-specific Leafpress binary (downloaded on first run)
-- Settings UI replaces interactive prompts
-- Command palette: "Leafpress: Publish" / "Leafpress: Preview"
-- OAuth opens in system browser, returns to Obsidian
-
-### Obsidian-Specific Considerations
-
-- Handle `[[wikilinks]]` → standard markdown links
-- Resolve Obsidian's flexible asset paths
-- Gracefully degrade callouts, Dataview blocks
-- Desktop-only (mobile Obsidian can't run binaries)
-
----
-
-## Future: Leafpress Cloud
-
-Phase 3 introduces Leafpress Cloud as a provider option:
-
-```
-? Select a deploy provider:
-    GitHub Pages
-    Netlify
-    Vercel
-  > Leafpress Cloud (one-click setup, custom domains included)
+```json
+{
+  "github-pages": {
+    "provider": "github-pages",
+    "accessToken": "...",
+    "username": "example"
+  }
+}
 ```
 
-**Value proposition over free providers:**
-- Single OAuth (no provider account needed)
-- Custom domains without DNS configuration complexity
-- Integrated analytics
-- Collaboration features (multiple editors)
+Automation can avoid the credential file by setting one of:
 
-**Pricing:** ~$5-10/month for hobbyist tier
+```text
+LEAFPRESS_GITHUB_TOKEN
+LEAFPRESS_NETLIFY_TOKEN
+LEAFPRESS_VERCEL_TOKEN
+```
 
----
+The environment variable takes precedence over stored credentials.
 
-## Success Metrics
+## Authentication
 
-| Metric | Target |
-|--------|--------|
-| Time to first deploy (new user) | < 2 minutes |
-| Deploy command success rate | > 95% |
-| Users completing OAuth flow | > 90% |
-| Repeat deploys (7-day retention) | > 60% |
+- GitHub Pages uses GitHub's OAuth device flow.
+- Vercel uses its device authorization flow.
+- Netlify requests a Personal Access Token with hidden terminal input. In a
+  non-interactive environment, use `LEAFPRESS_NETLIFY_TOKEN` instead.
 
----
+Tokens are sent only in provider authorization headers or Git's environment
+configuration; they are not embedded in remote URLs.
 
-## Open Questions
+## Provider behavior
 
-1. **Custom domains at launch?** Each provider handles this differently. Consider punting to Phase 2.
-2. **Deploy previews?** Netlify/Vercel support this. Expose via `leafpress deploy --preview`?
-3. **Monorepo support?** Auto-detect leafpress.toml location or require flag?
+### GitHub Pages
 
----
+The wizard selects a repository and deploy branch (default `gh-pages`). Each
+deployment clones or initializes that branch in a temporary directory, replaces
+its contents with the built site, adds `.nojekyll`, commits with a Leafpress
+deployment identity, and pushes over authenticated HTTPS.
 
-## Implementation Phases
+### Netlify
 
-**Phase 1 (MVP):**
-- GitHub Pages provider with device OAuth
-- Interactive setup wizard
-- Basic deploy command
+The wizard selects or creates a site. Deployment hashes files, asks Netlify
+which blobs are missing, uploads only required hashes, and finalizes the deploy.
 
-**Phase 2:**
-- Netlify + Vercel providers
-- `--reconfigure` and `--dry-run` flags
-- CI/CD environment detection
+### Vercel
 
-**Phase 3:**
-- Obsidian plugin (beta)
-- Token refresh handling
+The wizard selects or creates a project. Deployment uploads the build files and
+creates a production deployment using the configured project/team identifiers.
 
-**Phase 4:**
-- Leafpress Cloud provider
-- Obsidian plugin (stable)
+## Deployment state
+
+After a successful non-dry-run deployment, Leafpress writes
+`.leafpress-deploy-state.json` in the project root. It records the last deploy,
+up to ten history entries, deployed-file hashes, and source-file hashes. This is
+the data used by `leafpress status` to report added, modified, and deleted files.
+It does not contain provider credentials.
+
+## Failure behavior
+
+- A build error stops deployment before any provider mutation.
+- Missing or invalid credentials produce a reconfiguration instruction.
+- Provider and Git failures are returned without recording a successful deploy.
+- `Ctrl+C` cancels the active deployment context.
+- Manifest write failures are warnings after a provider deployment succeeds;
+  the published site remains live, but `status` may lack the latest state.
+
+## Implementation boundary
+
+Providers implement `internal/deploy.Provider`, which owns authentication,
+credential validation, configuration, and deployment. The CLI owns config
+loading, optional build execution, provider selection, and manifest recording.

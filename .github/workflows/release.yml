@@ -19,7 +19,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.25"
+          go-version: "1.25.5"
 
       # This repository contains two Go modules. Their scoped tags must point
       # at the same commit as the product release tag or `go install @latest`
@@ -71,7 +71,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.25"
+          go-version: "1.25.5"
 
       - name: Get version
         id: version
@@ -90,8 +90,8 @@ jobs:
           fi
           go build -ldflags="-s -w -X main.version=${{ steps.version.outputs.VERSION }}" -o $BINARY_NAME ./cmd/leafpress
 
-      # The render bridge ships as its own artifact: leafpad's server image
-      # downloads just this binary (pinned + checksum-verified), not the CLI.
+      # The render bridge ships as its own artifact so hosted integrations can
+      # download just this binary (pinned + checksum-verified), not the CLI.
       - name: Build render bridge
         env:
           GOOS: ${{ matrix.goos }}
@@ -135,8 +135,8 @@ jobs:
           path: artifacts
           merge-multiple: true
 
-      # One flat checksums file over every archive, so consumers (the leafpad
-      # Dockerfile in particular) can pin a version and verify the download.
+      # One flat checksums file over every archive so consumers can pin a
+      # version and verify the download.
       - name: Generate checksums
         run: |
           cd artifacts

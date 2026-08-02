@@ -11,8 +11,10 @@ curl -fsSL https://leafpress.in/install.sh | sh
 
 To initialize a new garden and see it live:
 ```bash
-leafpress init my-garden
-cd my-garden && leafpress serve
+mkdir my-garden
+cd my-garden
+leafpress init
+leafpress serve
 ```
 
 ## Why leafpress?
