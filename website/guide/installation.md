@@ -45,18 +45,19 @@ sudo mv leafpress /usr/local/bin/
 ## Create Your First Site
 
 ```bash
-leafpress init my-garden
-cd my-garden
+mkdir my-garden && cd my-garden
+leafpress init
 ```
 
-This creates:
+`leafpress init` scaffolds into the current directory, so create and enter the folder first. This creates:
 
 ```
 my-garden/
-├── content/
-│   └── index.md          # Your homepage
+├── index.md              # Your homepage
 ├── static/
-│   └── images/           # Put images here
+│   ├── images/           # Put images here
+│   ├── video/
+│   └── audio/
 ├── leafpress.json        # Configuration
 └── style.css             # Custom styles (optional)
 ```

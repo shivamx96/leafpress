@@ -13,11 +13,11 @@ Create pages using Markdown files with YAML frontmatter.
 leafpress new "My First Note"
 ```
 
-Creates `content/my-first-note.md` with frontmatter.
+Creates `my-first-note.md` with frontmatter.
 
 ### Manually
 
-Create any `.md` file in your content directory:
+Create any `.md` file in your site directory:
 
 ```markdown
 ---
@@ -189,10 +189,10 @@ Footnotes render as superscript numbers linking to a footnote section at the bot
 
 ## Folders
 
-Organize content in folders. Create `folder/_index.md` for section pages:
+Organize content in folders under your site root. Create `folder/_index.md` for section pages:
 
 ```
-content/
+.
 ├── index.md
 ├── projects/
 │   ├── _index.md      # /projects/
