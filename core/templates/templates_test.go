@@ -165,7 +165,7 @@ func testTheme(heading, body, mono string) config.Theme {
 func TestRemoteFontURL_OffByDefault(t *testing.T) {
 	// Without the deprecated remoteFonts opt-in there is never a remote
 	// URL, bundled or not.
-	if url := remoteFontURL(testTheme("Crimson Pro", "Inter", "JetBrains Mono")); url != "" {
+	if url := remoteFontURL(testTheme("Bricolage Grotesque", "Inter", "JetBrains Mono")); url != "" {
 		t.Errorf("bundled families produced remote URL %q", url)
 	}
 	if url := remoteFontURL(testTheme("Lobster", "Inter", "Fira Code")); url != "" {
@@ -174,10 +174,10 @@ func TestRemoteFontURL_OffByDefault(t *testing.T) {
 }
 
 func TestRemoteFontURL_OptInCoversOnlyUnbundled(t *testing.T) {
-	theme := testTheme("Crimson Pro", "Inter", "Fira Code")
+	theme := testTheme("Bricolage Grotesque", "Inter", "Fira Code")
 	theme.RemoteFonts = true
 	url := remoteFontURL(theme)
-	if strings.Contains(url, "Crimson+Pro") || strings.Contains(url, "family=Inter") {
+	if strings.Contains(url, "Bricolage+Grotesque") || strings.Contains(url, "family=Inter") {
 		t.Errorf("bundled families leaked into remote URL %q", url)
 	}
 	if !strings.Contains(url, "family=Fira+Code") {
@@ -191,7 +191,7 @@ func TestRemoteFontURL_OptInCoversOnlyUnbundled(t *testing.T) {
 	}
 
 	// Fully bundled theme yields no URL even when opted in.
-	allBundled := testTheme("Crimson Pro", "Inter", "JetBrains Mono")
+	allBundled := testTheme("Bricolage Grotesque", "Inter", "JetBrains Mono")
 	allBundled.RemoteFonts = true
 	if url := remoteFontURL(allBundled); url != "" {
 		t.Errorf("fully bundled theme produced remote URL %q", url)
@@ -212,7 +212,7 @@ func TestUnhostedFamilies(t *testing.T) {
 	if len(got) != 1 || got[0] != "Lobster" {
 		t.Fatalf("UnhostedFamilies = %v, want [Lobster]", got)
 	}
-	if got := UnhostedFamilies(testTheme("Crimson Pro", "Inter", "JetBrains Mono")); len(got) != 0 {
+	if got := UnhostedFamilies(testTheme("Bricolage Grotesque", "Inter", "JetBrains Mono")); len(got) != 0 {
 		t.Fatalf("fully bundled theme reported unhosted families: %v", got)
 	}
 }
@@ -227,7 +227,7 @@ func TestUnhostedFamiliesExcludesDeclaredCustom(t *testing.T) {
 }
 
 func TestFontCSSIncludesBundledFamilies(t *testing.T) {
-	css := FontCSS(testTheme("Crimson Pro", "Inter", "JetBrains Mono"))
+	css := FontCSS(testTheme("Bricolage Grotesque", "Inter", "JetBrains Mono"))
 	if !strings.Contains(css, `font-family: "Inter"`) || !strings.Contains(css, "@font-face") {
 		t.Error("FontCSS missing bundled @font-face rules")
 	}
@@ -259,13 +259,13 @@ func TestCustomFontCSS(t *testing.T) {
 }
 
 func TestFontCSSCombinesBuiltinAndCustom(t *testing.T) {
-	theme := testTheme("Crimson Pro", "My Serif", "JetBrains Mono")
+	theme := testTheme("Bricolage Grotesque", "My Serif", "JetBrains Mono")
 	theme.Fonts = []config.FontFace{{Family: "My Serif", File: "static/fonts/my.woff2"}}
 	css := FontCSS(theme)
 	if !strings.Contains(css, `font-family: "My Serif"`) {
 		t.Error("custom @font-face missing from FontCSS")
 	}
-	if !strings.Contains(css, `font-family: "Crimson Pro"`) {
+	if !strings.Contains(css, `font-family: "Bricolage Grotesque"`) {
 		t.Error("bundled @font-face missing from FontCSS")
 	}
 }

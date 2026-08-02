@@ -38,7 +38,7 @@ the historical `config.Default()` values.
     "headExtra": ""
   },
   "theme": {
-    "fontHeading": "Crimson Pro",
+    "fontHeading": "Bricolage Grotesque",
     "fontBody": "Inter",
     "fontMono": "JetBrains Mono",
     "accent": "#50ac00",
@@ -75,7 +75,7 @@ the historical `config.Default()` values.
 | --- | --- | --- |
 | `site` | `title` | `"My Garden"` |
 | | `description`, `author`, `baseURL`, `image`, `headExtra` | `""` |
-| `theme` | `fontHeading` / `fontBody` / `fontMono` | `"Crimson Pro"` / `"Inter"` / `"JetBrains Mono"` |
+| `theme` | `fontHeading` / `fontBody` / `fontMono` | `"Bricolage Grotesque"` / `"Inter"` / `"JetBrains Mono"` |
 | | `accent` | `"#50ac00"` |
 | | `navStyle` / `navActiveStyle` | `"base"` / `"base"` |
 | | `background` | light/dark theme defaults |

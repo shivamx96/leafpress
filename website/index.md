@@ -7,6 +7,10 @@ A fast, opinionated static site generator for digital gardens. [GitHub](https://
 
 ```bash
 curl -fsSL https://leafpress.in/install.sh | sh
+```
+
+To initialize a new garden and see it live:
+```bash
 leafpress init my-garden
 cd my-garden && leafpress serve
 ```

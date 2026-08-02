@@ -333,7 +333,7 @@ func Default() *Config {
 			Title: "My Garden",
 		},
 		Theme: Theme{
-			FontHeading:    "Crimson Pro",
+			FontHeading:    "Bricolage Grotesque",
 			FontBody:       "Inter",
 			FontMono:       "JetBrains Mono",
 			Accent:         "#50ac00",
@@ -398,7 +398,7 @@ func Parse(data []byte) (*Config, error) {
 		cfg.Build.Port = 3000
 	}
 	if cfg.Theme.FontHeading == "" {
-		cfg.Theme.FontHeading = "Crimson Pro"
+		cfg.Theme.FontHeading = "Bricolage Grotesque"
 	}
 	if cfg.Theme.FontBody == "" {
 		cfg.Theme.FontBody = "Inter"

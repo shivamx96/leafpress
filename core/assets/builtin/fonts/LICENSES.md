@@ -5,8 +5,8 @@ subsets served by Google Fonts. All three families are licensed under the
 SIL Open Font License 1.1 (https://openfontlicense.org), which permits
 bundling and redistribution:
 
-- **Crimson Pro** — Copyright 2018 The Crimson Pro Project Authors
-  (https://github.com/Fonthausen/CrimsonPro)
+- **Bricolage Grotesque** — Copyright 2022 The Bricolage Grotesque Project Authors
+  (https://github.com/ateliertriay/bricolage)
 - **Inter** — Copyright 2020 The Inter Project Authors
   (https://github.com/rsms/inter)
 - **JetBrains Mono** — Copyright 2020 The JetBrains Mono Project Authors
