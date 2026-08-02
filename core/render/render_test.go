@@ -231,7 +231,7 @@ func TestSiteIdentityAndFooterAttribution(t *testing.T) {
 	out := runJSON(t, `{
 	  "render": {
 	    "slug": "hosted",
-	    "footerAttribution": {"name": "Leafyard", "url": "https://leafyard.in"}
+	    "footerAttribution": {"name": "Example Host", "url": "https://example.net"}
 	  },
 	  "config": {"site": {
 	    "title": "Field Notes",
@@ -244,7 +244,7 @@ func TestSiteIdentityAndFooterAttribution(t *testing.T) {
 	for _, document := range []string{out.Index, pageHTML(t, out, "welcome")} {
 		for _, want := range []string{
 			"&copy; Garden Author. All rights reserved.",
-			`href="https://leafyard.in" target="_blank" rel="noopener noreferrer">Leafyard</a>`,
+			`href="https://example.net" target="_blank" rel="noopener noreferrer">Example Host</a>`,
 		} {
 			if !strings.Contains(document, want) {
 				t.Errorf("hosted identity output missing %q", want)
@@ -514,8 +514,8 @@ func TestInvalidInput(t *testing.T) {
 		{"bad font", `{"render": {"slug": "g"}, "config": {"theme": {"fontBody": "Inter\"><script>"}}, "content": {"pages": []}}`},
 		{"unsupported contractVersion", `{"contractVersion": 3, "render": {"slug": "g"}, "content": {"pages": []}}`},
 		{"dot-segment slug", `{"render": {"slug": "g"}, "content": {"pages": [{"slug": "essays/../secret", "markdown": "x"}]}}`},
-		{"attribution without name", `{"render": {"slug": "g", "footerAttribution": {"url": "https://leafyard.in"}}, "content": {"pages": []}}`},
-		{"unsafe attribution URL", `{"render": {"slug": "g", "footerAttribution": {"name": "Leafyard", "url": "javascript:alert(1)"}}, "content": {"pages": []}}`},
+		{"attribution without name", `{"render": {"slug": "g", "footerAttribution": {"url": "https://example.net"}}, "content": {"pages": []}}`},
+		{"unsafe attribution URL", `{"render": {"slug": "g", "footerAttribution": {"name": "Example Host", "url": "javascript:alert(1)"}}, "content": {"pages": []}}`},
 		{"unsafe slug", `{"render": {"slug": "g"}, "content": {"pages": [{"slug": "a\"b", "markdown": "x"}]}}`},
 	}
 

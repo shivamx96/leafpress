@@ -1,16 +1,29 @@
-# Performance enhancements
-Date: Dec 27, 2025
+# Performance architecture
 
-- **Parallel page rendering** to render pages in parallel using worker threads
-- **Parallel markdown rendering** to render MD files using goldmark via worker threads
-- **Parallel tag page, auto-index generation** to generate pages in parallel using worker threads
-- **Buffered I/O** for batching writes to disk instead of individually writing files
-- **Unified LinkResolver instance** to avoid rebuilding slug <> name maps repeatedly
-- **Pre-indexed tag data and section data** to reuse them when creating pages
-- **Regex caching** to avoid recompiling regex patterns repeatedly
-- **Template caching** to avoid recompiling templates repeatedly
-- **WalkDir optimization** to avoid unnecessary syscalls by reading all files
+Leafpress keeps full builds and local rebuilds responsive through:
 
-## Impact:
-- 1000 pages build time: 154ms -> 98ms (36%) vs 107ms for Hugo
-- 2000 pages build time: 272ms -> 171ms (37%) vs 206ms for Hugo
+- parallel Markdown/page rendering and parallel tag/auto-index generation;
+- a shared `LinkResolver` for rendering, backlinks, and graph generation;
+- pre-indexed tag and section data;
+- compiled regular expressions and parsed-template reuse;
+- a two-phase `WalkDir` scanner that avoids unnecessary file-info calls; and
+- incremental in-memory state during `leafpress serve`.
+
+## Measuring changes
+
+Historical wall-clock numbers are intentionally not kept here: they depend on
+hardware, filesystem cache state, content shape, Go version, and the exact
+commit. Performance changes should include a reproducible benchmark or command,
+the fixture size, the tested commit, and before/after results in the relevant PR.
+
+For local profiling, the CLI exposes:
+
+```bash
+leafpress build --cpuprofile cpu.out
+leafpress build --memprofile mem.out
+go tool pprof cpu.out
+```
+
+Run ordinary correctness and race tests alongside performance work; a faster
+incremental build is not acceptable if cached navigation, links, tags, or
+section listings become stale.

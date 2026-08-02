@@ -73,7 +73,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 
 	// Update .gitignore
 	gitignorePath := filepath.Join(cwd, ".gitignore")
-	gitignoreEntries := "\n# leafpress\n_site/\n.leafpress/\n"
+	gitignoreEntries := "\n# leafpress\n_site/\n"
 
 	if _, err := os.Stat(gitignorePath); os.IsNotExist(err) {
 		if err := os.WriteFile(gitignorePath, []byte(gitignoreEntries[1:]), 0644); err != nil {

@@ -16,8 +16,9 @@ go install github.com/shivamx96/leafpress/cli/cmd/leafpress@latest
 ## Quick Start
 
 ```bash
-leafpress init my-garden
+mkdir my-garden
 cd my-garden
+leafpress init
 leafpress serve
 ```
 
@@ -55,7 +56,7 @@ See the [deployment guide](https://leafpress.in/guide/deploy-github) for details
 - Link previews on hover
 - Design system with CSS custom properties (font scale, border radius)
 - SEO ready (sitemap, RSS, Open Graph)
-- Fast builds (~125ms for 1000 pages)
+- Fast parallel builds with incremental rebuilds during `serve`
 - One-command deploy to GitHub Pages, Vercel, or Netlify
 
 ## Documentation
