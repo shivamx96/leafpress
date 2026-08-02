@@ -210,42 +210,25 @@ func (t *Theme) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// validateBackground checks if a background value is valid
+var backgroundPatterns = []*regexp.Regexp{
+	regexp.MustCompile(`^#[0-9A-Fa-f]{3}(?:[0-9A-Fa-f]{3})?$`),
+	regexp.MustCompile(`^(?:rgb|rgba|hsl|hsla)\([A-Za-z0-9+.,%/ \t-]+\)$`),
+	regexp.MustCompile(`^(?:(?:repeating-)?linear-gradient|(?:repeating-)?radial-gradient|conic-gradient)\([A-Za-z0-9#()+.,%/ \t-]+\)$`),
+	regexp.MustCompile(`^(?:transparent|white|black|gray|silver|red|blue|green|yellow|orange)$`),
+}
+
+// validateBackground checks if a background value is a complete supported CSS
+// value. These strings cross a deliberate raw CSS template boundary, so a
+// recognized prefix is not sufficient: the entire input must match the safe
+// grammar and markup/rule delimiters are never accepted.
 func validateBackground(bg string) error {
-	// Check for common CSS background patterns
-	// Allow: hex colors, rgb/rgba, gradients, keywords
 	bg = strings.TrimSpace(bg)
 	if bg == "" {
 		return fmt.Errorf("background cannot be empty")
 	}
 
-	// Check for dangerous patterns (script injection)
-	dangerous := []string{"<script", "javascript:", "onerror=", "onload="}
-	bgLower := strings.ToLower(bg)
-	for _, pattern := range dangerous {
-		if strings.Contains(bgLower, pattern) {
-			return fmt.Errorf("background contains potentially dangerous content")
-		}
-	}
-
-	// Valid patterns: hex color, rgb/rgba, hsl/hsla, gradients, keywords
-	validPatterns := []string{
-		`^#[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?$`, // hex color
-		`^rgb\(`,                             // rgb()
-		`^rgba\(`,                            // rgba()
-		`^hsl\(`,                             // hsl()
-		`^hsla\(`,                            // hsla()
-		`^linear-gradient\(`,                 // linear-gradient()
-		`^radial-gradient\(`,                 // radial-gradient()
-		`^conic-gradient\(`,                  // conic-gradient()
-		`^repeating-linear-gradient\(`,       // repeating-linear-gradient()
-		`^repeating-radial-gradient\(`,       // repeating-radial-gradient()
-		`^(transparent|white|black|gray|silver|red|blue|green|yellow|orange)$`, // color keywords
-	}
-
-	for _, pattern := range validPatterns {
-		matched, _ := regexp.MatchString(pattern, bg)
-		if matched {
+	for _, pattern := range backgroundPatterns {
+		if pattern.MatchString(bg) {
 			return nil
 		}
 	}

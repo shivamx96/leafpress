@@ -660,6 +660,23 @@ func TestXSSTOCHeadingTextRemainsEscaped(t *testing.T) {
 	}
 }
 
+func TestXSSThemeBackgroundBreakoutRejected(t *testing.T) {
+	_, err := Run([]byte(`{
+	  "render": {"slug": "g"},
+	  "config": {"theme": {"background": {
+	    "light": "rgb(0)</style><input autofocus onfocus=alert(1)>",
+	    "dark": "#000"
+	  }}}
+	}`))
+	if err == nil {
+		t.Fatal("expected style-breakout background to be rejected")
+	}
+	var inputErr *InputError
+	if !errors.As(err, &inputErr) {
+		t.Fatalf("expected *InputError, got %T: %v", err, err)
+	}
+}
+
 func TestSiteIdentityAndAttributionEscaped(t *testing.T) {
 	out := runJSON(t, `{
 	  "render": {

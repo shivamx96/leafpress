@@ -289,7 +289,9 @@ func TestValidateBackground(t *testing.T) {
 		"#ffffff",
 		"rgb(255, 255, 255)",
 		"rgba(0, 0, 0, 0.5)",
+		"hsl(120deg 50% 50% / 80%)",
 		"linear-gradient(180deg, #fff 0%, #000 100%)",
+		"radial-gradient(circle at center, rgb(255, 255, 255), #000)",
 		"transparent",
 	}
 	for _, bg := range valid {
@@ -302,6 +304,10 @@ func TestValidateBackground(t *testing.T) {
 		"",
 		`<script>alert('xss')</script>`,
 		"javascript:void(0)",
+		`rgb(0)</style><input autofocus onfocus=alert(1)>`,
+		`rgba(0, 0, 0, 1); } body { display: none`,
+		"linear-gradient(#fff, #000)\n</style>",
+		`radial-gradient(circle, #fff, #000)}</style>`,
 	}
 	for _, bg := range invalid {
 		if err := validateBackground(bg); err == nil {
