@@ -829,7 +829,7 @@ func TestTagPagesGenerated(t *testing.T) {
 	  "render": {"slug": "g"},
 	  "config": {"site": {"baseURL": "https://example.com/g/shivam"}},
 	  "content": {"pages": [
-	    {"slug": "a", "title": "A", "markdown": "x", "tags": ["Systems", "go-lang"], "createdAt": "2026-01-02T00:00:00Z"},
+	    {"slug": "a", "title": "A", "markdown": "x", "tags": ["Systems", "systems", "go-lang"], "createdAt": "2026-01-02T00:00:00Z"},
 	    {"slug": "b", "title": "B", "markdown": "y", "tags": ["systems"], "createdAt": "2026-01-01T00:00:00Z"}
 	  ]}
 	}`)
@@ -845,6 +845,9 @@ func TestTagPagesGenerated(t *testing.T) {
 	}
 	if !strings.Contains(out.Tags.Index, "(2)") {
 		t.Error("tags index should show systems count of 2")
+	}
+	if got := strings.Count(pageHTML(t, out, "a"), `/tags/systems/`); got != 1 {
+		t.Errorf("case-variant tag rendered %d links, want 1", got)
 	}
 
 	// Tag list is deterministic and sorted.

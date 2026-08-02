@@ -9,6 +9,7 @@ import (
 
 	"github.com/shivamx96/leafpress/core/assets"
 	"github.com/shivamx96/leafpress/core/config"
+	"github.com/shivamx96/leafpress/core/content"
 )
 
 // newTestProject creates a minimal project in a temp dir and chdirs into it
@@ -414,5 +415,13 @@ func TestBuildGraphEdgesDoNotDependOnBacklinks(t *testing.T) {
 	}
 	if !strings.Contains(graph, `"target": "other"`) {
 		t.Fatalf("graph is missing note -> other: %s", graph)
+	}
+}
+
+func TestBuildTagIndexDeduplicatesCaseVariantsPerPage(t *testing.T) {
+	page := &content.Page{Tags: []string{"Go", "go"}}
+	index := buildTagIndex([]*content.Page{page})
+	if got := len(index["go"]); got != 1 {
+		t.Fatalf("go tag page count = %d, want 1", got)
 	}
 }

@@ -1322,8 +1322,13 @@ func buildSectionIndex(pages []*content.Page) map[string][]*content.Page {
 func buildTagIndex(pages []*content.Page) map[string][]*content.Page {
 	index := make(map[string][]*content.Page)
 	for _, page := range pages {
+		seen := make(map[string]bool)
 		for _, tag := range page.Tags {
 			tagLower := strings.ToLower(tag)
+			if seen[tagLower] {
+				continue
+			}
+			seen[tagLower] = true
 			index[tagLower] = append(index[tagLower], page)
 		}
 	}

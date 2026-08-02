@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 var htmlTagRegex = regexp.MustCompile(`<[^>]*>`)
@@ -149,9 +150,7 @@ func (p *Page) PlainContent() string {
 	// Normalize whitespace
 	plain = strings.Join(strings.Fields(plain), " ")
 	// Limit to ~5000 chars for search index size
-	if len(plain) > 5000 {
-		plain = plain[:5000]
-	}
+	plain, _ = truncateRunes(plain, 5000)
 	return plain
 }
 
@@ -174,13 +173,39 @@ func (p *Page) SEODescription() string {
 	}
 	// Auto-generate from content (first ~155 chars)
 	plain := p.PlainContent()
-	if len(plain) > 155 {
+	if truncated, didTruncate := truncateRunes(plain, 155); didTruncate {
 		// Try to break at word boundary
-		plain = plain[:155]
+		plain = truncated
 		if lastSpace := strings.LastIndex(plain, " "); lastSpace > 100 {
 			plain = plain[:lastSpace]
 		}
 		plain += "..."
 	}
 	return plain
+}
+
+func truncateRunes(value string, limit int) (string, bool) {
+	if limit < 0 || utf8.RuneCountInString(value) <= limit {
+		return value, false
+	}
+	return string([]rune(value)[:limit]), true
+}
+
+// NormalizeTags preserves the first spelling of each tag while removing
+// case-variant duplicates from a single page.
+func NormalizeTags(tags []string) []string {
+	if len(tags) < 2 {
+		return tags
+	}
+	seen := make(map[string]struct{}, len(tags))
+	normalized := make([]string, 0, len(tags))
+	for _, tag := range tags {
+		key := strings.ToLower(tag)
+		if _, exists := seen[key]; exists {
+			continue
+		}
+		seen[key] = struct{}{}
+		normalized = append(normalized, tag)
+	}
+	return normalized
 }

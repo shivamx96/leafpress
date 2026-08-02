@@ -125,6 +125,21 @@ func TestXMLArtifactsEscapePageURLs(t *testing.T) {
 	}
 }
 
+func TestRSSOrderingAndTruncationAreDeterministicAndUTF8Safe(t *testing.T) {
+	date := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	pages := []*content.Page{
+		{Slug: "beta", Title: "Beta", Date: date, Permalink: "/beta/", HTMLContent: "<p>beta</p>"},
+		{Slug: "alpha", Title: "Alpha", Date: date, Permalink: "/alpha/", HTMLContent: "<p>" + strings.Repeat("界", 301) + "</p>"},
+	}
+	feed := RSS(pages, templates.SiteData{Title: "Garden"}, "https://example.com", date)
+	if strings.Index(feed, "<title>Alpha</title>") > strings.Index(feed, "<title>Beta</title>") {
+		t.Fatalf("equal-date feed entries are not ordered by slug: %s", feed)
+	}
+	if strings.Contains(feed, "�") || !strings.Contains(feed, strings.Repeat("界", 300)+"...") {
+		t.Fatal("RSS description was not truncated at a rune boundary")
+	}
+}
+
 func TestStylesMatchesCLIComposition(t *testing.T) {
 	if got := Styles("", config.Default().Theme); !strings.HasPrefix(got, templates.DefaultCSS) || !strings.Contains(got, "@font-face") {
 		t.Error("empty user CSS should return the embedded stylesheet exactly")

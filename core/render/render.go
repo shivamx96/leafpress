@@ -20,6 +20,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/shivamx96/leafpress/core/assets"
 	"github.com/shivamx96/leafpress/core/config"
@@ -580,8 +581,13 @@ func renderTagPages(tmpl *templates.Templates, site templates.SiteData, pages []
 	// Group pages by lowercased tag (mirrors the CLI's buildTagIndex).
 	pagesByTag := make(map[string][]*content.Page)
 	for _, p := range pages {
+		seen := make(map[string]bool)
 		for _, tag := range p.Tags {
 			key := strings.ToLower(tag)
+			if seen[key] {
+				continue
+			}
+			seen[key] = true
 			pagesByTag[key] = append(pagesByTag[key], p)
 		}
 	}
@@ -892,7 +898,7 @@ func buildPages(in []InputPage) ([]*content.Page, error) {
 			Date:                created,
 			Created:             created,
 			Modified:            updated,
-			Tags:                ip.Tags,
+			Tags:                content.NormalizeTags(ip.Tags),
 			Growth:              ip.Growth,
 			TOC:                 ip.TOC,
 			Image:               html.EscapeString(ip.Image),
@@ -913,7 +919,11 @@ func buildPages(in []InputPage) ([]*content.Page, error) {
 func titleFromSlug(s string) string {
 	words := strings.Fields(strings.ReplaceAll(s, "-", " "))
 	for i, w := range words {
-		words[i] = strings.ToUpper(w[:1]) + w[1:]
+		runes := []rune(w)
+		if len(runes) > 0 {
+			runes[0] = unicode.ToUpper(runes[0])
+			words[i] = string(runes)
+		}
 	}
 	return strings.Join(words, " ")
 }
