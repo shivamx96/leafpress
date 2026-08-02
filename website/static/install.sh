@@ -86,6 +86,19 @@ download() {
     fi
 }
 
+sha256_file() {
+    file="$1"
+    if command -v sha256sum >/dev/null 2>&1; then
+        sha256sum "$file" | awk '{print $1}'
+    elif command -v shasum >/dev/null 2>&1; then
+        shasum -a 256 "$file" | awk '{print $1}'
+    elif command -v openssl >/dev/null 2>&1; then
+        openssl dgst -sha256 "$file" | awk '{print $NF}'
+    else
+        error "sha256sum, shasum, or openssl is required to verify the download"
+    fi
+}
+
 # Check if running with sudo/root when needed
 check_permissions() {
     if [ -w "$INSTALL_DIR" ]; then
@@ -131,6 +144,7 @@ main() {
     # Expected format: leafpress-{version}-{os}-{arch}.tar.gz
     TARBALL="leafpress-${VERSION}-${OS}-${ARCH}.tar.gz"
     DOWNLOAD_URL="https://github.com/${REPO}/releases/download/${VERSION}/${TARBALL}"
+    CHECKSUMS_URL="https://github.com/${REPO}/releases/download/${VERSION}/checksums.txt"
 
     # Create temp directory
     TMP_DIR=$(mktemp -d)
@@ -139,6 +153,17 @@ main() {
     # Download
     info "Downloading ${TARBALL}..."
     download "$DOWNLOAD_URL" "${TMP_DIR}/${TARBALL}"
+
+    info "Verifying SHA-256 checksum..."
+    download "$CHECKSUMS_URL" "${TMP_DIR}/checksums.txt"
+    EXPECTED_CHECKSUM=$(awk -v file="$TARBALL" '$2 == file || $2 == "*" file { print $1; exit }' "${TMP_DIR}/checksums.txt")
+    if [ -z "$EXPECTED_CHECKSUM" ]; then
+        error "No checksum published for ${TARBALL}"
+    fi
+    ACTUAL_CHECKSUM=$(sha256_file "${TMP_DIR}/${TARBALL}")
+    if [ "$ACTUAL_CHECKSUM" != "$EXPECTED_CHECKSUM" ]; then
+        error "Checksum verification failed for ${TARBALL}"
+    fi
 
     # Extract
     info "Extracting..."
