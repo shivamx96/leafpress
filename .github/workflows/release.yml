@@ -20,6 +20,9 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: "1.25.5"
+          cache-dependency-path: |
+            core/go.sum
+            cli/go.sum
 
       # This repository contains two Go modules. Their scoped tags must point
       # at the same commit as the product release tag or `go install @latest`
@@ -72,6 +75,9 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: "1.25.5"
+          cache-dependency-path: |
+            core/go.sum
+            cli/go.sum
 
       - name: Get version
         id: version

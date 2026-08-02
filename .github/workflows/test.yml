@@ -3,8 +3,7 @@ name: Tests
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
+  pull_request: {}
 
 jobs:
   test:
@@ -18,6 +17,9 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: "1.25.5"
+          cache-dependency-path: |
+            core/go.sum
+            cli/go.sum
 
       - name: Check formatting
         run: |
