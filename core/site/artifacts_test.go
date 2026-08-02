@@ -1,6 +1,7 @@
 package site
 
 import (
+	"encoding/xml"
 	"strings"
 	"testing"
 	"time"
@@ -73,6 +74,37 @@ func TestArtifactShapesAndOrdering(t *testing.T) {
 	}
 	if strings.Contains(feed, "<title>Section</title>") {
 		t.Error("RSS should exclude index pages")
+	}
+}
+
+func TestXMLArtifactsEscapePageURLs(t *testing.T) {
+	pages := []*content.Page{{
+		Slug:        "r&d",
+		Title:       "R&D",
+		Permalink:   "/r&d/",
+		HTMLContent: "<p>Research</p>",
+	}}
+
+	for name, document := range map[string]string{
+		"sitemap": Sitemap(pages, "https://example.com"),
+		"feed": RSS(
+			pages,
+			templates.SiteData{Title: "Garden"},
+			"https://example.com",
+			time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
+		),
+	} {
+		t.Run(name, func(t *testing.T) {
+			var root struct {
+				XMLName xml.Name
+			}
+			if err := xml.Unmarshal([]byte(document), &root); err != nil {
+				t.Fatalf("artifact is invalid XML: %v\n%s", err, document)
+			}
+			if !strings.Contains(document, "/r&amp;d/") {
+				t.Fatalf("artifact did not XML-escape page URL: %s", document)
+			}
+		})
 	}
 }
 

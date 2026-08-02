@@ -1435,6 +1435,6 @@ func extractBasePath(baseURL string) string {
 	}
 
 	// Remove trailing slash
-	path := strings.TrimSuffix(parsed.Path, "/")
+	path := strings.TrimSuffix(parsed.EscapedPath(), "/")
 	return path
 }

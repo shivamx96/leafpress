@@ -139,7 +139,7 @@ func Sitemap(pages []*content.Page, baseURL string) string {
 			lastmod = page.Date.Format("2006-01-02")
 		}
 		sb.WriteString("  <url>\n")
-		sb.WriteString(fmt.Sprintf("    <loc>%s</loc>\n", loc))
+		sb.WriteString(fmt.Sprintf("    <loc>%s</loc>\n", escapeXML(loc)))
 		if lastmod != "" {
 			sb.WriteString(fmt.Sprintf("    <lastmod>%s</lastmod>\n", lastmod))
 		}
@@ -180,10 +180,10 @@ func RSS(pages []*content.Page, siteData templates.SiteData, baseURL string, now
 	sb.WriteString("\n  <channel>\n")
 	sb.WriteString(fmt.Sprintf("    <title>%s</title>\n", escapeXML(siteData.Title)))
 	if baseURL != "" {
-		sb.WriteString(fmt.Sprintf("    <link>%s</link>\n", baseURL))
+		sb.WriteString(fmt.Sprintf("    <link>%s</link>\n", escapeXML(baseURL)))
 		sb.WriteString(fmt.Sprintf(
 			"    <atom:link href=\"%s/feed.xml\" rel=\"self\" type=\"application/rss+xml\"/>\n",
-			baseURL,
+			escapeXML(baseURL),
 		))
 	}
 	if siteData.Author != "" {
@@ -203,8 +203,8 @@ func RSS(pages []*content.Page, siteData templates.SiteData, baseURL string, now
 		}
 		sb.WriteString("    <item>\n")
 		sb.WriteString(fmt.Sprintf("      <title>%s</title>\n", escapeXML(page.Title)))
-		sb.WriteString(fmt.Sprintf("      <link>%s</link>\n", link))
-		sb.WriteString(fmt.Sprintf("      <guid>%s</guid>\n", link))
+		sb.WriteString(fmt.Sprintf("      <link>%s</link>\n", escapeXML(link)))
+		sb.WriteString(fmt.Sprintf("      <guid>%s</guid>\n", escapeXML(link)))
 		if date := effectiveDate(page); !date.IsZero() {
 			sb.WriteString(fmt.Sprintf("      <pubDate>%s</pubDate>\n", date.Format(time.RFC1123Z)))
 		}
