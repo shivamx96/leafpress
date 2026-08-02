@@ -124,8 +124,21 @@ func (s *CredentialsStore) save() error {
 		return err
 	}
 
-	// Write with restricted permissions (owner read/write only)
-	return os.WriteFile(s.path, data, 0600)
+	// OpenFile does not tighten an existing file's mode, so chmod explicitly
+	// before writing secrets back to disk.
+	f, err := os.OpenFile(s.path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	if err != nil {
+		return err
+	}
+	if err := f.Chmod(0600); err != nil {
+		f.Close()
+		return err
+	}
+	if _, err := f.Write(data); err != nil {
+		f.Close()
+		return err
+	}
+	return f.Close()
 }
 
 // Path returns the credentials file path

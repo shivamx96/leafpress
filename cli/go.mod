@@ -8,6 +8,7 @@ require (
 	github.com/shivamx96/leafpress/core v1.0.0-beta.15
 	github.com/spf13/cobra v1.10.2
 	golang.org/x/mod v0.31.0
+	golang.org/x/term v0.40.0
 	golang.org/x/text v0.32.0
 )
 
@@ -18,6 +19,6 @@ require (
 	github.com/spf13/pflag v1.0.9 // indirect
 	github.com/yuin/goldmark v1.7.13 // indirect
 	github.com/yuin/goldmark-highlighting/v2 v2.0.0-20230729083705-37449abec8cc // indirect
-	golang.org/x/sys v0.13.0 // indirect
+	golang.org/x/sys v0.41.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

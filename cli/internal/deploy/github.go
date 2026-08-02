@@ -275,18 +275,15 @@ func (g *GitHubPagesProvider) gitDeploy(ctx context.Context, buildDir, tmpDir, r
 		return fmt.Errorf("git add failed: %w", err)
 	}
 
-	// Git commit
-	commitCmd := exec.CommandContext(ctx, "git", "commit", "-m", fmt.Sprintf("Deploy via leafpress at %s", time.Now().Format(time.RFC3339)))
-	commitCmd.Dir = tmpDir
-	commitOutput, commitErr := commitCmd.CombinedOutput()
-	if commitErr != nil {
-		// Only ignore "nothing to commit" errors - actual failures should be reported
-		outputStr := string(commitOutput)
-		if !strings.Contains(outputStr, "nothing to commit") &&
-			!strings.Contains(outputStr, "no changes added") {
-			return fmt.Errorf("git commit failed: %s", outputStr)
+	hasChanges, err := hasStagedChanges(ctx, tmpDir)
+	if err != nil {
+		return err
+	}
+	if hasChanges {
+		commitCmd := gitCommitCommand(ctx, tmpDir, fmt.Sprintf("Deploy via leafpress at %s", time.Now().Format(time.RFC3339)))
+		if output, err := commitCmd.CombinedOutput(); err != nil {
+			return fmt.Errorf("git commit failed: %s", string(output))
 		}
-		// No changes to deploy - this is fine
 	}
 
 	// Git push
@@ -298,6 +295,31 @@ func (g *GitHubPagesProvider) gitDeploy(ctx context.Context, buildDir, tmpDir, r
 	}
 
 	return nil
+}
+
+func hasStagedChanges(ctx context.Context, dir string) (bool, error) {
+	cmd := exec.CommandContext(ctx, "git", "diff", "--cached", "--quiet")
+	cmd.Dir = dir
+	err := cmd.Run()
+	if err == nil {
+		return false, nil
+	}
+	if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
+		return true, nil
+	}
+	return false, fmt.Errorf("git diff failed: %w", err)
+}
+
+func gitCommitCommand(ctx context.Context, dir, message string) *exec.Cmd {
+	cmd := exec.CommandContext(
+		ctx,
+		"git",
+		"-c", "user.name=Leafpress Deploy",
+		"-c", "user.email=leafpress@users.noreply.github.com",
+		"commit", "-m", message,
+	)
+	cmd.Dir = dir
+	return cmd
 }
 
 // initNewBranch creates an orphan branch for first deployment
