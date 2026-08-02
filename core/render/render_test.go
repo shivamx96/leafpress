@@ -44,6 +44,39 @@ func artifact(t *testing.T, out *Output, path string) OutputArtifact {
 	return OutputArtifact{}
 }
 
+// Unknown or misplaced fields must be rejected as input errors (exit 1),
+// never silently ignored — otherwise a v1 payload or a typo renders an empty
+// default site. Covers the envelope, the nested config object, and every
+// nesting level (including theme, which has a custom unmarshaler).
+func TestRun_RejectsUnknownAndMisplacedFields(t *testing.T) {
+	cases := map[string]string{
+		"v1 garden payload":        `{"garden":{"slug":"x"},"pages":[{"slug":"a","markdown":"hi"}]}`,
+		"unknown top-level":        `{"render":{"slug":"x"},"bogus":1}`,
+		"unknown render field":     `{"render":{"slug":"x","tagline":"nope"}}`,
+		"unknown content field":    `{"content":{"pages":[],"extra":1}}`,
+		"unknown options field":    `{"options":{"emitAssets":false,"turbo":true}}`,
+		"unknown page field":       `{"content":{"pages":[{"slug":"a","markdown":"hi","foo":1}]}}`,
+		"unknown config field":     `{"config":{"site":{"title":"T"},"nope":1},"render":{"slug":"x"}}`,
+		"unknown site field":       `{"config":{"site":{"titel":"T"}},"render":{"slug":"x"}}`,
+		"unknown features field":   `{"config":{"features":{"grph":true}},"render":{"slug":"x"}}`,
+		"unknown navigation field": `{"config":{"navigation":{"modee":"automatic"}},"render":{"slug":"x"}}`,
+		"unknown build field":      `{"config":{"build":{"prt":8080}},"render":{"slug":"x"}}`,
+		"unknown theme field":      `{"config":{"theme":{"acent":"#fff"}},"render":{"slug":"x"}}`,
+	}
+	for name, in := range cases {
+		t.Run(name, func(t *testing.T) {
+			_, err := Run([]byte(in))
+			if err == nil {
+				t.Fatalf("expected an input error, got nil")
+			}
+			var ie *InputError
+			if !errors.As(err, &ie) {
+				t.Fatalf("expected *InputError, got %T: %v", err, err)
+			}
+		})
+	}
+}
+
 const twoLinkedPages = `{
   "render": {"slug": "shivam"},
   "config": {"site": {"title": "Shivam's Garden", "baseURL": "https://example.com/g/shivam"}},

@@ -89,6 +89,8 @@ func TestInvalidInputExitsOne(t *testing.T) {
 	cases := map[string]string{
 		"unsupported contractVersion": `{"contractVersion": 3, "render": {"slug": "g"}, "content": {"pages": []}}`,
 		"dot-segment page slug":       `{"render": {"slug": "g"}, "content": {"pages": [{"slug": "essays/../secret", "markdown": "x"}]}}`,
+		// A v1 payload must fail loudly, not silently render an empty site.
+		"v1 envelope shape": `{"garden": {"slug": "g"}, "pages": [{"slug": "a", "markdown": "hi"}]}`,
 	}
 	for name, input := range cases {
 		t.Run(name, func(t *testing.T) {

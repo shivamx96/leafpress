@@ -204,8 +204,14 @@ var (
 // Run decodes raw JSON input and renders it. Errors of type *InputError
 // indicate invalid input; any other error is an internal failure.
 func Run(raw []byte) (*Output, error) {
+	// Reject unknown/misplaced fields so a v1 payload (or a typo) fails loudly
+	// instead of silently rendering an empty default site. This enforces the
+	// contract's no-silent-loss invariant across the envelope; the nested
+	// config object is validated with the same strictness in config.Parse.
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	dec.DisallowUnknownFields()
 	var in Input
-	if err := json.Unmarshal(raw, &in); err != nil {
+	if err := dec.Decode(&in); err != nil {
 		return nil, inputErrorf("invalid input JSON: %v", err)
 	}
 	return Render(&in)
