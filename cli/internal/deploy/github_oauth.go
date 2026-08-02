@@ -161,7 +161,7 @@ func (g *GitHubOAuth) pollForToken(ctx context.Context, deviceCode *DeviceCodeRe
 				return nil, err
 			}
 
-			if token.Error == "" {
+			if token.Error == "" && token.AccessToken != "" {
 				return token, nil
 			}
 
@@ -179,6 +179,9 @@ func (g *GitHubOAuth) pollForToken(ctx context.Context, deviceCode *DeviceCodeRe
 			case "access_denied":
 				return nil, fmt.Errorf("authorization denied by user")
 			default:
+				if token.Error == "" {
+					return nil, fmt.Errorf("authorization response did not include an access token")
+				}
 				return nil, fmt.Errorf("authorization failed: %s", token.ErrorDesc)
 			}
 		}
@@ -209,6 +212,9 @@ func (g *GitHubOAuth) checkToken(ctx context.Context, deviceCode string) (*Token
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("token request failed: %s", string(body))
 	}
 
 	var token TokenResponse
