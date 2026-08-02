@@ -103,7 +103,9 @@ leafpress deploy --dry-run
 
 ```json
 {
-  "baseURL": "https://yourdomain.com"
+  "site": {
+    "baseURL": "https://yourdomain.com"
+  }
 }
 ```
 

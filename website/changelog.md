@@ -4,6 +4,13 @@ date: 2025-01-06
 toc: false
 ---
 
+## Unreleased
+
+- **Breaking: `leafpress.json` is now grouped into sections.** Settings live under `site` (title, author, baseURL, description, image, headExtra), `theme`, `features` (graph/search/toc/backlinks/wikilinks/rss), `navigation`, `build` (outputDir, port, ignore), and `deploy`. Every field is optional with a default, so an empty `{}` still builds a valid site. See the [Configuration guide](/guide/configuration/).
+- **Navigation is now explicit about how it's built.** `navigation.mode` is `"automatic"` (default — derives the nav from your top-level notes and sections; the home is reached via the site title and is no longer duplicated as a link) or `"explicit"` (`navigation.items`). Automatic navigation now works in the CLI too, not just hosted renders. Set `navigation.includeTags: true` to add a Tags item automatically.
+- **`baseURL` is a single, unambiguous canonical URL.** `sitemap.xml`, the RSS feed, and the `robots.txt` Sitemap line are generated only when `site.baseURL` is set; without it they're skipped with a warning instead of emitting invalid relative URLs.
+- **Renderer contract v2.** `leafpress-render` takes one versioned envelope — `config` (the shared leafpress.json object), `render` (host-only `slug` and `footerAttribution`), `content` (pages, styleCSS, assets), and `options` — replacing the previous `garden`/`config` dual mode. Slugs and output paths now reject `.`/`..` segments. See `docs/05_RENDERER_CONTRACT.md`.
+
 ## v1.0.0-beta.13
 *August 2, 2026*
 

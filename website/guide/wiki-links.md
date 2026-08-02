@@ -57,5 +57,5 @@ Hover over any wiki-link to see a preview card with the target page's title and 
 
 ## Graph View
 
-Enable `"graph": true` in config to visualize all connections between pages. The current page is highlighted, and you can click any node to navigate.
+Enable `features.graph` in config to visualize all connections between pages. The current page is highlighted, and you can click any node to navigate.
 

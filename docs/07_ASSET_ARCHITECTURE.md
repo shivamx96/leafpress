@@ -180,7 +180,7 @@ references a `static/fonts/` file that no caller entry declares, the renderer
 emits a warning: the site will 404 that font unless the host serves it by
 other means.
 
-**Bytes.** Setting `emitAssets: true` adds base64 artifacts for the
+**Bytes.** Setting `options.emitAssets: true` adds base64 artifacts for the
 **post-merge** output manifest entries that are still identical to a
 registry built-in (same logical path *and* `sha256`), each at the entry's
 **effective output path** — the same place the CLI writes the file and pages
