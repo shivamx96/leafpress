@@ -107,21 +107,29 @@ type NotFoundData struct {
 	CurrentPath string
 }
 
+// FooterAttribution is optional host branding for renderer consumers. Keeping
+// it structured prevents hosted callers from injecting raw footer HTML.
+type FooterAttribution struct {
+	Name string
+	URL  string
+}
+
 // SiteData contains site-wide information
 type SiteData struct {
-	Title       string
-	Description string // Site-wide meta description
-	Author      string
-	Nav         []config.NavItem
-	Theme       config.Theme
-	BaseURL     string
-	BasePath    string // Path portion of BaseURL (e.g., "/repo-name" for GitHub Pages)
-	Image       string // Default OG image path
-	TOC         bool
-	Graph       bool
-	Search      bool
-	RSS         bool
-	HeadExtra   string // Custom HTML to inject in <head>
+	Title             string
+	Description       string // Site-wide meta description
+	Author            string
+	Nav               []config.NavItem
+	Theme             config.Theme
+	BaseURL           string
+	BasePath          string // Path portion of BaseURL (e.g., "/repo-name" for GitHub Pages)
+	Image             string // Default OG image path
+	TOC               bool
+	Graph             bool
+	Search            bool
+	RSS               bool
+	HeadExtra         string // Custom HTML to inject in <head>
+	FooterAttribution *FooterAttribution
 }
 
 // New returns a cached Templates instance (parsed once, reused on subsequent calls)
@@ -575,7 +583,8 @@ const baseTemplate = `<!DOCTYPE html>
   </main>
   <footer class="lp-footer">
     {{if .Site.Author}}<span class="lp-footer-text">&copy; {{.Site.Author}}. All rights reserved.</span>{{end}}
-    <span class="lp-footer-text">Grown with <a href="https://leafpress.in" target="_blank">leafpress</a></span>
+    {{if .Site.FooterAttribution}}<span class="lp-footer-text">Grown with {{if .Site.FooterAttribution.URL}}<a href="{{.Site.FooterAttribution.URL}}" target="_blank" rel="noopener noreferrer">{{.Site.FooterAttribution.Name}}</a>{{else}}{{.Site.FooterAttribution.Name}}{{end}}</span>
+    {{else}}<span class="lp-footer-text">Grown with <a href="https://leafpress.in" target="_blank" rel="noopener noreferrer">leafpress</a></span>{{end}}
   </footer>
 
   {{if .Site.Graph}}<!-- Graph Overlay -->
@@ -1593,17 +1602,17 @@ const indexTemplate = `
 {{define "title"}}{{.Title}} | {{.Site.Title}}{{end}}
 {{define "currentSlug"}}{{end}}
 {{define "seo"}}
-  <meta name="description" content="{{.Title}} - {{.Site.Title}}">
+  <meta name="description" content="{{if and .Site.Description (eq .CurrentPath "/")}}{{.Site.Description}}{{else}}{{.Title}} - {{.Site.Title}}{{end}}">
   {{if .Site.BaseURL}}<link rel="canonical" href="{{.Site.BaseURL}}{{.CurrentPath}}">{{end}}
   <meta property="og:title" content="{{.Title}}">
-  <meta property="og:description" content="{{.Title}} - {{.Site.Title}}">
+  <meta property="og:description" content="{{if and .Site.Description (eq .CurrentPath "/")}}{{.Site.Description}}{{else}}{{.Title}} - {{.Site.Title}}{{end}}">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="{{.Site.Title}}">
   {{if .Site.BaseURL}}<meta property="og:url" content="{{.Site.BaseURL}}{{.CurrentPath}}">{{end}}
   {{if .Site.Image}}<meta property="og:image" content="{{if .Site.BaseURL}}{{.Site.BaseURL}}{{end}}{{.Site.Image}}">{{end}}
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="{{.Title}}">
-  <meta name="twitter:description" content="{{.Title}} - {{.Site.Title}}">
+  <meta name="twitter:description" content="{{if and .Site.Description (eq .CurrentPath "/")}}{{.Site.Description}}{{else}}{{.Title}} - {{.Site.Title}}{{end}}">
 {{end}}
 {{define "content"}}
 <div class="lp-section">

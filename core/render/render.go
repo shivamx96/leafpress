@@ -55,12 +55,22 @@ type Input struct {
 
 // Garden describes the garden being rendered.
 type Garden struct {
-	Slug          string          `json:"slug"`
-	Title         string          `json:"title"`   // optional; defaults to Slug
-	BaseURL       string          `json:"baseUrl"` // optional URL path prefix, e.g. "/g/shivam"
-	Sort          string          `json:"sort"`    // optional: date (default) | title | growth
-	ShowTagsInNav bool            `json:"showTagsInNav"`
-	Theme         json.RawMessage `json:"theme"` // optional; maps onto config.Theme
+	Slug              string             `json:"slug"`
+	Title             string             `json:"title"`       // optional; defaults to Slug
+	Description       string             `json:"description"` // optional site-wide meta description
+	Author            string             `json:"author"`      // optional public author/copyright name
+	BaseURL           string             `json:"baseUrl"`     // optional URL path prefix, e.g. "/g/shivam"
+	Sort              string             `json:"sort"`        // optional: date (default) | title | growth
+	ShowTagsInNav     bool               `json:"showTagsInNav"`
+	Theme             json.RawMessage    `json:"theme"` // optional; maps onto config.Theme
+	FooterAttribution *FooterAttribution `json:"footerAttribution,omitempty"`
+}
+
+// FooterAttribution is renderer-only host branding. It is deliberately
+// structured instead of accepting raw HTML or script content.
+type FooterAttribution struct {
+	Name string `json:"name"`
+	URL  string `json:"url"`
 }
 
 // InputPage is a single published page. Slugs may carry path segments
@@ -655,6 +665,9 @@ func renderTagPages(tmpl *templates.Templates, site templates.SiteData, pages []
 // legacy garden bridge fields into template data. Canonical config is parsed
 // by core/config, so the CLI and renderer share defaults and validation.
 func resolveSiteInput(in *Input) (*config.Config, templates.SiteData, bool, error) {
+	if err := validateFooterAttribution(in.Garden.FooterAttribution); err != nil {
+		return nil, templates.SiteData{}, false, err
+	}
 	canonical := len(bytes.TrimSpace(in.Config)) > 0 && string(bytes.TrimSpace(in.Config)) != "null"
 	var cfg *config.Config
 	var basePath string
@@ -691,6 +704,8 @@ func resolveSiteInput(in *Input) (*config.Config, templates.SiteData, bool, erro
 		if cfg.Title == "" {
 			cfg.Title = in.Garden.Slug
 		}
+		cfg.Description = in.Garden.Description
+		cfg.Author = in.Garden.Author
 		cfg.Theme = theme
 		// Preserve the original bridge contract: rich site artifacts and their
 		// controls activate only through canonical config.
@@ -699,20 +714,28 @@ func resolveSiteInput(in *Input) (*config.Config, templates.SiteData, bool, erro
 		cfg.RSS = false
 	}
 
+	var footerAttribution *templates.FooterAttribution
+	if in.Garden.FooterAttribution != nil {
+		footerAttribution = &templates.FooterAttribution{
+			Name: in.Garden.FooterAttribution.Name,
+			URL:  in.Garden.FooterAttribution.URL,
+		}
+	}
 	rawSite := templates.SiteData{
-		Title:       cfg.Title,
-		Description: cfg.Description,
-		Author:      cfg.Author,
-		Nav:         cfg.Nav,
-		Theme:       cfg.Theme,
-		BaseURL:     cfg.BaseURL,
-		BasePath:    basePath,
-		Image:       cfg.Image,
-		TOC:         cfg.TOC,
-		Graph:       cfg.Graph,
-		Search:      cfg.Search,
-		RSS:         cfg.RSS,
-		HeadExtra:   cfg.HeadExtra,
+		Title:             cfg.Title,
+		Description:       cfg.Description,
+		Author:            cfg.Author,
+		Nav:               cfg.Nav,
+		Theme:             cfg.Theme,
+		BaseURL:           cfg.BaseURL,
+		BasePath:          basePath,
+		Image:             cfg.Image,
+		TOC:               cfg.TOC,
+		Graph:             cfg.Graph,
+		Search:            cfg.Search,
+		RSS:               cfg.RSS,
+		HeadExtra:         cfg.HeadExtra,
+		FooterAttribution: footerAttribution,
 	}
 	return cfg, safeSiteData(rawSite), canonical, nil
 }
@@ -726,11 +749,34 @@ func safeSiteData(site templates.SiteData) templates.SiteData {
 	site.Author = html.EscapeString(site.Author)
 	site.BaseURL = html.EscapeString(site.BaseURL)
 	site.Image = html.EscapeString(site.Image)
+	if site.FooterAttribution != nil {
+		copy := *site.FooterAttribution
+		copy.Name = html.EscapeString(copy.Name)
+		copy.URL = html.EscapeString(copy.URL)
+		site.FooterAttribution = &copy
+	}
 	for i := range site.Nav {
 		site.Nav[i].Label = html.EscapeString(site.Nav[i].Label)
 		site.Nav[i].Path = html.EscapeString(site.Nav[i].Path)
 	}
 	return site
+}
+
+func validateFooterAttribution(attribution *FooterAttribution) error {
+	if attribution == nil {
+		return nil
+	}
+	if strings.TrimSpace(attribution.Name) == "" {
+		return inputErrorf("garden.footerAttribution.name is required")
+	}
+	if attribution.URL == "" {
+		return nil
+	}
+	parsed, err := url.Parse(attribution.URL)
+	if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
+		return inputErrorf("garden.footerAttribution.url must be an absolute http(s) URL")
+	}
+	return nil
 }
 
 func renderArtifacts(

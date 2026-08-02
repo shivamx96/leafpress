@@ -272,9 +272,14 @@ Semantic HTML with `lp-` prefixed classes. User overrides via `style.css`.
 
 ```html
 <footer class="lp-footer">
-  <span class="lp-footer-text">Grown with <a href="https://leafpress.dev">leafpress</a></span>
+  {{ if .Site.Author }}<span class="lp-footer-text">&copy; {{ .Site.Author }}. All rights reserved.</span>{{ end }}
+  <span class="lp-footer-text">Grown with <a href="https://leafpress.in">leafpress</a></span>
 </footer>
 ```
+
+Renderer hosts may replace only the “Grown with” name and link through the
+structured `garden.footerAttribution` field. Raw footer HTML and scripts are
+not accepted; CLI builds retain the Leafpress attribution.
 
 ---
 
