@@ -70,6 +70,25 @@ func TestBuiltinFontFacesRegistered(t *testing.T) {
 	}
 }
 
+func TestBuiltinFontPreloadFace(t *testing.T) {
+	tests := map[string]string{
+		"Inter":         "static/leafpress/fonts/inter-normal-latin.woff2",
+		"IBM Plex Mono": "static/leafpress/fonts/ibm-plex-mono-normal-latin-400.woff2",
+	}
+	for family, want := range tests {
+		face, ok := BuiltinFontPreloadFace(family)
+		if !ok {
+			t.Fatalf("BuiltinFontPreloadFace(%q) not found", family)
+		}
+		if face.LogicalPath != want || face.Style != "normal" || face.Subset != "latin" {
+			t.Errorf("BuiltinFontPreloadFace(%q) = %+v, want path %q normal Latin", family, face, want)
+		}
+	}
+	if _, ok := BuiltinFontPreloadFace("Lobster"); ok {
+		t.Error("unknown family returned a preload face")
+	}
+}
+
 func TestFontFaceCSS(t *testing.T) {
 	css := FontFaceCSS("Inter")
 	if !strings.Contains(css, `font-family: "Inter"`) {
