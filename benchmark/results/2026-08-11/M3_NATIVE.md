@@ -1,13 +1,12 @@
 # SSG Benchmark Results
 
-**Date**: Mon Aug 10 20:15:05 UTC 2026
-**System**: Linux x86_64
-**CPU**: AMD Ryzen 7 9800X3D 8-Core Processor
-**Memory**: 62GB
-**Container limits**: 4 CPUs, 8GB
-**Source revision**: `27f6d902f26a`
-**Leafpress binary**: `/benchmark/leafpress`
-**Leafpress SHA-256**: `d12c56de0e2b6cee648d6be6936b706a7de6dbb279c93eddd43f9af0a812d338`
+**Date**: Tue Aug 11 02:15:32 IST 2026
+**System**: Darwin arm64
+**CPU**: Apple M3
+**Memory**: 24GB
+**Source revision**: `0e7bdb91397f`
+**Leafpress binary**: `/tmp/leafpress-m3-benchmark.8c8cpc/leafpress-darwin/leafpress`
+**Leafpress SHA-256**: `be009e16b24b323e57d00bc2ee7f3570f3b614e15fe28df8b454fdde0473a4b2`
 **Workload**: v2 (hierarchical-notes-posts)
 **Warmups / measured runs**: 2 / 10
 **Scheduling**: deterministic interleaved rotation
@@ -18,12 +17,12 @@
 
 | SSG | 100 pages | 1000 pages | 2000 pages |
 |-----|------------|------------|------------|
-| zola | 18 (18±1) | 71 (71±2) | 135 (137±4) |
-| hugo | 28 (27±1) | 107 (108±5) | 197 (200±8) |
-| leafpress-minimal | 18 (18±1) | 73 (73±2) | 133 (134±3) |
-| leafpress | 19 (19±0) | 88 (90±4) | 166 (166±5) |
-| eleventy | 231 (232±5) | 446 (448±14) | 668 (667±14) |
-| jekyll | 159 (160±2) | 290 (289±2) | 439 (441±5) |
+| zola | 34 (34±0) | 159 (158±5) | 296 (298±7) |
+| hugo | 46 (46±1) | 184 (188±11) | 334 (336±10) |
+| leafpress-minimal | 35 (34±1) | 164 (165±5) | 312 (311±12) |
+| leafpress | 36 (36±3) | 171 (171±3) | 321 (327±11) |
+| eleventy | 262 (263±3) | 602 (604±10) | 962 (965±11) |
+| jekyll | 207 (207±0) | 470 (472±7) | 774 (776±6) |
 
 *leafpress-minimal: reader features disabled; standard Markdown links remain.*
 *leafpress: default reader features including wikilinks, backlinks, graph, search, and TOC.*
