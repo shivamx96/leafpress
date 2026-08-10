@@ -1,6 +1,9 @@
 package build
 
 import (
+	"crypto/rand"
+	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"net/url"
@@ -25,7 +28,6 @@ import (
 type Options struct {
 	IncludeDrafts bool
 	Verbose       bool
-	SkipClean     bool // Skip cleaning output directory (for hot reload)
 }
 
 // Stats contains build statistics
@@ -42,6 +44,10 @@ type Builder struct {
 	outputDir string
 	templates *templates.Templates
 	initErr   error
+
+	// promoteHook is used by tests to force a failure after the old output has
+	// been moved aside, exercising rollback of the final promotion.
+	promoteHook func() error
 
 	// Cached state for incremental builds
 	pages          []*content.Page
@@ -68,12 +74,9 @@ func New(cfg *config.Config, opts Options) *Builder {
 const (
 	outputOwnershipMarker  = ".leafpress-output"
 	outputOwnershipContent = "leafpress-output-v1\n"
+	outputStageInfix       = ".leafpress-stage-"
+	outputBackupInfix      = ".leafpress-backup-"
 )
-
-// SetSkipClean enables or disables cleaning the output directory
-func (b *Builder) SetSkipClean(skip bool) {
-	b.opts.SkipClean = skip
-}
 
 // logTiming prints timing info in verbose mode with aligned formatting
 func (b *Builder) logTiming(label string, d time.Duration) {
@@ -83,7 +86,7 @@ func (b *Builder) logTiming(label string, d time.Duration) {
 }
 
 // Build generates the static site
-func (b *Builder) Build() (*Stats, error) {
+func (b *Builder) Build() (result *Stats, resultErr error) {
 	stats := &Stats{}
 	var t0 time.Time
 	if b.initErr != nil {
@@ -92,7 +95,16 @@ func (b *Builder) Build() (*Stats, error) {
 	if err := b.cfg.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid config: %w", err)
 	}
-	b.outputDir = filepath.Join(b.rootDir, b.cfg.Build.OutputDir)
+	finalOutputDir := filepath.Join(b.rootDir, b.cfg.Build.OutputDir)
+	b.outputDir = finalOutputDir
+
+	previousState := b.snapshotBuildState()
+	stateCommitted := false
+	defer func() {
+		if !stateCommitted {
+			b.restoreBuildState(previousState)
+		}
+	}()
 
 	// Verify custom font files exist as regular files. Config validation
 	// covers only the declaration shape; checking the filesystem is the
@@ -128,14 +140,27 @@ func (b *Builder) Build() (*Stats, error) {
 	}
 	b.logTiming("templates", time.Since(t0))
 
-	// Claim and clean the output directory through an os.Root. Besides the
-	// config's lexical checks, os.Root prevents traversal through symlinks while
-	// performing the destructive operation.
+	// Full builds render into a sibling staging directory and promote only after
+	// every artifact succeeds. Incremental rebuilds continue writing in place.
 	t0 = time.Now()
-	if err := b.prepareOutputDirectory(); err != nil {
+	outputTx, err := b.prepareStagedOutput()
+	if err != nil {
 		return nil, err
 	}
-	b.logTiming("clean", time.Since(t0))
+	b.outputDir = filepath.Join(b.rootDir, outputTx.stagingDir)
+	defer func() {
+		b.outputDir = finalOutputDir
+		if cleanupErr := outputTx.close(); cleanupErr != nil {
+			if outputTx.committed && resultErr == nil {
+				fmt.Printf("  warning: failed to fully clean output transaction: %v\n", cleanupErr)
+				stats.WarningCount++
+				return
+			}
+			result = nil
+			resultErr = errors.Join(resultErr, fmt.Errorf("clean up output transaction: %w", cleanupErr))
+		}
+	}()
+	b.logTiming("prepare", time.Since(t0))
 
 	// Scan content
 	t0 = time.Now()
@@ -344,61 +369,233 @@ func (b *Builder) Build() (*Stats, error) {
 	}
 	b.logTiming("rss", time.Since(t0))
 
+	t0 = time.Now()
+	if err := outputTx.commit(b.promoteHook); err != nil {
+		stateCommitted = outputTx.committed
+		return nil, fmt.Errorf("failed to publish staged output: %w", err)
+	}
+	b.logTiming("publish", time.Since(t0))
+	stateCommitted = true
+
 	return stats, nil
 }
 
-// prepareOutputDirectory refuses to clean a non-empty custom directory until
-// Leafpress has claimed it. The default _site directory is treated as a legacy
-// Leafpress destination, and recognizable pre-marker builds are migrated on
-// their next successful preparation.
-func (b *Builder) prepareOutputDirectory() error {
+type buildState struct {
+	pages          []*content.Page
+	pagesByPath    map[string]*content.Page
+	pagesBySlug    map[string]*content.Page
+	pagesBySection map[string][]*content.Page
+	pagesByTag     map[string][]*content.Page
+	linkResolver   *content.LinkResolver
+	siteData       templates.SiteData
+}
+
+func (b *Builder) snapshotBuildState() buildState {
+	return buildState{
+		pages:          b.pages,
+		pagesByPath:    b.pagesByPath,
+		pagesBySlug:    b.pagesBySlug,
+		pagesBySection: b.pagesBySection,
+		pagesByTag:     b.pagesByTag,
+		linkResolver:   b.linkResolver,
+		siteData:       b.siteData,
+	}
+}
+
+func (b *Builder) restoreBuildState(state buildState) {
+	b.pages = state.pages
+	b.pagesByPath = state.pagesByPath
+	b.pagesBySlug = state.pagesBySlug
+	b.pagesBySection = state.pagesBySection
+	b.pagesByTag = state.pagesByTag
+	b.linkResolver = state.linkResolver
+	b.siteData = state.siteData
+}
+
+type outputTransaction struct {
+	root        *os.Root
+	finalDir    string
+	stagingDir  string
+	backupDir   string
+	finalExists bool
+	committed   bool
+	closed      bool
+}
+
+func (b *Builder) prepareStagedOutput() (*outputTransaction, error) {
 	root, err := os.OpenRoot(b.rootDir)
 	if err != nil {
-		return fmt.Errorf("open project directory: %w", err)
+		return nil, fmt.Errorf("open project directory: %w", err)
 	}
-	defer root.Close()
 
 	outputDir := b.cfg.Build.OutputDir
+	exists, err := inspectOutputDirectory(root, outputDir)
+	if err != nil {
+		root.Close()
+		return nil, err
+	}
+
+	parentDir := filepath.Dir(outputDir)
+	if err := root.MkdirAll(parentDir, 0755); err != nil {
+		root.Close()
+		return nil, fmt.Errorf("create output parent directory %q: %w", parentDir, err)
+	}
+	stagingDir, err := createManagedSibling(root, outputDir, outputStageInfix)
+	if err != nil {
+		root.Close()
+		return nil, fmt.Errorf("create staging directory: %w", err)
+	}
+
+	return &outputTransaction{
+		root:        root,
+		finalDir:    outputDir,
+		stagingDir:  stagingDir,
+		finalExists: exists,
+	}, nil
+}
+
+func (tx *outputTransaction) commit(promoteHook func() error) error {
+	if tx.finalExists {
+		backupDir, err := unusedManagedSibling(tx.root, tx.finalDir, outputBackupInfix)
+		if err != nil {
+			return fmt.Errorf("reserve backup path: %w", err)
+		}
+		if err := tx.root.Rename(tx.finalDir, backupDir); err != nil {
+			return fmt.Errorf("move current output to backup: %w", err)
+		}
+		tx.backupDir = backupDir
+	}
+
+	if promoteHook != nil {
+		if err := promoteHook(); err != nil {
+			return tx.rollback(fmt.Errorf("promotion hook: %w", err))
+		}
+	}
+	if err := tx.root.Rename(tx.stagingDir, tx.finalDir); err != nil {
+		return tx.rollback(fmt.Errorf("promote staging directory: %w", err))
+	}
+	tx.stagingDir = ""
+	tx.committed = true
+	return nil
+}
+
+func (tx *outputTransaction) rollback(cause error) error {
+	if tx.backupDir == "" {
+		return cause
+	}
+	if err := tx.root.Rename(tx.backupDir, tx.finalDir); err != nil {
+		return errors.Join(cause, fmt.Errorf("restore previous output from %q: %w", tx.backupDir, err))
+	}
+	tx.backupDir = ""
+	return cause
+}
+
+func (tx *outputTransaction) close() error {
+	if tx.closed {
+		return nil
+	}
+	tx.closed = true
+
+	var cleanupErr error
+	if tx.stagingDir != "" {
+		if err := tx.root.RemoveAll(tx.stagingDir); err != nil {
+			cleanupErr = errors.Join(cleanupErr, fmt.Errorf("remove staging directory %q: %w", tx.stagingDir, err))
+		}
+	}
+	if tx.backupDir != "" {
+		if tx.committed {
+			if err := tx.root.RemoveAll(tx.backupDir); err != nil {
+				cleanupErr = errors.Join(cleanupErr, fmt.Errorf("remove output backup %q: %w", tx.backupDir, err))
+			}
+		} else {
+			if _, err := tx.root.Lstat(tx.finalDir); os.IsNotExist(err) {
+				if err := tx.root.Rename(tx.backupDir, tx.finalDir); err != nil {
+					cleanupErr = errors.Join(cleanupErr, fmt.Errorf("restore output backup %q: %w", tx.backupDir, err))
+				}
+			} else if err != nil {
+				cleanupErr = errors.Join(cleanupErr, fmt.Errorf("inspect output during rollback: %w", err))
+			} else {
+				cleanupErr = errors.Join(cleanupErr, fmt.Errorf("output backup retained at %q after failed rollback", tx.backupDir))
+			}
+		}
+	}
+	cleanupErr = errors.Join(cleanupErr, tx.root.Close())
+	return cleanupErr
+}
+
+func createManagedSibling(root *os.Root, outputDir, infix string) (string, error) {
+	for range 32 {
+		candidate, err := managedSiblingCandidate(outputDir, infix)
+		if err != nil {
+			return "", err
+		}
+		if err := root.Mkdir(candidate, 0755); err != nil {
+			if os.IsExist(err) {
+				continue
+			}
+			return "", err
+		}
+		marker := filepath.Join(candidate, outputOwnershipMarker)
+		if err := root.WriteFile(marker, []byte(outputOwnershipContent), 0644); err != nil {
+			_ = root.RemoveAll(candidate)
+			return "", err
+		}
+		return candidate, nil
+	}
+	return "", fmt.Errorf("could not allocate a unique managed directory")
+}
+
+func unusedManagedSibling(root *os.Root, outputDir, infix string) (string, error) {
+	for range 32 {
+		candidate, err := managedSiblingCandidate(outputDir, infix)
+		if err != nil {
+			return "", err
+		}
+		if _, err := root.Lstat(candidate); os.IsNotExist(err) {
+			return candidate, nil
+		} else if err != nil {
+			return "", err
+		}
+	}
+	return "", fmt.Errorf("could not allocate a unique managed path")
+}
+
+func managedSiblingCandidate(outputDir, infix string) (string, error) {
+	random := make([]byte, 8)
+	if _, err := rand.Read(random); err != nil {
+		return "", err
+	}
+	name := "." + filepath.Base(outputDir) + infix + hex.EncodeToString(random)
+	return filepath.Join(filepath.Dir(outputDir), name), nil
+}
+
+func inspectOutputDirectory(root *os.Root, outputDir string) (bool, error) {
 	info, err := root.Lstat(outputDir)
 	switch {
 	case err == nil:
 		if !info.IsDir() {
-			return fmt.Errorf("refusing to use output directory %q: it is not a directory", outputDir)
+			return false, fmt.Errorf("refusing to use output directory %q: it is not a directory", outputDir)
 		}
 		owned, err := outputDirectoryOwned(root, outputDir)
 		if err != nil {
-			return fmt.Errorf("inspect output directory %q: %w", outputDir, err)
+			return false, fmt.Errorf("inspect output directory %q: %w", outputDir, err)
 		}
 		if !owned {
 			empty, err := outputDirectoryEmpty(root, outputDir)
 			if err != nil {
-				return fmt.Errorf("inspect output directory %q: %w", outputDir, err)
+				return false, fmt.Errorf("inspect output directory %q: %w", outputDir, err)
 			}
 			legacy := filepath.Clean(outputDir) == "_site" || legacyLeafpressOutput(root, outputDir)
 			if !empty && !legacy {
-				return fmt.Errorf("refusing to use existing output directory %q because Leafpress does not own it; choose an empty directory or remove it manually", outputDir)
+				return false, fmt.Errorf("refusing to use existing output directory %q because Leafpress does not own it; choose an empty directory or remove it manually", outputDir)
 			}
 		}
+		return true, nil
 	case os.IsNotExist(err):
-		// A new path is safe to claim below.
+		return false, nil
 	default:
-		return fmt.Errorf("inspect output directory %q: %w", outputDir, err)
+		return false, fmt.Errorf("inspect output directory %q: %w", outputDir, err)
 	}
-
-	if !b.opts.SkipClean {
-		if err := root.RemoveAll(outputDir); err != nil {
-			return fmt.Errorf("failed to safely clean output directory %q: %w", outputDir, err)
-		}
-	}
-	if err := root.MkdirAll(outputDir, 0755); err != nil {
-		return fmt.Errorf("failed to safely create output directory %q: %w", outputDir, err)
-	}
-	marker := filepath.Join(outputDir, outputOwnershipMarker)
-	if err := root.WriteFile(marker, []byte(outputOwnershipContent), 0644); err != nil {
-		return fmt.Errorf("failed to claim output directory %q: %w", outputDir, err)
-	}
-
-	return nil
 }
 
 func outputDirectoryOwned(root *os.Root, outputDir string) (bool, error) {
@@ -485,18 +682,14 @@ func (b *Builder) RebuildIncremental(changedPath string, changeType ChangeType) 
 		if err != nil {
 			return nil, fmt.Errorf("failed to reload config: %w", err)
 		}
+		oldCfg := b.cfg
+		oldOutputDir := b.outputDir
+		oldTemplates := b.templates
 		b.cfg = newCfg
-		b.outputDir = filepath.Join(b.rootDir, b.cfg.Build.OutputDir)
-
-		// Regenerate templates
-		newTemplates, err := templates.New()
-		if err != nil {
-			return nil, fmt.Errorf("failed to reload templates: %w", err)
-		}
-		b.templates = newTemplates
-
-		b.opts.SkipClean = false // Full clean for config changes
 		if _, err := b.Build(); err != nil {
+			b.cfg = oldCfg
+			b.outputDir = oldOutputDir
+			b.templates = oldTemplates
 			return nil, err
 		}
 		stats.FullRebuild = true
