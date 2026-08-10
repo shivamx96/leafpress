@@ -47,23 +47,39 @@ Most static site generators make you choose: simple but limited, or powerful but
 
 ## Performance
 
-Build times in milliseconds (median of 10 runs) as of Apr 1, 2026 on **v1.0.0-beta.6**:
+Clean-build times in milliseconds on **v1.0.0-beta.17** using the deterministic
+workload v2 garden (median of 10 measured runs after 2 warmups). Both Docker
+hosts use the same pinned image with a 4-CPU and 8GB memory limit.
 
-**Docker on Apple M3, 24GB RAM**
+**Docker on Apple M3, 24GB host — container limited to 4 CPUs and 8GB RAM**
 
 | SSG | 100 pages | 1000 pages | 2000 pages |
 |-----|-----|------------|------------|
-| zola | 25 | 76 | 135  |
-| hugo | 40| 128 | 224  |
-| leafpress-minimal | 24| 89 | 145  |
-| leafpress | 30| 125 | 233  |
-| eleventy | 266| 555 | 836  |
-| jekyll | 175| 332 | 499  |
+| zola | 21 | 75 | 138 |
+| hugo | 36 | 124 | 219 |
+| leafpress-minimal | 23 | 97 | 171 |
+| leafpress | 25 | 111 | 203 |
+| eleventy | 258 | 523 | 805 |
+| jekyll | 155 | 278 | 419 |
+
+**Docker on AMD Ryzen 7 9800X3D, 62GB host — same container limits**
+
+| SSG | 100 pages | 1000 pages | 2000 pages |
+|-----|-----|------------|------------|
+| zola | 18 | 71 | 135 |
+| hugo | 28 | 107 | 197 |
+| leafpress-minimal | 18 | 73 | 133 |
+| leafpress | 19 | 88 | 166 |
+| eleventy | 231 | 446 | 668 |
+| jekyll | 159 | 290 | 439 |
 
 *leafpress-minimal: all extra features disabled (comparable to Hugo/Zola).*
 *leafpress: full features including wikilinks, backlinks, graph, search, and TOC.*
 
-On apples-to-apples comparison, we're literally the **2nd fastest just behind zola**. The cost of digital gardens is real and it adds up taking us to **hugo's** level once we include everything that matters.
+Across both hosts, full-featured leafpress is the **second-fastest generator
+behind Zola** and stays ahead of Hugo at every tested size. The fixture models
+a hierarchical garden with Notes, Posts, Tags, deterministic links, code
+blocks, and orphan pages. [See the full methodology and native/Docker reports.](https://github.com/shivamx96/leafpress/tree/main/benchmark/results/2026-08-11)
 
 ## Quick Start
 

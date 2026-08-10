@@ -144,6 +144,7 @@ output_dir_for() {
 
 output_metrics() {
     local directory=$1
+    local IFS=$' \t\n'
     if [[ ! -d $directory ]]; then
         printf 'N/A\tN/A\n'
         return
@@ -247,7 +248,7 @@ fi
 {
     echo "# SSG Benchmark Results"
     echo
-    echo "**Date**: $(date)"
+    echo "**Date**: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
     echo "**System**: $(uname -s) $(uname -m)"
     echo "**CPU**: ${CPU_INFO}"
     echo "**Memory**: ${MEM_INFO}"
