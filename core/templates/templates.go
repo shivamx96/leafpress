@@ -2,6 +2,8 @@ package templates
 
 import (
 	"bufio"
+	"bytes"
+	"crypto/sha256"
 	"fmt"
 	"html"
 	"io"
@@ -131,6 +133,46 @@ type SiteData struct {
 	RSS               bool
 	HeadExtra         string // Custom HTML to inject in <head>
 	FooterAttribution *FooterAttribution
+	ClientScriptPath  string // Content-hashed shared client bundle, relative to the site root
+}
+
+// ClientScriptAsset renders the site-wide client code once and returns its
+// content-addressed output path. Pages can then share this file instead of
+// embedding the same JavaScript in every HTML document.
+func (t *Templates) ClientScriptAsset(site SiteData) (string, string, error) {
+	site.ClientScriptPath = ""
+	var rendered bytes.Buffer
+	if err := t.base.Execute(&rendered, struct {
+		Site        SiteData
+		CurrentPath string
+	}{Site: site}); err != nil {
+		return "", "", err
+	}
+
+	const open = "<script data-leafpress-client>"
+	const close = "</script>"
+	html := rendered.String()
+	var scripts []string
+	for {
+		start := strings.Index(html, open)
+		if start < 0 {
+			break
+		}
+		html = html[start+len(open):]
+		end := strings.Index(html, close)
+		if end < 0 {
+			return "", "", fmt.Errorf("unterminated Leafpress client script")
+		}
+		scripts = append(scripts, strings.TrimSpace(html[:end]))
+		html = html[end+len(close):]
+	}
+	if len(scripts) == 0 {
+		return "", "", fmt.Errorf("Leafpress client script not found")
+	}
+
+	content := strings.Join(scripts, "\n\n") + "\n"
+	hash := sha256.Sum256([]byte(content))
+	return fmt.Sprintf("static/leafpress/app.%x.js", hash[:6]), content, nil
 }
 
 // New returns a cached Templates instance (parsed once, reused on subsequent calls)
@@ -715,7 +757,7 @@ const baseTemplate = `<!DOCTYPE html>
     </div>
   </div>{{end}}
 
-  <script>
+  {{if .Site.ClientScriptPath}}<script src="{{.Site.BasePath}}/{{.Site.ClientScriptPath}}" defer></script>{{else}}<script data-leafpress-client>
     // Base path for asset loading (supports GitHub Pages subdirectory hosting)
     var LP_BASE_PATH = '{{.Site.BasePath}}';
 
@@ -1627,7 +1669,7 @@ const baseTemplate = `<!DOCTYPE html>
       })();
     });
   </script>
-  <script>
+  <script data-leafpress-client>
     if (document.querySelector('.mermaid')) {
       var s = document.createElement('script');
       s.src = LP_BASE_PATH + '/static/leafpress/mermaid/mermaid.min.js';
@@ -1637,7 +1679,7 @@ const baseTemplate = `<!DOCTYPE html>
       };
       document.body.appendChild(s);
     }
-  </script>
+  </script>{{end}}
 </body>
 </html>
 `
