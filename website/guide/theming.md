@@ -33,6 +33,10 @@ stylesheet:
 - Code: **JetBrains Mono**, **Geist Mono**, **IBM Plex Mono**,
   **Fira Code**, **Source Code Pro**, **Atkinson Hyperlegible Mono**
 
+Leafpress also preloads one normal face for each selected family in theme role
+order (`fontHeading`, `fontBody`, then `fontMono`). Reused families and files
+are deduplicated; italic and extended-Latin faces remain demand-loaded.
+
 These groups are recommendations, not validation restrictions; any bundled
 family can be assigned to any theme role:
 

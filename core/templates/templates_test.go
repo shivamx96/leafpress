@@ -1,6 +1,7 @@
 package templates
 
 import (
+	"reflect"
 	"strings"
 	"testing"
 
@@ -257,6 +258,44 @@ func TestFontCSSIncludesBundledFamilies(t *testing.T) {
 	css := FontCSS(testTheme("Bricolage Grotesque", "Inter", "JetBrains Mono"))
 	if !strings.Contains(css, `font-family: "Inter"`) || !strings.Contains(css, "@font-face") {
 		t.Error("FontCSS missing bundled @font-face rules")
+	}
+}
+
+func TestFontPreloadsPreserveRoleOrder(t *testing.T) {
+	preloads := fontPreloads(testTheme("Bricolage Grotesque", "Inter", "JetBrains Mono"))
+	want := []fontPreload{
+		{Path: "static/leafpress/fonts/bricolage-grotesque-normal-latin.woff2", ContentType: "font/woff2"},
+		{Path: "static/leafpress/fonts/inter-normal-latin.woff2", ContentType: "font/woff2"},
+		{Path: "static/leafpress/fonts/jetbrains-mono-normal-latin.woff2", ContentType: "font/woff2"},
+	}
+	if !reflect.DeepEqual(preloads, want) {
+		t.Fatalf("fontPreloads() = %#v, want %#v", preloads, want)
+	}
+}
+
+func TestFontPreloadsDeduplicateAndSkipUnhosted(t *testing.T) {
+	preloads := fontPreloads(testTheme("Inter", "Inter", "Lobster"))
+	if len(preloads) != 1 || preloads[0].Path != "static/leafpress/fonts/inter-normal-latin.woff2" {
+		t.Fatalf("fontPreloads() = %#v, want one Inter preload", preloads)
+	}
+}
+
+func TestFontPreloadsCustomFace(t *testing.T) {
+	theme := testTheme("My Serif", "Inter", "My Mono")
+	theme.Fonts = []config.FontFace{
+		{Family: "My Serif", File: "static/fonts/my-serif-italic.woff2", Style: "italic", Weight: "400"},
+		{Family: "My Serif", File: "static/fonts/my-serif-bold.woff2", Weight: "700"},
+		{Family: "My Serif", File: "static/fonts/my-serif-variable.woff2", Weight: "300 600"},
+		{Family: "My Mono", File: "static/fonts/my-mono.ttf"},
+	}
+	preloads := fontPreloads(theme)
+	want := []fontPreload{
+		{Path: "static/fonts/my-serif-variable.woff2", ContentType: "font/woff2"},
+		{Path: "static/leafpress/fonts/inter-normal-latin.woff2", ContentType: "font/woff2"},
+		{Path: "static/fonts/my-mono.ttf", ContentType: "font/ttf"},
+	}
+	if !reflect.DeepEqual(preloads, want) {
+		t.Fatalf("fontPreloads() = %#v, want %#v", preloads, want)
 	}
 }
 

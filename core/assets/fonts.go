@@ -124,6 +124,20 @@ func IsBuiltinFontFamily(family string) bool {
 	return false
 }
 
+// BuiltinFontPreloadFace returns the normal Latin face a page should preload
+// for family. Each bundled family has exactly one variable face for that
+// combination, or (for static families) lists the regular 400 face first.
+// Keeping this selection beside the catalog ensures preload hints and emitted
+// @font-face rules cannot drift to different files.
+func BuiltinFontPreloadFace(family string) (BuiltinFontFace, bool) {
+	for _, face := range builtinFontFaces {
+		if face.Family == family && face.Style == "normal" && face.Subset == "latin" {
+			return face, true
+		}
+	}
+	return BuiltinFontFace{}, false
+}
+
 // RequiredBuiltins returns every built-in a rendered site references for the
 // given theme families: all root built-ins (favicons, linked from every page
 // head) plus the faces and OFL license texts of families covered by the

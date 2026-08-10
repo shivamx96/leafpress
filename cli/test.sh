@@ -999,18 +999,23 @@ fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR"
 
-# Test 42b: Default build is self-hosted with no Google Fonts request
-test_case "Default fonts are self-hosted with no Google request"
+# Test 42b: Default build is self-hosted and preloads selected fonts
+test_case "Default fonts are self-hosted and preloaded"
 TESTDIR=$(mktemp -d)
 cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 "$LEAFPRESS" build > /dev/null 2>&1
 if grep -rq -e 'fonts.googleapis.com' -e 'fonts.gstatic.com' _site/; then
     fail "Default build references Google Fonts"
-elif grep -q '@font-face' _site/style.css && ls _site/static/leafpress/fonts/*.woff2 > /dev/null 2>&1; then
+elif grep -q '@font-face' _site/style.css && \
+     [ "$(grep -c 'rel="preload".*as="font"' _site/index.html)" -eq 3 ] && \
+     grep -q 'bricolage-grotesque-normal-latin.woff2' _site/index.html && \
+     grep -q 'inter-normal-latin.woff2' _site/index.html && \
+     grep -q 'jetbrains-mono-normal-latin.woff2' _site/index.html && \
+     ls _site/static/leafpress/fonts/*.woff2 > /dev/null 2>&1; then
     pass
 else
-    fail "Self-hosted font files or @font-face rules missing"
+    fail "Self-hosted font files, @font-face rules, or preload links missing"
 fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR"

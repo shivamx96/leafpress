@@ -39,6 +39,7 @@ func init() {
 		"safeHTML":          func(s string) string { return s },
 		"safeCSS":           func(s string) string { return s },
 		"fontURL":           fontURL,
+		"fontPreloads":      fontPreloads,
 		"remoteFontURL":     remoteFontURL,
 		"hasPrefix":         strings.HasPrefix,
 	}
@@ -277,6 +278,91 @@ var fontFormats = map[string]string{
 	".otf":   "opentype",
 }
 
+var fontMIMETypes = map[string]string{
+	".woff2": "font/woff2",
+	".woff":  "font/woff",
+	".ttf":   "font/ttf",
+	".otf":   "font/otf",
+}
+
+// fontPreload describes one self-hosted face linked from every page head.
+// Fields are exported because Go templates can only access exported fields.
+type fontPreload struct {
+	Path        string
+	ContentType string
+}
+
+// fontPreloads resolves one normal Latin/regular face for each selected theme
+// family, preserving role order (heading, body, mono). Families and files are
+// deduplicated so assigning the same font to multiple roles never creates
+// duplicate fetch hints. Remote-only families are deliberately skipped: their
+// provider stylesheet owns the final font URLs.
+func fontPreloads(theme config.Theme) []fontPreload {
+	families := []string{theme.FontHeading, theme.FontBody, theme.FontMono}
+	seenFamilies := map[string]bool{}
+	seenPaths := map[string]bool{}
+	preloads := make([]fontPreload, 0, len(families))
+
+	for _, family := range families {
+		if family == "" || seenFamilies[family] {
+			continue
+		}
+		seenFamilies[family] = true
+
+		if face, ok := assets.BuiltinFontPreloadFace(family); ok {
+			if !seenPaths[face.LogicalPath] {
+				seenPaths[face.LogicalPath] = true
+				preloads = append(preloads, fontPreload{
+					Path:        assets.EscapedURLPath(face.LogicalPath),
+					ContentType: "font/woff2",
+				})
+			}
+			continue
+		}
+
+		if face, ok := customFontPreloadFace(theme.Fonts, family); ok {
+			fontPath := assets.EscapedURLPath(face.File)
+			if !seenPaths[fontPath] {
+				seenPaths[fontPath] = true
+				preloads = append(preloads, fontPreload{
+					Path:        fontPath,
+					ContentType: fontMIMETypes[strings.ToLower(path.Ext(face.File))],
+				})
+			}
+		}
+	}
+
+	return preloads
+}
+
+// customFontPreloadFace prefers the first normal face that can render weight
+// 400, then falls back to the first normal face. Config validation guarantees
+// the file extension and weight syntax before templates render.
+func customFontPreloadFace(faces []config.FontFace, family string) (config.FontFace, bool) {
+	var fallback config.FontFace
+	for _, face := range faces {
+		style := face.Style
+		if style == "" {
+			style = "normal"
+		}
+		if face.Family != family || style != "normal" {
+			continue
+		}
+		if fallback.File == "" {
+			fallback = face
+		}
+		weight := face.Weight
+		if weight == "" || weight == "400" {
+			return face, true
+		}
+		var low, high int
+		if _, err := fmt.Sscanf(weight, "%d %d", &low, &high); err == nil && low <= 400 && high >= 400 {
+			return face, true
+		}
+	}
+	return fallback, fallback.File != ""
+}
+
 // customFontCSS renders @font-face rules for the theme's custom local font
 // declarations. URLs are site-relative like the built-in faces (the rules
 // live in the root-served stylesheet) with segments escaped as defense in
@@ -460,6 +546,8 @@ const baseTemplate = `<!DOCTYPE html>
   <link rel="icon" type="image/png" sizes="96x96" href="{{.Site.BasePath}}/favicon-96x96.png">
   <link rel="icon" type="image/x-icon" href="{{.Site.BasePath}}/favicon.ico">
   {{if .Site.RSS}}<link rel="alternate" type="application/rss+xml" title="{{.Site.Title}}" href="{{.Site.BasePath}}/feed.xml">{{end}}
+  {{range fontPreloads .Site.Theme}}<link rel="preload" href="{{$.Site.BasePath}}/{{.Path}}" as="font" type="{{.ContentType}}" crossorigin>
+  {{end}}
   <style>
     :root {
       --lp-font-heading: "{{.Site.Theme.FontHeading}}", Georgia, serif;

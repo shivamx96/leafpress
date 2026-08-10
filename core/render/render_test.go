@@ -1297,6 +1297,23 @@ func TestSelfHostedFontsInStylesheet(t *testing.T) {
 	if strings.Contains(html, "fonts.googleapis.com") || strings.Contains(html, "fonts.gstatic.com") {
 		t.Error("bundled default fonts must not reference Google Fonts")
 	}
+	preloadPaths := []string{
+		"/g/shivam/static/leafpress/fonts/bricolage-grotesque-normal-latin.woff2",
+		"/g/shivam/static/leafpress/fonts/inter-normal-latin.woff2",
+		"/g/shivam/static/leafpress/fonts/jetbrains-mono-normal-latin.woff2",
+	}
+	last := -1
+	for _, fontPath := range preloadPaths {
+		link := `rel="preload" href="` + fontPath + `" as="font" type="font/woff2" crossorigin`
+		index := strings.Index(html, link)
+		if index < 0 {
+			t.Errorf("page head missing font preload %q", link)
+		}
+		if index <= last {
+			t.Errorf("font preloads are not in theme role order: %v", preloadPaths)
+		}
+		last = index
+	}
 	// No warnings: every family is self-hosted.
 	for _, w := range out.Warnings {
 		if strings.Contains(w, "font family") {
@@ -1378,6 +1395,9 @@ func TestCustomLocalFontsRenderPortableCSS(t *testing.T) {
 	html := pageHTML(t, out, "note")
 	if strings.Contains(html, "fonts.googleapis.com") || strings.Contains(out.CSS, "fonts.googleapis.com") {
 		t.Error("declared custom family must not trigger a remote font link")
+	}
+	if !strings.Contains(html, `rel="preload" href="/static/fonts/my.woff2" as="font" type="font/woff2" crossorigin`) {
+		t.Error("declared custom family should emit a matching preload link")
 	}
 }
 
