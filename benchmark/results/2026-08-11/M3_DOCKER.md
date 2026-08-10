@@ -1,6 +1,6 @@
 # SSG Benchmark Results
 
-**Date**: Mon Aug 10 20:54:30 UTC 2026
+**Date**: 2026-08-10T20:54:30Z
 **System**: Linux aarch64
 **CPU**: Unknown
 **Memory**: 11GB

@@ -1,6 +1,6 @@
 # SSG Benchmark Results
 
-**Date**: Mon Aug 10 20:15:05 UTC 2026
+**Date**: 2026-08-10T20:15:05Z
 **System**: Linux x86_64
 **CPU**: AMD Ryzen 7 9800X3D 8-Core Processor
 **Memory**: 62GB

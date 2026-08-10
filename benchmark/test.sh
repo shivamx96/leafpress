@@ -131,6 +131,8 @@ BENCHMARK_RESULTS_FILE=$main_report BENCHMARK_RUNS=2 BENCHMARK_WARMUPS=1 \
     BENCHMARK_PAGE_COUNTS=20 BENCHMARK_SSGS="leafpress-minimal leafpress" \
     bash "${SCRIPT_DIR}/run-all.sh" >/dev/null
 assert_contains '**Workload**: v2 (hierarchical-notes-posts)' "$main_report"
+grep -Eq '^\*\*Date\*\*: [0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$' "$main_report" || \
+    fail "main report timestamp is not UTC RFC 3339"
 assert_contains '**Scheduling**: deterministic interleaved rotation' "$main_report"
 assert_contains '**Leafpress SHA-256**:' "$main_report"
 assert_contains '## Generated Output (logical bytes and file count)' "$main_report"
@@ -154,5 +156,7 @@ BENCHMARK_RESULTS_FILE=$stress_report BENCHMARK_RUNS=1 BENCHMARK_WARMUPS=1 \
     BENCHMARK_PAGE_COUNTS=20 bash "${SCRIPT_DIR}/run-navigation-stress.sh" >/dev/null
 assert_contains '| 20 |' "$stress_report"
 assert_contains 'Nav links/page' "$stress_report"
+grep -Eq '^\*\*Date\*\*: [0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$' "$stress_report" || \
+    fail "stress report timestamp is not UTC RFC 3339"
 
 echo "benchmark smoke tests passed"

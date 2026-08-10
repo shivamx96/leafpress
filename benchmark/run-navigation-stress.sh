@@ -35,7 +35,7 @@ median() {
 {
     echo "# Leafpress Flat-Navigation Stress Results"
     echo
-    echo "**Date**: $(date)"
+    echo "**Date**: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
     echo "**System**: $(uname -s) $(uname -m)"
     echo "**Warmups / measured runs**: ${WARMUPS} / ${RUNS}"
     echo

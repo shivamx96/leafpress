@@ -1,6 +1,6 @@
 # SSG Benchmark Results
 
-**Date**: Mon Jan  5 16:39:15 UTC 2026
+**Date**: 2026-01-05T16:39:15Z
 **System**: Linux aarch64
 **CPU**: Docker container (aarch64)
 **Memory**: 11GB

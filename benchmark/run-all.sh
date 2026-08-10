@@ -248,7 +248,7 @@ fi
 {
     echo "# SSG Benchmark Results"
     echo
-    echo "**Date**: $(date)"
+    echo "**Date**: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
     echo "**System**: $(uname -s) $(uname -m)"
     echo "**CPU**: ${CPU_INFO}"
     echo "**Memory**: ${MEM_INFO}"
