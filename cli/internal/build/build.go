@@ -2,6 +2,7 @@ package build
 
 import (
 	"fmt"
+	"io"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -40,6 +41,7 @@ type Builder struct {
 	rootDir   string
 	outputDir string
 	templates *templates.Templates
+	initErr   error
 
 	// Cached state for incremental builds
 	pages          []*content.Page
@@ -53,14 +55,20 @@ type Builder struct {
 
 // New creates a new Builder
 func New(cfg *config.Config, opts Options) *Builder {
-	cwd, _ := os.Getwd()
+	cwd, err := os.Getwd()
 	return &Builder{
 		cfg:       cfg,
 		opts:      opts,
 		rootDir:   cwd,
 		outputDir: filepath.Join(cwd, cfg.Build.OutputDir),
+		initErr:   err,
 	}
 }
+
+const (
+	outputOwnershipMarker  = ".leafpress-output"
+	outputOwnershipContent = "leafpress-output-v1\n"
+)
 
 // SetSkipClean enables or disables cleaning the output directory
 func (b *Builder) SetSkipClean(skip bool) {
@@ -78,6 +86,13 @@ func (b *Builder) logTiming(label string, d time.Duration) {
 func (b *Builder) Build() (*Stats, error) {
 	stats := &Stats{}
 	var t0 time.Time
+	if b.initErr != nil {
+		return nil, fmt.Errorf("resolve project directory: %w", b.initErr)
+	}
+	if err := b.cfg.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid config: %w", err)
+	}
+	b.outputDir = filepath.Join(b.rootDir, b.cfg.Build.OutputDir)
 
 	// Verify custom font files exist as regular files. Config validation
 	// covers only the declaration shape; checking the filesystem is the
@@ -113,15 +128,12 @@ func (b *Builder) Build() (*Stats, error) {
 	}
 	b.logTiming("templates", time.Since(t0))
 
-	// Clean output directory (skip for hot reload)
+	// Claim and clean the output directory through an os.Root. Besides the
+	// config's lexical checks, os.Root prevents traversal through symlinks while
+	// performing the destructive operation.
 	t0 = time.Now()
-	if !b.opts.SkipClean {
-		if err := os.RemoveAll(b.outputDir); err != nil {
-			return nil, fmt.Errorf("failed to clean output directory: %w", err)
-		}
-	}
-	if err := os.MkdirAll(b.outputDir, 0755); err != nil {
-		return nil, fmt.Errorf("failed to create output directory: %w", err)
+	if err := b.prepareOutputDirectory(); err != nil {
+		return nil, err
 	}
 	b.logTiming("clean", time.Since(t0))
 
@@ -333,6 +345,101 @@ func (b *Builder) Build() (*Stats, error) {
 	b.logTiming("rss", time.Since(t0))
 
 	return stats, nil
+}
+
+// prepareOutputDirectory refuses to clean a non-empty custom directory until
+// Leafpress has claimed it. The default _site directory is treated as a legacy
+// Leafpress destination, and recognizable pre-marker builds are migrated on
+// their next successful preparation.
+func (b *Builder) prepareOutputDirectory() error {
+	root, err := os.OpenRoot(b.rootDir)
+	if err != nil {
+		return fmt.Errorf("open project directory: %w", err)
+	}
+	defer root.Close()
+
+	outputDir := b.cfg.Build.OutputDir
+	info, err := root.Lstat(outputDir)
+	switch {
+	case err == nil:
+		if !info.IsDir() {
+			return fmt.Errorf("refusing to use output directory %q: it is not a directory", outputDir)
+		}
+		owned, err := outputDirectoryOwned(root, outputDir)
+		if err != nil {
+			return fmt.Errorf("inspect output directory %q: %w", outputDir, err)
+		}
+		if !owned {
+			empty, err := outputDirectoryEmpty(root, outputDir)
+			if err != nil {
+				return fmt.Errorf("inspect output directory %q: %w", outputDir, err)
+			}
+			legacy := filepath.Clean(outputDir) == "_site" || legacyLeafpressOutput(root, outputDir)
+			if !empty && !legacy {
+				return fmt.Errorf("refusing to use existing output directory %q because Leafpress does not own it; choose an empty directory or remove it manually", outputDir)
+			}
+		}
+	case os.IsNotExist(err):
+		// A new path is safe to claim below.
+	default:
+		return fmt.Errorf("inspect output directory %q: %w", outputDir, err)
+	}
+
+	if !b.opts.SkipClean {
+		if err := root.RemoveAll(outputDir); err != nil {
+			return fmt.Errorf("failed to safely clean output directory %q: %w", outputDir, err)
+		}
+	}
+	if err := root.MkdirAll(outputDir, 0755); err != nil {
+		return fmt.Errorf("failed to safely create output directory %q: %w", outputDir, err)
+	}
+	marker := filepath.Join(outputDir, outputOwnershipMarker)
+	if err := root.WriteFile(marker, []byte(outputOwnershipContent), 0644); err != nil {
+		return fmt.Errorf("failed to claim output directory %q: %w", outputDir, err)
+	}
+
+	return nil
+}
+
+func outputDirectoryOwned(root *os.Root, outputDir string) (bool, error) {
+	marker := filepath.Join(outputDir, outputOwnershipMarker)
+	info, err := root.Lstat(marker)
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	if !info.Mode().IsRegular() {
+		return false, fmt.Errorf("ownership marker is not a regular file")
+	}
+	data, err := root.ReadFile(marker)
+	if err != nil {
+		return false, err
+	}
+	return string(data) == outputOwnershipContent, nil
+}
+
+func outputDirectoryEmpty(root *os.Root, outputDir string) (bool, error) {
+	dir, err := root.Open(outputDir)
+	if err != nil {
+		return false, err
+	}
+	defer dir.Close()
+	_, err = dir.ReadDir(1)
+	if err == io.EOF {
+		return true, nil
+	}
+	return false, err
+}
+
+func legacyLeafpressOutput(root *os.Root, outputDir string) bool {
+	index, err := root.Stat(filepath.Join(outputDir, "index.html"))
+	if err != nil || !index.Mode().IsRegular() {
+		return false
+	}
+	assetsDir, err := root.Stat(filepath.Join(outputDir, "static", "leafpress"))
+	return err == nil && assetsDir.IsDir()
 }
 
 // ChangeType represents the type of file change

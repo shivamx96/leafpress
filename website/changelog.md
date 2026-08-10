@@ -4,6 +4,10 @@ date: 2025-01-06
 toc: false
 ---
 
+## Unreleased
+
+- Prevented destructive `build.outputDir` configurations: build output must remain inside the project, symlink escapes are blocked during cleanup, and non-empty custom directories require Leafpress ownership before they can be erased.
+
 ## v1.0.0-beta.16
 *August 3, 2026*
 

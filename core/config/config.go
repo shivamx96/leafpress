@@ -441,24 +441,8 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("port must be between 1 and 65535, got %d", c.Build.Port)
 	}
 
-	// Validate output directory is not a dangerous path
-	absPath, err := filepath.Abs(c.Build.OutputDir)
-	if err != nil {
-		return fmt.Errorf("invalid output directory path: %w", err)
-	}
-	// Block exact system paths and their direct children (but allow deeper nesting like /var/folders/...)
-	dangerousPaths := []string{"/", "/etc", "/bin", "/usr", "/sys", "/proc", "/var/log", "/var/run"}
-	for _, dangerous := range dangerousPaths {
-		if absPath == dangerous || strings.HasPrefix(absPath, dangerous+string(filepath.Separator)) {
-			return fmt.Errorf("output directory cannot be set to system path: %s", absPath)
-		}
-	}
-	// Also block root-level system directories exactly
-	rootDirs := []string{"/etc", "/bin", "/usr", "/sys", "/proc", "/var", "/sbin", "/lib", "/boot"}
-	for _, dir := range rootDirs {
-		if absPath == dir {
-			return fmt.Errorf("output directory cannot be set to system path: %s", absPath)
-		}
+	if err := validateOutputDir(c.Build.OutputDir); err != nil {
+		return err
 	}
 
 	// Validate accent color format (hex color)
@@ -529,6 +513,38 @@ func (c *Config) Validate() error {
 	}
 
 	return nil
+}
+
+// validateOutputDir keeps the configured build destination unambiguously
+// inside the garden. Runtime code also resolves symlinks before cleaning; this
+// lexical check is deliberately portable so a config cannot become unsafe
+// when moved between Unix and Windows.
+func validateOutputDir(outputDir string) error {
+	if outputDir == "" || strings.TrimSpace(outputDir) != outputDir {
+		return fmt.Errorf("build.outputDir must be a non-empty relative path without surrounding whitespace")
+	}
+
+	portable := strings.ReplaceAll(outputDir, "\\", "/")
+	if filepath.IsAbs(outputDir) || filepath.VolumeName(outputDir) != "" ||
+		strings.HasPrefix(portable, "/") || isWindowsDrivePath(portable) {
+		return fmt.Errorf("build.outputDir must be relative to the project, got %q", outputDir)
+	}
+
+	for _, segment := range strings.Split(portable, "/") {
+		if segment == "." || segment == ".." {
+			return fmt.Errorf("build.outputDir must not contain . or .. path segments, got %q", outputDir)
+		}
+	}
+
+	return nil
+}
+
+func isWindowsDrivePath(path string) bool {
+	if len(path) < 2 || path[1] != ':' {
+		return false
+	}
+	first := path[0]
+	return first >= 'A' && first <= 'Z' || first >= 'a' && first <= 'z'
 }
 
 // validateBaseURL enforces the canonical URL shape promised by the shared
