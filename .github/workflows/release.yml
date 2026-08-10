@@ -12,14 +12,17 @@ jobs:
   verify-modules:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with:
           go-version: "1.25.5"
+          cache-dependency-path: |
+            core/go.sum
+            cli/go.sum
 
       # This repository contains two Go modules. Their scoped tags must point
       # at the same commit as the product release tag or `go install @latest`
@@ -66,12 +69,15 @@ jobs:
             goarch: arm64
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with:
           go-version: "1.25.5"
+          cache-dependency-path: |
+            core/go.sum
+            cli/go.sum
 
       - name: Get version
         id: version
@@ -120,7 +126,7 @@ jobs:
           (cd core && zip ../dist/leafpress-render-${{ steps.version.outputs.VERSION }}-${{ matrix.goos }}-${{ matrix.goarch }}.zip leafpress-render.exe)
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: leafpress-${{ matrix.goos }}-${{ matrix.goarch }}
           path: dist/*
@@ -130,7 +136,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: artifacts
           merge-multiple: true
@@ -144,7 +150,7 @@ jobs:
           cat checksums.txt
 
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             artifacts/**/*.tar.gz
