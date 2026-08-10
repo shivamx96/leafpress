@@ -23,7 +23,7 @@ github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2
 github.com/inconshreveable/mousetrap v1.1.0/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/russross/blackfriday/v2 v2.1.0/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
-github.com/shivamx96/leafpress/core v1.0.0-beta.17 h1:vz8urno+Ej+dtk6kMHaqI/z4C/vBAAto4XI7PcU6DqQ=
+github.com/shivamx96/leafpress/core v1.0.0-beta.17 h1:nI5fvMn4UFRNaqykgHX83SN1+ucHyrGlEvk8AX+RquY=
 github.com/shivamx96/leafpress/core v1.0.0-beta.17/go.mod h1:9Jq+CUGGeju7Jkqxmmt3xRIfzOYvsefhiHu4P107M1M=
 github.com/spf13/cobra v1.10.2 h1:DMTTonx5m65Ic0GOoRY2c16WCbHxOOw6xxezuLaBpcU=
 github.com/spf13/cobra v1.10.2/go.mod h1:7C1pvHqHw5A4vrJfjNwvOdzYu0Gml16OCs2GRiTUUS4=
