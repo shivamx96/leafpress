@@ -193,6 +193,12 @@ regardless of MIME type (OFL license texts included), while **generated**
 site artifacts are always `utf8`. The `encoding` field is authoritative;
 hosts never sniff.
 
+The content-addressed `static/leafpress/app.<sha256-prefix>.js` client bundle
+is a generated UTF-8 artifact rather than a registry asset. It is emitted on
+every render because its bytes depend on site configuration; the HTML and
+artifact path are generated from the same bundle snapshot. It therefore does
+not participate in `assetManifest` synchronization or `emitAssets`.
+
 **Synchronization is hash-driven, per entry.** The manifest lists only what
 the current configuration references, so no single identifier can stand in
 for "I have everything this render needs" — a theme change can require

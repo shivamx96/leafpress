@@ -382,7 +382,8 @@ cat > leafpress.json << 'EOF'
 }
 EOF
 "$LEAFPRESS" build > /dev/null 2>&1
-if grep -q "lp-nav-placeholder" _site/index.html && grep -q "lp-nav--pill" _site/index.html; then
+CLIENT_JS=$(find _site/static/leafpress -maxdepth 1 -name 'app.*.js' -print -quit)
+if grep -q "lp-nav-placeholder" _site/index.html && grep -q "lp-nav--pill" "$CLIENT_JS"; then
     pass
 else
     fail "Glassy nav style not applied"
@@ -965,7 +966,8 @@ TESTDIR=$(mktemp -d)
 cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 "$LEAFPRESS" build > /dev/null 2>&1
-if grep -q 'lp-copy-button' _site/index.html; then
+CLIENT_JS=$(find _site/static/leafpress -maxdepth 1 -name 'app.*.js' -print -quit)
+if grep -q 'lp-copy-button' "$CLIENT_JS"; then
     pass
 else
     fail "Copy button script not included"
@@ -1993,10 +1995,11 @@ title: Other
 Body
 EOF
 "$LEAFPRESS" build > /dev/null 2>&1
+CLIENT_JS=$(find _site/static/leafpress -maxdepth 1 -name 'app.*.js' -print -quit)
 if [ -f "_site/search-index.json" ] && \
    grep -q 'Note' _site/search-index.json && \
    ! grep -q 'lp-search-toggle' _site/note/index.html && \
-   grep -q 'search-index.json' _site/note/index.html; then
+   grep -q 'search-index.json' "$CLIENT_JS"; then
     pass
 else
     fail "search-index.json must still be emitted for link previews when search UI is off"
@@ -3519,7 +3522,8 @@ TESTDIR=$(mktemp -d)
 cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 "$LEAFPRESS" build > /dev/null 2>&1
-if grep -q 'lp-link-preview' _site/index.html; then
+CLIENT_JS=$(find _site/static/leafpress -maxdepth 1 -name 'app.*.js' -print -quit)
+if grep -q 'lp-link-preview' "$CLIENT_JS"; then
     pass
 else
     fail "Link preview JavaScript missing"
@@ -3547,7 +3551,8 @@ TESTDIR=$(mktemp -d)
 cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 "$LEAFPRESS" build > /dev/null 2>&1
-if grep -q '\.lp-wikilink' _site/index.html; then
+CLIENT_JS=$(find _site/static/leafpress -maxdepth 1 -name 'app.*.js' -print -quit)
+if grep -q '\.lp-wikilink' "$CLIENT_JS"; then
     pass
 else
     fail "Link preview should target .lp-wikilink"
@@ -3561,7 +3566,8 @@ TESTDIR=$(mktemp -d)
 cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 "$LEAFPRESS" build > /dev/null 2>&1
-if grep -q '\.lp-backlink' _site/index.html; then
+CLIENT_JS=$(find _site/static/leafpress -maxdepth 1 -name 'app.*.js' -print -quit)
+if grep -q '\.lp-backlink' "$CLIENT_JS"; then
     pass
 else
     fail "Link preview should target .lp-backlink"
@@ -4042,9 +4048,10 @@ graph TD
 ```
 MEOF
 "$LEAFPRESS" build > /dev/null 2>&1
-if grep -q "static/leafpress/mermaid/mermaid.min.js" _site/test/index.html && \
+CLIENT_JS=$(find _site/static/leafpress -maxdepth 1 -name 'app.*.js' -print -quit)
+if grep -q "static/leafpress/mermaid/mermaid.min.js" "$CLIENT_JS" && \
    [ -f "_site/static/leafpress/mermaid/mermaid.min.js" ] && \
-   ! grep -q 'cdn.jsdelivr' _site/test/index.html; then
+   ! grep -q 'cdn.jsdelivr' "$CLIENT_JS"; then
     pass
 else
     fail "Mermaid should load from self-hosted static/leafpress path, not a CDN"

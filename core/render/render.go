@@ -310,6 +310,11 @@ func Render(in *Input) (*Output, error) {
 	// same projection for both the home listing and site-wide navigation.
 	homeEntries := sitegen.RootEntries(children, indexBySection)
 	site.Nav = sitegen.BuildNavigation(pages, cfg.Navigation)
+	clientScriptPath, clientScript, err := tmpl.ClientScriptAsset(site)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate client script: %w", err)
+	}
+	site.ClientScriptPath = clientScriptPath
 
 	outPages := make([]OutputPage, 0, len(pages))
 	for _, p := range pages {
@@ -411,6 +416,9 @@ func Render(in *Input) (*Output, error) {
 	if err != nil {
 		return nil, err
 	}
+	artifacts = append(artifacts, OutputArtifact{
+		Path: clientScriptPath, Content: clientScript, ContentType: "text/javascript; charset=utf-8", Encoding: "utf8",
+	})
 
 	// Self-contained output is the default: families with no self-hosted
 	// source fall back to the CSS system stacks, and the author is told.

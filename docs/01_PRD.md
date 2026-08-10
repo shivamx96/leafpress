@@ -363,7 +363,8 @@ _site/
 │   ├── index.html          # All tags
 │   ├── go/index.html
 │   └── tools/index.html
-├── static/                 # Copied verbatim
+├── static/                 # User files plus Leafpress-owned assets
+│   ├── leafpress/app.<hash>.js # Shared content-addressed client bundle
 │   └── ...
 ├── style.css               # Merged: embedded + user overrides
 └── graph.json              # If config.graph = true

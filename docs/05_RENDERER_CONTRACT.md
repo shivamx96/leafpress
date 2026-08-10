@@ -268,6 +268,10 @@ The top-level output object:
 
 Generated site files, each using the exact CLI filename:
 
+- `static/leafpress/app.<sha256-prefix>.js` always; every rendered HTML
+  document references this one site-wide client bundle from its `<head>`. The
+  32-hex-character prefix is the first 128 bits of the bundle's SHA-256 and
+  changes when feature or base-path configuration changes.
 - `graph.json` when the graph feature is enabled
 - `search-index.json` always (full-text search and hover link previews share
   it; the `search` feature only toggles the search UI)
@@ -282,6 +286,12 @@ never sniff. Generated site artifacts are always `utf8`. Asset artifacts — one
 per built-in manifest entry, appearing only when `options.emitAssets` is set —
 are always `base64`, regardless of MIME type (the OFL license texts are base64
 too).
+
+The generated client bundle is an artifact, not an `assetManifest` entry. Its
+bytes depend on the current render configuration and are returned on every
+render so a host can publish the exact content-addressed path referenced by the
+HTML. Hosts should replace the publication snapshot atomically so superseded
+bundle hashes do not accumulate.
 
 ### Asset manifest
 

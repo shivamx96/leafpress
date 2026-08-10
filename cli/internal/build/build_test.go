@@ -13,6 +13,76 @@ import (
 	"github.com/shivamx96/leafpress/core/content"
 )
 
+func readClientScript(t *testing.T, siteDir string) (string, string) {
+	t.Helper()
+	matches, err := filepath.Glob(filepath.Join(siteDir, "static", "leafpress", "app.*.js"))
+	if err != nil || len(matches) != 1 {
+		t.Fatalf("client script files = %v, err = %v; want exactly one", matches, err)
+	}
+	data, err := os.ReadFile(matches[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	rel := filepath.ToSlash(strings.TrimPrefix(matches[0], siteDir+string(filepath.Separator)))
+	want := "static/leafpress/app." + assets.Sum(data)[:32] + ".js"
+	if rel != want {
+		t.Fatalf("client script path = %q, want content-addressed path %q", rel, want)
+	}
+	return rel, string(data)
+}
+
+func TestBuildSharesOneContentAddressedClientScript(t *testing.T) {
+	dir := newTestProject(t)
+	if err := os.WriteFile(filepath.Join(dir, "other.md"), []byte("# Other\n\nhello\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := config.Default()
+	b := New(cfg, Options{})
+	if _, err := b.Build(); err != nil {
+		t.Fatal(err)
+	}
+
+	siteDir := filepath.Join(dir, "_site")
+	clientPath, client := readClientScript(t, siteDir)
+	scriptTag := `<script src="/` + clientPath + `" defer></script>`
+	for _, rel := range []string{"note/index.html", "other/index.html", "404.html"} {
+		data, err := os.ReadFile(filepath.Join(siteDir, filepath.FromSlash(rel)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		html := string(data)
+		if strings.Count(html, scriptTag) != 1 {
+			t.Errorf("%s must reference the shared client script exactly once", rel)
+		}
+		if scriptAt, headEnd := strings.Index(html, scriptTag), strings.Index(html, "</head>"); scriptAt < 0 || headEnd < 0 || scriptAt > headEnd {
+			t.Errorf("%s must discover the shared client script in <head>", rel)
+		}
+		if strings.Contains(html, "var LP_BASE_PATH") || strings.Contains(html, "lp-copy-button") {
+			t.Errorf("%s duplicates client JavaScript inline", rel)
+		}
+	}
+	if !strings.Contains(client, "var LP_BASE_PATH") || !strings.Contains(client, "lp-copy-button") {
+		t.Fatal("shared client asset is missing expected client behavior")
+	}
+
+	oldPath := clientPath
+	cfg.Features.Search = false
+	if _, err := b.Build(); err != nil {
+		t.Fatal(err)
+	}
+	clientPath, client = readClientScript(t, siteDir)
+	if clientPath == oldPath {
+		t.Fatal("feature change did not invalidate the client script path")
+	}
+	if strings.Contains(client, "lp-search-input") {
+		t.Fatal("search-disabled build retained search UI code")
+	}
+	if _, err := os.Stat(filepath.Join(siteDir, filepath.FromSlash(oldPath))); !os.IsNotExist(err) {
+		t.Fatalf("stale client script remains after a full rebuild: %v", err)
+	}
+}
+
 // newTestProject creates a minimal project in a temp dir and chdirs into it
 // (Builder resolves the project root from the working directory).
 func newTestProject(t *testing.T) string {
@@ -610,7 +680,11 @@ func TestBuildSelfHostsMermaidWhenUsed(t *testing.T) {
 	if strings.Contains(html, "cdn.jsdelivr") || strings.Contains(html, "cdnjs") {
 		t.Error("page must not load Mermaid from a third-party CDN")
 	}
-	if !strings.Contains(html, "/static/leafpress/mermaid/mermaid.min.js") {
+	clientPath, client := readClientScript(t, filepath.Join(dir, "_site"))
+	if !strings.Contains(html, `src="/`+clientPath+`" defer`) {
+		t.Error("page must load shared client script")
+	}
+	if !strings.Contains(client, "/static/leafpress/mermaid/mermaid.min.js") {
 		t.Error("page must load self-hosted mermaid path")
 	}
 }
@@ -665,7 +739,11 @@ func TestBuildEmitsSearchIndexWhenSearchUIDisabled(t *testing.T) {
 	if strings.Contains(html, `class="lp-search-toggle"`) {
 		t.Error("search UI toggle must stay off when search is false")
 	}
-	if !strings.Contains(html, "search-index.json") {
+	clientPath, client := readClientScript(t, filepath.Join(dir, "_site"))
+	if !strings.Contains(html, `src="/`+clientPath+`" defer`) {
+		t.Error("page must load shared client script")
+	}
+	if !strings.Contains(client, "search-index.json") {
 		t.Error("link preview script must still reference search-index.json")
 	}
 }
