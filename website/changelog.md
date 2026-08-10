@@ -4,8 +4,6 @@ date: 2025-01-06
 toc: false
 ---
 
-## Unreleased
-
 ## v1.0.0-beta.17
 *August 11, 2026*
 
