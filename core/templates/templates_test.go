@@ -1,6 +1,7 @@
 package templates
 
 import (
+	"bytes"
 	"reflect"
 	"strings"
 	"testing"
@@ -349,5 +350,33 @@ func TestRemoteFontURL_ExcludesDeclaredCustomFamilies(t *testing.T) {
 func TestMermaidUsesStrictSecurityLevel(t *testing.T) {
 	if !strings.Contains(baseTemplate, "securityLevel: 'strict'") {
 		t.Fatal("Mermaid initialization must explicitly use strict security")
+	}
+}
+
+func TestIndexIntroUsesSharedContentStyles(t *testing.T) {
+	tmpl, err := New()
+	if err != nil {
+		t.Fatalf("New() error: %v", err)
+	}
+
+	var out bytes.Buffer
+	err = tmpl.RenderIndex(&out, IndexData{
+		Site: SiteData{
+			Title: "Test Garden",
+			Theme: config.Default().Theme,
+		},
+		Title: "Notes",
+		Intro: `<pre class="chroma"><code>const answer = 42</code></pre>`,
+	})
+	if err != nil {
+		t.Fatalf("RenderIndex() error: %v", err)
+	}
+
+	html := out.String()
+	if !strings.Contains(html, `class="lp-section-intro lp-content"`) {
+		t.Fatalf("index intro does not share the rich-content styling surface:\n%s", html)
+	}
+	if !strings.Contains(html, `<pre class="chroma">`) {
+		t.Fatal("index intro dropped rendered code content")
 	}
 }
