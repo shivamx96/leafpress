@@ -13,6 +13,19 @@ import (
 	"github.com/shivamx96/leafpress/core/content"
 )
 
+func readClientScript(t *testing.T, siteDir string) (string, string) {
+	t.Helper()
+	matches, err := filepath.Glob(filepath.Join(siteDir, "static", "leafpress", "app.*.js"))
+	if err != nil || len(matches) != 1 {
+		t.Fatalf("client script files = %v, err = %v; want exactly one", matches, err)
+	}
+	data, err := os.ReadFile(matches[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	return filepath.ToSlash(strings.TrimPrefix(matches[0], siteDir+string(filepath.Separator))), string(data)
+}
+
 // newTestProject creates a minimal project in a temp dir and chdirs into it
 // (Builder resolves the project root from the working directory).
 func newTestProject(t *testing.T) string {
@@ -610,7 +623,11 @@ func TestBuildSelfHostsMermaidWhenUsed(t *testing.T) {
 	if strings.Contains(html, "cdn.jsdelivr") || strings.Contains(html, "cdnjs") {
 		t.Error("page must not load Mermaid from a third-party CDN")
 	}
-	if !strings.Contains(html, "/static/leafpress/mermaid/mermaid.min.js") {
+	clientPath, client := readClientScript(t, filepath.Join(dir, "_site"))
+	if !strings.Contains(html, `src="/`+clientPath+`" defer`) {
+		t.Error("page must load shared client script")
+	}
+	if !strings.Contains(client, "/static/leafpress/mermaid/mermaid.min.js") {
 		t.Error("page must load self-hosted mermaid path")
 	}
 }
@@ -665,7 +682,11 @@ func TestBuildEmitsSearchIndexWhenSearchUIDisabled(t *testing.T) {
 	if strings.Contains(html, `class="lp-search-toggle"`) {
 		t.Error("search UI toggle must stay off when search is false")
 	}
-	if !strings.Contains(html, "search-index.json") {
+	clientPath, client := readClientScript(t, filepath.Join(dir, "_site"))
+	if !strings.Contains(html, `src="/`+clientPath+`" defer`) {
+		t.Error("page must load shared client script")
+	}
+	if !strings.Contains(client, "search-index.json") {
 		t.Error("link preview script must still reference search-index.json")
 	}
 }

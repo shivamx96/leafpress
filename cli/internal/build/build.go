@@ -226,6 +226,18 @@ func (b *Builder) Build() (result *Stats, resultErr error) {
 		RSS:         b.cfg.Features.RSS,
 		HeadExtra:   b.cfg.Site.HeadExtra,
 	}
+	clientScriptPath, clientScript, err := b.templates.ClientScriptAsset(siteData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate client script: %w", err)
+	}
+	clientScriptOutput := filepath.Join(b.outputDir, filepath.FromSlash(clientScriptPath))
+	if err := os.MkdirAll(filepath.Dir(clientScriptOutput), 0755); err != nil {
+		return nil, fmt.Errorf("create client script directory: %w", err)
+	}
+	if err := os.WriteFile(clientScriptOutput, []byte(clientScript), 0644); err != nil {
+		return nil, fmt.Errorf("write client script: %w", err)
+	}
+	siteData.ClientScriptPath = clientScriptPath
 
 	// Cache state for incremental builds
 	b.pages = pages

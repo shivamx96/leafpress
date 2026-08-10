@@ -44,6 +44,17 @@ func artifact(t *testing.T, out *Output, path string) OutputArtifact {
 	return OutputArtifact{}
 }
 
+func clientScriptArtifact(t *testing.T, out *Output) OutputArtifact {
+	t.Helper()
+	for _, item := range out.Artifacts {
+		if strings.HasPrefix(item.Path, "static/leafpress/app.") && strings.HasSuffix(item.Path, ".js") {
+			return item
+		}
+	}
+	t.Fatal("client script artifact not found")
+	return OutputArtifact{}
+}
+
 // Unknown or misplaced fields must be rejected as input errors (exit 1),
 // never silently ignored — otherwise a v1 payload or a typo renders an empty
 // default site. Covers the envelope, the nested config object, and every
@@ -419,7 +430,7 @@ func TestConfigDefaultsAndFeatureDisables(t *testing.T) {
 		!strings.Contains(search.Content, `"title": "One"`) {
 		t.Errorf("search-index should still list pages when search UI is off: %s", search.Content)
 	}
-	if !strings.Contains(combined, "search-index.json") {
+	if !strings.Contains(clientScriptArtifact(t, disabled).Content, "search-index.json") {
 		t.Error("link preview script should still fetch search-index.json when search UI is off")
 	}
 }
@@ -1500,11 +1511,14 @@ func TestMermaidSelfHostedInManifestAndHTML(t *testing.T) {
 	if strings.Contains(html, "cdn.jsdelivr") || strings.Contains(html, "unpkg.com") {
 		t.Error("rendered page must not load Mermaid from a CDN")
 	}
-	// Script src is composed at runtime: LP_BASE_PATH + '/static/leafpress/mermaid/…'
-	if !strings.Contains(html, `var LP_BASE_PATH = '/g/g'`) {
-		t.Error("page must set LP_BASE_PATH from garden baseURL")
+	client := clientScriptArtifact(t, out)
+	if !strings.Contains(html, `src="/g/g/`+client.Path+`" defer`) {
+		t.Error("page must load the base-prefixed shared client script")
 	}
-	if !strings.Contains(html, `LP_BASE_PATH + '/static/leafpress/mermaid/mermaid.min.js'`) {
+	if !strings.Contains(client.Content, `var LP_BASE_PATH = '/g/g'`) {
+		t.Error("client script must set LP_BASE_PATH from garden baseURL")
+	}
+	if !strings.Contains(client.Content, `LP_BASE_PATH + '/static/leafpress/mermaid/mermaid.min.js'`) {
 		t.Error("page must load self-hosted mermaid via LP_BASE_PATH")
 	}
 	if !strings.Contains(html, `class="mermaid"`) {
