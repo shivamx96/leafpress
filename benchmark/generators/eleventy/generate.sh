@@ -9,7 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=../../lib/workload.sh
 source "${SCRIPT_DIR}/../../lib/workload.sh"
 
-mkdir -p "$DIR/src/_includes" "$DIR/src/notes" "$DIR/src/posts"
+mkdir -p "$DIR/src/_includes" "$DIR/src/notes" "$DIR/src/posts" "$DIR/src/tags"
 cd "$DIR"
 
 cat > .eleventy.js << 'EOF'
@@ -29,7 +29,7 @@ EOF
 cat > src/_includes/base.njk << 'EOF'
 <!DOCTYPE html>
 <html><head><title>{{ title }}</title></head>
-<body>{{ content | safe }}</body></html>
+<body><nav><a href="/notes/">Notes</a><a href="/posts/">Posts</a><a href="/tags/">Tags</a></nav>{{ content | safe }}</body></html>
 EOF
 
 cat > src/index.md << 'EOF'
@@ -49,6 +49,28 @@ title: $title
 ---
 # $title
 EOF
+    workload_write_section_links "$section" "$COUNT" >> "src/${section}/index.md"
+done
+
+cat > src/tags/index.md << 'EOF'
+---
+layout: base.njk
+title: Tags
+---
+# Tags
+EOF
+workload_write_tag_index_links >> src/tags/index.md
+
+for ((tag = 0; tag < WORKLOAD_TAG_COUNT; tag++)); do
+    cat > "src/tags/tag${tag}.md" << EOF
+---
+layout: base.njk
+title: tag${tag}
+permalink: /tags/tag${tag}/index.html
+---
+# tag${tag}
+EOF
+    workload_write_tag_links "tag${tag}" "$COUNT" >> "src/tags/tag${tag}.md"
 done
 
 for ((i = 1; i <= COUNT; i++)); do

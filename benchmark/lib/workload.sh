@@ -4,6 +4,7 @@
 # Increment this when content shape, routing, or feature distribution changes.
 WORKLOAD_VERSION=2
 WORKLOAD_NOTES_PERCENT=70
+WORKLOAD_TAG_COUNT=20
 
 WORKLOAD_PARAGRAPHS=(
     "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."
@@ -172,4 +173,38 @@ workload_link_target() {
 workload_has_code_block() {
     local index=$1
     (((index * 41 + 7) % 100 < 40))
+}
+
+# Support pages are generated outside the timed build but rendered by every
+# SSG. Keeping their Markdown bodies here gives each adapter the same section
+# listings and tag routes without depending on generator-specific plugins.
+workload_write_section_links() {
+    local section=$1
+    local count=$2
+    local index
+    for ((index = 1; index <= count; index++)); do
+        workload_set_page "$index" "$count"
+        if [[ $WORKLOAD_SECTION == "$section" ]]; then
+            printf -- '- [%s](%s)\n' "$WORKLOAD_TITLE" "$WORKLOAD_ROUTE"
+        fi
+    done
+}
+
+workload_write_tag_index_links() {
+    local tag
+    for ((tag = 0; tag < WORKLOAD_TAG_COUNT; tag++)); do
+        printf -- '- [tag%s](/tags/tag%s/)\n' "$tag" "$tag"
+    done
+}
+
+workload_write_tag_links() {
+    local wanted_tag=$1
+    local count=$2
+    local index
+    for ((index = 1; index <= count; index++)); do
+        workload_set_page "$index" "$count"
+        if [[ $WORKLOAD_TAG_ONE == "$wanted_tag" || $WORKLOAD_TAG_TWO == "$wanted_tag" ]]; then
+            printf -- '- [%s](%s)\n' "$WORKLOAD_TITLE" "$WORKLOAD_ROUTE"
+        fi
+    done
 }

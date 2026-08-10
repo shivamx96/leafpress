@@ -20,6 +20,7 @@ fi
 
 mkdir -p "$(dirname "$OUTPUT_FILE")"
 WORKDIR=$(mktemp -d "${TMPDIR:-/tmp}/leafpress-navigation-stress.XXXXXX")
+REPORT_TMP="${WORKDIR}/report.md"
 cleanup() {
     if [[ -n ${WORKDIR:-} && -d $WORKDIR && $(basename "$WORKDIR") == leafpress-navigation-stress.* ]]; then
         rm -rf -- "$WORKDIR"
@@ -38,9 +39,9 @@ median() {
     echo "**System**: $(uname -s) $(uname -m)"
     echo "**Warmups / measured runs**: ${WARMUPS} / ${RUNS}"
     echo
-    echo "| Root notes | P50 build | Output size | Nav links/page | Average HTML/page |"
+    echo "| Root notes | P50 build | Logical output | Nav links/page | Average HTML/page |"
     echo "|-----------:|----------:|------------:|---------------:|------------------:|"
-} > "$OUTPUT_FILE"
+} > "$REPORT_TMP"
 
 for count in "${PAGE_COUNTS[@]}"; do
     test_dir="${WORKDIR}/${count}"
@@ -55,25 +56,28 @@ for count in "${PAGE_COUNTS[@]}"; do
     done
 
     p50=$(median "${times[@]}")
-    output_kib=$(du -sk "${test_dir}/_site" | awk '{print $1}')
-    output_size=$(awk -v kib="$output_kib" 'BEGIN {if (kib >= 1048576) printf "%.2f GiB", kib/1048576; else printf "%.1f MiB", kib/1024}')
     sample="${test_dir}/_site/page-1/index.html"
     nav_links=$(grep -c '<a class="lp-nav-link' "$sample" || true)
     if [[ $(uname -s) == Darwin ]]; then
         read -r html_count html_bytes < <(find "${test_dir}/_site" -name '*.html' -type f -exec stat -f '%z' {} + | awk '{sum+=$1} END {print NR, sum}')
+        output_bytes=$(find "${test_dir}/_site" -type f -exec stat -f '%z' {} + | awk '{sum+=$1} END {print sum + 0}')
     else
         read -r html_count html_bytes < <(find "${test_dir}/_site" -name '*.html' -type f -printf '%s\n' | awk '{sum+=$1} END {print NR, sum}')
+        output_bytes=$(find "${test_dir}/_site" -type f -printf '%s\n' | awk '{sum+=$1} END {print sum + 0}')
     fi
+    output_size=$(awk -v bytes="$output_bytes" 'BEGIN {if (bytes >= 1073741824) printf "%.2f GiB", bytes/1073741824; else if (bytes >= 1048576) printf "%.1f MiB", bytes/1048576; else printf "%.1f KiB", bytes/1024}')
     average_html=$((html_bytes / html_count))
 
-    echo "| $count | ${p50} ms | $output_size | $nav_links | ${average_html} B |" >> "$OUTPUT_FILE"
+    echo "| $count | ${p50} ms | $output_size | $nav_links | ${average_html} B |" >> "$REPORT_TMP"
     rm -rf -- "$test_dir"
 done
 
 {
     echo
     echo "This is an intentional worst case, not the headline SSG workload: automatic navigation renders every root note into every page."
-} >> "$OUTPUT_FILE"
+} >> "$REPORT_TMP"
+
+mv "$REPORT_TMP" "$OUTPUT_FILE"
 
 echo "Stress benchmark complete: $OUTPUT_FILE"
 cat "$OUTPUT_FILE"

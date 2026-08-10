@@ -9,7 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=../../lib/workload.sh
 source "${SCRIPT_DIR}/../../lib/workload.sh"
 
-mkdir -p "$DIR/_layouts" "$DIR/notes" "$DIR/posts"
+mkdir -p "$DIR/_layouts" "$DIR/notes" "$DIR/posts" "$DIR/tags"
 cd "$DIR"
 
 cat > _config.yml << 'EOF'
@@ -22,7 +22,7 @@ EOF
 cat > _layouts/default.html << 'EOF'
 <!DOCTYPE html>
 <html><head><title>{{ page.title }}</title></head>
-<body>{{ content }}</body></html>
+<body><nav><a href="/notes/">Notes</a><a href="/posts/">Posts</a><a href="/tags/">Tags</a></nav>{{ content }}</body></html>
 EOF
 
 cat > index.md << 'EOF'
@@ -44,6 +44,29 @@ permalink: /${section}/
 ---
 # $title
 EOF
+    workload_write_section_links "$section" "$COUNT" >> "${section}/index.md"
+done
+
+cat > tags/index.md << 'EOF'
+---
+layout: default
+title: Tags
+permalink: /tags/
+---
+# Tags
+EOF
+workload_write_tag_index_links >> tags/index.md
+
+for ((tag = 0; tag < WORKLOAD_TAG_COUNT; tag++)); do
+    cat > "tags/tag${tag}.md" << EOF
+---
+layout: default
+title: tag${tag}
+permalink: /tags/tag${tag}/
+---
+# tag${tag}
+EOF
+    workload_write_tag_links "tag${tag}" "$COUNT" >> "tags/tag${tag}.md"
 done
 
 for ((i = 1; i <= COUNT; i++)); do

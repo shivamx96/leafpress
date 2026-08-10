@@ -9,7 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=../../lib/workload.sh
 source "${SCRIPT_DIR}/../../lib/workload.sh"
 
-mkdir -p "$DIR/src/pages/notes" "$DIR/src/pages/posts" "$DIR/src/layouts"
+mkdir -p "$DIR/src/pages/notes" "$DIR/src/pages/posts" "$DIR/src/pages/tags" "$DIR/src/layouts"
 cd "$DIR"
 
 cat > package.json << 'EOF'
@@ -17,7 +17,7 @@ cat > package.json << 'EOF'
   "name": "astro-benchmark",
   "private": true,
   "scripts": { "build": "astro build" },
-  "dependencies": { "astro": "^4.0.0" }
+  "dependencies": { "astro": "4.16.19" }
 }
 EOF
 
@@ -28,11 +28,11 @@ EOF
 
 cat > src/layouts/Base.astro << 'EOF'
 ---
-const { title } = Astro.props;
+const { title } = Astro.props.frontmatter ?? Astro.props;
 ---
 <!DOCTYPE html>
 <html><head><title>{title}</title></head>
-<body><slot /></body></html>
+<body><nav><a href="/notes/">Notes</a><a href="/posts/">Posts</a><a href="/tags/">Tags</a></nav><slot /></body></html>
 EOF
 
 cat > src/pages/index.astro << 'EOF'
@@ -44,12 +44,34 @@ EOF
 
 for section in notes posts; do
     if [[ $section == notes ]]; then title="Notes"; else title="Posts"; fi
-    cat > "src/pages/${section}/index.astro" << EOF
+    cat > "src/pages/${section}/index.md" << EOF
 ---
-import Base from '../../layouts/Base.astro';
+layout: ../../layouts/Base.astro
+title: $title
 ---
-<Base title="$title"><h1>$title</h1></Base>
+# $title
 EOF
+    workload_write_section_links "$section" "$COUNT" >> "src/pages/${section}/index.md"
+done
+
+cat > src/pages/tags/index.md << 'EOF'
+---
+layout: ../../layouts/Base.astro
+title: Tags
+---
+# Tags
+EOF
+workload_write_tag_index_links >> src/pages/tags/index.md
+
+for ((tag = 0; tag < WORKLOAD_TAG_COUNT; tag++)); do
+    cat > "src/pages/tags/tag${tag}.md" << EOF
+---
+layout: ../../layouts/Base.astro
+title: tag${tag}
+---
+# tag${tag}
+EOF
+    workload_write_tag_links "tag${tag}" "$COUNT" >> "src/pages/tags/tag${tag}.md"
 done
 
 for ((i = 1; i <= COUNT; i++)); do

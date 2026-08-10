@@ -1,9 +1,9 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Main entry point for running SSG benchmarks
 # Usage: ./run.sh [docker|local|stress]
 
-set -e
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MODE=${1:-docker}
@@ -15,11 +15,6 @@ echo ""
 if [ "$MODE" == "docker" ]; then
     echo "Running in Docker (recommended for fair comparison)"
     echo ""
-
-    # Build Leafpress first and copy to benchmark dir
-    echo "Building Leafpress..."
-    cd "${SCRIPT_DIR}/../cli"
-    go build -o "${SCRIPT_DIR}/leafpress" ./cmd/leafpress
 
     if docker compose version >/dev/null 2>&1; then
         COMPOSE=(docker compose)
@@ -37,7 +32,7 @@ if [ "$MODE" == "docker" ]; then
 
     echo ""
     echo "Running benchmarks..."
-    "${COMPOSE[@]}" up --abort-on-container-exit
+    "${COMPOSE[@]}" up --abort-on-container-exit --exit-code-from benchmark
 
     echo ""
     echo "Results saved to: ${SCRIPT_DIR}/results/"

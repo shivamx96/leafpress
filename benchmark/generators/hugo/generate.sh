@@ -9,7 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=../../lib/workload.sh
 source "${SCRIPT_DIR}/../../lib/workload.sh"
 
-mkdir -p "$DIR/content/notes" "$DIR/content/posts" \
+mkdir -p "$DIR/content/notes" "$DIR/content/posts" "$DIR/content/tags" \
     "$DIR/themes/minimal/layouts/_default" "$DIR/themes/minimal/layouts/partials" "$DIR/static"
 cd "$DIR"
 
@@ -18,12 +18,13 @@ baseURL = 'http://example.org/'
 languageCode = 'en-us'
 title = 'Benchmark Test'
 theme = 'minimal'
+disableKinds = ['taxonomy', 'term']
 EOF
 
 cat > themes/minimal/layouts/_default/baseof.html << 'EOF'
 <!DOCTYPE html>
 <html><head><title>{{ .Title }}</title></head>
-<body>{{ block "main" . }}{{ end }}</body></html>
+<body><nav><a href="/notes/">Notes</a><a href="/posts/">Posts</a><a href="/tags/">Tags</a></nav>{{ block "main" . }}{{ end }}</body></html>
 EOF
 
 cat > themes/minimal/layouts/_default/single.html << 'EOF'
@@ -31,7 +32,7 @@ cat > themes/minimal/layouts/_default/single.html << 'EOF'
 EOF
 
 cat > themes/minimal/layouts/_default/list.html << 'EOF'
-{{ define "main" }}<h1>{{ .Title }}</h1>{{ range .Pages }}<a href="{{ .Permalink }}">{{ .Title }}</a>{{ end }}{{ end }}
+{{ define "main" }}<h1>{{ .Title }}</h1>{{ .Content }}{{ end }}
 EOF
 
 cat > themes/minimal/layouts/index.html << 'EOF'
@@ -44,7 +45,31 @@ for section in notes posts; do
 ---
 title: "$title"
 ---
+
+# $title
 EOF
+    workload_write_section_links "$section" "$COUNT" >> "content/${section}/_index.md"
+done
+
+cat > content/tags/_index.md << 'EOF'
+---
+title: "Tags"
+---
+
+# Tags
+EOF
+workload_write_tag_index_links >> content/tags/_index.md
+
+for ((tag = 0; tag < WORKLOAD_TAG_COUNT; tag++)); do
+    cat > "content/tags/tag${tag}.md" << EOF
+---
+title: "tag${tag}"
+url: "/tags/tag${tag}/"
+---
+
+# tag${tag}
+EOF
+    workload_write_tag_links "tag${tag}" "$COUNT" >> "content/tags/tag${tag}.md"
 done
 
 for ((i = 1; i <= COUNT; i++)); do
