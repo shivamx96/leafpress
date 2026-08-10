@@ -201,6 +201,48 @@ func TestValidate_PortRange(t *testing.T) {
 	}
 }
 
+func TestValidate_OutputDir(t *testing.T) {
+	valid := []string{
+		"_site",
+		"dist",
+		"build/site",
+		".generated",
+	}
+	for _, outputDir := range valid {
+		t.Run("valid_"+strings.ReplaceAll(outputDir, "/", "_"), func(t *testing.T) {
+			cfg := Default()
+			cfg.Build.OutputDir = outputDir
+			if err := cfg.Validate(); err != nil {
+				t.Fatalf("outputDir %q should be valid: %v", outputDir, err)
+			}
+		})
+	}
+
+	invalid := []string{
+		"",
+		".",
+		"..",
+		"../site",
+		"notes/../site",
+		"./site",
+		"/tmp/site",
+		`C:\site`,
+		`C:site`,
+		`\\server\share`,
+		" site",
+		"site ",
+	}
+	for _, outputDir := range invalid {
+		t.Run("invalid_"+strings.NewReplacer("/", "_", "\\", "_").Replace(outputDir), func(t *testing.T) {
+			cfg := Default()
+			cfg.Build.OutputDir = outputDir
+			if err := cfg.Validate(); err == nil {
+				t.Fatalf("outputDir %q should be rejected", outputDir)
+			}
+		})
+	}
+}
+
 func TestValidate_AccentColor(t *testing.T) {
 	cfg := Default()
 

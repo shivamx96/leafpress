@@ -24,6 +24,141 @@ func newTestProject(t *testing.T) string {
 	return dir
 }
 
+func TestBuildRefusesProjectRootOutputWithoutDeletingSources(t *testing.T) {
+	dir := newTestProject(t)
+	cfg := config.Default()
+	cfg.Build.OutputDir = "."
+
+	if _, err := New(cfg, Options{}).Build(); err == nil {
+		t.Fatal("Build should reject the project root as outputDir")
+	}
+	if _, err := os.Stat(filepath.Join(dir, "note.md")); err != nil {
+		t.Fatalf("source file was removed: %v", err)
+	}
+}
+
+func TestBuildRefusesTraversalOutputWithoutDeletingOutsideFiles(t *testing.T) {
+	parent := t.TempDir()
+	garden := filepath.Join(parent, "garden")
+	outside := filepath.Join(parent, "outside")
+	if err := os.MkdirAll(garden, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(outside, 0755); err != nil {
+		t.Fatal(err)
+	}
+	sentinel := filepath.Join(outside, "keep.txt")
+	if err := os.WriteFile(sentinel, []byte("keep"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	t.Chdir(garden)
+
+	cfg := config.Default()
+	cfg.Build.OutputDir = "../outside"
+	if _, err := New(cfg, Options{}).Build(); err == nil {
+		t.Fatal("Build should reject an outputDir outside the project")
+	}
+	if _, err := os.Stat(sentinel); err != nil {
+		t.Fatalf("outside file was removed: %v", err)
+	}
+}
+
+func TestBuildRefusesUnownedCustomOutputWithoutDeletingIt(t *testing.T) {
+	dir := newTestProject(t)
+	notesDir := filepath.Join(dir, "notes")
+	if err := os.MkdirAll(notesDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	sentinel := filepath.Join(notesDir, "keep.md")
+	if err := os.WriteFile(sentinel, []byte("# Keep"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := config.Default()
+	cfg.Build.OutputDir = "notes"
+	_, err := New(cfg, Options{}).Build()
+	if err == nil || !strings.Contains(err.Error(), "does not own it") {
+		t.Fatalf("Build should refuse an unowned custom directory, got %v", err)
+	}
+	if _, err := os.Stat(sentinel); err != nil {
+		t.Fatalf("custom directory content was removed: %v", err)
+	}
+}
+
+func TestBuildClaimsCustomOutputAndCleansItOnLaterBuilds(t *testing.T) {
+	dir := newTestProject(t)
+	cfg := config.Default()
+	cfg.Build.OutputDir = "public"
+
+	if _, err := New(cfg, Options{}).Build(); err != nil {
+		t.Fatalf("first Build: %v", err)
+	}
+	marker := filepath.Join(dir, "public", outputOwnershipMarker)
+	if data, err := os.ReadFile(marker); err != nil || string(data) != outputOwnershipContent {
+		t.Fatalf("ownership marker = %q, %v", data, err)
+	}
+	stale := filepath.Join(dir, "public", "stale.txt")
+	if err := os.WriteFile(stale, []byte("stale"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := New(cfg, Options{}).Build(); err != nil {
+		t.Fatalf("second Build: %v", err)
+	}
+	if _, err := os.Stat(stale); !os.IsNotExist(err) {
+		t.Fatalf("owned output was not cleaned; stat error = %v", err)
+	}
+}
+
+func TestBuildMigratesLegacyCustomOutput(t *testing.T) {
+	dir := newTestProject(t)
+	legacyDir := filepath.Join(dir, "dist")
+	if err := os.MkdirAll(filepath.Join(legacyDir, "static", "leafpress"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(legacyDir, "index.html"), []byte("legacy"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := config.Default()
+	cfg.Build.OutputDir = "dist"
+	if _, err := New(cfg, Options{}).Build(); err != nil {
+		t.Fatalf("Build should migrate recognizable legacy output: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(legacyDir, outputOwnershipMarker)); err != nil {
+		t.Fatalf("legacy output was not claimed: %v", err)
+	}
+}
+
+func TestBuildRefusesOutputThroughSymlinkOutsideProject(t *testing.T) {
+	parent := t.TempDir()
+	garden := filepath.Join(parent, "garden")
+	outside := filepath.Join(parent, "outside")
+	if err := os.MkdirAll(garden, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(outside, 0755); err != nil {
+		t.Fatal(err)
+	}
+	sentinel := filepath.Join(outside, "keep.txt")
+	if err := os.WriteFile(sentinel, []byte("keep"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, filepath.Join(garden, "linked")); err != nil {
+		t.Skipf("symlinks unavailable: %v", err)
+	}
+	t.Chdir(garden)
+
+	cfg := config.Default()
+	cfg.Build.OutputDir = "linked/site"
+	if _, err := New(cfg, Options{}).Build(); err == nil {
+		t.Fatal("Build should reject an output path through an external symlink")
+	}
+	if _, err := os.Stat(sentinel); err != nil {
+		t.Fatalf("outside file was removed: %v", err)
+	}
+}
+
 func TestBuildWritesDefaultFaviconsFromRegistry(t *testing.T) {
 	dir := newTestProject(t)
 
