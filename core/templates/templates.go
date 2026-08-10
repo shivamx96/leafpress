@@ -568,6 +568,26 @@ const baseTemplate = `<!DOCTYPE html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <script>
+    // Resolve the theme before styles load to avoid flashing the wrong scheme.
+    (function() {
+      var preference = 'system';
+      try {
+        var storedPreference = localStorage.getItem('theme');
+        if (storedPreference === 'light' || storedPreference === 'dark') {
+          preference = storedPreference;
+        }
+      } catch (error) {
+        // Storage can be unavailable in privacy-restricted browsing contexts.
+      }
+      var theme = preference === 'system'
+        ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+        : preference;
+      document.documentElement.setAttribute('data-theme-preference', preference);
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
   <title>{{block "title" .}}{{.Site.Title}}{{end}}</title>
   {{block "seo" .}}{{end}}
   <link rel="icon" type="image/svg+xml" href="{{.Site.BasePath}}/favicon.svg">
@@ -578,6 +598,7 @@ const baseTemplate = `<!DOCTYPE html>
   {{end}}
   <style>
     :root {
+      color-scheme: light;
       --lp-font-heading: "{{.Site.Theme.FontHeading}}", Georgia, serif;
       --lp-font-body: "{{.Site.Theme.FontBody}}", system-ui, -apple-system, sans-serif;
       --lp-font-mono: "{{.Site.Theme.FontMono}}", "Fira Code", "Courier New", monospace;
@@ -625,6 +646,7 @@ const baseTemplate = `<!DOCTYPE html>
     {{end}}
 
     [data-theme="dark"] {
+      color-scheme: dark;
       --lp-bg: #1a1a1a;
       --lp-text: #e5e5e5;
       --lp-text-muted: #a0a0a0;
@@ -674,7 +696,12 @@ const baseTemplate = `<!DOCTYPE html>
               <line x1="21" y1="21" x2="15.5" y2="15.5"></line>
             </svg>
           </button>{{end}}
-          <button class="lp-theme-toggle" aria-label="Toggle dark mode" title="Toggle theme">
+          <button class="lp-theme-toggle" aria-label="Change theme" title="Change theme">
+            <svg class="lp-theme-icon lp-theme-icon-system" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="13" rx="2"></rect>
+              <line x1="8" y1="21" x2="16" y2="21"></line>
+              <line x1="12" y1="17" x2="12" y2="21"></line>
+            </svg>
             <svg class="lp-theme-icon lp-theme-icon-light" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="5"></circle>
               <line x1="12" y1="1" x2="12" y2="3"></line>
@@ -751,41 +778,116 @@ const baseTemplate = `<!DOCTYPE html>
     var LP_BASE_PATH = '{{.Site.BasePath}}';
 
     // Theme switching
-    (function() {
-      var theme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    var themeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    var themePreference = document.documentElement.getAttribute('data-theme-preference') || 'system';
+
+    function getSystemTheme() {
+      return themeMediaQuery.matches ? 'dark' : 'light';
+    }
+
+    function getEffectiveTheme(preference) {
+      return preference === 'system' ? getSystemTheme() : preference;
+    }
+
+    function getNextThemePreference() {
+      if (themePreference === 'system') {
+        return getEffectiveTheme(themePreference) === 'dark' ? 'light' : 'dark';
+      }
+      if (themePreference !== getSystemTheme()) {
+        return getSystemTheme();
+      }
+      return 'system';
+    }
+
+    function updateThemeToggle(theme) {
+      var themeToggle = document.querySelector('.lp-theme-toggle');
+      if (!themeToggle) return;
+
+      var nextPreference = getNextThemePreference();
+
+      var currentLabel = themePreference === 'system'
+        ? 'system (' + theme + ')'
+        : themePreference;
+      var nextLabel = nextPreference === 'system' ? 'system setting' : nextPreference + ' theme';
+      var label = 'Theme: ' + currentLabel + '. Use ' + nextLabel;
+      themeToggle.setAttribute('aria-label', label);
+      themeToggle.setAttribute('title', label);
+    }
+
+    function updateGraphTheme(theme) {
+      var graphBody = document.getElementById('lp-graph-panel-body');
+      if (!graphBody || !graphBody.querySelector('svg')) return;
+
+      var linkColor = theme === 'dark' ? '#444444' : '#d0d0d0';
+      var textColor = getComputedStyle(document.documentElement).getPropertyValue('--lp-text').trim();
+      var accentColor = getComputedStyle(document.documentElement).getPropertyValue('--lp-accent').trim();
+      graphBody.querySelectorAll('.lp-graph-link').forEach(function(link) {
+        if (!link.style.opacity || link.style.opacity === '0.5') {
+          link.setAttribute('stroke', linkColor);
+        }
+      });
+      graphBody.querySelectorAll('.lp-graph-label').forEach(function(label) {
+        label.style.fill = textColor;
+      });
+      graphBody.querySelectorAll('.lp-graph-node').forEach(function(node) {
+        node.setAttribute('fill', accentColor);
+      });
+    }
+
+    function applyThemePreference(preference) {
+      themePreference = preference;
+      var theme = getEffectiveTheme(preference);
+      document.documentElement.setAttribute('data-theme-preference', preference);
       document.documentElement.setAttribute('data-theme', theme);
-    })();
+      updateThemeToggle(theme);
+      updateGraphTheme(theme);
+    }
+
+    function storeThemePreference(preference) {
+      try {
+        if (preference === 'system') {
+          localStorage.removeItem('theme');
+        } else {
+          localStorage.setItem('theme', preference);
+        }
+      } catch (error) {
+        // Keep theme switching functional even when storage is unavailable.
+      }
+    }
+
+    function handleSystemThemeChange() {
+      if (themePreference === 'system') {
+        applyThemePreference('system');
+      } else {
+        updateThemeToggle(getEffectiveTheme(themePreference));
+      }
+    }
+
+    if (themeMediaQuery.addEventListener) {
+      themeMediaQuery.addEventListener('change', handleSystemThemeChange);
+    } else if (themeMediaQuery.addListener) {
+      // Safari before 14 uses the legacy MediaQueryList listener API.
+      themeMediaQuery.addListener(handleSystemThemeChange);
+    }
+
+    window.addEventListener('storage', function(event) {
+      if (event.key !== 'theme' && event.key !== null) return;
+      var preference = event.newValue === 'light' || event.newValue === 'dark'
+        ? event.newValue
+        : 'system';
+      applyThemePreference(preference);
+    });
 
     // Add copy buttons to code blocks
     document.addEventListener('DOMContentLoaded', function() {
       // Theme toggle
       var themeToggle = document.querySelector('.lp-theme-toggle');
       if (themeToggle) {
+        updateThemeToggle(getEffectiveTheme(themePreference));
         themeToggle.addEventListener('click', function() {
-          var currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
-          var newTheme = currentTheme === 'light' ? 'dark' : 'light';
-          document.documentElement.setAttribute('data-theme', newTheme);
-          localStorage.setItem('theme', newTheme);
-
-          // Update graph colors if graph exists
-          var graphBody = document.getElementById('lp-graph-panel-body');
-          if (graphBody && graphBody.querySelector('svg')) {
-            var isDark = newTheme === 'dark';
-            var linkColor = isDark ? '#444444' : '#d0d0d0';
-            var textColor = getComputedStyle(document.documentElement).getPropertyValue('--lp-text').trim();
-            var accentColor = getComputedStyle(document.documentElement).getPropertyValue('--lp-accent').trim();
-            graphBody.querySelectorAll('.lp-graph-link').forEach(function(link) {
-              if (!link.style.opacity || link.style.opacity === '0.5') {
-                link.setAttribute('stroke', linkColor);
-              }
-            });
-            graphBody.querySelectorAll('.lp-graph-label').forEach(function(label) {
-              label.style.fill = textColor;
-            });
-            graphBody.querySelectorAll('.lp-graph-node').forEach(function(node) {
-              node.setAttribute('fill', accentColor);
-            });
-          }
+          var nextPreference = getNextThemePreference();
+          storeThemePreference(nextPreference);
+          applyThemePreference(nextPreference);
         });
       }
 

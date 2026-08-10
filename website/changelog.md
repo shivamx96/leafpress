@@ -7,6 +7,7 @@ toc: false
 ## v1.0.0-beta.17
 *August 11, 2026*
 
+- **Kept themes synchronized with the operating system.** Sites now apply the saved or system theme before styles load, react to live OS appearance changes while using the system setting, expose system/light/dark modes through the theme control, and keep native controls and graph colors in sync.
 - **Reduced repeated JavaScript in generated sites.** Leafpress now emits one content-addressed client bundle shared by every page instead of embedding the same client code into every HTML document. Bundle paths change with relevant configuration, stale hashes disappear on full rebuilds, and native CLI and hosted-renderer output remain in parity.
 - **Preloaded selected self-hosted fonts.** Pages preload one normal face for each configured heading, body, and monospace family in role order, while deduplicating reused families and leaving italic and extended-Latin faces demand-loaded.
 - **Made full builds transactional and output cleanup safer.** Builds render into staging and replace the published site only after every artifact succeeds; failures preserve the previous output. Output directories must remain inside the project, symlink escapes are blocked, and non-empty custom directories require Leafpress ownership before cleanup.
