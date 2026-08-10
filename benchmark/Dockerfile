@@ -18,7 +18,7 @@ RUN apt-get update && apt-get install -y \
 
 # Install Go (for Hugo and Leafpress)
 ENV GO_VERSION=1.25.5
-ARG TARGETARCH
+ARG TARGETARCH=amd64
 RUN case "$TARGETARCH" in \
       arm64) archive="go${GO_VERSION}.linux-arm64.tar.gz"; checksum="b00b694903d126c588c378e72d3545549935d3982635ba3f7a964c9fa23fe3b9" ;; \
       amd64) archive="go${GO_VERSION}.linux-amd64.tar.gz"; checksum="9e9b755d63b36acf30c12a9a3fc379243714c1c6d3dd72861da637f336ebb35b" ;; \
