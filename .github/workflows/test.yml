@@ -33,6 +33,12 @@ jobs:
             exit 1
           fi
 
+      - name: Verify CLI module outside the workspace
+        working-directory: ./cli
+        env:
+          GOWORK: "off"
+        run: go test -mod=readonly ./...
+
       - name: Build (cli)
         working-directory: ./cli
         run: go build -o leafpress ./cmd/leafpress
