@@ -17,6 +17,9 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: "1.25.5"
+          cache-dependency-path: |
+            core/go.sum
+            cli/go.sum
 
       - name: Check formatting
         run: |
@@ -25,19 +28,6 @@ jobs:
             echo "$unformatted"
             exit 1
           fi
-
-      - name: Verify published CLI module has no local replacements
-        run: |
-          if grep -Eq '^[[:space:]]*replace[[:space:]]' cli/go.mod; then
-            echo "cli/go.mod must not contain replace directives; use go.work for local modules"
-            exit 1
-          fi
-
-      - name: Verify CLI module outside the workspace
-        working-directory: ./cli
-        env:
-          GOWORK: "off"
-        run: go test -mod=readonly ./...
 
       - name: Build (cli)
         working-directory: ./cli
@@ -79,3 +69,30 @@ jobs:
           path: |
             core/coverage.out
             cli/coverage.out
+
+  cli-standalone:
+    name: CLI standalone module
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.5"
+          cache-dependency-path: cli/go.sum
+
+      - name: Verify published CLI module has no local replacements
+        run: |
+          if grep -Eq '^[[:space:]]*replace[[:space:]]' cli/go.mod; then
+            echo "cli/go.mod must not contain replace directives; use go.work for local modules"
+            exit 1
+          fi
+
+      - name: Verify CLI module outside the workspace
+        working-directory: ./cli
+        env:
+          GOWORK: "off"
+        run: go test -mod=readonly ./...
