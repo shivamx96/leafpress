@@ -46,13 +46,60 @@ func artifact(t *testing.T, out *Output, path string) OutputArtifact {
 
 func clientScriptArtifact(t *testing.T, out *Output) OutputArtifact {
 	t.Helper()
+	var matches []OutputArtifact
 	for _, item := range out.Artifacts {
 		if strings.HasPrefix(item.Path, "static/leafpress/app.") && strings.HasSuffix(item.Path, ".js") {
-			return item
+			matches = append(matches, item)
 		}
 	}
-	t.Fatal("client script artifact not found")
-	return OutputArtifact{}
+	if len(matches) != 1 {
+		t.Fatalf("client script artifacts = %d, want exactly one", len(matches))
+	}
+	item := matches[0]
+	wantPath := "static/leafpress/app." + assets.Sum([]byte(item.Content))[:32] + ".js"
+	if item.Path != wantPath {
+		t.Fatalf("client script path = %q, want content-addressed path %q", item.Path, wantPath)
+	}
+	if item.ContentType != "text/javascript; charset=utf-8" || item.Encoding != "utf8" {
+		t.Fatalf("client script metadata = (%q, %q), want JavaScript utf8", item.ContentType, item.Encoding)
+	}
+	return item
+}
+
+func TestRunSharesOneClientScriptAcrossRenderedDocuments(t *testing.T) {
+	out := runJSON(t, `{
+	  "render": {"slug": "g"},
+	  "content": {"pages": [
+	    {"slug": "one", "title": "One", "markdown": "one", "tags": ["shared"]},
+	    {"slug": "notes/two", "title": "Two", "markdown": "two", "tags": ["shared"]}
+	  ]}
+	}`)
+	client := clientScriptArtifact(t, out)
+	scriptTag := `<script src="/` + client.Path + `" defer></script>`
+	if len(out.Tags.Pages) != 1 {
+		t.Fatalf("tag pages = %d, want 1", len(out.Tags.Pages))
+	}
+	documents := []struct {
+		name string
+		html string
+	}{
+		{name: "home", html: out.Index},
+		{name: "page one", html: pageHTML(t, out, "one")},
+		{name: "page two", html: pageHTML(t, out, "notes/two")},
+		{name: "tag index", html: out.Tags.Index},
+		{name: "tag page", html: out.Tags.Pages[0].HTML},
+	}
+	for _, document := range documents {
+		if strings.Count(document.html, scriptTag) != 1 {
+			t.Errorf("%s must reference the shared client script exactly once", document.name)
+		}
+		if scriptAt, headEnd := strings.Index(document.html, scriptTag), strings.Index(document.html, "</head>"); scriptAt < 0 || headEnd < 0 || scriptAt > headEnd {
+			t.Errorf("%s must discover the shared client script in <head>", document.name)
+		}
+		if strings.Contains(document.html, "var LP_BASE_PATH") || strings.Contains(document.html, "lp-copy-button") {
+			t.Errorf("%s duplicates client JavaScript inline", document.name)
+		}
+	}
 }
 
 // Unknown or misplaced fields must be rejected as input errors (exit 1),

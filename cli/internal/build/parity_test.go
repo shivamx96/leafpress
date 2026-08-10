@@ -282,6 +282,25 @@ func TestParityCSSAndTextArtifacts(t *testing.T) {
 	if readSite("style.css") != out.CSS {
 		t.Error("style.css differs between CLI and renderer")
 	}
+	var clientArtifacts []render.OutputArtifact
+	for _, a := range out.Artifacts {
+		if strings.HasPrefix(a.Path, "static/leafpress/app.") && strings.HasSuffix(a.Path, ".js") {
+			clientArtifacts = append(clientArtifacts, a)
+		}
+	}
+	if len(clientArtifacts) != 1 {
+		t.Fatalf("renderer client script artifacts = %d, want exactly one", len(clientArtifacts))
+	}
+	client := clientArtifacts[0]
+	if client.ContentType != "text/javascript; charset=utf-8" || client.Encoding != "utf8" {
+		t.Fatalf("renderer client script metadata = (%q, %q), want JavaScript utf8", client.ContentType, client.Encoding)
+	}
+	if want := "static/leafpress/app." + assets.Sum([]byte(client.Content))[:32] + ".js"; client.Path != want {
+		t.Fatalf("renderer client script path = %q, want %q", client.Path, want)
+	}
+	if readSite(client.Path) != client.Content {
+		t.Error("shared client script differs between CLI and renderer")
+	}
 	for _, path := range []string{"robots.txt", "404.html"} {
 		if readSite(path) != artifactContent(path) {
 			t.Errorf("%s differs between CLI and renderer", path)
