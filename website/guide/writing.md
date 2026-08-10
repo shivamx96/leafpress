@@ -72,6 +72,27 @@ Connect pages with double brackets:
 
 See [[guide/wiki-links|Wiki Links]] for details.
 
+### Tags
+
+Tags can be declared in frontmatter or written directly in ordinary prose:
+
+```markdown
+---
+tags: [projects]
+---
+
+Working on #leafpress and #static-sites.
+```
+
+Inline tags become links to their generated tag pages. Leafpress merges them
+with frontmatter tags, preserving the frontmatter spelling and removing
+case-insensitive duplicates.
+
+Tag names may contain letters, numbers, underscores, and hyphens. Hashes in
+code spans, fenced code blocks, links, URLs, raw HTML tags, or escaped forms
+such as `\#literal` remain literal. Nested forms such as `#project/leafpress`
+are not interpreted as tags.
+
 ### Callouts
 
 Obsidian-compatible admonitions:
@@ -203,4 +224,3 @@ Organize content in folders under your site root. Create `folder/_index.md` for 
 ```
 
 Link to nested pages: `[[projects/website]]`
-

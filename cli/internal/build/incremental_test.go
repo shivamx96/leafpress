@@ -102,6 +102,43 @@ func TestIncrementalStaticDeletionRemovesOutput(t *testing.T) {
 	}
 }
 
+func TestIncrementalInlineTagChangesRebuildTagPages(t *testing.T) {
+	dir := newTestProject(t)
+	notePath := filepath.Join(dir, "note.md")
+	b := New(config.Default(), Options{})
+	if _, err := b.Build(); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.WriteFile(notePath, []byte("# Note\n\nNow tracking #alpha.\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	stats, err := b.RebuildIncremental(notePath, ChangeModify)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if stats.TagsRebuilt != 1 {
+		t.Fatalf("TagsRebuilt = %d, want 1", stats.TagsRebuilt)
+	}
+	alphaPage := filepath.Join(dir, "_site", "tags", "alpha", "index.html")
+	assertFileContains(t, alphaPage, ">Note<")
+
+	if err := os.WriteFile(notePath, []byte("# Note\n\nNow tracking #beta.\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	stats, err = b.RebuildIncremental(notePath, ChangeModify)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if stats.TagsRebuilt != 2 {
+		t.Fatalf("TagsRebuilt = %d, want 2", stats.TagsRebuilt)
+	}
+	if _, err := os.Stat(alphaPage); !os.IsNotExist(err) {
+		t.Fatalf("removed inline tag page still exists: %v", err)
+	}
+	assertFileContains(t, filepath.Join(dir, "_site", "tags", "beta", "index.html"), ">Note<")
+}
+
 func TestFailedConfigRebuildRestoresPreviousBuilderState(t *testing.T) {
 	dir := newTestProject(t)
 	b := New(config.Default(), Options{})

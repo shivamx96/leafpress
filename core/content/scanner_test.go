@@ -1,7 +1,9 @@
 package content
 
 import (
+	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 )
 
@@ -35,5 +37,23 @@ func TestScannerPathDerivations(t *testing.T) {
 func TestGenerateTitleFromUnicodeSlug(t *testing.T) {
 	if got := generateTitleFromSlug("éclair-notes"); got != "Éclair Notes" {
 		t.Fatalf("title = %q, want Éclair Notes", got)
+	}
+}
+
+func TestParseSingleFileMergesFrontmatterAndInlineTags(t *testing.T) {
+	root := t.TempDir()
+	path := filepath.Join(root, "note.md")
+	markdown := "---\ntags: [Systems, notes]\n---\nBody with #systems, #LeafPress, and `#ignored`.\n"
+	if err := os.WriteFile(path, []byte(markdown), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	page, err := ParseSingleFile(root, "note.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"Systems", "notes", "LeafPress"}
+	if !reflect.DeepEqual(page.Tags, want) {
+		t.Fatalf("page.Tags = %v, want %v", page.Tags, want)
 	}
 }

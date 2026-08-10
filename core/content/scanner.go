@@ -209,7 +209,7 @@ func (s *Scanner) parsePage(absPath, relPath string, info os.FileInfo) (*Page, e
 		Date:                date,
 		Created:             created,
 		Modified:            modified,
-		Tags:                NormalizeTags(fm.Tags),
+		Tags:                MergeTags(fm.Tags, ExtractInlineTags(body)),
 		Draft:               fm.Draft,
 		Growth:              fm.Growth,
 		TOC:                 fm.TOC,

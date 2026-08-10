@@ -856,7 +856,8 @@ func buildPages(in []InputPage) ([]*content.Page, error) {
 			return nil, inputErrorf("pages[%d].sort must be one of date, title, growth; got %q", i, ip.Sort)
 		}
 
-		for _, tag := range ip.Tags {
+		tags := content.MergeTags(ip.Tags, content.ExtractInlineTags(ip.Markdown))
+		for _, tag := range tags {
 			if !tagRegex.MatchString(tag) {
 				return nil, inputErrorf("pages[%d] has invalid tag %q: tags may only contain letters, digits, underscores, and hyphens", i, tag)
 			}
@@ -906,7 +907,7 @@ func buildPages(in []InputPage) ([]*content.Page, error) {
 			Date:                created,
 			Created:             created,
 			Modified:            updated,
-			Tags:                content.NormalizeTags(ip.Tags),
+			Tags:                tags,
 			Growth:              ip.Growth,
 			TOC:                 ip.TOC,
 			Image:               html.EscapeString(ip.Image),

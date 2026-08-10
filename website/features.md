@@ -11,7 +11,7 @@ Everything you need to build a digital garden, nothing you don't.
 
 **Backlinks** — Every page shows what links to it. No configuration needed.
 
-**Tags** — Add `tags: [idea, project]` to frontmatter. Get tag pages automatically.
+**Tags** — Add `tags: [idea, project]` to frontmatter or write `#idea` directly in your notes. Inline tags become links and feed the same automatically generated tag pages.
 
 **Mermaid Diagrams** — Fenced `mermaid` code blocks render as interactive diagrams. Supports flowcharts, sequence diagrams, Gantt charts, and more. Dark mode compatible. Self-hosted (no CDN).
 

@@ -71,7 +71,7 @@ const parityConfig = `{
 // noteABody links to the same page in all three wikilink forms — display
 // title, filename, and full slug — so parity covers the whole resolution
 // matrix.
-const noteABody = "Linking to [[Note B]], [[note-b]], and [[essays/note-b]] while thinking about systems.\n\n## Ideas\n\nSome plain markdown content.\n"
+const noteABody = "Linking to [[Note B]], [[note-b]], and [[essays/note-b]] while thinking about #gardens.\n\n## Ideas\n\nSome plain markdown content.\n"
 const noteBBody = "# Heading\n\nEssay content with a [link](https://example.org).\n"
 
 const parityStyleCSS = ".my-rule { color: rebeccapurple; }\n"
@@ -219,6 +219,17 @@ func rendererHTMLPaths(out *render.Output) map[string]bool {
 		}
 	}
 	return paths
+}
+
+func tagPageByName(t *testing.T, out *render.Output, tag string) string {
+	t.Helper()
+	for _, page := range out.Tags.Pages {
+		if page.Tag == tag {
+			return page.HTML
+		}
+	}
+	t.Fatalf("tag page %q not found", tag)
+	return ""
 }
 
 func sortedKeys(m map[string]bool) []string {
@@ -573,6 +584,7 @@ func TestParityPageHTMLStructure(t *testing.T) {
 			markers: []string{
 				`href="/garden/essays/note-b/"`, // resolved wikilinks
 				`href="/garden/style.css"`,
+				`class="lp-tag lp-inline-tag" href="/garden/tags/gardens/"`,
 				`href="/garden/tags/systems/"`,
 			},
 		},
@@ -583,9 +595,15 @@ func TestParityPageHTMLStructure(t *testing.T) {
 			markers:  []string{`href="/garden/style.css"`, `href="/garden/favicon.svg"`},
 		},
 		{
+			name:     "tags/gardens",
+			cliHTML:  readSite("tags/gardens/index.html"),
+			rendered: tagPageByName(t, out, "gardens"),
+			markers:  []string{`href="/garden/note-a/"`},
+		},
+		{
 			name:     "tags/systems",
 			cliHTML:  readSite("tags/systems/index.html"),
-			rendered: out.Tags.Pages[0].HTML,
+			rendered: tagPageByName(t, out, "systems"),
 			markers:  []string{`href="/garden/note-a/"`},
 		},
 	}

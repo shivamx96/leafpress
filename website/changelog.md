@@ -4,6 +4,10 @@ date: 2025-01-06
 toc: false
 ---
 
+## Unreleased
+
+- **Added automatic inline tags.** Tags written as `#notes` in ordinary Markdown now become links and feed tag pages, navigation, graph/search metadata, and incremental rebuilds alongside frontmatter tags. Code, links, URLs, raw HTML tags, escaped hashes, and unsupported nested tags remain literal.
+
 ## v1.0.0-beta.17
 *August 11, 2026*
 
