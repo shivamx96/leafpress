@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# Build Leafpress site (minimal config)
+# Build the Leafpress flat-navigation stress workload.
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LEAFPRESS=${LEAFPRESS_BIN:-"${SCRIPT_DIR}/../../leafpress"}
 cd "$1"
-[ "$2" != "warm" ] && rm -rf _site
-if [ ! -x "$LEAFPRESS" ]; then
+[[ ${2:-} == "warm" ]] || rm -rf _site
+if [[ ! -x $LEAFPRESS ]]; then
     LEAFPRESS="/benchmark/leafpress"
 fi
 

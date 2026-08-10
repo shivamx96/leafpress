@@ -67,6 +67,11 @@ jobs:
         working-directory: ./cli
         run: ./test.sh
 
+      - name: Validate benchmark workloads
+        env:
+          LEAFPRESS_BIN: ${{ github.workspace }}/cli/leafpress
+        run: ./benchmark/test.sh
+
       - name: Upload coverage reports
         uses: actions/upload-artifact@v4
         with:

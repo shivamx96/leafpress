@@ -11,11 +11,12 @@ RUN apt-get update && apt-get install -y \
     wget \
     git \
     build-essential \
+    python3 \
     time \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Go (for Hugo and Leafpress)
-ENV GO_VERSION=1.21.5
+ENV GO_VERSION=1.25.5
 ARG TARGETARCH
 RUN if [ "$TARGETARCH" = "arm64" ]; then \
       curl -fsSL https://go.dev/dl/go${GO_VERSION}.linux-arm64.tar.gz | tar -xz -C /usr/local; \
@@ -55,10 +56,11 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
     fi
 
 # Install Jekyll
-RUN gem install jekyll bundler --no-document
+RUN gem install jekyll -v 4.4.1 --no-document \
+    && gem install bundler --no-document
 
 # Install Node.js SSGs globally
-RUN npm install -g @11ty/eleventy
+RUN npm install -g @11ty/eleventy@3.1.2
 
 # Create working directory
 WORKDIR /benchmark
