@@ -6,8 +6,14 @@ toc: false
 
 ## Unreleased
 
-- Prevented destructive `build.outputDir` configurations: build output must remain inside the project, symlink escapes are blocked during cleanup, and non-empty custom directories require Leafpress ownership before they can be erased.
-- Full builds now render into a staging directory and replace the published site only after every artifact succeeds; generation failures leave the previous output untouched, and failed promotion rolls it back.
+## v1.0.0-beta.17
+*August 11, 2026*
+
+- **Reduced repeated JavaScript in generated sites.** Leafpress now emits one content-addressed client bundle shared by every page instead of embedding the same client code into every HTML document. Bundle paths change with relevant configuration, stale hashes disappear on full rebuilds, and native CLI and hosted-renderer output remain in parity.
+- **Preloaded selected self-hosted fonts.** Pages preload one normal face for each configured heading, body, and monospace family in role order, while deduplicating reused families and leaving italic and extended-Latin faces demand-loaded.
+- **Made full builds transactional and output cleanup safer.** Builds render into staging and replace the published site only after every artifact succeeds; failures preserve the previous output. Output directories must remain inside the project, symlink escapes are blocked, and non-empty custom directories require Leafpress ownership before cleanup.
+- Section index introductions now use the same rich-content styling as ordinary pages.
+- Rebuilt the SSG benchmark around a deterministic notes/posts/tags workload, normalized routes and support pages across generators, rotated run order, logical output sizes, strict output contracts, pinned Docker inputs, and independently visible standalone CLI validation.
 
 ## v1.0.0-beta.16
 *August 3, 2026*
