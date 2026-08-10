@@ -1,12 +1,12 @@
 # SSG Benchmark Results
 
-**Date**: Tue Aug 11 01:17:07 IST 2026
+**Date**: Tue Aug 11 01:46:32 IST 2026
 **System**: Linux x86_64
 **CPU**: AMD Ryzen 7 9800X3D 8-Core Processor
 **Memory**: 62GB
-**Source revision**: `4f6527a9c464-dirty`
-**Leafpress binary**: `/home/shivam/IdeaProjects/leafpress/benchmark/leafpress`
-**Leafpress SHA-256**: `e7e15b197c107e7748cb05f99b6f016eb5983e0f53705acde61d1aa6d0a90d53`
+**Source revision**: `27f6d902f26a`
+**Leafpress binary**: `/tmp/leafpress-beta17-benchmark/leafpress`
+**Leafpress SHA-256**: `d12c56de0e2b6cee648d6be6936b706a7de6dbb279c93eddd43f9af0a812d338`
 **Workload**: v2 (hierarchical-notes-posts)
 **Warmups / measured runs**: 2 / 10
 **Scheduling**: deterministic interleaved rotation
@@ -17,12 +17,12 @@
 
 | SSG | 100 pages | 1000 pages | 2000 pages |
 |-----|------------|------------|------------|
-| zola | 16 (15±1) | 51 (51±0) | 98 (98±2) |
-| hugo | 25 (25±0) | 78 (78±2) | 138 (138±1) |
-| leafpress-minimal | 16 (15±1) | 48 (48±0) | 82 (81±0) |
-| leafpress | 16 (16±0) | 58 (58±0) | 101 (100±1) |
-| eleventy | 211 (213±4) | 409 (410±5) | 624 (626±8) |
-| jekyll | 154 (154±2) | 266 (266±0) | 386 (386±2) |
+| zola | 16 (16±0) | 52 (52±1) | 97 (97±1) |
+| hugo | 25 (25±0) | 78 (79±2) | 141 (142±6) |
+| leafpress-minimal | 16 (15±0) | 49 (48±1) | 82 (82±0) |
+| leafpress | 17 (16±1) | 60 (60±0) | 103 (103±2) |
+| eleventy | 211 (213±4) | 411 (416±13) | 634 (633±12) |
+| jekyll | 154 (154±0) | 266 (267±3) | 387 (387±3) |
 
 *leafpress-minimal: reader features disabled; standard Markdown links remain.*
 *leafpress: default reader features including wikilinks, backlinks, graph, search, and TOC.*
@@ -62,4 +62,4 @@ The intentionally pathological flat-root automatic-navigation workload is run se
 | Zola | 0.21.0 |
 | Eleventy | 3.1.2 |
 | Jekyll | 4.4.1 |
-| Leafpress | leafpress dev |
+| Leafpress | leafpress v1.0.0-beta.17 |
