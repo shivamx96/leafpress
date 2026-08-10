@@ -35,6 +35,15 @@ For the comparable container environment:
 ./benchmark/run.sh docker
 ```
 
+Docker runs persist files written below `/benchmark/results/`. To give a
+canonical report its final repository path, pass the path as seen inside the
+container:
+
+```sh
+BENCHMARK_RESULTS_FILE=/benchmark/results/YYYY-MM-DD/MACHINE_DOCKER.md \
+  ./benchmark/run.sh docker
+```
+
 To use locally installed SSGs:
 
 ```sh
@@ -70,6 +79,10 @@ For quick local checks, the harness accepts these environment variables:
 | `BENCHMARK_STRICT` | `true` | `BENCHMARK_STRICT=false` |
 | `BENCHMARK_RESULTS_FILE` | timestamped file in `results/` | `/tmp/leafpress-benchmark.md` |
 | `LEAFPRESS_BIN` | `benchmark/leafpress` | `/path/to/leafpress` |
+
+All `BENCHMARK_*` controls in this table are forwarded to Docker. `LEAFPRESS_BIN`
+is local-only because Docker always builds `/benchmark/leafpress` from the
+mounted checkout.
 
 Run the fast workload and reporting checks with:
 

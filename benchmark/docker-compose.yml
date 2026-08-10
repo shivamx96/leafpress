@@ -8,6 +8,13 @@ services:
       - ../:/leafpress-src:ro
     working_dir: /benchmark
     command: /benchmark/run-all.sh
+    environment:
+      - BENCHMARK_RESULTS_FILE
+      - BENCHMARK_RUNS
+      - BENCHMARK_WARMUPS
+      - BENCHMARK_PAGE_COUNTS
+      - BENCHMARK_SSGS
+      - BENCHMARK_STRICT
     # Resource limits for fair comparison
     deploy:
       resources:
