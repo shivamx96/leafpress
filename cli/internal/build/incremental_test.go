@@ -102,6 +102,45 @@ func TestIncrementalStaticDeletionRemovesOutput(t *testing.T) {
 	}
 }
 
+func TestFailedConfigRebuildRestoresPreviousBuilderState(t *testing.T) {
+	dir := newTestProject(t)
+	b := New(config.Default(), Options{})
+	if _, err := b.Build(); err != nil {
+		t.Fatalf("first Build: %v", err)
+	}
+
+	oldCfg := b.cfg
+	oldOutputDir := b.outputDir
+	oldTemplates := b.templates
+	pagePath := filepath.Join(dir, "_site", "note", "index.html")
+	published, err := os.ReadFile(pagePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	configPath := filepath.Join(dir, "leafpress.json")
+	if err := os.WriteFile(configPath, []byte(`{"site":{"title":"Updated"}}`), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(dir, "static", "leafpress"), 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := b.RebuildIncremental(configPath, ChangeModify); err == nil {
+		t.Fatal("config rebuild should fail during static generation")
+	}
+	if b.cfg != oldCfg || b.outputDir != oldOutputDir || b.templates != oldTemplates {
+		t.Error("failed config rebuild did not restore the previous builder configuration")
+	}
+	got, err := os.ReadFile(pagePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(published) {
+		t.Error("failed config rebuild replaced the published output")
+	}
+	assertNoOutputTransactions(t, dir, "_site")
+}
+
 func assertFileContains(t *testing.T, path string, wants ...string) {
 	t.Helper()
 	data, err := os.ReadFile(path)

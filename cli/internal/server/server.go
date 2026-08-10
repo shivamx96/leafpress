@@ -383,8 +383,6 @@ func (s *Server) rebuild() {
 	fmt.Println("Rebuilding...")
 	start := time.Now()
 
-	// Skip clean on hot reload for faster rebuilds
-	s.builder.SetSkipClean(true)
 	stats, err := s.builder.Build()
 	if err != nil {
 		fmt.Printf("Build error: %v\n", err)

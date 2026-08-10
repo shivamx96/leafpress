@@ -2,6 +2,7 @@ package build
 
 import (
 	"bytes"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -22,6 +23,26 @@ func newTestProject(t *testing.T) string {
 	}
 	t.Chdir(dir)
 	return dir
+}
+
+func assertNoOutputTransactions(t *testing.T, projectDir, outputDir string) {
+	t.Helper()
+	parent := filepath.Join(projectDir, filepath.Dir(outputDir))
+	entries, err := os.ReadDir(parent)
+	if os.IsNotExist(err) {
+		return
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	base := filepath.Base(outputDir)
+	stagePrefix := "." + base + outputStageInfix
+	backupPrefix := "." + base + outputBackupInfix
+	for _, entry := range entries {
+		if strings.HasPrefix(entry.Name(), stagePrefix) || strings.HasPrefix(entry.Name(), backupPrefix) {
+			t.Errorf("output transaction artifact was not cleaned: %s", entry.Name())
+		}
+	}
 }
 
 func TestBuildRefusesProjectRootOutputWithoutDeletingSources(t *testing.T) {
@@ -110,6 +131,20 @@ func TestBuildClaimsCustomOutputAndCleansItOnLaterBuilds(t *testing.T) {
 	}
 }
 
+func TestBuildStagesNestedCustomOutputBesideDestination(t *testing.T) {
+	dir := newTestProject(t)
+	cfg := config.Default()
+	cfg.Build.OutputDir = filepath.Join("build", "site")
+
+	if _, err := New(cfg, Options{}).Build(); err != nil {
+		t.Fatalf("Build: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "build", "site", outputOwnershipMarker)); err != nil {
+		t.Fatalf("nested output was not published: %v", err)
+	}
+	assertNoOutputTransactions(t, dir, cfg.Build.OutputDir)
+}
+
 func TestBuildMigratesLegacyCustomOutput(t *testing.T) {
 	dir := newTestProject(t)
 	legacyDir := filepath.Join(dir, "dist")
@@ -157,6 +192,116 @@ func TestBuildRefusesOutputThroughSymlinkOutsideProject(t *testing.T) {
 	if _, err := os.Stat(sentinel); err != nil {
 		t.Fatalf("outside file was removed: %v", err)
 	}
+}
+
+func TestFailedFullBuildPreservesPublishedOutput(t *testing.T) {
+	dir := newTestProject(t)
+	b := New(config.Default(), Options{})
+	if _, err := b.Build(); err != nil {
+		t.Fatalf("first Build: %v", err)
+	}
+
+	pagePath := filepath.Join(dir, "_site", "note", "index.html")
+	published, err := os.ReadFile(pagePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sentinel := filepath.Join(dir, "_site", "keep.txt")
+	if err := os.WriteFile(sentinel, []byte("keep"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	previousPage := b.pagesByPath["note.md"]
+
+	if err := os.WriteFile(filepath.Join(dir, "note.md"), []byte("# Updated\n\nnew content\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(dir, "static", "leafpress"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := b.Build(); err == nil || !strings.Contains(err.Error(), "static/leafpress is reserved") {
+		t.Fatalf("Build should fail after rendering staged pages, got %v", err)
+	}
+
+	got, err := os.ReadFile(pagePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(got, published) {
+		t.Error("failed build replaced the previously published page")
+	}
+	if _, err := os.Stat(sentinel); err != nil {
+		t.Fatalf("failed build removed existing output: %v", err)
+	}
+	if b.pagesByPath["note.md"] != previousPage {
+		t.Error("failed build did not restore the previous incremental cache")
+	}
+	assertNoOutputTransactions(t, dir, "_site")
+}
+
+func TestPromotionFailureRollsBackPublishedOutput(t *testing.T) {
+	dir := newTestProject(t)
+	b := New(config.Default(), Options{})
+	if _, err := b.Build(); err != nil {
+		t.Fatalf("first Build: %v", err)
+	}
+
+	pagePath := filepath.Join(dir, "_site", "note", "index.html")
+	published, err := os.ReadFile(pagePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	previousPage := b.pagesByPath["note.md"]
+	if err := os.WriteFile(filepath.Join(dir, "note.md"), []byte("# Updated\n\nnew content\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	b.promoteHook = func() error { return errors.New("forced promotion failure") }
+
+	if _, err := b.Build(); err == nil || !strings.Contains(err.Error(), "forced promotion failure") {
+		t.Fatalf("Build should report the promotion failure, got %v", err)
+	}
+	got, err := os.ReadFile(pagePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(got, published) {
+		t.Error("promotion rollback did not restore the published page")
+	}
+	if b.pagesByPath["note.md"] != previousPage {
+		t.Error("promotion rollback did not restore the previous incremental cache")
+	}
+	assertNoOutputTransactions(t, dir, "_site")
+
+	b.promoteHook = nil
+	if _, err := b.Build(); err != nil {
+		t.Fatalf("Build after rollback: %v", err)
+	}
+	got, err = os.ReadFile(pagePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(got, []byte("Updated")) {
+		t.Error("successful retry did not publish the staged output")
+	}
+	assertNoOutputTransactions(t, dir, "_site")
+}
+
+func TestFailedInitialBuildDoesNotPublishPartialOutput(t *testing.T) {
+	dir := newTestProject(t)
+	if err := os.WriteFile(filepath.Join(dir, "note.md"), []byte("---\ntitle: Broken\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	b := New(config.Default(), Options{})
+	if _, err := b.Build(); err == nil {
+		t.Fatal("Build should reject unclosed frontmatter")
+	}
+	if _, err := os.Stat(filepath.Join(dir, "_site")); !os.IsNotExist(err) {
+		t.Fatalf("failed initial build published an output directory; stat error = %v", err)
+	}
+	if b.pages != nil {
+		t.Error("failed initial build retained a partial incremental cache")
+	}
+	assertNoOutputTransactions(t, dir, "_site")
 }
 
 func TestBuildWritesDefaultFaviconsFromRegistry(t *testing.T) {

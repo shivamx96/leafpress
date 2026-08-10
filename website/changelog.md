@@ -7,6 +7,7 @@ toc: false
 ## Unreleased
 
 - Prevented destructive `build.outputDir` configurations: build output must remain inside the project, symlink escapes are blocked during cleanup, and non-empty custom directories require Leafpress ownership before they can be erased.
+- Full builds now render into a staging directory and replace the published site only after every artifact succeeds; generation failures leave the previous output untouched, and failed promotion rolls it back.
 
 ## v1.0.0-beta.16
 *August 3, 2026*
