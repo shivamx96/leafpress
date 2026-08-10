@@ -2,6 +2,8 @@ package templates
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -350,6 +352,103 @@ func TestRemoteFontURL_ExcludesDeclaredCustomFamilies(t *testing.T) {
 func TestMermaidUsesStrictSecurityLevel(t *testing.T) {
 	if !strings.Contains(baseTemplate, "securityLevel: 'strict'") {
 		t.Fatal("Mermaid initialization must explicitly use strict security")
+	}
+}
+
+func TestClientScriptAssetIsContentAddressed(t *testing.T) {
+	tmpl, err := New()
+	if err != nil {
+		t.Fatalf("New() error: %v", err)
+	}
+
+	site := SiteData{
+		Title:    "Test Garden",
+		BasePath: "/garden",
+		Theme:    config.Default().Theme,
+		Graph:    true,
+		Search:   true,
+	}
+	assetPath, content, err := tmpl.ClientScriptAsset(site)
+	if err != nil {
+		t.Fatalf("ClientScriptAsset() error: %v", err)
+	}
+
+	hash := sha256.Sum256([]byte(content))
+	wantPath := fmt.Sprintf("static/leafpress/app.%x.js", hash[:16])
+	if assetPath != wantPath {
+		t.Fatalf("ClientScriptAsset() path = %q, want %q", assetPath, wantPath)
+	}
+	for _, want := range []string{
+		`var LP_BASE_PATH = '/garden'`,
+		"lp-graph-panel-body",
+		"lp-search-input",
+		"static/leafpress/mermaid/mermaid.min.js",
+	} {
+		if !strings.Contains(content, want) {
+			t.Errorf("client script missing %q", want)
+		}
+	}
+	if strings.Contains(content, "<script") || strings.Contains(content, "</script>") {
+		t.Fatal("client asset must contain JavaScript only, without script elements")
+	}
+
+	site.Search = false
+	withoutSearchPath, withoutSearch, err := tmpl.ClientScriptAsset(site)
+	if err != nil {
+		t.Fatalf("ClientScriptAsset(search disabled) error: %v", err)
+	}
+	if withoutSearchPath == assetPath || withoutSearch == content {
+		t.Fatal("feature-dependent client code must produce a different asset")
+	}
+	if strings.Contains(withoutSearch, "lp-search-input") {
+		t.Fatal("search-disabled client asset contains search UI code")
+	}
+}
+
+func TestClientScriptAssetLoadsFromHead(t *testing.T) {
+	tmpl, err := New()
+	if err != nil {
+		t.Fatalf("New() error: %v", err)
+	}
+
+	var out bytes.Buffer
+	err = tmpl.RenderIndex(&out, IndexData{
+		Site: SiteData{
+			Title:            "Test Garden",
+			BasePath:         "/garden",
+			Theme:            config.Default().Theme,
+			ClientScriptPath: "static/leafpress/app.0123456789abcdef.js",
+		},
+		Title: "Home",
+	})
+	if err != nil {
+		t.Fatalf("RenderIndex() error: %v", err)
+	}
+
+	html := out.String()
+	script := `<script src="/garden/static/leafpress/app.0123456789abcdef.js" defer></script>`
+	scriptAt := strings.Index(html, script)
+	headEnd := strings.Index(html, "</head>")
+	if scriptAt < 0 || headEnd < 0 || scriptAt > headEnd {
+		t.Fatalf("shared client script must be discovered in the document head:\n%s", html)
+	}
+	if strings.Contains(html, "var LP_BASE_PATH") {
+		t.Fatal("page with a shared client asset must not duplicate inline client JavaScript")
+	}
+
+	out.Reset()
+	err = tmpl.RenderIndex(&out, IndexData{
+		Site:  SiteData{Title: "Test Garden", BasePath: "/garden", Theme: config.Default().Theme},
+		Title: "Home",
+	})
+	if err != nil {
+		t.Fatalf("RenderIndex(inline fallback) error: %v", err)
+	}
+	inline := out.String()
+	if strings.Count(inline, "<script>") != 2 ||
+		!strings.Contains(inline, "var LP_BASE_PATH") ||
+		!strings.Contains(inline, "static/leafpress/mermaid/mermaid.min.js") {
+		t.Fatal("inline fallback must preserve both legacy client script blocks")
 	}
 }
 

@@ -1,12 +1,8 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Build Zola site
-cd "$1"
-[ "$2" != "warm" ] && rm -rf public
+set -euo pipefail
 
-# Cross-platform milliseconds (macOS date doesn't support %N)
-now_ms() { python3 -c "import time; print(int(time.time() * 1000))"; }
-
-start=$(now_ms)
-zola build >/dev/null 2>&1
-end=$(now_ms)
-echo $((end - start))
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "${1:?site directory is required}"
+[[ ${2:-} == "warm" ]] || rm -rf public
+python3 "${SCRIPT_DIR}/../../lib/time-command.py" zola build

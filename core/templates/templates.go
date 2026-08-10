@@ -2,6 +2,8 @@ package templates
 
 import (
 	"bufio"
+	"bytes"
+	"crypto/sha256"
 	"fmt"
 	"html"
 	"io"
@@ -131,6 +133,32 @@ type SiteData struct {
 	RSS               bool
 	HeadExtra         string // Custom HTML to inject in <head>
 	FooterAttribution *FooterAttribution
+	ClientScriptPath  string // Content-hashed shared client bundle, relative to the site root
+}
+
+// ClientScriptAsset renders the site-wide client code once and returns its
+// content-addressed output path. Pages can then share this file instead of
+// embedding the same JavaScript in every HTML document.
+func (t *Templates) ClientScriptAsset(site SiteData) (string, string, error) {
+	data := struct{ Site SiteData }{Site: site}
+	scripts := make([]string, 0, 2)
+	for _, name := range []string{"clientScriptMain", "clientScriptMermaid"} {
+		var rendered bytes.Buffer
+		if err := t.base.ExecuteTemplate(&rendered, name, data); err != nil {
+			return "", "", err
+		}
+		if script := strings.TrimSpace(rendered.String()); script != "" {
+			scripts = append(scripts, script)
+		}
+	}
+
+	if len(scripts) == 0 {
+		return "", "", fmt.Errorf("Leafpress client script not found")
+	}
+	content := strings.Join(scripts, "\n\n") + "\n"
+
+	hash := sha256.Sum256([]byte(content))
+	return fmt.Sprintf("static/leafpress/app.%x.js", hash[:16]), content, nil
 }
 
 // New returns a cached Templates instance (parsed once, reused on subsequent calls)
@@ -610,6 +638,7 @@ const baseTemplate = `<!DOCTYPE html>
     {{end}}
   </style>
   <link rel="stylesheet" href="{{.Site.BasePath}}/style.css">
+  {{if .Site.ClientScriptPath}}<script src="{{.Site.BasePath}}/{{.Site.ClientScriptPath}}" defer></script>{{end}}
   {{$remoteFontURL := remoteFontURL .Site.Theme}}{{if $remoteFontURL}}<link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="{{$remoteFontURL}}" rel="stylesheet">
@@ -715,7 +744,9 @@ const baseTemplate = `<!DOCTYPE html>
     </div>
   </div>{{end}}
 
-  <script>
+  {{if not .Site.ClientScriptPath}}<script>{{template "clientScriptMain" .}}</script>
+  <script>{{template "clientScriptMermaid" .}}</script>{{end}}
+  {{define "clientScriptMain"}}
     // Base path for asset loading (supports GitHub Pages subdirectory hosting)
     var LP_BASE_PATH = '{{.Site.BasePath}}';
 
@@ -1626,9 +1657,9 @@ const baseTemplate = `<!DOCTYPE html>
         });
       })();
     });
-  </script>
-  <script>
-    if (document.querySelector('.mermaid')) {
+
+  {{end}}
+  {{define "clientScriptMermaid"}}if (document.querySelector('.mermaid')) {
       var s = document.createElement('script');
       s.src = LP_BASE_PATH + '/static/leafpress/mermaid/mermaid.min.js';
       s.onload = function() {
@@ -1637,7 +1668,7 @@ const baseTemplate = `<!DOCTYPE html>
       };
       document.body.appendChild(s);
     }
-  </script>
+  {{end}}
 </body>
 </html>
 `

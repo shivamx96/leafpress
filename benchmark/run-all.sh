@@ -1,267 +1,447 @@
 #!/usr/bin/env bash
 
-# SSG Benchmark Suite
-# Runs clean build benchmarks for multiple static site generators
+# Reproducible clean-build benchmark suite for static site generators.
 
-set -e
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-OUTPUT_FILE="${SCRIPT_DIR}/results/BENCHMARK_${TIMESTAMP}.md"
-RUNS=10
-PAGE_COUNTS=(100 1000 2000)
-SSGS=(zola hugo leafpress-minimal leafpress eleventy jekyll)
+# shellcheck source=lib/workload.sh
+source "${SCRIPT_DIR}/lib/workload.sh"
 
-# Colors
+TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+OUTPUT_FILE=${BENCHMARK_RESULTS_FILE:-"${SCRIPT_DIR}/results/BENCHMARK_${TIMESTAMP}.md"}
+RUNS=${BENCHMARK_RUNS:-10}
+WARMUPS=${BENCHMARK_WARMUPS:-2}
+STRICT=${BENCHMARK_STRICT:-true}
+read -r -a PAGE_COUNTS <<< "${BENCHMARK_PAGE_COUNTS:-100 1000 2000}"
+read -r -a SSGS <<< "${BENCHMARK_SSGS:-zola hugo leafpress-minimal leafpress eleventy jekyll}"
+
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-# Create results directory
-mkdir -p "${SCRIPT_DIR}/results"
+mkdir -p "$(dirname "$OUTPUT_FILE")"
+WORKDIR=$(mktemp -d "${TMPDIR:-/tmp}/leafpress-benchmark.XXXXXX")
+REPORT_TMP="${WORKDIR}/report.md"
+SIZE_ROWS="${WORKDIR}/output-sizes.md"
+TIMES_DIR="${WORKDIR}/times"
+mkdir -p "$TIMES_DIR"
 
-# Working directory for test sites
-WORKDIR=$(mktemp -d)
-trap "rm -rf $WORKDIR" EXIT
+cleanup() {
+    if [[ -n ${WORKDIR:-} && -d $WORKDIR && $(basename "$WORKDIR") == leafpress-benchmark.* ]]; then
+        rm -rf -- "$WORKDIR"
+    fi
+}
+trap cleanup EXIT
 
-echo -e "${YELLOW}======================================${NC}"
-echo -e "${YELLOW}    SSG Benchmark Suite${NC}"
-echo -e "${YELLOW}======================================${NC}"
-echo ""
-echo "SSGs: ${SSGS[*]}"
-echo "Page counts: ${PAGE_COUNTS[*]}"
-echo "Runs per test: $RUNS"
-echo "Output: $OUTPUT_FILE"
-echo ""
+fail() {
+    echo -e "${RED}benchmark failed: $*${NC}" >&2
+    exit 1
+}
 
-# Function to calculate stats (mean, stddev, p50/median, min, max)
+[[ $RUNS =~ ^[1-9][0-9]*$ ]] || fail "BENCHMARK_RUNS must be a positive integer"
+[[ $WARMUPS =~ ^[0-9]+$ ]] || fail "BENCHMARK_WARMUPS must be a non-negative integer"
+[[ $STRICT == true || $STRICT == false ]] || fail "BENCHMARK_STRICT must be true or false"
+((${#PAGE_COUNTS[@]} > 0)) || fail "at least one page count is required"
+((${#SSGS[@]} > 0)) || fail "at least one SSG is required"
+for count in "${PAGE_COUNTS[@]}"; do
+    [[ $count =~ ^[1-9][0-9]*$ ]] || fail "invalid page count: $count"
+done
+
 calc_stats() {
     local -a times=("$@")
     local -a valid_times=()
+    local t
 
-    # Filter valid numeric values
     for t in "${times[@]}"; do
-        if [[ -n "$t" && "$t" =~ ^[0-9]+$ ]]; then
-            valid_times+=($t)
+        if [[ $t =~ ^[0-9]+$ ]]; then
+            valid_times+=("$t")
         fi
     done
 
     local count=${#valid_times[@]}
-    if [ $count -eq 0 ]; then
+    if ((count == 0)); then
         echo "0 0 0 0 0"
         return
     fi
 
-    # Calculate sum, min, max
     local sum=0
     local min=${valid_times[0]}
     local max=${valid_times[0]}
     for t in "${valid_times[@]}"; do
         sum=$((sum + t))
-        if [ "$t" -lt "$min" ]; then min=$t; fi
-        if [ "$t" -gt "$max" ]; then max=$t; fi
+        ((t < min)) && min=$t
+        ((t > max)) && max=$t
     done
 
-    # Calculate mean
     local mean=$((sum / count))
-
-    # Calculate standard deviation
     local sum_sq_diff=0
+    local diff
     for t in "${valid_times[@]}"; do
-        local diff=$((t - mean))
+        diff=$((t - mean))
         sum_sq_diff=$((sum_sq_diff + diff * diff))
     done
+
     local variance=$((sum_sq_diff / count))
-    # Integer square root approximation
     local stddev=0
-    if [ $variance -gt 0 ]; then
+    if ((variance > 0)); then
         stddev=$(awk "BEGIN {printf \"%.0f\", sqrt($variance)}")
     fi
 
-    # Calculate P50 (median) - sort and pick middle value
-    IFS=$'\n' sorted=($(sort -n <<< "${valid_times[*]}")); unset IFS
+    local -a sorted
+    IFS=$'\n' sorted=($(printf '%s\n' "${valid_times[@]}" | sort -n)); unset IFS
     local mid=$((count / 2))
     local p50
-    if [ $((count % 2)) -eq 0 ]; then
-        # Even count: average of two middle values
-        p50=$(( (sorted[mid-1] + sorted[mid]) / 2 ))
+    if ((count % 2 == 0)); then
+        p50=$(((sorted[mid - 1] + sorted[mid]) / 2))
     else
-        # Odd count: middle value
         p50=${sorted[mid]}
     fi
 
     echo "$mean $stddev $p50 $min $max"
 }
 
-# Check if SSG is available
 check_ssg() {
-    local ssg=$1
-    case $ssg in
-        leafpress|leafpress-minimal) [ -f "${SCRIPT_DIR}/leafpress" ] || [ -f /benchmark/leafpress ] ;;
+    case $1 in
+        leafpress|leafpress-minimal) [[ -x ${LEAFPRESS_BIN:-} || -x "${SCRIPT_DIR}/leafpress" || -x /benchmark/leafpress ]] ;;
         hugo) command -v hugo &>/dev/null ;;
         zola) command -v zola &>/dev/null ;;
-        eleventy) command -v eleventy &>/dev/null || command -v npx &>/dev/null ;;
+        eleventy) command -v eleventy &>/dev/null ;;
         jekyll) command -v jekyll &>/dev/null ;;
+        astro) command -v npm &>/dev/null ;;
+        *) return 1 ;;
     esac
 }
 
-# Gather system info
+resolve_leafpress_binary() {
+    local candidate
+    if [[ -n ${LEAFPRESS_BIN:-} ]]; then
+        if [[ -x $LEAFPRESS_BIN ]]; then
+            LEAFPRESS_BIN="$(cd "$(dirname "$LEAFPRESS_BIN")" && pwd)/$(basename "$LEAFPRESS_BIN")"
+            export LEAFPRESS_BIN
+        fi
+        return
+    fi
+
+    for candidate in "${SCRIPT_DIR}/leafpress" /benchmark/leafpress; do
+        if [[ -n $candidate && -x $candidate ]]; then
+            LEAFPRESS_BIN="$(cd "$(dirname "$candidate")" && pwd)/$(basename "$candidate")"
+            export LEAFPRESS_BIN
+            return
+        fi
+    done
+}
+
+output_dir_for() {
+    case $1 in
+        hugo) echo "public" ;;
+        zola) echo "public" ;;
+        astro) echo "dist" ;;
+        *) echo "_site" ;;
+    esac
+}
+
+output_metrics() {
+    local directory=$1
+    if [[ ! -d $directory ]]; then
+        printf 'N/A\tN/A\n'
+        return
+    fi
+
+    local bytes files
+    if [[ $(uname -s) == Darwin ]]; then
+        read -r files bytes < <(find "$directory" -type f -exec stat -f '%z' {} + | awk '{sum += $1} END {print NR + 0, sum + 0}')
+    else
+        read -r files bytes < <(find "$directory" -type f -printf '%s\n' | awk '{sum += $1} END {print NR + 0, sum + 0}')
+    fi
+
+    local size
+    size=$(awk -v bytes="$bytes" 'BEGIN {
+        if (bytes >= 1073741824) printf "%.2f GiB", bytes / 1073741824;
+        else if (bytes >= 1048576) printf "%.1f MiB", bytes / 1048576;
+        else if (bytes >= 1024) printf "%.1f KiB", bytes / 1024;
+        else printf "%d B", bytes;
+    }')
+    printf '%s\t%s\n' "$size" "$files"
+}
+
+validate_generated_output() {
+    local directory=$1
+    local count=$2
+    local expected_html=$((count + 24))
+    local sample="${directory}/notes/note-1/index.html"
+
+    [[ -f $sample ]] || return 1
+    [[ -f ${directory}/posts/index.html ]] || return 1
+    [[ -f ${directory}/tags/index.html ]] || return 1
+    [[ -f ${directory}/tags/tag0/index.html ]] || return 1
+    grep -Fq 'href="/notes/"' "$sample" || return 1
+    grep -Fq 'href="/posts/"' "$sample" || return 1
+    grep -Fq 'href="/tags/"' "$sample" || return 1
+
+    local html_count
+    html_count=$(find "$directory" -type f -name '*.html' | wc -l | tr -d ' ')
+    ((html_count >= expected_html))
+}
+
+binary_sha256() {
+    local binary=$1
+    if command -v sha256sum &>/dev/null; then
+        sha256sum "$binary" | awk '{print $1}'
+    else
+        shasum -a 256 "$binary" | awk '{print $1}'
+    fi
+}
+
 get_cpu_info() {
-    if [ "$(uname -s)" == "Darwin" ]; then
+    if [[ $(uname -s) == Darwin ]]; then
         sysctl -n machdep.cpu.brand_string 2>/dev/null || echo "Unknown"
     else
-        # Try model name first, then fall back to other methods
-        cpu=$(grep -m1 "model name" /proc/cpuinfo 2>/dev/null | cut -d: -f2 | xargs)
-        if [ -z "$cpu" ]; then
-            # ARM/Docker fallback - try lscpu
-            cpu=$(lscpu 2>/dev/null | grep "Model name" | cut -d: -f2 | xargs)
-        fi
-        if [ -z "$cpu" ]; then
-            # Last resort - check if running in Docker
-            if [ -f /.dockerenv ]; then
-                cpu="Docker container ($(uname -m))"
-            else
-                cpu="Unknown"
-            fi
-        fi
-        echo "$cpu"
+        local cpu
+        cpu=$(awk -F: '/model name/ {gsub(/^[ \t]+/, "", $2); print $2; exit}' /proc/cpuinfo 2>/dev/null || true)
+        [[ -n $cpu ]] || cpu=$(lscpu 2>/dev/null | awk -F: '/Model name/ {gsub(/^[ \t]+/, "", $2); print $2; exit}')
+        echo "${cpu:-Unknown}"
     fi
 }
 
 get_memory_info() {
-    if [ "$(uname -s)" == "Darwin" ]; then
+    if [[ $(uname -s) == Darwin ]]; then
+        local mem_bytes
         mem_bytes=$(sysctl -n hw.memsize 2>/dev/null)
         echo "$((mem_bytes / 1024 / 1024 / 1024))GB"
     else
-        mem_kb=$(grep MemTotal /proc/meminfo 2>/dev/null | awk '{print $2}')
+        local mem_kb
+        mem_kb=$(awk '/MemTotal/ {print $2}' /proc/meminfo 2>/dev/null)
         echo "$((mem_kb / 1024 / 1024))GB"
     fi
 }
 
+source_revision() {
+    local repo="${SCRIPT_DIR}/.."
+    [[ -d /leafpress-src/.git ]] && repo=/leafpress-src
+    if ! git -C "$repo" rev-parse --git-dir &>/dev/null; then
+        echo "unknown"
+        return
+    fi
+    local revision
+    revision=$(git -C "$repo" rev-parse --short=12 HEAD)
+    if [[ -n $(git -C "$repo" status --porcelain --untracked-files=no) ]]; then
+        revision="${revision}-dirty"
+    fi
+    echo "$revision"
+}
+
 CPU_INFO=$(get_cpu_info)
 MEM_INFO=$(get_memory_info)
+SOURCE_REVISION=$(source_revision)
+resolve_leafpress_binary
+LEAFPRESS_VERSION="N/A"
+LEAFPRESS_SHA256="N/A"
+if [[ -x ${LEAFPRESS_BIN:-} ]]; then
+    LEAFPRESS_VERSION=$("$LEAFPRESS_BIN" version 2>/dev/null | head -1 || true)
+    LEAFPRESS_VERSION=${LEAFPRESS_VERSION:-local-build}
+    LEAFPRESS_SHA256=$(binary_sha256 "$LEAFPRESS_BIN")
+fi
 
-# Initialize results file
-cat > "$OUTPUT_FILE" << EOF
-# SSG Benchmark Results
+{
+    echo "# SSG Benchmark Results"
+    echo
+    echo "**Date**: $(date)"
+    echo "**System**: $(uname -s) $(uname -m)"
+    echo "**CPU**: ${CPU_INFO}"
+    echo "**Memory**: ${MEM_INFO}"
+    echo "**Source revision**: \`${SOURCE_REVISION}\`"
+    echo "**Leafpress binary**: \`${LEAFPRESS_BIN:-N/A}\`"
+    echo "**Leafpress SHA-256**: \`${LEAFPRESS_SHA256}\`"
+    echo "**Workload**: v${WORKLOAD_VERSION} (hierarchical-notes-posts)"
+    echo "**Warmups / measured runs**: ${WARMUPS} / ${RUNS}"
+    echo "**Scheduling**: deterministic interleaved rotation"
+    echo
+    echo "## Build Times (ms)"
+    echo
+    echo "*Format: P50 (mean ± stddev)*"
+    echo
+    printf '| SSG |'
+    for count in "${PAGE_COUNTS[@]}"; do printf ' %s pages |' "$count"; done
+    echo
+    printf '|-----|'
+    for _ in "${PAGE_COUNTS[@]}"; do printf '%s' '------------|'; done
+    echo
+} > "$REPORT_TMP"
 
-**Date**: $(date)
-**System**: $(uname -s) $(uname -m)
-**CPU**: ${CPU_INFO}
-**Memory**: ${MEM_INFO}
-**Runs per test**: $RUNS
+{
+    printf '| SSG |'
+    for count in "${PAGE_COUNTS[@]}"; do printf ' %s pages |' "$count"; done
+    echo
+    printf '|-----|'
+    for _ in "${PAGE_COUNTS[@]}"; do printf '%s' '------------|'; done
+    echo
+} > "$SIZE_ROWS"
 
-## Build Times (ms)
+echo -e "${YELLOW}SSG Benchmark Suite — workload v${WORKLOAD_VERSION}${NC}"
+echo "SSGs: ${SSGS[*]}"
+echo "Page counts: ${PAGE_COUNTS[*]}"
+echo "Warmups / measured runs: $WARMUPS / $RUNS"
+echo "Source revision: $SOURCE_REVISION"
+echo "Strict mode: $STRICT"
+echo "Output: $OUTPUT_FILE"
+echo
 
-*Format: P50 (mean ± stddev)*
-
-| SSG | 100 pages | 1000 pages | 2000 pages |
-|-----|-----------|------------|------------|
-EOF
-
+# Generate every fixture before timing. Warmups then absorb fixture-generation
+# heat, while the rotated matrix keeps one SSG from always running first or last.
+AVAILABLE_SSGS=()
 for ssg in "${SSGS[@]}"; do
-    echo -e "${YELLOW}Testing $ssg...${NC}"
-
-    if ! check_ssg "$ssg"; then
-        echo -e "${RED}  $ssg not found, skipping${NC}"
-        echo "| $ssg | N/A | N/A | N/A |" >> "$OUTPUT_FILE"
+    generator="${SCRIPT_DIR}/generators/${ssg}/generate.sh"
+    builder="${SCRIPT_DIR}/generators/${ssg}/build.sh"
+    if ! check_ssg "$ssg" || [[ ! -f $generator || ! -f $builder ]]; then
+        if [[ $STRICT == true ]]; then
+            fail "$ssg is unavailable or has no benchmark adapter"
+        fi
+        echo -e "${RED}$ssg unavailable; recording N/A${NC}"
+        touch "${WORKDIR}/unavailable_${ssg}"
         continue
     fi
 
-    ssg_results="| $ssg |"
-
+    AVAILABLE_SSGS+=("$ssg")
     for count in "${PAGE_COUNTS[@]}"; do
-        echo -e "  ${count} pages..."
+        test_dir="${WORKDIR}/fixture_${ssg}_${count}"
+        echo "Preparing $ssg, $count pages..."
+        if ! bash "$generator" "$count" "$test_dir" >/dev/null; then
+            if [[ $STRICT == true ]]; then
+                fail "$ssg fixture generation failed at $count pages"
+            fi
+            touch "${WORKDIR}/failed_${ssg}_${count}"
+        fi
+    done
+done
 
-        # Create test directory
-        TEST_DIR="$WORKDIR/${ssg}_${count}"
-        mkdir -p "$TEST_DIR"
+((${#AVAILABLE_SSGS[@]} > 0)) || fail "no benchmark generators are available"
 
-        # Generate content
-        if [ -f "${SCRIPT_DIR}/generators/${ssg}/generate.sh" ]; then
-            bash "${SCRIPT_DIR}/generators/${ssg}/generate.sh" "$count" "$TEST_DIR" 2>/dev/null
-        else
-            echo -e "${RED}    Generator not found${NC}"
-            ssg_results="${ssg_results} N/A |"
+for ((warmup = 0; warmup < WARMUPS; warmup++)); do
+    echo -e "${YELLOW}Warmup $((warmup + 1))/$WARMUPS${NC}"
+    for ((count_slot = 0; count_slot < ${#PAGE_COUNTS[@]}; count_slot++)); do
+        count_index=$(((count_slot + warmup) % ${#PAGE_COUNTS[@]}))
+        count=${PAGE_COUNTS[$count_index]}
+        for ((ssg_slot = 0; ssg_slot < ${#AVAILABLE_SSGS[@]}; ssg_slot++)); do
+            ssg_index=$(((ssg_slot + warmup + count_index) % ${#AVAILABLE_SSGS[@]}))
+            ssg=${AVAILABLE_SSGS[$ssg_index]}
+            [[ -f ${WORKDIR}/failed_${ssg}_${count} ]] && continue
+            builder="${SCRIPT_DIR}/generators/${ssg}/build.sh"
+            test_dir="${WORKDIR}/fixture_${ssg}_${count}"
+            if ! bash "$builder" "$test_dir" >/dev/null; then
+                if [[ $STRICT == true ]]; then
+                    fail "$ssg warmup failed at $count pages"
+                fi
+                touch "${WORKDIR}/failed_${ssg}_${count}"
+            fi
+        done
+    done
+done
+
+for ((run = 0; run < RUNS; run++)); do
+    echo -e "${YELLOW}Measured rotation $((run + 1))/$RUNS${NC}"
+    for ((count_slot = 0; count_slot < ${#PAGE_COUNTS[@]}; count_slot++)); do
+        count_index=$(((count_slot + run) % ${#PAGE_COUNTS[@]}))
+        count=${PAGE_COUNTS[$count_index]}
+        for ((ssg_slot = 0; ssg_slot < ${#AVAILABLE_SSGS[@]}; ssg_slot++)); do
+            ssg_index=$(((ssg_slot + run + count_index) % ${#AVAILABLE_SSGS[@]}))
+            ssg=${AVAILABLE_SSGS[$ssg_index]}
+            [[ -f ${WORKDIR}/failed_${ssg}_${count} ]] && continue
+            builder="${SCRIPT_DIR}/generators/${ssg}/build.sh"
+            test_dir="${WORKDIR}/fixture_${ssg}_${count}"
+            if time_ms=$(bash "$builder" "$test_dir"); then
+                echo "$time_ms" >> "${TIMES_DIR}/${ssg}_${count}"
+                echo "  $ssg, $count pages: ${time_ms}ms"
+            else
+                if [[ $STRICT == true ]]; then
+                    fail "$ssg measured run $((run + 1)) failed at $count pages"
+                fi
+                touch "${WORKDIR}/failed_${ssg}_${count}"
+            fi
+        done
+    done
+done
+
+for ssg in "${SSGS[@]}"; do
+    timing_row="| $ssg |"
+    size_row="| $ssg |"
+    for count in "${PAGE_COUNTS[@]}"; do
+        times_file="${TIMES_DIR}/${ssg}_${count}"
+        if [[ -f ${WORKDIR}/unavailable_${ssg} || -f ${WORKDIR}/failed_${ssg}_${count} || ! -f $times_file ]]; then
+            timing_row="${timing_row} N/A |"
+            size_row="${size_row} N/A |"
             continue
         fi
 
-        # Run builds
         times=()
-        for run in $(seq 1 $RUNS); do
-            if [ -f "${SCRIPT_DIR}/generators/${ssg}/build.sh" ]; then
-                time_ms=$(bash "${SCRIPT_DIR}/generators/${ssg}/build.sh" "$TEST_DIR" 2>/dev/null)
-                if [[ "$time_ms" =~ ^[0-9]+$ ]]; then
-                    times+=($time_ms)
-                    echo "    Run $run: ${time_ms}ms"
-                else
-                    echo "    Run $run: failed"
-                fi
-            fi
-        done
-
-        # Calculate stats
-        if [ ${#times[@]} -gt 0 ]; then
-            read mean stddev p50 min max <<< $(calc_stats "${times[@]}")
-            ssg_results="${ssg_results} ${p50} (${mean}±${stddev}) |"
-            echo -e "${GREEN}    P50: ${p50}ms, Mean: ${mean}ms ± ${stddev}ms (range: ${min}-${max}ms)${NC}"
-        else
-            ssg_results="${ssg_results} N/A |"
+        while IFS= read -r time_ms; do times+=("$time_ms"); done < "$times_file"
+        if ((${#times[@]} != RUNS)); then
+            [[ $STRICT == true ]] && fail "$ssg recorded ${#times[@]}/$RUNS runs at $count pages"
+            timing_row="${timing_row} N/A |"
+            size_row="${size_row} N/A |"
+            continue
         fi
 
-        # Cleanup test dir to save space
-        rm -rf "$TEST_DIR"
-    done
+        read -r mean stddev p50 min max <<< "$(calc_stats "${times[@]}")"
+        generated_output="${WORKDIR}/fixture_${ssg}_${count}/$(output_dir_for "$ssg")"
+        if ! validate_generated_output "$generated_output" "$count"; then
+            if [[ $STRICT == true ]]; then
+                fail "$ssg output contract failed at $count pages"
+            fi
+            timing_row="${timing_row} N/A |"
+            size_row="${size_row} N/A |"
+            continue
+        fi
 
-    echo "$ssg_results" >> "$OUTPUT_FILE"
-    echo ""
+        timing_row="${timing_row} ${p50} (${mean}±${stddev}) |"
+        IFS=$'\t' read -r size file_count <<< "$(output_metrics "$generated_output")"
+        size_row="${size_row} ${size} (${file_count} files) |"
+        echo -e "${GREEN}$ssg, $count pages — P50 ${p50}ms, ${size} across ${file_count} files${NC}"
+    done
+    echo "$timing_row" >> "$REPORT_TMP"
+    echo "$size_row" >> "$SIZE_ROWS"
 done
 
-# Add note about leafpress features
-echo "" >> "$OUTPUT_FILE"
-echo "*leafpress-minimal: all extra features disabled (comparable to Hugo/Zola).*" >> "$OUTPUT_FILE"
-echo "*leafpress: full features including wikilinks, backlinks, graph, search, and TOC.*" >> "$OUTPUT_FILE"
+{
+    echo
+    echo "*leafpress-minimal: reader features disabled; standard Markdown links remain.*"
+    echo "*leafpress: default reader features including wikilinks, backlinks, graph, search, and TOC.*"
+    echo
+    echo "## Generated Output (logical bytes and file count)"
+    echo
+    cat "$SIZE_ROWS"
+    echo
+    echo "## Methodology"
+    echo
+    echo "- **Clean builds**: Each output directory is removed before every build."
+    echo "- **Warmups**: ${WARMUPS} unmeasured clean builds precede ${RUNS} measured clean builds."
+    echo "- **Scheduling**: Page-count and SSG order rotate deterministically between warmups and measured runs."
+    echo "- **Workload v${WORKLOAD_VERSION}**: Deterministic 70/30 split across \`notes/\` and \`posts/\`, with section homes."
+    echo "- **Navigation**: Every adapter renders Notes, Posts, and Tags links; Leafpress derives them automatically."
+    echo "- **Content**: 1–5 deterministic paragraphs; code blocks on approximately 40% of pages."
+    echo "- **Links**: Approximately 15% orphan pages; other pages have 2–8 links with deterministic hub bias and cross-section targets."
+    echo "- **Tags**: Two of 20 deterministic tags per page."
+    echo "- **Timing**: One Python monotonic-clock wrapper executes each build; interpreter startup is outside the timed interval."
+    echo "- **Output size**: Sum of logical file bytes plus file count; filesystem allocation is not reported."
+    echo "- **Support pages**: Home, two section listings, one tag index, and 20 tag pages are additional to the requested note/post count."
+    echo
+    echo "The intentionally pathological flat-root automatic-navigation workload is run separately with \`./run.sh stress\`."
+    echo
+    echo "## SSG Versions"
+    echo
+    echo "| SSG | Version |"
+    echo "|-----|---------|"
+} >> "$REPORT_TMP"
 
-# Add methodology section
-cat >> "$OUTPUT_FILE" << 'EOF'
+command -v hugo &>/dev/null && echo "| Hugo | $(hugo version 2>/dev/null | grep -oE 'v[0-9.]+' | head -1) |" >> "$REPORT_TMP"
+command -v zola &>/dev/null && echo "| Zola | $(zola --version 2>/dev/null | grep -oE '[0-9.]+') |" >> "$REPORT_TMP"
+command -v eleventy &>/dev/null && echo "| Eleventy | $(eleventy --version 2>/dev/null) |" >> "$REPORT_TMP"
+command -v jekyll &>/dev/null && echo "| Jekyll | $(jekyll --version 2>/dev/null | grep -oE '[0-9.]+' | head -1) |" >> "$REPORT_TMP"
+[[ -x ${LEAFPRESS_BIN:-} ]] && echo "| Leafpress | ${LEAFPRESS_VERSION} |" >> "$REPORT_TMP"
 
-## Methodology
+mv "$REPORT_TMP" "$OUTPUT_FILE"
 
-- **Clean Build**: Output directory removed before each build
-- **Runs**: 10 iterations, reporting P50 (median), mean, and standard deviation
-- **Content**: Each page has frontmatter, markdown content, code block, and internal links
-- **Tags**: 20 unique tags distributed across pages
-- **Links**: Each page links to 2 other pages
-- **Timing**: External timing via `date +%s%3N` for consistency across all SSGs
-
-## SSG Versions
-
-EOF
-
-# Add version info
-echo "| SSG | Version |" >> "$OUTPUT_FILE"
-echo "|-----|---------|" >> "$OUTPUT_FILE"
-
-if command -v hugo &>/dev/null; then
-    echo "| Hugo | $(hugo version 2>/dev/null | grep -oE 'v[0-9.]+' | head -1) |" >> "$OUTPUT_FILE"
-fi
-if command -v zola &>/dev/null; then
-    echo "| Zola | $(zola --version 2>/dev/null | grep -oE '[0-9.]+') |" >> "$OUTPUT_FILE"
-fi
-if command -v eleventy &>/dev/null; then
-    echo "| Eleventy | $(eleventy --version 2>/dev/null) |" >> "$OUTPUT_FILE"
-fi
-if command -v jekyll &>/dev/null; then
-    echo "| Jekyll | $(jekyll --version 2>/dev/null | grep -oE '[0-9.]+') |" >> "$OUTPUT_FILE"
-fi
-if [ -f /benchmark/leafpress ]; then
-    echo "| Leafpress | (local build) |" >> "$OUTPUT_FILE"
-fi
-
-echo ""
-echo -e "${GREEN}======================================${NC}"
-echo -e "${GREEN}    Benchmark Complete!${NC}"
-echo -e "${GREEN}======================================${NC}"
-echo ""
+echo
+echo -e "${GREEN}Benchmark complete: ${OUTPUT_FILE}${NC}"
 cat "$OUTPUT_FILE"
