@@ -18,11 +18,11 @@ RUN apt-get update && apt-get install -y \
 
 # Install Go (for Hugo and Leafpress)
 ENV GO_VERSION=1.25.5
-ARG TARGETARCH=amd64
-RUN case "$TARGETARCH" in \
+RUN arch="$(dpkg --print-architecture)" \
+    && case "$arch" in \
       arm64) archive="go${GO_VERSION}.linux-arm64.tar.gz"; checksum="b00b694903d126c588c378e72d3545549935d3982635ba3f7a964c9fa23fe3b9" ;; \
       amd64) archive="go${GO_VERSION}.linux-amd64.tar.gz"; checksum="9e9b755d63b36acf30c12a9a3fc379243714c1c6d3dd72861da637f336ebb35b" ;; \
-      *) echo "unsupported architecture: $TARGETARCH" >&2; exit 1 ;; \
+      *) echo "unsupported architecture: $arch" >&2; exit 1 ;; \
     esac \
     && curl -fsSL "https://go.dev/dl/${archive}" -o "/tmp/${archive}" \
     && echo "${checksum}  /tmp/${archive}" | sha256sum -c - \
@@ -37,10 +37,11 @@ RUN apt-get update && apt-get install -y ruby-full && rm -rf /var/lib/apt/lists/
 
 # Install Node.js (for Eleventy, Astro)
 ENV NODE_VERSION=20.19.5
-RUN case "$TARGETARCH" in \
+RUN arch="$(dpkg --print-architecture)" \
+    && case "$arch" in \
       arm64) node_arch="arm64"; checksum="d462267863ae8ee556039ebdf559055a8ec562c633889ef1403f3adb449ba1dd" ;; \
       amd64) node_arch="x64"; checksum="315046739a513a70e03a4a55a8afda8cf979f30852e576075c340084e3f8ac0f" ;; \
-      *) echo "unsupported architecture: $TARGETARCH" >&2; exit 1 ;; \
+      *) echo "unsupported architecture: $arch" >&2; exit 1 ;; \
     esac \
     && archive="node-v${NODE_VERSION}-linux-${node_arch}.tar.xz" \
     && curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/${archive}" -o "/tmp/${archive}" \
@@ -50,10 +51,11 @@ RUN case "$TARGETARCH" in \
 
 # Install Hugo
 ENV HUGO_VERSION=0.121.1
-RUN case "$TARGETARCH" in \
+RUN arch="$(dpkg --print-architecture)" \
+    && case "$arch" in \
       arm64) hugo_arch="arm64"; checksum="286dde6af51c21db6d196fa5ccbc5956c4d02984fd7ff83bc1cc1a1fc9acfad0" ;; \
       amd64) hugo_arch="amd64"; checksum="762ddf0b3507284f8a046299fe0dea8fe5fe8b8ccd0c9e68b1604625822501fd" ;; \
-      *) echo "unsupported architecture: $TARGETARCH" >&2; exit 1 ;; \
+      *) echo "unsupported architecture: $arch" >&2; exit 1 ;; \
     esac \
     && archive="hugo_extended_${HUGO_VERSION}_linux-${hugo_arch}.tar.gz" \
     && curl -fsSL "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/${archive}" -o "/tmp/${archive}" \
@@ -63,10 +65,11 @@ RUN case "$TARGETARCH" in \
 
 # Install Zola
 ENV ZOLA_VERSION=0.21.0
-RUN case "$TARGETARCH" in \
+RUN arch="$(dpkg --print-architecture)" \
+    && case "$arch" in \
       arm64) zola_arch="aarch64"; checksum="da7e9def7b9acf0c9b78fb99ce72624504cfee1066ab7a161f09a4126dd7ffe6" ;; \
       amd64) zola_arch="x86_64"; checksum="5c37a8f706567d6cad3f0dbc0eaebe3b9591cc301bd67089e5ddc0d0401732d6" ;; \
-      *) echo "unsupported architecture: $TARGETARCH" >&2; exit 1 ;; \
+      *) echo "unsupported architecture: $arch" >&2; exit 1 ;; \
     esac \
     && archive="zola-v${ZOLA_VERSION}-${zola_arch}-unknown-linux-gnu.tar.gz" \
     && curl -fsSL "https://github.com/getzola/zola/releases/download/v${ZOLA_VERSION}/${archive}" -o "/tmp/${archive}" \
