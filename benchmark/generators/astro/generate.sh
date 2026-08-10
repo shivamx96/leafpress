@@ -52,20 +52,22 @@ import Base from '../../layouts/Base.astro';
 EOF
 done
 
-for i in $(seq 1 "$COUNT"); do
-    section=$(workload_section "$i" "$COUNT")
-    slug=$(workload_slug "$i" "$COUNT")
-    title=$(workload_title "$i" "$COUNT")
-    tag1=$(workload_tag_one "$i")
-    tag2=$(workload_tag_two "$i")
-    paragraph_count=$(workload_paragraph_count "$i")
-    link_count=$(workload_link_count "$i")
+for ((i = 1; i <= COUNT; i++)); do
+    workload_set_page "$i" "$COUNT"
+    section=$WORKLOAD_SECTION
+    slug=$WORKLOAD_SLUG
+    title=$WORKLOAD_TITLE
+    tag1=$WORKLOAD_TAG_ONE
+    tag2=$WORKLOAD_TAG_TWO
+    paragraph_count=$WORKLOAD_PARAGRAPH_COUNT
+    link_count=$WORKLOAD_LINK_COUNT
     content=""
 
-    for p in $(seq 1 "$paragraph_count"); do
+    for ((p = 1; p <= paragraph_count; p++)); do
+        workload_set_paragraph "$i" "$p"
         content="${content}
 
-$(workload_paragraph "$i" "$p")"
+$WORKLOAD_PARAGRAPH"
     done
 
     links=""
@@ -74,15 +76,15 @@ $(workload_paragraph "$i" "$p")"
 
 ## Related Notes
 "
-        for l in $(seq 1 "$link_count"); do
-            target=$(workload_link_target "$i" "$l" "$COUNT")
+        for ((l = 1; l <= link_count; l++)); do
+            workload_set_target "$i" "$l" "$COUNT"
             links="${links}
-- [$(workload_title "$target" "$COUNT")]($(workload_route "$target" "$COUNT"))"
+- [$WORKLOAD_TARGET_TITLE]($WORKLOAD_TARGET_ROUTE)"
         done
     fi
 
     code_block=""
-    if workload_has_code_block "$i"; then
+    if [[ $WORKLOAD_HAS_CODE_BLOCK == true ]]; then
         code_block="
 
 \`\`\`go

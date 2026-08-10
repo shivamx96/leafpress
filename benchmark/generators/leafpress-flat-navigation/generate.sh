@@ -27,7 +27,7 @@ cat > leafpress.json << 'EOF'
 }
 EOF
 
-for i in $(seq 1 "$COUNT"); do
+for ((i = 1; i <= COUNT; i++)); do
     cat > "page-${i}.md" << EOF
 ---
 title: Page $i
