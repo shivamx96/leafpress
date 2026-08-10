@@ -136,6 +136,9 @@ assert_contains '**Leafpress SHA-256**:' "$main_report"
 assert_contains '## Generated Output (logical bytes and file count)' "$main_report"
 assert_contains 'files)' "$main_report"
 assert_contains '| leafpress |' "$main_report"
+if grep -Fq '| 0 B (' "$main_report"; then
+    fail "generated output metrics lost the byte count"
+fi
 
 strict_report="${TEST_ROOT}/strict-report.md"
 printf 'sentinel\n' > "$strict_report"

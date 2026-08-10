@@ -144,6 +144,7 @@ output_dir_for() {
 
 output_metrics() {
     local directory=$1
+    local IFS=$' \t\n'
     if [[ ! -d $directory ]]; then
         printf 'N/A\tN/A\n'
         return
