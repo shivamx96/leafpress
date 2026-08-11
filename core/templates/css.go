@@ -154,15 +154,15 @@ html {
   height: 20px;
 }
 
-.lp-theme-icon-light {
+[data-theme-preference="system"] .lp-theme-icon-system {
   display: block;
 }
 
-[data-theme="dark"] .lp-theme-icon-light {
-  display: none;
+[data-theme-preference="light"] .lp-theme-icon-light {
+  display: block;
 }
 
-[data-theme="dark"] .lp-theme-icon-dark {
+[data-theme-preference="dark"] .lp-theme-icon-dark {
   display: block;
 }
 

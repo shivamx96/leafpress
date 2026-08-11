@@ -4,6 +4,10 @@ date: 2025-01-06
 toc: false
 ---
 
+## Unreleased
+
+- **Kept themes synchronized with the operating system.** Sites now apply the saved or system theme before styles load, react to live OS appearance changes while using the system setting, expose system/light/dark modes through the theme control, and keep native controls and graph colors in sync.
+
 ## v1.0.0-beta.17
 *August 11, 2026*
 
