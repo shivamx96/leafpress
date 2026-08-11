@@ -380,6 +380,9 @@ func TestClientScriptAssetIsContentAddressed(t *testing.T) {
 	}
 	for _, want := range []string{
 		`var LP_BASE_PATH = '/garden'`,
+		`themeMediaQuery.addEventListener('change', handleSystemThemeChange)`,
+		`localStorage.removeItem('theme')`,
+		`window.addEventListener('storage'`,
 		"lp-graph-panel-body",
 		"lp-search-input",
 		"static/leafpress/mermaid/mermaid.min.js",
@@ -426,9 +429,15 @@ func TestClientScriptAssetLoadsFromHead(t *testing.T) {
 	}
 
 	html := out.String()
+	bootstrap := `localStorage.getItem('theme')`
 	script := `<script src="/garden/static/leafpress/app.0123456789abcdef.js" defer></script>`
+	bootstrapAt := strings.Index(html, bootstrap)
+	styleAt := strings.Index(html, `<style>`)
 	scriptAt := strings.Index(html, script)
 	headEnd := strings.Index(html, "</head>")
+	if bootstrapAt < 0 || styleAt < 0 || bootstrapAt > styleAt {
+		t.Fatalf("theme bootstrap must run before styles are loaded:\n%s", html)
+	}
 	if scriptAt < 0 || headEnd < 0 || scriptAt > headEnd {
 		t.Fatalf("shared client script must be discovered in the document head:\n%s", html)
 	}
@@ -445,10 +454,40 @@ func TestClientScriptAssetLoadsFromHead(t *testing.T) {
 		t.Fatalf("RenderIndex(inline fallback) error: %v", err)
 	}
 	inline := out.String()
-	if strings.Count(inline, "<script>") != 2 ||
+	if strings.Count(inline, "<script>") != 3 ||
 		!strings.Contains(inline, "var LP_BASE_PATH") ||
 		!strings.Contains(inline, "static/leafpress/mermaid/mermaid.min.js") {
 		t.Fatal("inline fallback must preserve both legacy client script blocks")
+	}
+}
+
+func TestThemeBootstrapAndControlExposeSystemMode(t *testing.T) {
+	tmpl, err := New()
+	if err != nil {
+		t.Fatalf("New() error: %v", err)
+	}
+
+	var out bytes.Buffer
+	err = tmpl.RenderIndex(&out, IndexData{
+		Site:  SiteData{Title: "Test Garden", Theme: config.Default().Theme},
+		Title: "Home",
+	})
+	if err != nil {
+		t.Fatalf("RenderIndex() error: %v", err)
+	}
+
+	html := out.String()
+	for _, want := range []string{
+		`<meta name="color-scheme" content="light dark">`,
+		`data-theme-preference`,
+		`preference = 'system'`,
+		`lp-theme-icon-system`,
+		`function getNextThemePreference()`,
+		`applyThemePreference('system')`,
+	} {
+		if !strings.Contains(html, want) {
+			t.Errorf("rendered page missing system theme behavior %q", want)
+		}
 	}
 }
 
