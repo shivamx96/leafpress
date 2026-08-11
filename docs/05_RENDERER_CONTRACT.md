@@ -224,6 +224,9 @@ Each entry in `content.pages`:
 - `title` defaults to the slug; `growth` must be one of
   `seedling` | `budding` | `evergreen`; `readingTime`, when set, overrides the
   computed value and must be positive; timestamps are RFC3339.
+- `tags` supplies explicit page metadata. Inline tags found in `markdown`
+  (for example, `#notes`) are merged into that list case-insensitively; the
+  explicit tag's order and spelling win when both forms name the same tag.
 
 ## Invariants
 

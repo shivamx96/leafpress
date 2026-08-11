@@ -783,3 +783,21 @@ func TestBuildTagIndexDeduplicatesCaseVariantsPerPage(t *testing.T) {
 		t.Fatalf("go tag page count = %d, want 1", got)
 	}
 }
+
+func TestBuildGeneratesPagesForInlineTags(t *testing.T) {
+	dir := newTestProject(t)
+	if err := os.WriteFile(filepath.Join(dir, "note.md"), []byte("# Note\n\nWorking on #LeafPress and `#ignored`.\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := New(config.Default(), Options{}).Build(); err != nil {
+		t.Fatal(err)
+	}
+
+	pagePath := filepath.Join(dir, "_site", "note", "index.html")
+	assertFileContains(t, pagePath, `class="lp-tag lp-inline-tag" href="/tags/leafpress/"`)
+	assertFileContains(t, filepath.Join(dir, "_site", "tags", "leafpress", "index.html"), ">Note<")
+	if _, err := os.Stat(filepath.Join(dir, "_site", "tags", "ignored", "index.html")); !os.IsNotExist(err) {
+		t.Fatalf("inline-code tag page should not exist: %v", err)
+	}
+}

@@ -6,6 +6,7 @@ toc: false
 
 ## Unreleased
 
+- **Added automatic inline tags.** Tags written as `#notes` in ordinary Markdown now become links and feed tag pages, navigation, graph/search metadata, and incremental rebuilds alongside frontmatter tags. Code, links, URLs, raw HTML tags, escaped hashes, and unsupported nested tags remain literal.
 - **Kept themes synchronized with the operating system.** Sites now apply the saved or system theme before styles load, react to live OS appearance changes while using the system setting, expose system/light/dark modes through the theme control, and keep native controls and graph colors in sync.
 
 ## v1.0.0-beta.17

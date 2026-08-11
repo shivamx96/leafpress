@@ -44,7 +44,7 @@ var bufferPool = sync.Pool{
 // always). The escaping mode instead registers rawHTMLEscaper for the raw
 // HTML node kinds — and, since WithUnsafe is dropped, goldmark also filters
 // dangerous link/image URLs (javascript:, data:, ...) in that mode.
-func newGoldmark(escapeRawHTML bool) goldmark.Markdown {
+func newGoldmark(escapeRawHTML bool, basePath string) goldmark.Markdown {
 	rendererOpts := []renderer.Option{
 		html.WithHardWraps(),
 		html.WithXHTML(),
@@ -61,6 +61,7 @@ func newGoldmark(escapeRawHTML bool) goldmark.Markdown {
 			extension.GFM, // GitHub Flavored Markdown
 			extension.Typographer,
 			extension.NewFootnote(),
+			newInlineTagExtension(basePath),
 			highlighting.NewHighlighting(
 				highlighting.WithStyle("github"),
 				highlighting.WithFormatOptions(
@@ -79,7 +80,7 @@ func newGoldmark(escapeRawHTML bool) goldmark.Markdown {
 // NewRenderer creates a new markdown renderer
 func NewRenderer(resolver *LinkResolver, enableWikilinks bool, basePath string) *Renderer {
 	return &Renderer{
-		md:              newGoldmark(false),
+		md:              newGoldmark(false, basePath),
 		resolver:        resolver,
 		enableWikilinks: enableWikilinks,
 		basePath:        basePath,
@@ -105,7 +106,7 @@ func (r *Renderer) SetPlainBrokenLinks(plain bool) {
 func (r *Renderer) SetEscapeRawHTML(escape bool) {
 	r.escapeRawHTML = escape
 	if escape && r.mdEscaped == nil {
-		r.mdEscaped = newGoldmark(true)
+		r.mdEscaped = newGoldmark(true, r.basePath)
 	}
 }
 
@@ -493,6 +494,11 @@ func (r *Renderer) processWikiLinksProtected(content string, warnings *[]string,
 	result := content
 	for _, link := range links {
 		var replacement string
+		// Inline tags inside wiki-link labels are metadata false positives and
+		// would create invalid nested anchors after the generated wiki-link HTML
+		// reaches Goldmark. Preserve the visible hash through an HTML entity so
+		// the inline tag parser never sees it as syntax.
+		label := strings.ReplaceAll(link.Label, "#", "&#35;")
 
 		if r.resolver != nil {
 			resolved := r.resolver.Resolve(link.Target)
@@ -500,10 +506,10 @@ func (r *Renderer) processWikiLinksProtected(content string, warnings *[]string,
 			if resolved.Broken {
 				if r.plainBrokenLinks {
 					// Plain mode - render just the display text
-					replacement = link.Label
+					replacement = label
 				} else {
 					// Broken link - render as span with class
-					replacement = tag(`<span class="lp-broken-link">`) + link.Label + tag(`</span>`)
+					replacement = tag(`<span class="lp-broken-link">`) + label + tag(`</span>`)
 				}
 				*warnings = append(*warnings, "broken link: [["+link.Target+"]]")
 			} else {
@@ -517,11 +523,11 @@ func (r *Renderer) processWikiLinksProtected(content string, warnings *[]string,
 					// placeholder, so make it attribute-safe here.
 					href = stdhtml.EscapeString(href)
 				}
-				replacement = tag(`<a class="lp-wikilink" href="`+href+`">`) + link.Label + tag(`</a>`)
+				replacement = tag(`<a class="lp-wikilink" href="`+href+`">`) + label + tag(`</a>`)
 			}
 		} else {
 			// No resolver - just render the label
-			replacement = link.Label
+			replacement = label
 		}
 
 		result = replaceFirst(result, link.Raw, replacement)

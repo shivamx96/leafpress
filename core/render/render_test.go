@@ -937,6 +937,32 @@ func TestTagPagesGenerated(t *testing.T) {
 	}
 }
 
+func TestInlineTagsFeedHostedTagOutputs(t *testing.T) {
+	out := runJSON(t, `{
+	  "render": {"slug": "g"},
+	  "config": {"site": {"baseURL": "https://example.com/g/shivam"}},
+	  "content": {"pages": [
+	    {"slug": "a", "title": "A", "markdown": "Body with #LeafPress and `+"`#ignored`"+`.", "tags": ["Systems"]},
+	    {"slug": "b", "title": "B", "markdown": "Body with #leafpress."}
+	  ]}
+	}`)
+
+	if len(out.Tags.Pages) != 2 || out.Tags.Pages[0].Tag != "leafpress" || out.Tags.Pages[1].Tag != "systems" {
+		t.Fatalf("tag pages = %#v, want leafpress and systems", out.Tags.Pages)
+	}
+	page := pageHTML(t, out, "a")
+	if !strings.Contains(page, `class="lp-tag lp-inline-tag" href="/g/shivam/tags/leafpress/"`) {
+		t.Fatalf("page missing linked inline tag:\n%s", page)
+	}
+	if strings.Contains(out.Tags.Index, "ignored") {
+		t.Fatalf("inline-code tag leaked into tag index:\n%s", out.Tags.Index)
+	}
+	leafpress := out.Tags.Pages[0].HTML
+	if !strings.Contains(leafpress, `href="/g/shivam/a/"`) || !strings.Contains(leafpress, `href="/g/shivam/b/"`) {
+		t.Fatalf("inline tag page does not list both tagged pages:\n%s", leafpress)
+	}
+}
+
 func TestNoTagsEmptyTagsOutput(t *testing.T) {
 	out := runJSON(t, `{"render": {"slug": "g"}, "content": {"pages": [{"slug": "p", "markdown": "x"}]}}`)
 
