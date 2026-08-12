@@ -466,7 +466,7 @@ func TestClientScriptAssetLoadsFromHead(t *testing.T) {
 // the contrast token: white for mid/dark accents (the historical behavior),
 // dark text only for genuinely pale accents.
 func TestThemePalettesAccentOverride(t *testing.T) {
-	pair := themePalettes(config.Theme{Name: "dusk", Accent: "#e11d48"})
+	pair := themePalettes(config.Theme{Name: "modern", Accent: "#e11d48"})
 	if pair.Light.Accent != "#e11d48" || pair.Dark.Accent != "#e11d48" {
 		t.Errorf("accent override not applied to both modes: %+v", pair)
 	}
@@ -483,8 +483,8 @@ func TestThemePalettesAccentOverride(t *testing.T) {
 		t.Errorf("mid-tone accent should keep white contrast text, got %q", green.Light.AccentContrast)
 	}
 
-	dusk := theme.ByName("dusk")
-	if pair := themePalettes(config.Theme{Name: "dusk"}); pair.Dark.AccentContrast != dusk.Dark.AccentContrast {
+	modern := theme.ByName("modern")
+	if pair := themePalettes(config.Theme{Name: "modern"}); pair.Dark.AccentContrast != modern.Dark.AccentContrast {
 		t.Error("without an accent override the preset contrast pairing must be kept")
 	}
 }
@@ -498,7 +498,7 @@ func TestThemePresetTokensInHead(t *testing.T) {
 		t.Fatalf("New() error: %v", err)
 	}
 
-	dusk := theme.ByName("dusk")
+	modern := theme.ByName("modern")
 	render := func(themeCfg config.Theme) string {
 		var out bytes.Buffer
 		if err := tmpl.RenderIndex(&out, IndexData{
@@ -511,38 +511,38 @@ func TestThemePresetTokensInHead(t *testing.T) {
 	}
 
 	html := render(config.Theme{
-		Name:        "dusk",
-		FontHeading: dusk.FontHeading, FontBody: dusk.FontBody, FontMono: dusk.FontMono,
-		NavStyle: dusk.NavStyle, NavActiveStyle: dusk.NavActiveStyle,
+		Name:        "modern",
+		FontHeading: modern.FontHeading, FontBody: modern.FontBody, FontMono: modern.FontMono,
+		NavStyle: modern.NavStyle, NavActiveStyle: modern.NavActiveStyle,
 	})
 	for _, want := range []string{
-		"--lp-bg: " + dusk.Light.Bg,
-		"--lp-bg: " + dusk.Dark.Bg,
-		"--lp-accent: " + dusk.Light.Accent,
-		"--lp-accent: " + dusk.Dark.Accent,
-		"--lp-accent-contrast: " + dusk.Light.AccentContrast,
-		"--lp-text: " + dusk.Dark.Text,
-		"--lp-graph-link: " + dusk.Light.GraphLink,
+		"--lp-bg: " + modern.Light.Bg,
+		"--lp-bg: " + modern.Dark.Bg,
+		"--lp-accent: " + modern.Light.Accent,
+		"--lp-accent: " + modern.Dark.Accent,
+		"--lp-accent-contrast: " + modern.Light.AccentContrast,
+		"--lp-text: " + modern.Dark.Text,
+		"--lp-graph-link: " + modern.Light.GraphLink,
 	} {
 		if !strings.Contains(html, want) {
-			t.Errorf("dusk page missing token %q", want)
+			t.Errorf("modern page missing token %q", want)
 		}
 	}
 
 	overridden := render(config.Theme{
-		Name:   "dusk",
+		Name:   "modern",
 		Accent: "#e11d48",
 		Background: config.Background{
 			Light: "#fafafa",
 		},
 	})
-	if strings.Contains(overridden, dusk.Light.Accent) || strings.Contains(overridden, dusk.Dark.Accent) {
+	if strings.Contains(overridden, modern.Light.Accent) || strings.Contains(overridden, modern.Dark.Accent) {
 		t.Error("explicit accent must replace the preset accent in both modes")
 	}
 	if got := strings.Count(overridden, "--lp-accent: #e11d48"); got != 2 {
 		t.Errorf("explicit accent should be emitted for light and dark, found %d occurrences", got)
 	}
-	if !strings.Contains(overridden, "--lp-bg: #fafafa") || !strings.Contains(overridden, "--lp-bg: "+dusk.Dark.Bg) {
+	if !strings.Contains(overridden, "--lp-bg: #fafafa") || !strings.Contains(overridden, "--lp-bg: "+modern.Dark.Bg) {
 		t.Error("explicit light background must win while dark keeps the preset value")
 	}
 }

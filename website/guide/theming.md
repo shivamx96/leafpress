@@ -20,24 +20,25 @@ Pick a built-in theme by name:
 ```json
 {
   "theme": {
-    "name": "dusk"
+    "name": "modern"
   }
 }
 ```
 
-Five presets ship with Leafpress:
+Themes are not color-and-font swaps — each one is a genuinely different
+look, restyling layout and components as well as the palette:
 
 | Name | Look |
 |------|------|
 | `default` | The classic Leafpress look: clean neutrals, fresh green accent |
-| `paper` | Warm cream and terracotta with serif type, like notes on good paper |
-| `dusk` | Indigo and violet with modern grotesque type and a glassy nav |
-| `forest` | Deep pine greens with readable humanist type |
-| `mist` | Cool gray-blues with quiet, minimal type and a sticky nav |
+| `plain` | Text-first minimalism — square corners, underlined links, quiet type scale, no decoration |
+| `paper` | Editorial serif on warm cream — centered headers under a double rule, small-caps metadata, dotted wiki-links, fleuron section breaks |
+| `modern` | Contemporary and layered — glassy pill nav, hover-lifting index cards, pill tags, accent bar under titles, soft shadows on gradient backgrounds |
 
-A theme is a token pack: it sets the fonts, nav style, and the full light
-*and* dark color palette (background, text, borders, code blocks, accent,
-graph colors). Every preset supports the light/dark toggle out of the box.
+Each theme sets the fonts, nav style, the full light *and* dark color
+palette (background, text, borders, code blocks, accent, graph colors), and
+its own structural CSS layer. Every preset supports the light/dark toggle
+out of the box.
 
 Any explicit `theme` option beats the preset, so you can take a theme and
 keep your own accent:
@@ -45,7 +46,7 @@ keep your own accent:
 ```json
 {
   "theme": {
-    "name": "forest",
+    "name": "modern",
     "accent": "#e11d48"
   }
 }

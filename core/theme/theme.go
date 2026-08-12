@@ -1,11 +1,11 @@
 // Package theme defines Leafpress's built-in theme presets.
 //
-// A preset is a token pack: one named set of design-token values (colors per
-// light/dark mode, font roles, nav defaults) layered between the embedded
-// base stylesheet and the user's own overrides. Presets are data, not CSS —
-// resolution happens in Go, so explicit leafpress.json theme fields and user
-// style.css always win over the preset, and every preset automatically covers
-// dark mode and future components. The cascade is:
+// A preset is a complete look layered between the embedded base stylesheet
+// and the user's own overrides: a token pack (colors per light/dark mode,
+// font roles, nav defaults) plus a structural CSS layer that restyles
+// components. Token resolution happens in Go, so explicit leafpress.json
+// theme fields and user style.css always win over the preset, and every
+// preset automatically covers dark mode. The cascade is:
 //
 //	layer 0: templates.DefaultCSS (structure, components)
 //	layer 1: the preset selected by theme.name (this package)
@@ -39,9 +39,13 @@ type Preset struct {
 	NavActiveStyle string // "base", "box", or "underlined"
 	Light          Palette
 	Dark           Palette
-	// ExtraCSS is an optional structural garnish appended after the base
-	// stylesheet and before user CSS. Presets should stay token-first: a
-	// preset that needs substantial CSS is a sign the base needs a new token.
+	// ExtraCSS is the preset's structural identity: rules appended after
+	// the base stylesheet (and before user CSS) that restyle components —
+	// link treatments, cards, header layout, radii and type-scale token
+	// overrides. This is what makes presets distinct looks rather than
+	// palette swaps. Values a preset varies per mode still belong in the
+	// palettes; ExtraCSS should express colors through the --lp-* tokens so
+	// it works in both modes and under user overrides.
 	ExtraCSS string
 }
 
@@ -81,8 +85,83 @@ var presets = []Preset{
 		},
 	},
 	{
+		Name:           "plain",
+		Description:    "Text-first minimalism: square corners, underlined links, no decoration.",
+		FontHeading:    "Atkinson Hyperlegible Next",
+		FontBody:       "Atkinson Hyperlegible Next",
+		FontMono:       "Atkinson Hyperlegible Mono",
+		NavStyle:       "base",
+		NavActiveStyle: "base",
+		Light: Palette{
+			Bg:             "#ffffff",
+			Text:           "#222222",
+			TextMuted:      "#6b6b6b",
+			Border:         "#dddddd",
+			CodeBg:         "#f4f4f4",
+			Accent:         "#205ea6",
+			AccentContrast: "#ffffff",
+			GraphLink:      "#cccccc",
+		},
+		Dark: Palette{
+			Bg:             "#171717",
+			Text:           "#dddddd",
+			TextMuted:      "#9a9a9a",
+			Border:         "#3a3a3a",
+			CodeBg:         "#262626",
+			Accent:         "#7cb2e8",
+			AccentContrast: "#171717",
+			GraphLink:      "#454545",
+		},
+		// Strip the decoration the base stylesheet applies: no rounding
+		// anywhere, a quieter type scale, underlined links instead of tinted
+		// wiki-link chips, and unadorned quotes.
+		ExtraCSS: `:root {
+  --lp-radius-sm: 0;
+  --lp-radius-md: 0;
+  --lp-radius-lg: 0;
+  --lp-radius-full: 0;
+  --lp-font-lg: 1.05rem;
+  --lp-font-xl: 1.2rem;
+  --lp-font-2xl: 1.4rem;
+  --lp-font-3xl: 1.6rem;
+  --lp-font-display: 3rem;
+}
+
+.lp-content a,
+.lp-tag,
+.lp-tag-cloud-item,
+.lp-backlink {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.lp-wikilink,
+.lp-wikilink:hover,
+[data-theme="dark"] .lp-wikilink,
+[data-theme="dark"] .lp-wikilink:hover {
+  background: none;
+  padding: 0;
+}
+
+.lp-content blockquote {
+  font-family: var(--lp-font-body);
+  font-size: var(--lp-font-base);
+  font-style: normal;
+  border-left: 3px solid var(--lp-border);
+  padding: 0.25rem 1.25rem;
+}
+
+.lp-content blockquote::before {
+  content: none;
+}
+
+.lp-title {
+  font-weight: 600;
+}`,
+	},
+	{
 		Name:           "paper",
-		Description:    "Warm cream and terracotta with serif type, like notes on good paper.",
+		Description:    "An editorial serif look on warm cream: centered headers, small caps, dotted wiki-links.",
 		FontHeading:    "Fraunces",
 		FontBody:       "Source Serif 4",
 		FontMono:       "IBM Plex Mono",
@@ -108,21 +187,82 @@ var presets = []Preset{
 			AccentContrast: "#211c14",
 			GraphLink:      "#4a4130",
 		},
+		// A print-inspired layout: centered page headers under a double
+		// rule, small-caps metadata, dotted underlines for wiki-links, and a
+		// fleuron in place of bare horizontal rules.
 		ExtraCSS: `.lp-title,
 .lp-section-title {
   letter-spacing: -0.02em;
+}
+
+.lp-header {
+  text-align: center;
+  border-bottom: 4px double var(--lp-border);
+  padding-bottom: 1.25rem;
+}
+
+.lp-meta,
+.lp-tags {
+  justify-content: center;
+}
+
+.lp-meta {
+  font-variant-caps: small-caps;
+  letter-spacing: 0.08em;
+}
+
+.lp-section-title,
+.lp-section-count {
+  text-align: center;
+}
+
+.lp-content h2,
+.lp-content h3 {
+  font-weight: 500;
+}
+
+.lp-wikilink,
+[data-theme="dark"] .lp-wikilink {
+  background: none;
+  padding: 0;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 3px;
+}
+
+.lp-wikilink:hover,
+[data-theme="dark"] .lp-wikilink:hover {
+  background: none;
+  text-decoration-style: solid;
+}
+
+.lp-content pre {
+  border: 1px solid var(--lp-border);
+}
+
+.lp-content hr {
+  border: none;
+  margin: 1.5rem 0;
+  text-align: center;
+}
+
+.lp-content hr::after {
+  content: "\2766";
+  display: block;
+  color: var(--lp-text-muted);
+  font-size: var(--lp-font-lg);
 }`,
 	},
 	{
-		Name:           "dusk",
-		Description:    "Indigo and violet with modern grotesque type and a glassy nav.",
+		Name:           "modern",
+		Description:    "A contemporary look: glassy nav, rounded cards, pill tags, soft shadows, gradients.",
 		FontHeading:    "Space Grotesk",
 		FontBody:       "Geist",
 		FontMono:       "Geist Mono",
 		NavStyle:       "glassy",
-		NavActiveStyle: "underlined",
+		NavActiveStyle: "box",
 		Light: Palette{
-			Bg:             "#f7f6fb",
+			Bg:             "linear-gradient(180deg, #f8f7fc 0%, #f1eff9 100%)",
 			Text:           "#201d33",
 			TextMuted:      "#67638a",
 			Border:         "#e1dff0",
@@ -141,64 +281,90 @@ var presets = []Preset{
 			AccentContrast: "#14121d",
 			GraphLink:      "#3b3457",
 		},
-	},
-	{
-		Name:           "forest",
-		Description:    "Deep pine greens with readable humanist type for a true garden feel.",
-		FontHeading:    "Crimson Pro",
-		FontBody:       "Atkinson Hyperlegible Next",
-		FontMono:       "Source Code Pro",
-		NavStyle:       "base",
-		NavActiveStyle: "base",
-		Light: Palette{
-			Bg:             "#f5f8f2",
-			Text:           "#243020",
-			TextMuted:      "#5f6f58",
-			Border:         "#dbe5d2",
-			CodeBg:         "#ebf1e4",
-			Accent:         "#2e7d43",
-			AccentContrast: "#ffffff",
-			GraphLink:      "#ccd8c1",
-		},
-		Dark: Palette{
-			Bg:             "#161c12",
-			Text:           "#dee7d6",
-			TextMuted:      "#91a186",
-			Border:         "#2c3824",
-			CodeBg:         "#202919",
-			Accent:         "#7cc47f",
-			AccentContrast: "#161c12",
-			GraphLink:      "#364330",
-		},
-	},
-	{
-		Name:           "mist",
-		Description:    "Cool gray-blues with quiet, minimal type and a sticky nav.",
-		FontHeading:    "Geist",
-		FontBody:       "Inter",
-		FontMono:       "JetBrains Mono",
-		NavStyle:       "sticky",
-		NavActiveStyle: "base",
-		Light: Palette{
-			Bg:             "#f6f8fa",
-			Text:           "#1d2733",
-			TextMuted:      "#5c6b7c",
-			Border:         "#dde4eb",
-			CodeBg:         "#ecf0f4",
-			Accent:         "#2b6cb8",
-			AccentContrast: "#ffffff",
-			GraphLink:      "#d3dbe3",
-		},
-		Dark: Palette{
-			Bg:             "#13171c",
-			Text:           "#dbe3eb",
-			TextMuted:      "#8896a6",
-			Border:         "#29323d",
-			CodeBg:         "#1d232b",
-			Accent:         "#6aa9e8",
-			AccentContrast: "#13171c",
-			GraphLink:      "#333e4a",
-		},
+		// Layered, rounded surfaces on top of the gradient background:
+		// index entries become hover-lifting cards, tags become pills, the
+		// page header carries an accent bar, and panels get soft shadows.
+		ExtraCSS: `:root {
+  --lp-radius-sm: 6px;
+  --lp-radius-md: 12px;
+  --lp-radius-lg: 20px;
+}
+
+.lp-title {
+  letter-spacing: -0.03em;
+}
+
+.lp-header {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.lp-header::after {
+  content: "";
+  display: block;
+  width: 3.5rem;
+  height: 4px;
+  margin-top: 1rem;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, var(--lp-accent), color-mix(in srgb, var(--lp-accent) 35%, transparent));
+}
+
+.lp-index-item {
+  border: 1px solid var(--lp-border);
+  border-radius: var(--lp-radius-md);
+  padding: 0.9rem 1.1rem;
+  margin-bottom: 0.75rem;
+  background: color-mix(in srgb, var(--lp-code-bg) 55%, transparent);
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+}
+
+.lp-index-item:last-child {
+  border-bottom: 1px solid var(--lp-border);
+}
+
+.lp-index-item:hover {
+  border-color: color-mix(in srgb, var(--lp-accent) 45%, var(--lp-border));
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+  transform: translateY(-2px);
+}
+
+[data-theme="dark"] .lp-index-item:hover {
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
+.lp-tag,
+.lp-tag-cloud-item {
+  background: color-mix(in srgb, var(--lp-accent) 12%, transparent);
+  padding: 0.2rem 0.65rem;
+  border-radius: 9999px;
+}
+
+.lp-tag:hover,
+.lp-tag-cloud-item:hover {
+  text-decoration: none;
+  background: color-mix(in srgb, var(--lp-accent) 20%, transparent);
+}
+
+.lp-nav-link.lp-nav-link--active.lp-nav-active-box {
+  border-radius: 9999px;
+}
+
+.lp-content pre {
+  border: 1px solid var(--lp-border);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="dark"] .lp-content pre {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+}
+
+.lp-backlinks {
+  border-top: none;
+  border: 1px solid var(--lp-border);
+  border-radius: var(--lp-radius-md);
+  padding: 1.25rem;
+  background: color-mix(in srgb, var(--lp-code-bg) 55%, transparent);
+}`,
 	},
 }
 

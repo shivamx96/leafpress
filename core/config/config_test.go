@@ -146,18 +146,18 @@ func TestParse_MinimalEmptyConfig(t *testing.T) {
 // empty so render-time palette resolution can apply the preset's per-mode
 // accents.
 func TestParse_ThemePresetFillsUnsetFields(t *testing.T) {
-	cfg, err := Parse([]byte(`{"theme": {"name": "dusk"}}`))
+	cfg, err := Parse([]byte(`{"theme": {"name": "modern"}}`))
 	if err != nil {
 		t.Fatalf("Parse: %v", err)
 	}
-	if cfg.Theme.Name != "dusk" {
-		t.Errorf("Name = %q, want dusk", cfg.Theme.Name)
+	if cfg.Theme.Name != "modern" {
+		t.Errorf("Name = %q, want modern", cfg.Theme.Name)
 	}
 	if cfg.Theme.FontHeading != "Space Grotesk" || cfg.Theme.FontBody != "Geist" || cfg.Theme.FontMono != "Geist Mono" {
-		t.Errorf("dusk fonts not applied: %+v", cfg.Theme)
+		t.Errorf("modern fonts not applied: %+v", cfg.Theme)
 	}
-	if cfg.Theme.NavStyle != "glassy" || cfg.Theme.NavActiveStyle != "underlined" {
-		t.Errorf("dusk nav styles not applied: navStyle=%q navActiveStyle=%q", cfg.Theme.NavStyle, cfg.Theme.NavActiveStyle)
+	if cfg.Theme.NavStyle != "glassy" || cfg.Theme.NavActiveStyle != "box" {
+		t.Errorf("modern nav styles not applied: navStyle=%q navActiveStyle=%q", cfg.Theme.NavStyle, cfg.Theme.NavActiveStyle)
 	}
 	if cfg.Theme.Accent != "" {
 		t.Errorf("Accent = %q, want empty (preset accents resolve at render time)", cfg.Theme.Accent)
@@ -167,7 +167,7 @@ func TestParse_ThemePresetFillsUnsetFields(t *testing.T) {
 // Explicit theme fields always win over the selected preset.
 func TestParse_ExplicitThemeFieldsBeatPreset(t *testing.T) {
 	cfg, err := Parse([]byte(`{"theme": {
-		"name": "dusk",
+		"name": "modern",
 		"fontBody": "Lora",
 		"accent": "#e11d48",
 		"navStyle": "base"
@@ -178,7 +178,7 @@ func TestParse_ExplicitThemeFieldsBeatPreset(t *testing.T) {
 	if cfg.Theme.FontBody != "Lora" || cfg.Theme.Accent != "#e11d48" || cfg.Theme.NavStyle != "base" {
 		t.Errorf("explicit fields overridden by preset: %+v", cfg.Theme)
 	}
-	if cfg.Theme.FontHeading != "Space Grotesk" || cfg.Theme.NavActiveStyle != "underlined" {
+	if cfg.Theme.FontHeading != "Space Grotesk" || cfg.Theme.NavActiveStyle != "box" {
 		t.Errorf("unset fields should still come from the preset: %+v", cfg.Theme)
 	}
 }

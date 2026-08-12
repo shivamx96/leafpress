@@ -74,6 +74,14 @@ func TestPresetsAreWellFormed(t *testing.T) {
 		if strings.Contains(strings.ToLower(p.ExtraCSS), "</style") {
 			t.Errorf("preset %s: ExtraCSS must not close a style element", p.Name)
 		}
+		// Presets are distinct looks, not palette swaps: the default preset
+		// IS the base stylesheet, every other preset must restyle it.
+		if p.Name == DefaultName && p.ExtraCSS != "" {
+			t.Error("the default preset must not alter the base stylesheet")
+		}
+		if p.Name != DefaultName && p.ExtraCSS == "" {
+			t.Errorf("preset %s: non-default presets must carry a structural CSS layer", p.Name)
+		}
 	}
 }
 
@@ -84,13 +92,13 @@ func TestByNameFallsBackToDefault(t *testing.T) {
 	if got := ByName("no-such-preset").Name; got != DefaultName {
 		t.Errorf("ByName(unknown) = %q, want %q", got, DefaultName)
 	}
-	if got := ByName("dusk").Name; got != "dusk" {
-		t.Errorf("ByName(dusk) = %q, want dusk", got)
+	if got := ByName("modern").Name; got != "modern" {
+		t.Errorf("ByName(modern) = %q, want modern", got)
 	}
 }
 
 func TestValidAndNames(t *testing.T) {
-	if !Valid("") || !Valid("forest") {
+	if !Valid("") || !Valid("plain") {
 		t.Error("empty and known names must be valid")
 	}
 	if Valid("neon") {

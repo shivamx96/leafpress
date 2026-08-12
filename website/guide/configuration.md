@@ -85,7 +85,7 @@ default site.
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `name` | `"default"` | Built-in theme preset: `"default"`, `"paper"`, `"dusk"`, `"forest"`, or `"mist"` — see [Theming](/guide/theming/). Supplies defaults for every option below; explicit options win |
+| `name` | `"default"` | Built-in theme preset: `"default"`, `"plain"`, `"paper"`, or `"modern"` — see [Theming](/guide/theming/). Supplies defaults for every option below; explicit options win |
 | `fontHeading` | from preset | Heading font (bundled families are self-hosted) |
 | `fontBody` | from preset | Body font (bundled families are self-hosted) |
 | `fontMono` | from preset | Code font (bundled families are self-hosted) |

@@ -292,26 +292,26 @@ func TestThemeReflectedInOutput(t *testing.T) {
 func TestThemePresetReflectedInOutput(t *testing.T) {
 	out := runJSON(t, `{
 	  "render": {"slug": "g"},
-	  "config": {"theme": {"name": "dusk", "accent": "#e11d48"}},
+	  "config": {"theme": {"name": "modern", "accent": "#e11d48"}},
 	  "content": {"pages": [{"slug": "p", "title": "P", "markdown": "hello"}]}
 	}`)
 
-	dusk := theme.ByName("dusk")
+	modern := theme.ByName("modern")
 	html := pageHTML(t, out, "p")
 	for _, want := range []string{
 		`--lp-font-heading: "Space Grotesk"`,
-		"--lp-bg: " + dusk.Light.Bg,
-		"--lp-bg: " + dusk.Dark.Bg,
+		"--lp-bg: " + modern.Light.Bg,
+		"--lp-bg: " + modern.Dark.Bg,
 		"--lp-accent: #e11d48",
-		"--lp-accent-contrast: " + dusk.Light.AccentContrast,
-		"--lp-graph-link: " + dusk.Dark.GraphLink,
+		"--lp-accent-contrast: " + modern.Light.AccentContrast,
+		"--lp-graph-link: " + modern.Dark.GraphLink,
 		"backdrop-filter: blur(16px)",
 	} {
 		if !strings.Contains(html, want) {
 			t.Errorf("preset page HTML missing %q", want)
 		}
 	}
-	if strings.Contains(html, "--lp-accent: "+dusk.Light.Accent) {
+	if strings.Contains(html, "--lp-accent: "+modern.Light.Accent) {
 		t.Error("explicit accent should override the preset accent")
 	}
 
