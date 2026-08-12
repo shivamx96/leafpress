@@ -96,3 +96,42 @@ jobs:
         env:
           GOWORK: "off"
         run: go test -mod=readonly ./...
+
+  theme-conformance:
+    name: Theme conformance
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version: "1.25.5"
+          cache-dependency-path: |
+            core/go.sum
+            cli/go.sum
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install test dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run cross-theme conformance suite
+        run: npm run test:themes
+
+      - name: Upload browser report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: theme-conformance-report
+          path: playwright-report/
+          retention-days: 14
