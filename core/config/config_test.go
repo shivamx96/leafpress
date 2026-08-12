@@ -140,6 +140,87 @@ func TestParse_MinimalEmptyConfig(t *testing.T) {
 	}
 }
 
+// --- Theme presets ---
+
+// theme.name fills unset font and nav fields from the preset; accent stays
+// empty so render-time palette resolution can apply the preset's per-mode
+// accents.
+func TestParse_ThemePresetFillsUnsetFields(t *testing.T) {
+	cfg, err := Parse([]byte(`{"theme": {"name": "dusk"}}`))
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+	if cfg.Theme.Name != "dusk" {
+		t.Errorf("Name = %q, want dusk", cfg.Theme.Name)
+	}
+	if cfg.Theme.FontHeading != "Space Grotesk" || cfg.Theme.FontBody != "Geist" || cfg.Theme.FontMono != "Geist Mono" {
+		t.Errorf("dusk fonts not applied: %+v", cfg.Theme)
+	}
+	if cfg.Theme.NavStyle != "glassy" || cfg.Theme.NavActiveStyle != "underlined" {
+		t.Errorf("dusk nav styles not applied: navStyle=%q navActiveStyle=%q", cfg.Theme.NavStyle, cfg.Theme.NavActiveStyle)
+	}
+	if cfg.Theme.Accent != "" {
+		t.Errorf("Accent = %q, want empty (preset accents resolve at render time)", cfg.Theme.Accent)
+	}
+}
+
+// Explicit theme fields always win over the selected preset.
+func TestParse_ExplicitThemeFieldsBeatPreset(t *testing.T) {
+	cfg, err := Parse([]byte(`{"theme": {
+		"name": "dusk",
+		"fontBody": "Lora",
+		"accent": "#e11d48",
+		"navStyle": "base"
+	}}`))
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+	if cfg.Theme.FontBody != "Lora" || cfg.Theme.Accent != "#e11d48" || cfg.Theme.NavStyle != "base" {
+		t.Errorf("explicit fields overridden by preset: %+v", cfg.Theme)
+	}
+	if cfg.Theme.FontHeading != "Space Grotesk" || cfg.Theme.NavActiveStyle != "underlined" {
+		t.Errorf("unset fields should still come from the preset: %+v", cfg.Theme)
+	}
+}
+
+func TestParse_UnknownThemePresetRejected(t *testing.T) {
+	_, err := Parse([]byte(`{"theme": {"name": "neon"}}`))
+	if err == nil {
+		t.Fatal("unknown theme.name should be rejected")
+	}
+	if !strings.Contains(err.Error(), "default") {
+		t.Errorf("error should list valid preset names, got: %v", err)
+	}
+}
+
+// A config without a theme section keeps Leafpress's historical defaults.
+func TestParse_NoThemeSectionKeepsDefaultLook(t *testing.T) {
+	cfg, err := Parse([]byte(`{}`))
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+	if cfg.Theme.FontHeading != "Bricolage Grotesque" || cfg.Theme.FontBody != "Inter" || cfg.Theme.FontMono != "JetBrains Mono" {
+		t.Errorf("default preset fonts not applied: %+v", cfg.Theme)
+	}
+	if cfg.Theme.NavStyle != "base" || cfg.Theme.NavActiveStyle != "base" {
+		t.Errorf("default nav styles not applied: %+v", cfg.Theme)
+	}
+}
+
+// theme.name round-trips through Write/Load and is omitted when unset.
+func TestThemeNameMarshalRoundTrip(t *testing.T) {
+	data, err := json.Marshal(Theme{Name: "paper", FontBody: "Lora"})
+	if err != nil {
+		t.Fatalf("Marshal: %v", err)
+	}
+	if !strings.Contains(string(data), `"name":"paper"`) {
+		t.Errorf("marshaled theme missing name: %s", data)
+	}
+	if data, err = json.Marshal(Theme{FontBody: "Lora"}); err != nil || strings.Contains(string(data), `"name"`) {
+		t.Errorf("unset name should be omitted (err=%v): %s", err, data)
+	}
+}
+
 func TestParse_UnsupportedContractVersion(t *testing.T) {
 	if _, err := Parse([]byte(`{"contractVersion": 3}`)); err == nil {
 		t.Error("contractVersion 3 should be rejected")

@@ -10,6 +10,7 @@ import (
 
 	"github.com/shivamx96/leafpress/core/assets"
 	"github.com/shivamx96/leafpress/core/templates"
+	"github.com/shivamx96/leafpress/core/theme"
 )
 
 // runJSON is a test helper that runs the bridge over a JSON string.
@@ -282,6 +283,49 @@ func TestThemeReflectedInOutput(t *testing.T) {
 	}
 	if !strings.Contains(out.CSS, "@font-face") {
 		t.Error("css output should carry self-hosted @font-face rules for bundled families")
+	}
+}
+
+// A theme preset selected by name flows through the JSON bridge: fonts and
+// nav style fill from the preset, palette tokens land in both modes, and the
+// preset's extra CSS joins the stylesheet before user CSS.
+func TestThemePresetReflectedInOutput(t *testing.T) {
+	out := runJSON(t, `{
+	  "render": {"slug": "g"},
+	  "config": {"theme": {"name": "dusk", "accent": "#e11d48"}},
+	  "content": {"pages": [{"slug": "p", "title": "P", "markdown": "hello"}]}
+	}`)
+
+	dusk := theme.ByName("dusk")
+	html := pageHTML(t, out, "p")
+	for _, want := range []string{
+		`--lp-font-heading: "Space Grotesk"`,
+		"--lp-bg: " + dusk.Light.Bg,
+		"--lp-bg: " + dusk.Dark.Bg,
+		"--lp-accent: #e11d48",
+		"--lp-accent-contrast: " + dusk.Light.AccentContrast,
+		"--lp-graph-link: " + dusk.Dark.GraphLink,
+		"backdrop-filter: blur(16px)",
+	} {
+		if !strings.Contains(html, want) {
+			t.Errorf("preset page HTML missing %q", want)
+		}
+	}
+	if strings.Contains(html, "--lp-accent: "+dusk.Light.Accent) {
+		t.Error("explicit accent should override the preset accent")
+	}
+
+	if _, err := Run([]byte(`{"config": {"theme": {"name": "neon"}}, "content": {"pages": []}}`)); err == nil {
+		t.Error("unknown theme.name should fail the render")
+	}
+
+	paperOut := runJSON(t, `{
+	  "render": {"slug": "g"},
+	  "config": {"theme": {"name": "paper"}},
+	  "content": {"pages": [{"slug": "p", "title": "P", "markdown": "hello"}]}
+	}`)
+	if paper := theme.ByName("paper"); paper.ExtraCSS != "" && !strings.Contains(paperOut.CSS, paper.ExtraCSS) {
+		t.Error("css output should carry the preset's extra CSS layer")
 	}
 }
 

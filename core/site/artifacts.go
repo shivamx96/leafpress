@@ -14,6 +14,7 @@ import (
 	"github.com/shivamx96/leafpress/core/config"
 	"github.com/shivamx96/leafpress/core/content"
 	"github.com/shivamx96/leafpress/core/templates"
+	"github.com/shivamx96/leafpress/core/theme"
 )
 
 // GraphNode is the public graph.json node shape.
@@ -243,15 +244,21 @@ func NotFound(tmpl *templates.Templates, siteData templates.SiteData) (string, e
 	return buf.String(), nil
 }
 
-// Styles combines Leafpress's embedded stylesheet, the theme's self-hosted
-// @font-face rules, and the optional contents of the CLI's style.css (or the
-// renderer's styleCSS input). Font rules live here rather than in each page
-// head so they are downloaded once and cached; their URLs are site-relative,
-// which resolves correctly because this stylesheet is served from the site
-// root.
-func Styles(userCSS string, theme config.Theme) string {
+// Styles combines Leafpress's embedded stylesheet, the selected theme
+// preset's optional extra rules, the theme's self-hosted @font-face rules,
+// and the optional contents of the CLI's style.css (or the renderer's
+// styleCSS input). Order is the theming cascade: base, then preset, then
+// user CSS last so it can override both. Font rules live here rather than in
+// each page head so they are downloaded once and cached; their URLs are
+// site-relative, which resolves correctly because this stylesheet is served
+// from the site root.
+func Styles(userCSS string, themeCfg config.Theme) string {
 	css := templates.DefaultCSS
-	if fontCSS := templates.FontCSS(theme); fontCSS != "" {
+	preset := theme.ByName(themeCfg.Name)
+	if preset.ExtraCSS != "" {
+		css += fmt.Sprintf("\n\n/* Theme: %s */\n%s", preset.Name, preset.ExtraCSS)
+	}
+	if fontCSS := templates.FontCSS(themeCfg); fontCSS != "" {
 		css += "\n\n/* Self-hosted fonts */\n" + fontCSS
 	}
 	if userCSS != "" {

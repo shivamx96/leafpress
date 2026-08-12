@@ -38,6 +38,7 @@ the historical `config.Default()` values.
     "headExtra": ""
   },
   "theme": {
+    "name": "default",
     "fontHeading": "Bricolage Grotesque",
     "fontBody": "Inter",
     "fontMono": "JetBrains Mono",
@@ -75,10 +76,11 @@ the historical `config.Default()` values.
 | --- | --- | --- |
 | `site` | `title` | `"My Garden"` |
 | | `description`, `author`, `baseURL`, `image`, `headExtra` | `""` |
-| `theme` | `fontHeading` / `fontBody` / `fontMono` | `"Bricolage Grotesque"` / `"Inter"` / `"JetBrains Mono"` |
-| | `accent` | `"#50ac00"` |
-| | `navStyle` / `navActiveStyle` | `"base"` / `"base"` |
-| | `background` | light/dark theme defaults |
+| `theme` | `name` | `""` (the `default` preset) |
+| | `fontHeading` / `fontBody` / `fontMono` | from the preset (`default`: `"Bricolage Grotesque"` / `"Inter"` / `"JetBrains Mono"`) |
+| | `accent` | `""` (the preset's per-mode accents) |
+| | `navStyle` / `navActiveStyle` | from the preset (`default`: `"base"` / `"base"`) |
+| | `background` | the preset's per-mode backgrounds |
 | `features` | `graph` `search` `toc` `backlinks` `wikilinks` `rss` | `true` |
 | `navigation` | `mode` | `"automatic"` |
 | | `includeTags` | `false` |
@@ -98,9 +100,14 @@ owner escape hatch injected verbatim into `<head>` (see Trust boundary).
 
 ### `theme`
 
-Unchanged from prior versions: fonts, accent, background, nav styles, and
-custom `fonts[]` declarations. Validated for safe interpolation into the inline
-`<style>` block.
+Fonts, accent, background, nav styles, and custom `fonts[]` declarations, all
+validated for safe interpolation into the inline `<style>` block. `name`
+selects a built-in preset (see the `core/theme` package): the preset supplies
+defaults for the font and nav fields, the per-mode palette tokens emitted in
+each page head, and an optional extra CSS layer in the stylesheet. Explicit
+fields always override the preset, and an unknown name is rejected. Because
+preset resolution happens in shared Core code during `config.Parse`, the CLI
+and the renderer resolve identically.
 
 ### `features`
 

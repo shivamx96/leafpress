@@ -122,7 +122,7 @@ html {
 
 .lp-nav-link.lp-nav-link--active.lp-nav-active-box {
   background-color: var(--lp-accent);
-  color: white;
+  color: var(--lp-accent-contrast);
   padding: 0.25rem 0.5rem;
   margin: -0.25rem -0.5rem;
   border-radius: var(--lp-radius-sm);
@@ -557,7 +557,7 @@ html {
 
 .lp-copy-button:hover {
   background-color: var(--lp-accent);
-  color: white;
+  color: var(--lp-accent-contrast);
   border-color: var(--lp-accent);
 }
 
@@ -739,7 +739,7 @@ html {
 }
 
 [data-theme="dark"] .lp-graph-link {
-  stroke: #444444 !important;
+  stroke: var(--lp-graph-link) !important;
 }
 
 [data-theme="dark"] .lp-graph-node {
@@ -1485,7 +1485,7 @@ html {
   display: inline-block;
   padding: 0.75rem 1.5rem;
   background: var(--lp-accent);
-  color: white;
+  color: var(--lp-accent-contrast);
   text-decoration: none;
   border-radius: var(--lp-radius-md);
   font-weight: 500;

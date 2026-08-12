@@ -9,6 +9,7 @@ import (
 	"github.com/shivamx96/leafpress/core/config"
 	"github.com/shivamx96/leafpress/core/content"
 	"github.com/shivamx96/leafpress/core/templates"
+	"github.com/shivamx96/leafpress/core/theme"
 )
 
 func TestArtifactShapesAndOrdering(t *testing.T) {
@@ -147,5 +148,24 @@ func TestStylesMatchesCLIComposition(t *testing.T) {
 	got := Styles("body { outline: none; }", config.Default().Theme)
 	if !strings.HasSuffix(got, "\n\n/* User Styles */\nbody { outline: none; }") {
 		t.Error("user CSS should use the CLI composition marker and ordering")
+	}
+}
+
+// A preset's ExtraCSS is layered between the base stylesheet and user CSS so
+// user overrides always win over the theme.
+func TestStylesLayersPresetExtraCSS(t *testing.T) {
+	paper := theme.ByName("paper")
+	if paper.ExtraCSS == "" {
+		t.Skip("paper preset no longer carries extra CSS")
+	}
+	got := Styles("body { outline: none; }", config.Theme{Name: "paper"})
+	base := strings.Index(got, templates.DefaultCSS)
+	extra := strings.Index(got, "/* Theme: paper */\n"+paper.ExtraCSS)
+	user := strings.Index(got, "/* User Styles */")
+	if base != 0 || extra < 0 || user < 0 || !(extra < user) {
+		t.Fatalf("stylesheet layers out of order: base=%d theme=%d user=%d", base, extra, user)
+	}
+	if def := Styles("", config.Default().Theme); strings.Contains(def, "/* Theme:") {
+		t.Error("the default preset must not inject a theme CSS layer")
 	}
 }

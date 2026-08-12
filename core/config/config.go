@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/shivamx96/leafpress/core/assets"
+	"github.com/shivamx96/leafpress/core/theme"
 )
 
 // Background represents background configuration that can be a string or object
@@ -98,6 +99,11 @@ type NavItem struct {
 
 // Theme represents theme configuration
 type Theme struct {
+	// Name selects a built-in theme preset (see the core/theme package).
+	// Empty means the default preset. The preset supplies defaults for the
+	// font and nav fields below and the palette tokens emitted in each page
+	// head; any field set explicitly in leafpress.json wins over the preset.
+	Name        string `json:"name,omitempty"`
 	FontHeading string `json:"fontHeading"`
 	FontBody    string `json:"fontBody"`
 	FontMono    string `json:"fontMono"`
@@ -362,6 +368,12 @@ func Load(path string) (*Config, error) {
 func Parse(data []byte) (*Config, error) {
 	cfg := Default()
 
+	// Theme defaults come from the preset overlay below, not Default():
+	// decoding over pre-filled fields would make "user set this explicitly"
+	// indistinguishable from "default", and explicit fields must win over
+	// the preset selected by theme.name.
+	cfg.Theme = Theme{}
+
 	// Reject unknown/misplaced keys (typos, wrong nesting) rather than
 	// silently ignoring them. This applies to every nested section; Theme has
 	// a custom UnmarshalJSON that enforces the same strictness itself.
@@ -381,23 +393,27 @@ func Parse(data []byte) (*Config, error) {
 	if cfg.Build.Port == 0 {
 		cfg.Build.Port = 3000
 	}
+	// Fill unset theme fields from the selected preset. An unknown name is
+	// rejected by Validate below; ByName's default fallback only feeds the
+	// fill for a config that is about to be discarded. Accent and background
+	// stay empty unless set explicitly — their preset values are per-mode
+	// palette tokens resolved at render time, so filling them here would
+	// clobber the preset's dark-mode values.
+	preset := theme.ByName(cfg.Theme.Name)
 	if cfg.Theme.FontHeading == "" {
-		cfg.Theme.FontHeading = "Bricolage Grotesque"
+		cfg.Theme.FontHeading = preset.FontHeading
 	}
 	if cfg.Theme.FontBody == "" {
-		cfg.Theme.FontBody = "Inter"
+		cfg.Theme.FontBody = preset.FontBody
 	}
 	if cfg.Theme.FontMono == "" {
-		cfg.Theme.FontMono = "JetBrains Mono"
-	}
-	if cfg.Theme.Accent == "" {
-		cfg.Theme.Accent = "#50ac00"
+		cfg.Theme.FontMono = preset.FontMono
 	}
 	if cfg.Theme.NavStyle == "" {
-		cfg.Theme.NavStyle = "base"
+		cfg.Theme.NavStyle = preset.NavStyle
 	}
 	if cfg.Theme.NavActiveStyle == "" {
-		cfg.Theme.NavActiveStyle = "base"
+		cfg.Theme.NavActiveStyle = preset.NavActiveStyle
 	}
 	if cfg.Navigation.Mode == "" {
 		cfg.Navigation.Mode = NavAutomatic
@@ -445,9 +461,15 @@ func (c *Config) Validate() error {
 		return err
 	}
 
-	// Validate accent color format (hex color)
+	// Validate the theme preset name.
+	if !theme.Valid(c.Theme.Name) {
+		return fmt.Errorf("theme.name must be one of %s, got %q", strings.Join(theme.Names(), ", "), c.Theme.Name)
+	}
+
+	// Validate accent color format (hex color). Empty means the selected
+	// preset's per-mode accents apply.
 	hexColorRegex := regexp.MustCompile(`^#[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?$`)
-	if !hexColorRegex.MatchString(c.Theme.Accent) {
+	if c.Theme.Accent != "" && !hexColorRegex.MatchString(c.Theme.Accent) {
 		return fmt.Errorf("accent color must be a valid hex color (e.g., #50ac00), got %s", c.Theme.Accent)
 	}
 

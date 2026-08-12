@@ -3,7 +3,57 @@ title: "Theming"
 date: 2025-12-21
 ---
 
-Customize your site's appearance with fonts, colors, and custom CSS.
+Customize your site's appearance with built-in themes, fonts, colors, and
+custom CSS.
+
+Styling is layered, and later layers always win:
+
+1. **Base** — Leafpress's structural stylesheet (layout, components).
+2. **Theme preset** — the look selected by `theme.name` below.
+3. **Your overrides** — explicit `theme` options (fonts, accent, background,
+   nav styles) and your own `style.css`.
+
+## Themes
+
+Pick a built-in theme by name:
+
+```json
+{
+  "theme": {
+    "name": "dusk"
+  }
+}
+```
+
+Five presets ship with Leafpress:
+
+| Name | Look |
+|------|------|
+| `default` | The classic Leafpress look: clean neutrals, fresh green accent |
+| `paper` | Warm cream and terracotta with serif type, like notes on good paper |
+| `dusk` | Indigo and violet with modern grotesque type and a glassy nav |
+| `forest` | Deep pine greens with readable humanist type |
+| `mist` | Cool gray-blues with quiet, minimal type and a sticky nav |
+
+A theme is a token pack: it sets the fonts, nav style, and the full light
+*and* dark color palette (background, text, borders, code blocks, accent,
+graph colors). Every preset supports the light/dark toggle out of the box.
+
+Any explicit `theme` option beats the preset, so you can take a theme and
+keep your own accent:
+
+```json
+{
+  "theme": {
+    "name": "forest",
+    "accent": "#e11d48"
+  }
+}
+```
+
+If your `leafpress.json` was scaffolded by an older `leafpress init`, it may
+pin every font and the accent explicitly — remove the lines you want the
+preset to control.
 
 ## Quick Theming
 
@@ -185,11 +235,13 @@ Run `leafpress init` to get a `style.css` you can modify. Or start from scratch 
   --lp-font-body: "Your Font", sans-serif;
   --lp-font-mono: "Your Font", monospace;
   --lp-accent: #50ac00;
+  --lp-accent-contrast: #ffffff;  /* text on accent-filled surfaces */
   --lp-bg: #ffffff;
   --lp-text: #1a1a1a;
   --lp-text-muted: #666666;
   --lp-border: #e5e5e5;
   --lp-code-bg: #f7f7f7;
+  --lp-graph-link: #d0d0d0;       /* knowledge-graph edge color */
   --lp-max-width: 680px;
 }
 
@@ -199,6 +251,7 @@ Run `leafpress init` to get a `style.css` you can modify. Or start from scratch 
   --lp-text-muted: #a0a0a0;
   --lp-border: #333333;
   --lp-code-bg: #2a2a2a;
+  --lp-graph-link: #444444;
 }
 ```
 

@@ -33,6 +33,7 @@ default site.
   },
 
   "theme": {
+    "name": "default",
     "fontHeading": "Bricolage Grotesque",
     "fontBody": "Inter",
     "fontMono": "JetBrains Mono",
@@ -84,16 +85,21 @@ default site.
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `fontHeading` | `"Bricolage Grotesque"` | Heading font (bundled families are self-hosted) |
-| `fontBody` | `"Inter"` | Body font (bundled families are self-hosted) |
-| `fontMono` | `"JetBrains Mono"` | Code font (bundled families are self-hosted) |
+| `name` | `"default"` | Built-in theme preset: `"default"`, `"paper"`, `"dusk"`, `"forest"`, or `"mist"` — see [Theming](/guide/theming/). Supplies defaults for every option below; explicit options win |
+| `fontHeading` | from preset | Heading font (bundled families are self-hosted) |
+| `fontBody` | from preset | Body font (bundled families are self-hosted) |
+| `fontMono` | from preset | Code font (bundled families are self-hosted) |
 | `remoteFonts` | `false` | Deprecated: load unbundled families from Google Fonts |
 | `fonts` | `[]` | Custom local font declarations (family, file under `static/fonts/`, weight, style, display) — see [Theming](/guide/theming/) |
-| `accent` | `"#50ac00"` | Accent color for links and highlights |
-| `background.light` | `"#ffffff"` | Light mode background (color or gradient) |
-| `background.dark` | `"#1a1a1a"` | Dark mode background (color or gradient) |
-| `navStyle` | `"base"` | `"base"`, `"sticky"`, or `"glassy"` |
-| `navActiveStyle` | `"base"` | `"base"`, `"box"`, or `"underlined"` |
+| `accent` | from preset | Accent color for links and highlights (applies to light and dark mode) |
+| `background.light` | from preset | Light mode background (color or gradient) |
+| `background.dark` | from preset | Dark mode background (color or gradient) |
+| `navStyle` | from preset | `"base"`, `"sticky"`, or `"glassy"` |
+| `navActiveStyle` | from preset | `"base"`, `"box"`, or `"underlined"` |
+
+The `default` preset reproduces Leafpress's classic look — `"Bricolage
+Grotesque"` / `"Inter"` / `"JetBrains Mono"`, `#50ac00` accent, white/near-black
+backgrounds, `"base"` nav — so existing configs render exactly as before.
 
 Gradients work too:
 ```json

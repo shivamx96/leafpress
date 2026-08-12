@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"html"
 	"io"
+	"math"
 	"path"
 	"regexp"
 	"strconv"
@@ -16,6 +17,7 @@ import (
 	"github.com/shivamx96/leafpress/core/assets"
 	"github.com/shivamx96/leafpress/core/config"
 	"github.com/shivamx96/leafpress/core/content"
+	"github.com/shivamx96/leafpress/core/theme"
 )
 
 // Pre-compiled regexes for ExtractTOC and generateHeadingID (compiled once at startup)
@@ -40,6 +42,7 @@ func init() {
 		"lower":             strings.ToLower,
 		"safeHTML":          func(s string) string { return s },
 		"safeCSS":           func(s string) string { return s },
+		"themePalettes":     themePalettes,
 		"fontURL":           fontURL,
 		"fontPreloads":      fontPreloads,
 		"remoteFontURL":     remoteFontURL,
@@ -115,6 +118,75 @@ type NotFoundData struct {
 type FooterAttribution struct {
 	Name string
 	URL  string
+}
+
+// palettePair carries the resolved light and dark token sets emitted in the
+// inline style block of every page head.
+type palettePair struct {
+	Light theme.Palette
+	Dark  theme.Palette
+}
+
+// themePalettes resolves the preset selected by t.Name and layers the
+// explicit config overrides on top: accent applies to both modes, each
+// background to its mode. Every other token comes from the preset, so user
+// style.css (loaded after the inline block) remains the final override.
+func themePalettes(t config.Theme) palettePair {
+	preset := theme.ByName(t.Name)
+	pair := palettePair{Light: preset.Light, Dark: preset.Dark}
+	if t.Accent != "" {
+		pair.Light.Accent = t.Accent
+		pair.Dark.Accent = t.Accent
+		// The preset pairs AccentContrast with its own accents; an explicit
+		// accent invalidates that pairing, so re-derive it.
+		contrast := accentContrast(t.Accent)
+		pair.Light.AccentContrast = contrast
+		pair.Dark.AccentContrast = contrast
+	}
+	if t.Background.Light != "" {
+		pair.Light.Bg = t.Background.Light
+	}
+	if t.Background.Dark != "" {
+		pair.Dark.Bg = t.Background.Dark
+	}
+	return pair
+}
+
+// accentContrast picks a readable text color for accent-filled surfaces
+// (active nav box, copy button, 404 link) given a user-chosen accent. The
+// threshold is deliberately biased toward white — Leafpress has always drawn
+// white on mid-tone accents like the default green — so only genuinely pale
+// accents (WCAG relative luminance above 0.55) switch to dark text. Config
+// validation guarantees a #rgb or #rrggbb value; anything else keeps white.
+func accentContrast(hexColor string) string {
+	hexColor = strings.TrimPrefix(hexColor, "#")
+	if len(hexColor) == 3 {
+		hexColor = strings.Repeat(string(hexColor[0]), 2) +
+			strings.Repeat(string(hexColor[1]), 2) +
+			strings.Repeat(string(hexColor[2]), 2)
+	}
+	if len(hexColor) != 6 {
+		return "#ffffff"
+	}
+	channels := make([]float64, 3)
+	for i := range channels {
+		v, err := strconv.ParseUint(hexColor[2*i:2*i+2], 16, 8)
+		if err != nil {
+			return "#ffffff"
+		}
+		c := float64(v) / 255
+		if c <= 0.04045 {
+			c /= 12.92
+		} else {
+			c = math.Pow((c+0.055)/1.055, 2.4)
+		}
+		channels[i] = c
+	}
+	luminance := 0.2126*channels[0] + 0.7152*channels[1] + 0.0722*channels[2]
+	if luminance > 0.55 {
+		return "#1a1a1a"
+	}
+	return "#ffffff"
 }
 
 // SiteData contains site-wide information
@@ -597,12 +669,13 @@ const baseTemplate = `<!DOCTYPE html>
   {{range fontPreloads .Site.Theme}}<link rel="preload" href="{{$.Site.BasePath}}/{{.Path}}" as="font" type="{{.ContentType}}" crossorigin>
   {{end}}
   <style>
-    :root {
+    {{$palettes := themePalettes .Site.Theme}}:root {
       color-scheme: light;
       --lp-font-heading: "{{.Site.Theme.FontHeading}}", Georgia, serif;
       --lp-font-body: "{{.Site.Theme.FontBody}}", system-ui, -apple-system, sans-serif;
       --lp-font-mono: "{{.Site.Theme.FontMono}}", "Fira Code", "Courier New", monospace;
-      --lp-accent: {{.Site.Theme.Accent}};
+      --lp-accent: {{$palettes.Light.Accent}};
+      --lp-accent-contrast: {{$palettes.Light.AccentContrast}};
       --lp-font-xs: 0.75rem;
       --lp-font-sm: 0.875rem;
       --lp-font-base: 1rem;
@@ -615,19 +688,15 @@ const baseTemplate = `<!DOCTYPE html>
       --lp-radius-md: 8px;
       --lp-radius-lg: 12px;
       --lp-radius-full: 9999px;
-      --lp-bg: #ffffff;
-      --lp-text: #1a1a1a;
-      --lp-text-muted: #666666;
-      --lp-border: #e5e5e5;
-      --lp-code-bg: #f7f7f7;
+      --lp-bg: {{$palettes.Light.Bg | safeCSS}};
+      --lp-text: {{$palettes.Light.Text}};
+      --lp-text-muted: {{$palettes.Light.TextMuted}};
+      --lp-border: {{$palettes.Light.Border}};
+      --lp-code-bg: {{$palettes.Light.CodeBg}};
+      --lp-graph-link: {{$palettes.Light.GraphLink}};
       --lp-max-width: 680px;
       --lp-nav-height: 60px;
     }
-    {{if .Site.Theme.Background.Light}}
-    :root {
-      --lp-bg: {{.Site.Theme.Background.Light | safeCSS}};
-    }
-    {{end}}
     {{if eq .Site.Theme.NavStyle "sticky"}}
     .lp-nav {
       position: sticky;
@@ -647,17 +716,15 @@ const baseTemplate = `<!DOCTYPE html>
 
     [data-theme="dark"] {
       color-scheme: dark;
-      --lp-bg: #1a1a1a;
-      --lp-text: #e5e5e5;
-      --lp-text-muted: #a0a0a0;
-      --lp-border: #333333;
-      --lp-code-bg: #2a2a2a;
+      --lp-accent: {{$palettes.Dark.Accent}};
+      --lp-accent-contrast: {{$palettes.Dark.AccentContrast}};
+      --lp-bg: {{$palettes.Dark.Bg | safeCSS}};
+      --lp-text: {{$palettes.Dark.Text}};
+      --lp-text-muted: {{$palettes.Dark.TextMuted}};
+      --lp-border: {{$palettes.Dark.Border}};
+      --lp-code-bg: {{$palettes.Dark.CodeBg}};
+      --lp-graph-link: {{$palettes.Dark.GraphLink}};
     }
-    {{if .Site.Theme.Background.Dark}}
-    [data-theme="dark"] {
-      --lp-bg: {{.Site.Theme.Background.Dark | safeCSS}};
-    }
-    {{end}}
   </style>
   <link rel="stylesheet" href="{{.Site.BasePath}}/style.css">
   {{if .Site.ClientScriptPath}}<script src="{{.Site.BasePath}}/{{.Site.ClientScriptPath}}" defer></script>{{end}}
@@ -818,7 +885,7 @@ const baseTemplate = `<!DOCTYPE html>
       var graphBody = document.getElementById('lp-graph-panel-body');
       if (!graphBody || !graphBody.querySelector('svg')) return;
 
-      var linkColor = theme === 'dark' ? '#444444' : '#d0d0d0';
+      var linkColor = getComputedStyle(document.documentElement).getPropertyValue('--lp-graph-link').trim();
       var textColor = getComputedStyle(document.documentElement).getPropertyValue('--lp-text').trim();
       var accentColor = getComputedStyle(document.documentElement).getPropertyValue('--lp-accent').trim();
       graphBody.querySelectorAll('.lp-graph-link').forEach(function(link) {
@@ -1113,8 +1180,7 @@ const baseTemplate = `<!DOCTYPE html>
           var labelGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
           svg.appendChild(labelGroup);
 
-          var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-          var linkColor = isDark ? '#444444' : '#d0d0d0';
+          var linkColor = getComputedStyle(document.documentElement).getPropertyValue('--lp-graph-link').trim();
           var accentColor = getComputedStyle(document.documentElement).getPropertyValue('--lp-accent').trim();
 
           links.forEach(function(link) {
@@ -1261,7 +1327,7 @@ const baseTemplate = `<!DOCTYPE html>
           }
 
           function clearHighlight() {
-            var currentLinkColor = document.documentElement.getAttribute('data-theme') === 'dark' ? '#444444' : '#d0d0d0';
+            var currentLinkColor = getComputedStyle(document.documentElement).getPropertyValue('--lp-graph-link').trim();
             nodes.forEach(function(n) {
               n.element.style.opacity = '1';
               n.element.setAttribute('r', n.id === currentSlug ? '8' : '6');
