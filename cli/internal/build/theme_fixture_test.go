@@ -64,7 +64,7 @@ func TestThemeGardenFixtureBuildsThemeSurfaces(t *testing.T) {
 
 	components := readThemeFixtureFile(t, siteDir, "notes/components/index.html")
 	assertThemeFixtureContains(t, "component gallery", components,
-		`data-lp-theme="classic"`,
+		`data-lp-theme="aurora"`,
 		`class="lp-toc"`,
 		`class="lp-tag"`,
 		`<table>`,
@@ -74,6 +74,13 @@ func TestThemeGardenFixtureBuildsThemeSurfaces(t *testing.T) {
 		`class="lp-backlinks"`,
 		`class="lp-search-overlay"`,
 		`class="lp-graph-overlay"`,
+	)
+
+	styles := readThemeFixtureFile(t, siteDir, "style.css")
+	assertThemeFixtureContains(t, "theme stylesheet", styles,
+		"leafpress Base Styles",
+		"leafpress Classic Theme",
+		"leafpress Aurora Theme",
 	)
 
 	callouts := readThemeFixtureFile(t, siteDir, "notes/callouts/index.html")
