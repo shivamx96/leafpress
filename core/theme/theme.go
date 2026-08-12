@@ -37,8 +37,14 @@ type Preset struct {
 	FontMono       string
 	NavStyle       string // "base", "sticky", or "glassy"
 	NavActiveStyle string // "base", "box", or "underlined"
-	Light          Palette
-	Dark           Palette
+	// Layout variants, the preset's structural arrangement. Each maps to a
+	// body class implemented by the base stylesheet and can be overridden
+	// individually via theme.layout in leafpress.json.
+	NavLayout    string // "top", "sidebar", or "minimal"
+	IndexLayout  string // "list" or "cards"
+	ContentWidth string // "narrow", "normal", or "wide"
+	Light        Palette
+	Dark         Palette
 	// ExtraCSS is the preset's structural identity: rules appended after
 	// the base stylesheet (and before user CSS) that restyle components —
 	// link treatments, cards, header layout, radii and type-scale token
@@ -63,6 +69,9 @@ var presets = []Preset{
 		FontMono:       "JetBrains Mono",
 		NavStyle:       "base",
 		NavActiveStyle: "base",
+		NavLayout:      "top",
+		IndexLayout:    "list",
+		ContentWidth:   "normal",
 		Light: Palette{
 			Bg:             "#ffffff",
 			Text:           "#1a1a1a",
@@ -92,6 +101,9 @@ var presets = []Preset{
 		FontMono:       "Atkinson Hyperlegible Mono",
 		NavStyle:       "base",
 		NavActiveStyle: "base",
+		NavLayout:      "minimal",
+		IndexLayout:    "list",
+		ContentWidth:   "narrow",
 		Light: Palette{
 			Bg:             "#ffffff",
 			Text:           "#222222",
@@ -167,6 +179,9 @@ var presets = []Preset{
 		FontMono:       "IBM Plex Mono",
 		NavStyle:       "base",
 		NavActiveStyle: "base",
+		NavLayout:      "top",
+		IndexLayout:    "list",
+		ContentWidth:   "narrow",
 		Light: Palette{
 			Bg:             "#f9f5ec",
 			Text:           "#2c2418",
@@ -261,6 +276,9 @@ var presets = []Preset{
 		FontMono:       "Geist Mono",
 		NavStyle:       "glassy",
 		NavActiveStyle: "box",
+		NavLayout:      "top",
+		IndexLayout:    "cards",
+		ContentWidth:   "normal",
 		Light: Palette{
 			Bg:             "linear-gradient(180deg, #f8f7fc 0%, #f1eff9 100%)",
 			Text:           "#201d33",
@@ -310,16 +328,8 @@ var presets = []Preset{
 }
 
 .lp-index-item {
-  border: 1px solid var(--lp-border);
-  border-radius: var(--lp-radius-md);
-  padding: 0.9rem 1.1rem;
-  margin-bottom: 0.75rem;
   background: color-mix(in srgb, var(--lp-code-bg) 55%, transparent);
   transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
-}
-
-.lp-index-item:last-child {
-  border-bottom: 1px solid var(--lp-border);
 }
 
 .lp-index-item:hover {
@@ -364,6 +374,77 @@ var presets = []Preset{
   border-radius: var(--lp-radius-md);
   padding: 1.25rem;
   background: color-mix(in srgb, var(--lp-code-bg) 55%, transparent);
+}`,
+	},
+	{
+		Name:           "studio",
+		Description:    "A workspace feel: fixed sidebar navigation, wide content, cool charcoal with teal.",
+		FontHeading:    "Space Grotesk",
+		FontBody:       "IBM Plex Sans",
+		FontMono:       "IBM Plex Mono",
+		NavStyle:       "base",
+		NavActiveStyle: "base",
+		NavLayout:      "sidebar",
+		IndexLayout:    "list",
+		ContentWidth:   "wide",
+		Light: Palette{
+			Bg:             "#fafbfb",
+			Text:           "#1b2426",
+			TextMuted:      "#5d6b6e",
+			Border:         "#dde4e5",
+			CodeBg:         "#eef2f2",
+			Accent:         "#0f766e",
+			AccentContrast: "#ffffff",
+			GraphLink:      "#d0dadb",
+		},
+		Dark: Palette{
+			Bg:             "#12181a",
+			Text:           "#dbe4e5",
+			TextMuted:      "#8a9a9d",
+			Border:         "#283336",
+			CodeBg:         "#1b2426",
+			Accent:         "#4fd1c5",
+			AccentContrast: "#12181a",
+			GraphLink:      "#324043",
+		},
+		// The sidebar layout does the structural heavy lifting; this layer
+		// gives the rail app-like affordances — accent-barred active links,
+		// uppercase brand — and squares things off slightly.
+		ExtraCSS: `:root {
+  --lp-radius-lg: 8px;
+}
+
+.lp-nav-title {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: var(--lp-font-base);
+}
+
+.lp-layout-nav--sidebar .lp-nav-link {
+  display: block;
+  width: 100%;
+  padding: 0.3rem 0.75rem;
+  margin-left: -0.75rem;
+  border-left: 2px solid transparent;
+}
+
+.lp-layout-nav--sidebar .lp-nav-link:hover {
+  border-left-color: var(--lp-border);
+}
+
+.lp-layout-nav--sidebar .lp-nav-link.lp-nav-link--active {
+  color: var(--lp-accent);
+  border-left-color: var(--lp-accent);
+}
+
+.lp-content h2 {
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--lp-border);
+}
+
+.lp-index-date {
+  font-family: var(--lp-font-mono);
+  font-size: var(--lp-font-xs);
 }`,
 	},
 }

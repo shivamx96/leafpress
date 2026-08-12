@@ -119,6 +119,18 @@ type Theme struct {
 	Background     Background `json:"-"`              // Custom unmarshaling
 	NavStyle       string     `json:"navStyle"`       // "base", "sticky", or "glassy"
 	NavActiveStyle string     `json:"navActiveStyle"` // "base", "box", or "underlined"
+	Layout         Layout     `json:"layout,omitzero"`
+}
+
+// Layout selects the structural arrangement of the site chrome. Each field
+// is an enumerated variant implemented by the base stylesheet and emitted as
+// a body class; unset fields fill from the selected theme preset. navStyle's
+// sticky/glassy behaviors only apply when nav is "top" — a sidebar or
+// minimal nav ignores them.
+type Layout struct {
+	Nav   string `json:"nav,omitempty"`   // "top", "sidebar", or "minimal"
+	Index string `json:"index,omitempty"` // "list" or "cards"
+	Width string `json:"width,omitempty"` // "narrow", "normal", or "wide"
 }
 
 // FontFace declares one custom local font file under static/fonts/. Families
@@ -329,6 +341,7 @@ func Default() *Config {
 			Accent:         "#50ac00",
 			NavStyle:       "base",
 			NavActiveStyle: "base",
+			Layout:         Layout{Nav: "top", Index: "list", Width: "normal"},
 		},
 		Features: Features{
 			Graph:     true,
@@ -415,6 +428,15 @@ func Parse(data []byte) (*Config, error) {
 	if cfg.Theme.NavActiveStyle == "" {
 		cfg.Theme.NavActiveStyle = preset.NavActiveStyle
 	}
+	if cfg.Theme.Layout.Nav == "" {
+		cfg.Theme.Layout.Nav = preset.NavLayout
+	}
+	if cfg.Theme.Layout.Index == "" {
+		cfg.Theme.Layout.Index = preset.IndexLayout
+	}
+	if cfg.Theme.Layout.Width == "" {
+		cfg.Theme.Layout.Width = preset.ContentWidth
+	}
 	if cfg.Navigation.Mode == "" {
 		cfg.Navigation.Mode = NavAutomatic
 	}
@@ -495,6 +517,18 @@ func (c *Config) Validate() error {
 	validNavActiveStyles := map[string]bool{"base": true, "box": true, "underlined": true}
 	if !validNavActiveStyles[c.Theme.NavActiveStyle] {
 		return fmt.Errorf("navActiveStyle must be 'base', 'box', or 'underlined', got '%s'", c.Theme.NavActiveStyle)
+	}
+
+	// Validate layout variants. Empty values are allowed here because Parse
+	// fills them from the theme preset before validating.
+	if v := c.Theme.Layout.Nav; v != "" && v != "top" && v != "sidebar" && v != "minimal" {
+		return fmt.Errorf("theme.layout.nav must be 'top', 'sidebar', or 'minimal', got '%s'", v)
+	}
+	if v := c.Theme.Layout.Index; v != "" && v != "list" && v != "cards" {
+		return fmt.Errorf("theme.layout.index must be 'list' or 'cards', got '%s'", v)
+	}
+	if v := c.Theme.Layout.Width; v != "" && v != "narrow" && v != "normal" && v != "wide" {
+		return fmt.Errorf("theme.layout.width must be 'narrow', 'normal', or 'wide', got '%s'", v)
 	}
 
 	// Validate theme font family names. They are interpolated into the

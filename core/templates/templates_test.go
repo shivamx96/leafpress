@@ -547,6 +547,49 @@ func TestThemePresetTokensInHead(t *testing.T) {
 	}
 }
 
+// Layout variants land on the body as classes, and the sticky/glassy nav
+// behaviors are suppressed for non-top nav layouts.
+func TestLayoutClassesAndNavGating(t *testing.T) {
+	tmpl, err := New()
+	if err != nil {
+		t.Fatalf("New() error: %v", err)
+	}
+
+	render := func(themeCfg config.Theme) string {
+		var out bytes.Buffer
+		if err := tmpl.RenderIndex(&out, IndexData{
+			Site:  SiteData{Title: "Test Garden", Theme: themeCfg},
+			Title: "Home",
+		}); err != nil {
+			t.Fatalf("RenderIndex() error: %v", err)
+		}
+		return out.String()
+	}
+
+	// A zero Theme (no config.Parse) gets the classic arrangement.
+	html := render(config.Theme{})
+	if !strings.Contains(html, `class="lp-body lp-layout-nav--top lp-layout-index--list lp-layout-width--normal"`) {
+		t.Errorf("default body classes missing:\n%s", html[:400])
+	}
+
+	html = render(config.Theme{
+		NavStyle: "glassy",
+		Layout:   config.Layout{Nav: "sidebar", Index: "cards", Width: "wide"},
+	})
+	for _, want := range []string{"lp-layout-nav--sidebar", "lp-layout-index--cards", "lp-layout-width--wide"} {
+		if !strings.Contains(html, want) {
+			t.Errorf("body class %q missing", want)
+		}
+	}
+	if strings.Contains(html, `<div class="lp-nav-placeholder">`) || strings.Contains(html, "backdrop-filter: blur(16px)") {
+		t.Error("glassy nav must be suppressed when nav layout is not top")
+	}
+
+	if html := render(config.Theme{NavStyle: "glassy", Layout: config.Layout{Nav: "top"}}); !strings.Contains(html, `<div class="lp-nav-placeholder">`) {
+		t.Error("glassy nav should still work with the top layout")
+	}
+}
+
 func TestThemeBootstrapAndControlExposeSystemMode(t *testing.T) {
 	tmpl, err := New()
 	if err != nil {

@@ -211,6 +211,140 @@ html {
   }
 }
 
+/* Layout variant: content width (lp-layout-width--*)
+ * Body classes retune the shared width token; every component that sizes
+ * against --lp-max-width follows automatically. */
+.lp-layout-width--narrow {
+  --lp-max-width: 560px;
+}
+
+.lp-layout-width--wide {
+  --lp-max-width: 880px;
+}
+
+/* Layout variant: minimal nav (lp-layout-nav--minimal)
+ * No persistent bar: a quiet, centered masthead that scrolls away. */
+.lp-layout-nav--minimal .lp-nav {
+  border-bottom: none;
+  padding: 2.5rem 0 0;
+}
+
+@media (min-width: 769px) {
+  .lp-layout-nav--minimal .lp-nav {
+    min-height: 0;
+    padding: 2.5rem 0 0;
+  }
+
+  .lp-layout-nav--minimal .lp-nav-container {
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0 1rem;
+  }
+
+  .lp-layout-nav--minimal .lp-nav-links {
+    justify-content: center;
+  }
+}
+
+.lp-layout-nav--minimal .lp-nav-container {
+  align-items: center;
+}
+
+.lp-layout-nav--minimal .lp-nav-brand {
+  width: auto;
+  gap: 0.5rem;
+}
+
+.lp-layout-nav--minimal .lp-nav-title {
+  font-size: var(--lp-font-base);
+}
+
+/* Layout variant: sidebar nav (lp-layout-nav--sidebar)
+ * A fixed navigation rail on desktop; below 1024px the markup falls back to
+ * the standard top bar untouched. */
+@media (min-width: 1024px) {
+  .lp-layout-nav--sidebar {
+    display: grid;
+    grid-template-columns: 260px minmax(0, 1fr);
+    grid-template-rows: 1fr auto;
+  }
+
+  .lp-layout-nav--sidebar .lp-nav {
+    grid-row: 1 / -1;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    height: 100dvh;
+    overflow-y: auto;
+    min-height: 0;
+    padding: 2rem 0;
+    border-bottom: none;
+    border-right: 1px solid var(--lp-border);
+    align-items: flex-start;
+  }
+
+  .lp-layout-nav--sidebar .lp-nav-container {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2rem;
+    padding: 0 1.5rem;
+  }
+
+  .lp-layout-nav--sidebar .lp-nav-brand {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+
+  .lp-layout-nav--sidebar .lp-nav-links {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.6rem;
+    justify-content: flex-start;
+  }
+
+  .lp-layout-nav--sidebar .lp-main {
+    grid-column: 2;
+  }
+
+  .lp-layout-nav--sidebar .lp-footer {
+    grid-column: 2;
+  }
+}
+
+/* Layout variant: card-grid index (lp-layout-index--cards) */
+.lp-layout-index--cards .lp-index {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.lp-layout-index--cards .lp-index-item,
+.lp-layout-index--cards .lp-index-item:last-child {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+  border: 1px solid var(--lp-border);
+  border-radius: var(--lp-radius-md);
+  padding: 1rem 1.1rem;
+}
+
+.lp-layout-index--cards .lp-index-link {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  width: 100%;
+}
+
+.lp-layout-index--cards .lp-index-title {
+  white-space: normal;
+}
+
+.lp-layout-index--cards .lp-index-date {
+  margin-left: 0;
+}
+
 /* Main content */
 .lp-main {
   flex: 1;

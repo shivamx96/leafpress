@@ -183,6 +183,33 @@ func TestParse_ExplicitThemeFieldsBeatPreset(t *testing.T) {
 	}
 }
 
+// Layout variants fill from the preset and can be overridden one knob at a
+// time, like every other theme field.
+func TestParse_LayoutFromPresetAndOverride(t *testing.T) {
+	cfg, err := Parse([]byte(`{"theme": {"name": "studio"}}`))
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+	if l := cfg.Theme.Layout; l.Nav != "sidebar" || l.Index != "list" || l.Width != "wide" {
+		t.Errorf("studio layout not applied: %+v", l)
+	}
+
+	cfg, err = Parse([]byte(`{"theme": {"name": "studio", "layout": {"index": "cards"}}}`))
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+	if l := cfg.Theme.Layout; l.Nav != "sidebar" || l.Index != "cards" || l.Width != "wide" {
+		t.Errorf("explicit layout.index should win, preset should fill the rest: %+v", l)
+	}
+
+	if _, err := Parse([]byte(`{"theme": {"layout": {"nav": "floating"}}}`)); err == nil {
+		t.Error("invalid layout.nav should be rejected")
+	}
+	if _, err := Parse([]byte(`{"theme": {"layout": {"indexx": "cards"}}}`)); err == nil {
+		t.Error("unknown layout key should be rejected")
+	}
+}
+
 func TestParse_UnknownThemePresetRejected(t *testing.T) {
 	_, err := Parse([]byte(`{"theme": {"name": "neon"}}`))
 	if err == nil {

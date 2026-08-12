@@ -85,7 +85,7 @@ default site.
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `name` | `"default"` | Built-in theme preset: `"default"`, `"plain"`, `"paper"`, or `"modern"` — see [Theming](/guide/theming/). Supplies defaults for every option below; explicit options win |
+| `name` | `"default"` | Built-in theme preset: `"default"`, `"plain"`, `"paper"`, `"modern"`, or `"studio"` — see [Theming](/guide/theming/). Supplies defaults for every option below; explicit options win |
 | `fontHeading` | from preset | Heading font (bundled families are self-hosted) |
 | `fontBody` | from preset | Body font (bundled families are self-hosted) |
 | `fontMono` | from preset | Code font (bundled families are self-hosted) |
@@ -94,8 +94,11 @@ default site.
 | `accent` | from preset | Accent color for links and highlights (applies to light and dark mode) |
 | `background.light` | from preset | Light mode background (color or gradient) |
 | `background.dark` | from preset | Dark mode background (color or gradient) |
-| `navStyle` | from preset | `"base"`, `"sticky"`, or `"glassy"` |
+| `navStyle` | from preset | `"base"`, `"sticky"`, or `"glassy"` (applies to the `"top"` nav layout only) |
 | `navActiveStyle` | from preset | `"base"`, `"box"`, or `"underlined"` |
+| `layout.nav` | from preset | Navigation placement: `"top"`, `"sidebar"` (fixed rail on desktop), or `"minimal"` (quiet centered masthead) |
+| `layout.index` | from preset | Index pages: `"list"` or `"cards"` (responsive card grid) |
+| `layout.width` | from preset | Content column: `"narrow"`, `"normal"`, or `"wide"` |
 
 The `default` preset reproduces Leafpress's classic look — `"Bricolage
 Grotesque"` / `"Inter"` / `"JetBrains Mono"`, `#50ac00` accent, white/near-black

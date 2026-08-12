@@ -43,6 +43,8 @@ func init() {
 		"safeHTML":          func(s string) string { return s },
 		"safeCSS":           func(s string) string { return s },
 		"themePalettes":     themePalettes,
+		"layoutClasses":     layoutClasses,
+		"navLayout":         navLayout,
 		"fontURL":           fontURL,
 		"fontPreloads":      fontPreloads,
 		"remoteFontURL":     remoteFontURL,
@@ -150,6 +152,30 @@ func themePalettes(t config.Theme) palettePair {
 		pair.Dark.Bg = t.Background.Dark
 	}
 	return pair
+}
+
+// navLayout resolves the nav placement variant with a safe default, so
+// templates render sensibly even for a Theme that skipped config.Parse.
+func navLayout(t config.Theme) string {
+	if t.Layout.Nav == "" {
+		return "top"
+	}
+	return t.Layout.Nav
+}
+
+// layoutClasses returns the body classes that select the layout variants
+// implemented by the base stylesheet. Unset fields fall back to the classic
+// arrangement.
+func layoutClasses(t config.Theme) string {
+	index := t.Layout.Index
+	if index == "" {
+		index = "list"
+	}
+	width := t.Layout.Width
+	if width == "" {
+		width = "normal"
+	}
+	return fmt.Sprintf("lp-layout-nav--%s lp-layout-index--%s lp-layout-width--%s", navLayout(t), index, width)
 }
 
 // accentContrast picks a readable text color for accent-filled surfaces
@@ -697,7 +723,7 @@ const baseTemplate = `<!DOCTYPE html>
       --lp-max-width: 680px;
       --lp-nav-height: 60px;
     }
-    {{if eq .Site.Theme.NavStyle "sticky"}}
+    {{if eq (navLayout .Site.Theme) "top"}}{{if eq .Site.Theme.NavStyle "sticky"}}
     .lp-nav {
       position: sticky;
       top: 0;
@@ -712,7 +738,7 @@ const baseTemplate = `<!DOCTYPE html>
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
     }
-    {{end}}
+    {{end}}{{end}}
 
     [data-theme="dark"] {
       color-scheme: dark;
@@ -733,8 +759,8 @@ const baseTemplate = `<!DOCTYPE html>
   <link href="{{$remoteFontURL}}" rel="stylesheet">
   {{end}}{{if .Site.HeadExtra}}{{.Site.HeadExtra | safeHTML}}{{end}}
 </head>
-<body class="lp-body">
-  {{if eq .Site.Theme.NavStyle "glassy"}}<div class="lp-nav-placeholder"></div>{{end}}
+<body class="lp-body {{layoutClasses .Site.Theme}}">
+  {{if and (eq .Site.Theme.NavStyle "glassy") (eq (navLayout .Site.Theme) "top")}}<div class="lp-nav-placeholder"></div>{{end}}
   <nav class="lp-nav">
     <div class="lp-nav-container">
       <div class="lp-nav-brand">

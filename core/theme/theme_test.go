@@ -69,6 +69,15 @@ func TestPresetsAreWellFormed(t *testing.T) {
 		if !validNavActive[p.NavActiveStyle] {
 			t.Errorf("preset %s: invalid navActiveStyle %q", p.Name, p.NavActiveStyle)
 		}
+		if v := p.NavLayout; v != "top" && v != "sidebar" && v != "minimal" {
+			t.Errorf("preset %s: invalid NavLayout %q", p.Name, v)
+		}
+		if v := p.IndexLayout; v != "list" && v != "cards" {
+			t.Errorf("preset %s: invalid IndexLayout %q", p.Name, v)
+		}
+		if v := p.ContentWidth; v != "narrow" && v != "normal" && v != "wide" {
+			t.Errorf("preset %s: invalid ContentWidth %q", p.Name, v)
+		}
 		checkPalette(t, p.Name, "light", p.Light)
 		checkPalette(t, p.Name, "dark", p.Dark)
 		if strings.Contains(strings.ToLower(p.ExtraCSS), "</style") {

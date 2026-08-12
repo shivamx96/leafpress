@@ -30,15 +30,42 @@ look, restyling layout and components as well as the palette:
 
 | Name | Look |
 |------|------|
-| `default` | The classic Leafpress look: clean neutrals, fresh green accent |
-| `plain` | Text-first minimalism — square corners, underlined links, quiet type scale, no decoration |
-| `paper` | Editorial serif on warm cream — centered headers under a double rule, small-caps metadata, dotted wiki-links, fleuron section breaks |
-| `modern` | Contemporary and layered — glassy pill nav, hover-lifting index cards, pill tags, accent bar under titles, soft shadows on gradient backgrounds |
+| `default` | The classic Leafpress look: clean neutrals, fresh green accent, top nav, list index |
+| `plain` | Text-first minimalism — minimal centered masthead, narrow column, square corners, underlined links, quiet type scale |
+| `paper` | Editorial serif on warm cream — narrow measure, centered headers under a double rule, small-caps metadata, dotted wiki-links, fleuron section breaks |
+| `modern` | Contemporary and layered — glassy pill nav, card-grid indexes with hover lift, pill tags, accent bar under titles, soft shadows on gradient backgrounds |
+| `studio` | A workspace feel — fixed sidebar navigation with accent-barred active links, wide content column, cool charcoal and teal |
 
-Each theme sets the fonts, nav style, the full light *and* dark color
-palette (background, text, borders, code blocks, accent, graph colors), and
-its own structural CSS layer. Every preset supports the light/dark toggle
-out of the box.
+Each theme sets the fonts, the layout (navigation placement, index style,
+content width), the full light *and* dark color palette (background, text,
+borders, code blocks, accent, graph colors), and its own structural CSS
+layer. Every preset supports the light/dark toggle out of the box.
+
+## Layout
+
+Layout is its own axis, and any knob can be overridden independently of the
+theme:
+
+```json
+{
+  "theme": {
+    "name": "paper",
+    "layout": {
+      "nav": "sidebar",
+      "index": "cards",
+      "width": "wide"
+    }
+  }
+}
+```
+
+- `nav` — `"top"` (the classic bar), `"sidebar"` (a fixed navigation rail on
+  desktop that falls back to the top bar on smaller screens), or `"minimal"`
+  (a quiet centered masthead that scrolls away).
+- `index` — `"list"` or `"cards"` (a responsive card grid).
+- `width` — `"narrow"`, `"normal"`, or `"wide"` content column.
+
+`navStyle` (`"sticky"` / `"glassy"`) only applies when `nav` is `"top"`.
 
 Any explicit `theme` option beats the preset, so you can take a theme and
 keep your own accent:

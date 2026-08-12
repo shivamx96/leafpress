@@ -327,6 +327,15 @@ func TestThemePresetReflectedInOutput(t *testing.T) {
 	if paper := theme.ByName("paper"); paper.ExtraCSS != "" && !strings.Contains(paperOut.CSS, paper.ExtraCSS) {
 		t.Error("css output should carry the preset's extra CSS layer")
 	}
+
+	studioOut := runJSON(t, `{
+	  "render": {"slug": "g"},
+	  "config": {"theme": {"name": "studio"}},
+	  "content": {"pages": [{"slug": "p", "title": "P", "markdown": "hello"}]}
+	}`)
+	if html := pageHTML(t, studioOut, "p"); !strings.Contains(html, "lp-layout-nav--sidebar lp-layout-index--list lp-layout-width--wide") {
+		t.Error("studio preset should emit its layout classes on the body")
+	}
 }
 
 func TestSiteIdentityAndFooterAttribution(t *testing.T) {

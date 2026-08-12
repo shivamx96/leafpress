@@ -44,7 +44,12 @@ the historical `config.Default()` values.
     "fontMono": "JetBrains Mono",
     "accent": "#50ac00",
     "navStyle": "base",
-    "navActiveStyle": "base"
+    "navActiveStyle": "base",
+    "layout": {
+      "nav": "top",
+      "index": "list",
+      "width": "normal"
+    }
   },
   "features": {
     "graph": true,
@@ -80,6 +85,7 @@ the historical `config.Default()` values.
 | | `fontHeading` / `fontBody` / `fontMono` | from the preset (`default`: `"Bricolage Grotesque"` / `"Inter"` / `"JetBrains Mono"`) |
 | | `accent` | `""` (the preset's per-mode accents) |
 | | `navStyle` / `navActiveStyle` | from the preset (`default`: `"base"` / `"base"`) |
+| | `layout.nav` / `layout.index` / `layout.width` | from the preset (`default`: `"top"` / `"list"` / `"normal"`) |
 | | `background` | the preset's per-mode backgrounds |
 | `features` | `graph` `search` `toc` `backlinks` `wikilinks` `rss` | `true` |
 | `navigation` | `mode` | `"automatic"` |
@@ -100,14 +106,21 @@ owner escape hatch injected verbatim into `<head>` (see Trust boundary).
 
 ### `theme`
 
-Fonts, accent, background, nav styles, and custom `fonts[]` declarations, all
-validated for safe interpolation into the inline `<style>` block. `name`
-selects a built-in preset (see the `core/theme` package): the preset supplies
-defaults for the font and nav fields, the per-mode palette tokens emitted in
-each page head, and an optional extra CSS layer in the stylesheet. Explicit
-fields always override the preset, and an unknown name is rejected. Because
-preset resolution happens in shared Core code during `config.Parse`, the CLI
-and the renderer resolve identically.
+Fonts, accent, background, nav styles, layout variants, and custom `fonts[]`
+declarations, all validated for safe interpolation into the inline `<style>`
+block. `name` selects a built-in preset (see the `core/theme` package): the
+preset supplies defaults for the font, nav, and layout fields, the per-mode
+palette tokens emitted in each page head, and an optional extra CSS layer in
+the stylesheet. Explicit fields always override the preset, and an unknown
+name is rejected. Because preset resolution happens in shared Core code
+during `config.Parse`, the CLI and the renderer resolve identically.
+
+`layout` is an enumerated structural axis (`nav`: top/sidebar/minimal,
+`index`: list/cards, `width`: narrow/normal/wide). The shared templates stay
+identical across all values — variants are emitted as body classes
+(`lp-layout-nav--sidebar` …) implemented entirely by the shared stylesheet,
+so layout never forks the HTML contract. `navStyle` sticky/glassy behaviors
+apply only under the `top` nav layout.
 
 ### `features`
 
