@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/shivamx96/leafpress/core/assets"
+	"github.com/shivamx96/leafpress/core/themes"
 )
 
 // Background represents background configuration that can be a string or object
@@ -98,6 +99,7 @@ type NavItem struct {
 
 // Theme represents theme configuration
 type Theme struct {
+	Preset      string `json:"preset"`
 	FontHeading string `json:"fontHeading"`
 	FontBody    string `json:"fontBody"`
 	FontMono    string `json:"fontMono"`
@@ -308,6 +310,81 @@ func validateFontFace(f FontFace) error {
 	return nil
 }
 
+// defaultTheme converts one registry definition into the resolved public
+// configuration shape. Unknown names only occur during the Parse preflight;
+// start them from the default preset so the full validation pass can return a
+// useful theme.preset error after decoding the user's value.
+func defaultTheme(preset string) Theme {
+	definition, ok := themes.Lookup(preset)
+	if !ok {
+		definition, _ = themes.Lookup(themes.DefaultPreset)
+	}
+	defaults := definition.Defaults
+	return Theme{
+		Preset:         definition.Name,
+		FontHeading:    defaults.FontHeading,
+		FontBody:       defaults.FontBody,
+		FontMono:       defaults.FontMono,
+		Accent:         defaults.Accent,
+		Background:     Background{Light: defaults.BackgroundLight, Dark: defaults.BackgroundDark},
+		NavStyle:       defaults.NavStyle,
+		NavActiveStyle: defaults.NavActiveStyle,
+	}
+}
+
+// requestedThemePreset performs a permissive preflight over only the preset
+// name. The strict decode below remains authoritative for malformed JSON and
+// unknown fields. This first pass exists so omitted theme fields can inherit
+// the selected preset's defaults rather than always inheriting classic.
+func requestedThemePreset(data []byte) string {
+	var root struct {
+		Theme json.RawMessage `json:"theme"`
+	}
+	if err := json.Unmarshal(data, &root); err != nil || len(root.Theme) == 0 {
+		return themes.DefaultPreset
+	}
+	var probe struct {
+		Preset string `json:"preset"`
+	}
+	if err := json.Unmarshal(root.Theme, &probe); err != nil || probe.Preset == "" {
+		return themes.DefaultPreset
+	}
+	if _, ok := themes.Lookup(probe.Preset); !ok {
+		return themes.DefaultPreset
+	}
+	return probe.Preset
+}
+
+func applyThemeDefaults(theme *Theme, defaults Theme) {
+	if theme.Preset == "" {
+		theme.Preset = defaults.Preset
+	}
+	if theme.FontHeading == "" {
+		theme.FontHeading = defaults.FontHeading
+	}
+	if theme.FontBody == "" {
+		theme.FontBody = defaults.FontBody
+	}
+	if theme.FontMono == "" {
+		theme.FontMono = defaults.FontMono
+	}
+	if theme.Accent == "" {
+		theme.Accent = defaults.Accent
+	}
+	if theme.Background.Light == "" {
+		theme.Background.Light = defaults.Background.Light
+	}
+	if theme.Background.Dark == "" {
+		theme.Background.Dark = defaults.Background.Dark
+	}
+	if theme.NavStyle == "" {
+		theme.NavStyle = defaults.NavStyle
+	}
+	if theme.NavActiveStyle == "" {
+		theme.NavActiveStyle = defaults.NavActiveStyle
+	}
+}
+
 // Default returns a Config with default values. Defaults are identical for the
 // CLI and the renderer so an empty config renders the same site either way.
 func Default() *Config {
@@ -316,14 +393,7 @@ func Default() *Config {
 		Site: Site{
 			Title: "My Garden",
 		},
-		Theme: Theme{
-			FontHeading:    "Bricolage Grotesque",
-			FontBody:       "Inter",
-			FontMono:       "JetBrains Mono",
-			Accent:         "#50ac00",
-			NavStyle:       "base",
-			NavActiveStyle: "base",
-		},
+		Theme: defaultTheme(themes.DefaultPreset),
 		Features: Features{
 			Graph:     true,
 			Search:    true,
@@ -361,6 +431,8 @@ func Load(path string) (*Config, error) {
 // such as leafpress-render, preventing the JSON bridge and CLI from drifting.
 func Parse(data []byte) (*Config, error) {
 	cfg := Default()
+	themeDefaults := defaultTheme(requestedThemePreset(data))
+	cfg.Theme = themeDefaults
 
 	// Reject unknown/misplaced keys (typos, wrong nesting) rather than
 	// silently ignoring them. This applies to every nested section; Theme has
@@ -381,24 +453,7 @@ func Parse(data []byte) (*Config, error) {
 	if cfg.Build.Port == 0 {
 		cfg.Build.Port = 3000
 	}
-	if cfg.Theme.FontHeading == "" {
-		cfg.Theme.FontHeading = "Bricolage Grotesque"
-	}
-	if cfg.Theme.FontBody == "" {
-		cfg.Theme.FontBody = "Inter"
-	}
-	if cfg.Theme.FontMono == "" {
-		cfg.Theme.FontMono = "JetBrains Mono"
-	}
-	if cfg.Theme.Accent == "" {
-		cfg.Theme.Accent = "#50ac00"
-	}
-	if cfg.Theme.NavStyle == "" {
-		cfg.Theme.NavStyle = "base"
-	}
-	if cfg.Theme.NavActiveStyle == "" {
-		cfg.Theme.NavActiveStyle = "base"
-	}
+	applyThemeDefaults(&cfg.Theme, themeDefaults)
 	if cfg.Navigation.Mode == "" {
 		cfg.Navigation.Mode = NavAutomatic
 	}
@@ -443,6 +498,14 @@ func (c *Config) Validate() error {
 
 	if err := validateOutputDir(c.Build.OutputDir); err != nil {
 		return err
+	}
+
+	if _, ok := themes.Lookup(c.Theme.Preset); !ok {
+		quoted := make([]string, 0, len(themes.Names()))
+		for _, name := range themes.Names() {
+			quoted = append(quoted, strconv.Quote(name))
+		}
+		return fmt.Errorf("theme.preset must be one of %s, got %q", strings.Join(quoted, ", "), c.Theme.Preset)
 	}
 
 	// Validate accent color format (hex color)

@@ -27,3 +27,15 @@ func TestDefaultCSSComposesBaseAndClassicTheme(t *testing.T) {
 		}
 	}
 }
+
+func TestCSSForPresetSelectsClassicAndDefaultsDefensively(t *testing.T) {
+	if got := CSSForPreset("classic"); got != DefaultCSS {
+		t.Error("classic preset does not reproduce DefaultCSS")
+	}
+	if got := CSSForPreset(""); got != DefaultCSS {
+		t.Error("empty preset does not select the default stylesheet")
+	}
+	if got := CSSForPreset("unknown"); got != DefaultCSS {
+		t.Error("unknown preset does not fall back defensively")
+	}
+}
