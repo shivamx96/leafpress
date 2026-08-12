@@ -5,6 +5,26 @@ date: 2025-12-21
 
 Customize your site's appearance with fonts, colors, and custom CSS.
 
+## Bundled Themes
+
+Select a bundled visual theme with `theme.preset`:
+
+```json
+{
+  "theme": {
+    "preset": "classic"
+  }
+}
+```
+
+`classic` is the current and default preset. It preserves Leafpress's existing
+appearance. Additional presets will ship as complete component themes rather
+than color-only variations.
+
+Each preset supplies defaults for fonts, accent, backgrounds, and navigation.
+Explicit values in `leafpress.json` override those preset defaults, and a
+project's `style.css` remains the final, authoritative layer.
+
 ## Quick Theming
 
 Set options in `leafpress.json`:
@@ -12,6 +32,7 @@ Set options in `leafpress.json`:
 ```json
 {
   "theme": {
+    "preset": "classic",
     "fontHeading": "Bricolage Grotesque",
     "fontBody": "Inter",
     "accent": "#e11d48"
@@ -173,7 +194,10 @@ Solid colors or gradients:
 
 ## Custom CSS
 
-For deeper customization, create `style.css` in your site root. Leafpress **appends** it after the default stylesheet (and any self-hosted `@font-face` rules), so you can override variables and classes without rewriting the base theme.
+For deeper customization, create `style.css` in your site root. Leafpress
+composes the shared base, selected bundled theme, self-hosted `@font-face`
+rules, and finally your custom stylesheet. Because `style.css` is last, it can
+override variables and classes without rewriting the selected theme.
 
 ### Starting Point
 

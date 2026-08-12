@@ -5,6 +5,9 @@
     "author": "Leafpress",
     "baseURL": "https://example.com"
   },
+  "theme": {
+    "preset": "classic"
+  },
   "features": {
     "graph": true,
     "search": true,

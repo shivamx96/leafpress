@@ -38,6 +38,7 @@ the historical `config.Default()` values.
     "headExtra": ""
   },
   "theme": {
+    "preset": "classic",
     "fontHeading": "Bricolage Grotesque",
     "fontBody": "Inter",
     "fontMono": "JetBrains Mono",
@@ -75,7 +76,8 @@ the historical `config.Default()` values.
 | --- | --- | --- |
 | `site` | `title` | `"My Garden"` |
 | | `description`, `author`, `baseURL`, `image`, `headExtra` | `""` |
-| `theme` | `fontHeading` / `fontBody` / `fontMono` | `"Bricolage Grotesque"` / `"Inter"` / `"JetBrains Mono"` |
+| `theme` | `preset` | `"classic"` |
+| | `fontHeading` / `fontBody` / `fontMono` | `"Bricolage Grotesque"` / `"Inter"` / `"JetBrains Mono"` |
 | | `accent` | `"#50ac00"` |
 | | `navStyle` / `navActiveStyle` | `"base"` / `"base"` |
 | | `background` | light/dark theme defaults |
@@ -98,9 +100,12 @@ owner escape hatch injected verbatim into `<head>` (see Trust boundary).
 
 ### `theme`
 
-Unchanged from prior versions: fonts, accent, background, nav styles, and
-custom `fonts[]` declarations. Validated for safe interpolation into the inline
-`<style>` block.
+`preset` selects a bundled visual theme and defaults to `"classic"`. Unknown
+names are rejected with the available preset list. The selected preset supplies
+the initial fonts, accent, backgrounds, and navigation defaults; explicitly
+provided config fields override them. Custom `fonts[]` declarations and all
+values interpolated into the inline `<style>` block retain their existing
+validation.
 
 ### `features`
 
@@ -172,8 +177,8 @@ The full object read from stdin:
   build reads:
   - `pages` (default `[]`) — the published pages (schema below).
   - `styleCSS` (default `""`) — the in-memory `style.css`, appended after the
-    embedded stylesheet using the same CLI composition. Trusted owner
-    configuration.
+    shared base, selected bundled theme, and self-hosted fonts using the same
+    CLI composition. Trusted owner configuration.
   - `assets` (default `[]`) — declares the user assets the caller will serve
     alongside the site (custom fonts under `static/fonts/` today). Each entry
     carries `logicalPath`, `contentType`, `sha256`, `size`, and an optional

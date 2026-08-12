@@ -31,7 +31,7 @@ removed, or altered. There is no manual registry version to bump.
 - [ ] Verify `@font-face` URLs stay site-relative (`static/leafpress/fonts/…`)
       and that CLI materialization + renderer manifest stay in lockstep
       (`RequiredBuiltins` / `RequiredBuiltinsFor`).
-- [ ] Smoke light + dark pages with the default theme.
+- [ ] Smoke light + dark pages for every bundled theme preset.
 
 ### Favicons
 
