@@ -170,6 +170,24 @@ func TestParse_ThemePresetAndOverrides(t *testing.T) {
 	}
 }
 
+func TestParse_AuroraPresetDefaultsAndOverrides(t *testing.T) {
+	cfg, err := Parse([]byte(`{"theme":{"preset":"aurora","accent":"#123456"}}`))
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+	if cfg.Theme.Preset != themes.Aurora || cfg.Theme.Accent != "#123456" {
+		t.Fatalf("resolved theme = %+v", cfg.Theme)
+	}
+	if cfg.Theme.FontHeading != "Space Grotesk" || cfg.Theme.FontBody != "Inter" ||
+		cfg.Theme.NavStyle != "glassy" || cfg.Theme.NavActiveStyle != "box" {
+		t.Fatalf("aurora defaults were not applied: %+v", cfg.Theme)
+	}
+	if !strings.HasPrefix(cfg.Theme.Background.Light, "linear-gradient(") ||
+		!strings.HasPrefix(cfg.Theme.Background.Dark, "linear-gradient(") {
+		t.Fatalf("aurora backgrounds were not applied: %+v", cfg.Theme.Background)
+	}
+}
+
 func TestApplyThemeDefaultsPreservesExplicitValues(t *testing.T) {
 	defaults := Theme{
 		Preset:         "paper",
@@ -201,11 +219,11 @@ func TestApplyThemeDefaultsPreservesExplicitValues(t *testing.T) {
 }
 
 func TestParse_RejectsUnknownThemePreset(t *testing.T) {
-	_, err := Parse([]byte(`{"theme":{"preset":"aurora"}}`))
+	_, err := Parse([]byte(`{"theme":{"preset":"nebula"}}`))
 	if err == nil {
 		t.Fatal("unknown theme preset should be rejected")
 	}
-	if !strings.Contains(err.Error(), `theme.preset must be one of "classic", got "aurora"`) {
+	if !strings.Contains(err.Error(), `theme.preset must be one of "aurora", "classic", got "nebula"`) {
 		t.Fatalf("unexpected preset error: %v", err)
 	}
 }

@@ -9,6 +9,8 @@ import (
 )
 
 const (
+	// Aurora is Leafpress's expressive, layered appearance.
+	Aurora = "aurora"
 	// Classic is the original Leafpress appearance.
 	Classic = "classic"
 	// DefaultPreset is selected when theme.preset is omitted.
@@ -44,7 +46,29 @@ var BaseCSS string
 //go:embed styles/classic.css
 var classicCSS string
 
+// Aurora builds on the complete component coverage of the original theme and
+// then replaces its composition, surfaces, and interaction treatments. Keeping
+// the baseline in the bundle means new shared components remain usable while
+// Aurora can deliberately diverge wherever its visual language calls for it.
+//
+//go:embed styles/aurora.css
+var auroraCSS string
+
 var registry = map[string]Definition{
+	Aurora: {
+		Name: Aurora,
+		CSS:  classicCSS + "\n" + auroraCSS,
+		Defaults: Defaults{
+			FontHeading:     "Space Grotesk",
+			FontBody:        "Inter",
+			FontMono:        "JetBrains Mono",
+			Accent:          "#16813d",
+			BackgroundLight: "linear-gradient(135deg, #dcfce7 0%, #f0fdf4 34%, #e0f2fe 72%, #ecfeff 100%)",
+			BackgroundDark:  "linear-gradient(135deg, #10261d 0%, #101d23 52%, #10243a 100%)",
+			NavStyle:        "glassy",
+			NavActiveStyle:  "box",
+		},
+	},
 	Classic: {
 		Name: Classic,
 		CSS:  classicCSS,

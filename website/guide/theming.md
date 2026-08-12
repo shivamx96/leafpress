@@ -12,14 +12,24 @@ Select a bundled visual theme with `theme.preset`:
 ```json
 {
   "theme": {
-    "preset": "classic"
+    "preset": "aurora"
   }
 }
 ```
 
-`classic` is the current and default preset. It preserves Leafpress's existing
-appearance. Additional presets will ship as complete component themes rather
-than color-only variations.
+Leafpress ships two presets:
+
+- `classic` is the default and preserves Leafpress's original, focused reading
+  experience.
+- `aurora` is an expressive composition with a gradient canvas, floating glass
+  navigation, layered reading surfaces, card-based indexes and backlinks, and
+  elevated search and graph panels. It includes coordinated light and dark
+  appearances.
+
+Presets are complete component themes rather than color-only variations.
+They share Leafpress's semantic type scale, so switching presets preserves
+heading hierarchy, body size, and component text sizing. Presets express their
+typographic identity through font family, weight, tracking, and composition.
 
 Each preset supplies defaults for fonts, accent, backgrounds, and navigation.
 Explicit values in `leafpress.json` override those preset defaults, and a
@@ -32,8 +42,8 @@ Set options in `leafpress.json`:
 ```json
 {
   "theme": {
-    "preset": "classic",
-    "fontHeading": "Bricolage Grotesque",
+    "preset": "aurora",
+    "fontHeading": "Space Grotesk",
     "fontBody": "Inter",
     "accent": "#e11d48"
   }

@@ -100,12 +100,18 @@ owner escape hatch injected verbatim into `<head>` (see Trust boundary).
 
 ### `theme`
 
-`preset` selects a bundled visual theme and defaults to `"classic"`. Unknown
-names are rejected with the available preset list. The selected preset supplies
+`preset` selects a bundled visual theme (`"classic"` or `"aurora"`) and
+defaults to `"classic"`. Unknown names are rejected with the available preset
+list. The selected preset supplies
 the initial fonts, accent, backgrounds, and navigation defaults; explicitly
 provided config fields override them. Custom `fonts[]` declarations and all
 values interpolated into the inline `<style>` block retain their existing
 validation.
+
+The shared base stylesheet owns the semantic type scale for page titles,
+article headings, section headings, body copy, and component text. Presets may
+change typefaces, weights, tracking, color, and composition, but should not
+change those sizes or invert the hierarchy between heading levels.
 
 ### `features`
 
