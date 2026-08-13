@@ -564,9 +564,7 @@ html {
 }
 
 .lp-backlinks-title::before {
-  content: "REFS::";
-  margin-right: 0.45rem;
-  color: var(--lp-terminal-muted);
+  content: none;
 }
 
 .lp-backlinks-list {
@@ -732,6 +730,54 @@ html {
   line-height: 1.6;
 }
 
+/* Classic's bright semantic colors are too light for compact terminal labels. */
+.lp-callout-note,
+.lp-callout-info,
+.lp-callout-todo {
+  --lp-callout-title: #1d5fa7;
+}
+
+.lp-callout-tip,
+.lp-callout-hint,
+.lp-callout-success,
+.lp-callout-check,
+.lp-callout-done {
+  --lp-callout-title: #08734f;
+}
+
+.lp-callout-warning,
+.lp-callout-caution,
+.lp-callout-question,
+.lp-callout-faq {
+  --lp-callout-title: #8a4b00;
+}
+
+.lp-callout-danger,
+.lp-callout-error,
+.lp-callout-fail,
+.lp-callout-failure,
+.lp-callout-bug {
+  --lp-callout-title: #b32632;
+}
+
+.lp-callout-important {
+  --lp-callout-title: #7740a8;
+}
+
+.lp-callout-quote {
+  --lp-callout-title: #4f5f57;
+}
+
+.lp-callout-example {
+  --lp-callout-title: #6741a5;
+}
+
+.lp-callout-abstract,
+.lp-callout-summary,
+.lp-callout-tldr {
+  --lp-callout-title: #087287;
+}
+
 /* Command palette and graph inspector */
 .lp-search-backdrop,
 .lp-graph-backdrop {
@@ -876,10 +922,12 @@ html {
 .lp-not-found-title {
   color: var(--lp-terminal-red);
   font-family: var(--lp-font-mono);
+  font-size: var(--lp-font-3xl);
+  line-height: 1.2;
 }
 
 .lp-not-found-title::before {
-  content: "ERR 404: ";
+  content: "ERR: ";
 }
 
 .lp-not-found-link {
@@ -989,6 +1037,10 @@ html {
     box-shadow: 4px 4px 0 color-mix(in srgb, #000000 30%, transparent);
   }
 
+  .lp-graph-panel {
+    height: min(72dvh, 34rem);
+  }
+
   .lp-footer {
     gap: 0.2rem;
     padding: 0.55rem 0.65rem;
@@ -1004,4 +1056,14 @@ html {
   .lp-nav.lp-nav--pill {
     animation: none;
   }
+
+  .lp-search-panel,
+  .lp-graph-panel {
+    transition: none;
+  }
+}
+
+.lp-body :where(a, button, input):focus-visible {
+  outline: 2px solid var(--lp-terminal-signal);
+  outline-offset: 3px;
 }
