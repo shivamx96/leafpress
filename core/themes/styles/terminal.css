@@ -945,7 +945,8 @@ html {
     white-space: nowrap;
   }
 
-  .lp-nav-link::before {
+  .lp-nav-link::before,
+  .lp-nav-link::after {
     content: none !important;
   }
 
