@@ -112,7 +112,8 @@ func TestThemeGardenFixtureBuildsThemeSurfaces(t *testing.T) {
 	}
 
 	css := readThemeFixtureFile(t, siteDir, "style.css")
-	assertThemeFixtureContains(t, "default stylesheet", css, "/* leafpress Default Styles */", "/* Self-hosted fonts */")
+	assertThemeFixtureContains(t, "default stylesheet", css,
+		"/* leafpress Base Styles */", "/* leafpress Classic Theme */", "/* Self-hosted fonts */")
 	if strings.Contains(css, "/* User Styles */") {
 		t.Error("theme garden must exercise pristine theme output without user style.css")
 	}

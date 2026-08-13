@@ -141,10 +141,14 @@ func TestRSSOrderingAndTruncationAreDeterministicAndUTF8Safe(t *testing.T) {
 }
 
 func TestStylesMatchesCLIComposition(t *testing.T) {
-	if got := Styles("", config.Default().Theme); !strings.HasPrefix(got, templates.DefaultCSS) || !strings.Contains(got, "@font-face") {
-		t.Error("empty user CSS should return the embedded stylesheet exactly")
+	got := Styles("", config.Default().Theme)
+	baseAt := strings.Index(got, "/* leafpress Base Styles */")
+	classicAt := strings.Index(got, "/* leafpress Classic Theme */")
+	fontsAt := strings.Index(got, "/* Self-hosted fonts */")
+	if baseAt != 0 || classicAt <= baseAt || fontsAt <= classicAt {
+		t.Errorf("stylesheet order = base:%d classic:%d fonts:%d", baseAt, classicAt, fontsAt)
 	}
-	got := Styles("body { outline: none; }", config.Default().Theme)
+	got = Styles("body { outline: none; }", config.Default().Theme)
 	if !strings.HasSuffix(got, "\n\n/* User Styles */\nbody { outline: none; }") {
 		t.Error("user CSS should use the CLI composition marker and ordering")
 	}
