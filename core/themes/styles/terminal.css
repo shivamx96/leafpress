@@ -215,37 +215,6 @@ html {
   opacity: 1;
 }
 
-.lp-nav-actions svg,
-html .lp-nav-actions .lp-theme-icon {
-  display: none;
-}
-
-.lp-rss-link::before {
-  content: "RSS";
-}
-
-.lp-graph-toggle::before {
-  content: "MAP";
-}
-
-.lp-search-toggle::before {
-  content: "/";
-}
-
-.lp-theme-toggle::before {
-  content: "◐";
-}
-
-.lp-rss-link::before,
-.lp-graph-toggle::before,
-.lp-search-toggle::before,
-.lp-theme-toggle::before {
-  font-family: var(--lp-font-mono);
-  font-size: var(--lp-font-xs);
-  font-weight: 700;
-  line-height: 1;
-}
-
 /* Terminal window */
 .lp-main {
   max-width: var(--lp-max-width);
@@ -269,7 +238,7 @@ html .lp-nav-actions .lp-theme-icon {
 
 .lp-article::before,
 .lp-section::before {
-  content: "leafpress@local:~/garden/notes  [view]";
+  content: "~/garden/notes";
   display: block;
   margin: -2.6rem -3rem 2rem;
   padding: 0.35rem 0.75rem;
@@ -281,7 +250,7 @@ html .lp-nav-actions .lp-theme-icon {
 }
 
 .lp-section::before {
-  content: "leafpress@local:~/garden  [index]";
+  content: "~/garden";
 }
 
 .lp-toc {
@@ -296,7 +265,7 @@ html .lp-nav-actions .lp-theme-icon {
 }
 
 .lp-toc-nav::before {
-  content: "tree ./document";
+  content: "contents";
   display: block;
   margin: -0.75rem -0.75rem 0.65rem;
   padding: 0.3rem 0.55rem;
@@ -350,34 +319,15 @@ html .lp-nav-actions .lp-theme-icon {
 }
 
 .lp-title::before {
-  content: "$ view ";
+  content: "$ ";
   color: var(--lp-terminal-signal);
   font-weight: 500;
-}
-
-.lp-title::after {
-  content: "_";
-  margin-left: 0.2em;
-  color: var(--lp-terminal-signal);
-  font-weight: 500;
-  animation: terminal-cursor 1.15s steps(1, end) infinite;
 }
 
 .lp-section-title::before {
-  content: "$ ls ";
+  content: "$ ";
   color: var(--lp-terminal-signal);
   font-weight: 500;
-}
-
-@keyframes terminal-cursor {
-  0%,
-  48% {
-    opacity: 0.85;
-  }
-  49%,
-  100% {
-    opacity: 0.18;
-  }
 }
 
 .lp-section-title {
@@ -387,12 +337,6 @@ html .lp-nav-actions .lp-theme-icon {
 .lp-meta {
   color: var(--lp-terminal-muted);
   font-family: var(--lp-font-mono);
-}
-
-.lp-meta::before {
-  content: "stdout:";
-  margin-right: 0.35rem;
-  color: var(--lp-terminal-cyan);
 }
 
 .lp-reading-time + .lp-date-info::before {
@@ -450,37 +394,6 @@ html .lp-nav-actions .lp-theme-icon {
   font-family: var(--lp-font-mono);
   font-weight: 650;
   letter-spacing: -0.035em;
-}
-
-.lp-content h1::before,
-.lp-section-intro h1::before {
-  content: ":: ";
-  color: var(--lp-terminal-signal);
-}
-
-.lp-content h2::before,
-.lp-section-intro h2::before {
-  content: "├─ ";
-  color: var(--lp-terminal-cyan);
-}
-
-.lp-content h3::before,
-.lp-section-intro h3::before {
-  content: "└─ ";
-  color: var(--lp-terminal-amber);
-}
-
-.lp-content h1::before,
-.lp-content h2::before,
-.lp-content h3::before,
-.lp-section-intro h1::before,
-.lp-section-intro h2::before,
-.lp-section-intro h3::before {
-  font-size: 0.72em;
-  font-weight: 500;
-  letter-spacing: 0;
-  opacity: 0.82;
-  vertical-align: 0.08em;
 }
 
 .lp-heading-anchor {
@@ -553,20 +466,8 @@ html .lp-nav-actions .lp-theme-icon {
   box-shadow: 4px 4px 0 var(--lp-terminal-shadow);
 }
 
-.lp-content pre::before {
-  content: "leafpress@local:~$";
-  display: block;
-  padding: 0.35rem 0.7rem;
-  border-bottom: 1px solid var(--lp-terminal-rule);
-  background: var(--lp-terminal-panel);
-  color: var(--lp-terminal-signal);
-  font-family: var(--lp-font-mono);
-  font-size: var(--lp-font-xs);
-}
-
 .lp-content pre code {
   display: block;
-  padding-top: 0.4rem;
 }
 
 .lp-copy-button {
@@ -692,11 +593,6 @@ html .lp-nav-actions .lp-theme-icon {
   font-family: var(--lp-font-mono);
 }
 
-.lp-section-count::before {
-  content: "total ";
-  color: var(--lp-terminal-rule-strong);
-}
-
 .lp-index {
   border-top: 1px solid var(--lp-terminal-rule-strong);
 }
@@ -704,17 +600,9 @@ html .lp-nav-actions .lp-theme-icon {
 .lp-index-item {
   position: relative;
   gap: 0.75rem;
-  padding: 0.7rem 0.65rem 0.7rem 6.4rem;
+  padding: 0.7rem 0.65rem;
   border-bottom: 1px solid var(--lp-terminal-rule);
   background: transparent;
-}
-
-.lp-index-item::before {
-  content: "-rw-r--r--";
-  position: absolute;
-  left: 0.65rem;
-  color: var(--lp-terminal-muted);
-  font-size: var(--lp-font-xs);
 }
 
 .lp-index-item:hover {
@@ -894,7 +782,7 @@ html .lp-nav-actions .lp-theme-icon {
 }
 
 .lp-search-header::before {
-  content: "$ rg";
+  content: "$";
   color: var(--lp-terminal-signal);
   font-family: var(--lp-font-mono);
   font-size: var(--lp-font-sm);
@@ -973,7 +861,7 @@ html .lp-nav-actions .lp-theme-icon {
 }
 
 .lp-graph-panel::before {
-  content: "leafpress@local:~$ graph --current";
+  content: "graph";
   flex: 0 0 auto;
   padding: 0.55rem 3rem 0.55rem 0.75rem;
   border-bottom: 1px solid var(--lp-terminal-rule);
@@ -1064,12 +952,6 @@ html .lp-nav-actions .lp-theme-icon {
   text-align: left;
 }
 
-.lp-footer::before {
-  content: "STATUS: ONLINE";
-  margin-right: 0.65rem;
-  color: var(--lp-terminal-signal);
-}
-
 .lp-footer a {
   color: var(--lp-terminal-ink);
   text-decoration: underline;
@@ -1127,25 +1009,8 @@ html .lp-nav-actions .lp-theme-icon {
     margin: -2.1rem -1rem 1.5rem;
   }
 
-  .lp-article::before {
-    content: "~/garden/notes  [view]";
-  }
-
-  .lp-section::before {
-    content: "~/garden  [index]";
-  }
-
-  .lp-title::before {
-    content: "$ ";
-  }
-
   .lp-index-item {
     align-items: flex-start;
-    padding-left: 0.65rem;
-  }
-
-  .lp-index-item::before {
-    content: none;
   }
 
   .lp-content table {
@@ -1169,10 +1034,6 @@ html .lp-nav-actions .lp-theme-icon {
     padding: 0.55rem 0.65rem;
   }
 
-  .lp-footer::before {
-    content: "ONLINE";
-    margin-right: 0.25rem;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1183,11 +1044,6 @@ html .lp-nav-actions .lp-theme-icon {
   .lp-search-panel,
   .lp-graph-panel {
     transition: none;
-  }
-
-  .lp-title::after {
-    animation: none;
-    opacity: 0.5;
   }
 }
 
