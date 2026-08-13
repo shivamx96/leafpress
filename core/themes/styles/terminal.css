@@ -945,6 +945,10 @@ html {
     white-space: nowrap;
   }
 
+  .lp-nav-link::before {
+    content: none !important;
+  }
+
   .lp-main {
     padding: 1rem 0.65rem 2rem;
   }
