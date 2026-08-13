@@ -10,8 +10,8 @@ func TestRegistryContainsBundledThemesAndClassicDefault(t *testing.T) {
 	if DefaultPreset != Classic {
 		t.Fatalf("default preset = %q, want %q", DefaultPreset, Classic)
 	}
-	if got := Names(); !reflect.DeepEqual(got, []string{Aurora, Classic, Paper}) {
-		t.Fatalf("theme names = %v, want [%s %s %s]", got, Aurora, Classic, Paper)
+	if got := Names(); !reflect.DeepEqual(got, []string{Aurora, Classic, Paper, Terminal}) {
+		t.Fatalf("theme names = %v, want [%s %s %s %s]", got, Aurora, Classic, Paper, Terminal)
 	}
 	definition, ok := Lookup(Classic)
 	if !ok {
@@ -57,6 +57,24 @@ func TestRegistryContainsBundledThemesAndClassicDefault(t *testing.T) {
 		paper.Defaults.BackgroundLight != "#faf8f3" ||
 		paper.Defaults.BackgroundDark != "#191714" {
 		t.Fatalf("paper defaults are incomplete: %+v", paper.Defaults)
+	}
+
+	terminal, ok := Lookup(Terminal)
+	if !ok {
+		t.Fatal("terminal theme is not registered")
+	}
+	if !strings.Contains(terminal.CSS, "leafpress Terminal Theme") {
+		t.Fatal("terminal stylesheet is missing its visual layer")
+	}
+	if terminal.Defaults.FontHeading != "IBM Plex Mono" ||
+		terminal.Defaults.FontBody != "IBM Plex Mono" ||
+		terminal.Defaults.FontMono != "IBM Plex Mono" ||
+		terminal.Defaults.Accent != "#087f5b" ||
+		terminal.Defaults.NavStyle != "sticky" ||
+		terminal.Defaults.NavActiveStyle != "base" ||
+		terminal.Defaults.BackgroundLight != "#f2f5ef" ||
+		terminal.Defaults.BackgroundDark != "#0b100e" {
+		t.Fatalf("terminal defaults are incomplete: %+v", terminal.Defaults)
 	}
 }
 

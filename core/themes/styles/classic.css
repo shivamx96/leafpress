@@ -431,6 +431,20 @@ html {
   text-decoration: underline;
 }
 
+.lp-content .footnote-ref {
+  padding: 0 0.14em;
+  border-radius: var(--lp-radius-sm);
+  background: color-mix(in srgb, var(--lp-accent) 10%, transparent);
+}
+
+.lp-content .footnotes {
+  color: var(--lp-text-muted);
+}
+
+.lp-content .footnotes hr {
+  border-color: var(--lp-border);
+}
+
 .lp-content ul,
 .lp-content ol {
   margin-bottom: 1rem;

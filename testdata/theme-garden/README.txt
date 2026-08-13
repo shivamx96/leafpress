@@ -6,7 +6,7 @@ themes. It deliberately exercises the major visual surfaces in one small site:
 
 - root, explicit section, and generated section indexes
 - articles with metadata, tags, growth states, and a table of contents
-- prose, tables, task lists, blockquotes, code, media, and Mermaid diagrams
+- prose, tables, task lists, blockquotes, code, footnotes, media, and Mermaid diagrams
 - every canonical callout type
 - resolved wikilinks, backlinks, search, and a non-trivial knowledge graph
 

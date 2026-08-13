@@ -97,3 +97,24 @@ func TestCSSForPresetSelectsPaperVisualLayer(t *testing.T) {
 		}
 	}
 }
+
+func TestCSSForPresetSelectsTerminalVisualLayer(t *testing.T) {
+	got := CSSForPreset("terminal")
+	if got == DefaultCSS {
+		t.Fatal("terminal unexpectedly reproduced the default stylesheet")
+	}
+	for _, want := range []string{
+		"leafpress Classic Theme",
+		"leafpress Terminal Theme",
+		".lp-article",
+		".lp-index",
+		".lp-content table",
+		".lp-callout",
+		".lp-search-panel",
+		".lp-graph-panel",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("terminal stylesheet is missing %q", want)
+		}
+	}
+}

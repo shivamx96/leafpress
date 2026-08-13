@@ -356,6 +356,27 @@ html {
   text-decoration-color: var(--lp-accent);
 }
 
+.lp-content .footnote-ref {
+  padding: 0.05em 0.24em;
+  border-radius: 0.35rem;
+  background: var(--lp-aurora-glow);
+  text-decoration: none;
+}
+
+.lp-content .footnotes {
+  padding: 1.1rem 1.2rem;
+  border: 1px solid var(--lp-border);
+  border-radius: var(--lp-radius-md);
+  background: linear-gradient(135deg, var(--lp-aurora-glow), var(--lp-aurora-surface-soft));
+  color: var(--lp-text-muted);
+  box-shadow: var(--lp-aurora-shadow-soft);
+}
+
+.lp-content .footnotes hr {
+  border: 0;
+  border-top: 1px solid var(--lp-border);
+}
+
 .lp-content blockquote {
   position: relative;
   margin: 2rem 0;

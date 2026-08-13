@@ -15,6 +15,8 @@ const (
 	Classic = "classic"
 	// Paper is Leafpress's editorial, print-inspired appearance.
 	Paper = "paper"
+	// Terminal is Leafpress's compact, command-line-inspired appearance.
+	Terminal = "terminal"
 	// DefaultPreset is selected when theme.preset is omitted.
 	DefaultPreset = Classic
 )
@@ -62,6 +64,12 @@ var auroraCSS string
 //go:embed styles/paper.css
 var paperCSS string
 
+// Terminal keeps the original component coverage as a compatibility foundation,
+// then replaces the visual composition with a compact command-line language.
+//
+//go:embed styles/terminal.css
+var terminalCSS string
+
 var registry = map[string]Definition{
 	Aurora: {
 		Name: Aurora,
@@ -101,6 +109,20 @@ var registry = map[string]Definition{
 			BackgroundDark:  "#191714",
 			NavStyle:        "sticky",
 			NavActiveStyle:  "underlined",
+		},
+	},
+	Terminal: {
+		Name: Terminal,
+		CSS:  classicCSS + "\n" + terminalCSS,
+		Defaults: Defaults{
+			FontHeading:     "IBM Plex Mono",
+			FontBody:        "IBM Plex Mono",
+			FontMono:        "IBM Plex Mono",
+			Accent:          "#087f5b",
+			BackgroundLight: "#f2f5ef",
+			BackgroundDark:  "#0b100e",
+			NavStyle:        "sticky",
+			NavActiveStyle:  "base",
 		},
 	},
 }
