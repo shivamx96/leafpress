@@ -354,6 +354,26 @@ html {
   text-decoration-thickness: 2px;
 }
 
+.lp-content .footnote-ref {
+  color: var(--lp-paper-ink);
+  font-family: var(--lp-font-mono);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.15em;
+}
+
+.lp-content .footnotes {
+  color: var(--lp-paper-muted);
+}
+
+.lp-content .footnotes hr {
+  width: 4rem;
+  margin-right: 0;
+  margin-bottom: 1.25rem;
+  margin-left: 0;
+  border-color: var(--lp-paper-rule-strong);
+}
+
 .lp-content ul,
 .lp-content ol,
 .lp-section-intro ul,

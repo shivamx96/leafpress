@@ -423,6 +423,27 @@ html {
   text-decoration-style: solid;
 }
 
+.lp-content .footnote-ref,
+.lp-content .footnote-backref {
+  color: var(--lp-terminal-signal);
+  font-family: var(--lp-font-mono);
+  text-decoration: none;
+}
+
+.lp-content .footnotes {
+  padding-top: 0.9rem;
+  border-top: 1px dashed var(--lp-terminal-rule-strong);
+  color: var(--lp-terminal-muted);
+}
+
+.lp-content .footnotes hr {
+  display: none;
+}
+
+.lp-content .footnotes li::marker {
+  color: var(--lp-terminal-cyan);
+}
+
 .lp-content li::marker,
 .lp-section-intro li::marker {
   color: var(--lp-terminal-signal);
