@@ -1,0 +1,10 @@
+{
+  "name": "leafpress-repository-tests",
+  "private": true,
+  "scripts": {
+    "test:themes": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.62.1"
+  }
+}
