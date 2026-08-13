@@ -82,6 +82,15 @@ And a plain-text block checks the unhighlighted treatment:
 base -> selected theme -> config -> user CSS
 ```
 
+## Footnotes
+
+Footnote references should remain legible without interrupting the reading
+rhythm.[^rhythm] Their definitions may contain **emphasis**, `inline code`, and
+links,[^content] followed by a clear route back to the original reference.
+
+[^rhythm]: The reference should feel secondary while remaining easy to target.
+[^content]: Rich footnote content should preserve the same inline semantics as the article, including [external links](https://example.org).
+
 ## Media and diagrams
 
 ![Overlapping color swatches used by the theme fixture](/static/images/theme-swatch.svg)

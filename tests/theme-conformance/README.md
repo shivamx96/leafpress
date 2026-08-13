@@ -13,8 +13,10 @@ The primary matrix covers:
 - light and dark color schemes
 
 Those dimensions produce 144 conformance states. Four additional smoke tests
-exercise the fixture's article, index, tags, table, code, quote, callouts,
-backlinks, table of contents, theme toggle, search, and graph in every theme.
+exercise the fixture's article, index, tags, table, code, quote, footnotes,
+callouts, backlinks, table of contents, theme toggle, search, and graph in every
+theme. Footnote references, endnotes, and return links are also checked in all
+144 matrix states.
 
 Run the suite from the repository root:
 

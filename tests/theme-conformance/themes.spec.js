@@ -17,6 +17,34 @@ async function numericFontSize(locator) {
   return locator.evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));
 }
 
+async function followLastFootnoteBack(page) {
+  const backref = page.locator('.footnote-backref[role="doc-backlink"]').last();
+  await backref.scrollIntoViewIfNeeded();
+  const referenceHref = await backref.getAttribute("href");
+  expect(referenceHref).toMatch(/^#fnref:/);
+
+  const reference = page.locator(`[id="${referenceHref.slice(1)}"]`);
+  await backref.click();
+  await expect(page).toHaveURL(new RegExp(`${referenceHref.replace(":", "\\:")}$`));
+  await expect(reference).toBeInViewport();
+
+  const placement = await reference.evaluate((element) => {
+    const target = element.getBoundingClientRect();
+    const nav = document.querySelector(".lp-nav");
+    const navPosition = getComputedStyle(nav).position;
+    const navBottom = ["fixed", "sticky"].includes(navPosition)
+      ? nav.getBoundingClientRect().bottom
+      : 0;
+    return {
+      clearance: target.top - navBottom,
+      targetBottom: target.bottom,
+      viewportHeight: window.innerHeight
+    };
+  });
+  expect(placement.clearance).toBeGreaterThanOrEqual(8);
+  expect(placement.targetBottom).toBeLessThanOrEqual(placement.viewportHeight);
+}
+
 for (const theme of themes) {
   for (const navStyle of navStyles) {
     for (const activeStyle of activeStyles) {
@@ -141,6 +169,16 @@ for (const theme of themes) {
             expect(await numericFontSize(page.locator(".lp-content h2").first())).toBeCloseTo(24, 1);
             expect(await numericFontSize(page.locator(".lp-content h3").first())).toBeCloseTo(20, 1);
 
+            const footnoteReference = page.locator(".footnote-ref").first();
+            const footnotes = page.locator('.footnotes[role="doc-endnotes"]');
+            await expect(footnoteReference).toBeVisible();
+            await expect(footnoteReference).toHaveAttribute("role", "doc-noteref");
+            await expect(footnotes).toBeVisible();
+            expect(await numericFontSize(footnotes)).toBeCloseTo(14, 1);
+            await expect(footnotes.locator("li")).toHaveCount(2);
+            await expect(footnotes.locator('.footnote-backref[role="doc-backlink"]')).toHaveCount(2);
+            await followLastFootnoteBack(page);
+
             const horizontalOverflow = await page.evaluate(
               () => document.documentElement.scrollWidth - document.documentElement.clientWidth
             );
@@ -184,7 +222,17 @@ for (const theme of themes) {
     await expect(page.locator(".lp-content table")).toBeVisible();
     await expect(page.locator(".lp-content pre").first()).toBeVisible();
     await expect(page.locator(".lp-content blockquote")).toBeVisible();
+    await expect(page.locator(".footnote-ref")).toHaveCount(2);
+    await expect(page.locator(".footnotes")).toBeVisible();
+    await expect(page.locator(".footnote-backref")).toHaveCount(2);
     await expect(page.locator(".lp-backlinks")).toBeVisible();
+
+    const lastFootnote = page.locator(".footnote-ref").last();
+    const footnoteTarget = await lastFootnote.getAttribute("href");
+    expect(footnoteTarget).toMatch(/^#fn:/);
+    await lastFootnote.click();
+    await expect(page).toHaveURL(new RegExp(`${footnoteTarget.replace(":", "\\:")}$`));
+    await followLastFootnoteBack(page);
 
     if (theme === "terminal") {
       const terminalChrome = await page.evaluate(() => ({
