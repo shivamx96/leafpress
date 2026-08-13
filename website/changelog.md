@@ -4,10 +4,14 @@ date: 2025-01-06
 toc: false
 ---
 
-## Unreleased
+## v1.0.0-beta.18
+*August 13, 2026*
 
+- **Added four bundled visual themes.** Select `classic`, `aurora`, `paper`, or `terminal` with `theme.preset`. Classic remains the default for existing gardens, while explicit font, accent, background, and navigation settings continue to override preset defaults.
 - **Added automatic inline tags.** Tags written as `#notes` in ordinary Markdown now become links and feed tag pages, navigation, graph/search metadata, and incremental rebuilds alongside frontmatter tags. Code, links, URLs, raw HTML tags, escaped hashes, and unsupported nested tags remain literal.
-- **Kept themes synchronized with the operating system.** Sites now apply the saved or system theme before styles load, react to live OS appearance changes while using the system setting, expose system/light/dark modes through the theme control, and keep native controls and graph colors in sync.
+- **Kept color schemes synchronized with the operating system.** Sites now apply the saved or system preference before styles load, react to live OS appearance changes while using the system setting, expose system/light/dark modes through the theme control, and keep native controls and graph colors in sync.
+- Added a representative theme garden and a 148-case browser conformance suite covering every preset, navigation and active-link style, desktop and mobile layouts, light and dark appearances, and reader tools including search and graph.
+- Styled footnotes consistently across every bundled theme and fixed footnote back-links so their references remain visible below fixed and sticky navigation.
 
 ## v1.0.0-beta.17
 *August 11, 2026*
