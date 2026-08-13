@@ -64,7 +64,7 @@ func TestThemeGardenFixtureBuildsThemeSurfaces(t *testing.T) {
 
 	components := readThemeFixtureFile(t, siteDir, "notes/components/index.html")
 	assertThemeFixtureContains(t, "component gallery", components,
-		`data-lp-theme="paper"`,
+		`data-lp-theme="terminal"`,
 		`class="lp-toc"`,
 		`class="lp-tag"`,
 		`<table>`,
@@ -80,7 +80,7 @@ func TestThemeGardenFixtureBuildsThemeSurfaces(t *testing.T) {
 	assertThemeFixtureContains(t, "theme stylesheet", styles,
 		"leafpress Base Styles",
 		"leafpress Classic Theme",
-		"leafpress Paper Theme",
+		"leafpress Terminal Theme",
 	)
 
 	callouts := readThemeFixtureFile(t, siteDir, "notes/callouts/index.html")

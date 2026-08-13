@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-const themes = ["classic", "aurora", "paper"];
+const themes = ["classic", "aurora", "paper", "terminal"];
 const navStyles = ["base", "sticky", "glassy"];
 const activeStyles = ["base", "underlined", "box"];
 const colorSchemes = ["light", "dark"];
@@ -83,7 +83,7 @@ for (const theme of themes) {
                   activeTreatment.backgroundImage !== "none"
               ).toBe(true);
 
-              if (theme === "paper") {
+              if (["paper", "terminal"].includes(theme)) {
                 const inactiveBox = await page
                   .locator(".lp-nav-link:not(.lp-nav-link--active)")
                   .first()

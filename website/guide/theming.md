@@ -17,7 +17,7 @@ Select a bundled visual theme with `theme.preset`:
 }
 ```
 
-Leafpress ships three presets:
+Leafpress ships four presets:
 
 - `classic` is the default and preserves Leafpress's original, focused reading
   experience.
@@ -29,6 +29,11 @@ Leafpress ships three presets:
   ruled reading sheets, sharp geometry, marginalia-like callouts, tabular
   indexes, and document-style search and graph panels. It includes coordinated
   light and dark appearances.
+- `terminal` is a compact, command-line-inspired workspace with prompt-marked
+  headings, path-like navigation, file-list indexes, structured log callouts,
+  session-style code blocks, and diagnostic search and graph panels. Its light
+  appearance resembles printed terminal output; its dark appearance uses a
+  restrained phosphor palette.
 
 Presets are complete component themes rather than color-only variations.
 They share Leafpress's semantic type scale, so switching presets preserves
