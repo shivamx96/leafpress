@@ -198,3 +198,21 @@ func TestStylesComposesPaperBeforeFontsAndUserCSS(t *testing.T) {
 			baseAt, classicAt, paperAt, fontsAt, userAt)
 	}
 }
+
+func TestStylesComposesTerminalBeforeFontsAndUserCSS(t *testing.T) {
+	theme, err := config.Parse([]byte(`{"theme":{"preset":"terminal"}}`))
+	if err != nil {
+		t.Fatalf("parse terminal config: %v", err)
+	}
+	got := Styles(".custom { color: hotpink; }", theme.Theme)
+	baseAt := strings.Index(got, "/* leafpress Base Styles */")
+	classicAt := strings.Index(got, "/* leafpress Classic Theme */")
+	terminalAt := strings.Index(got, "/* leafpress Terminal Theme */")
+	fontsAt := strings.Index(got, "/* Self-hosted fonts */")
+	userAt := strings.Index(got, "/* User Styles */")
+	if baseAt != 0 || classicAt <= baseAt || terminalAt <= classicAt ||
+		fontsAt <= terminalAt || userAt <= fontsAt {
+		t.Errorf("stylesheet order = base:%d classic:%d terminal:%d fonts:%d user:%d",
+			baseAt, classicAt, terminalAt, fontsAt, userAt)
+	}
+}
