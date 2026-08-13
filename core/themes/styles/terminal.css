@@ -45,16 +45,34 @@
 
 html {
   background-color: var(--lp-terminal-canvas);
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent 0 3px,
+    color-mix(in srgb, var(--lp-terminal-rule) 9%, transparent) 3px 4px
+  );
+}
+
+[data-theme="dark"] {
   background-image:
-    linear-gradient(color-mix(in srgb, var(--lp-terminal-rule) 18%, transparent) 1px, transparent 1px),
-    linear-gradient(90deg, color-mix(in srgb, var(--lp-terminal-rule) 12%, transparent) 1px, transparent 1px);
-  background-size: 100% 24px, 24px 100%;
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--lp-accent) 7%, transparent), transparent 42rem),
+    repeating-linear-gradient(
+      0deg,
+      transparent 0 3px,
+      color-mix(in srgb, var(--lp-terminal-rule) 11%, transparent) 3px 4px
+    );
+}
+
+::selection {
+  background: var(--lp-terminal-signal);
+  color: var(--lp-terminal-panel);
 }
 
 .lp-body {
   background: transparent;
   color: var(--lp-terminal-ink);
   font-family: var(--lp-font-mono);
+  font-variant-ligatures: none;
+  font-variant-numeric: tabular-nums;
   line-height: 1.65;
 }
 
@@ -197,6 +215,37 @@ html {
   opacity: 1;
 }
 
+.lp-nav-actions svg,
+html .lp-nav-actions .lp-theme-icon {
+  display: none;
+}
+
+.lp-rss-link::before {
+  content: "RSS";
+}
+
+.lp-graph-toggle::before {
+  content: "MAP";
+}
+
+.lp-search-toggle::before {
+  content: "/";
+}
+
+.lp-theme-toggle::before {
+  content: "◐";
+}
+
+.lp-rss-link::before,
+.lp-graph-toggle::before,
+.lp-search-toggle::before,
+.lp-theme-toggle::before {
+  font-family: var(--lp-font-mono);
+  font-size: var(--lp-font-xs);
+  font-weight: 700;
+  line-height: 1;
+}
+
 /* Terminal window */
 .lp-main {
   max-width: var(--lp-max-width);
@@ -215,12 +264,12 @@ html {
   border: 1px solid var(--lp-terminal-rule);
   border-radius: 2px;
   background: color-mix(in srgb, var(--lp-terminal-panel) 97%, transparent);
-  box-shadow: 6px 6px 0 var(--lp-terminal-shadow);
+  box-shadow: 3px 3px 0 var(--lp-terminal-shadow);
 }
 
 .lp-article::before,
 .lp-section::before {
-  content: "leafpress://garden";
+  content: "leafpress@local:~/garden/notes  [view]";
   display: block;
   margin: -2.6rem -3rem 2rem;
   padding: 0.35rem 0.75rem;
@@ -232,7 +281,7 @@ html {
 }
 
 .lp-section::before {
-  content: "leafpress://index";
+  content: "leafpress@local:~/garden  [index]";
 }
 
 .lp-toc {
@@ -247,7 +296,7 @@ html {
 }
 
 .lp-toc-nav::before {
-  content: "INDEX";
+  content: "tree ./document";
   display: block;
   margin: -0.75rem -0.75rem 0.65rem;
   padding: 0.3rem 0.55rem;
@@ -272,8 +321,12 @@ html {
 }
 
 .lp-toc-link::before {
-  content: counter(terminal-toc, decimal-leading-zero) " ";
+  content: "├─ " counter(terminal-toc, decimal-leading-zero) " ";
   color: var(--lp-terminal-rule-strong);
+}
+
+.lp-toc-item:last-child .lp-toc-link::before {
+  content: "└─ " counter(terminal-toc, decimal-leading-zero) " ";
 }
 
 .lp-toc-link:hover {
@@ -296,11 +349,35 @@ html {
   text-wrap: balance;
 }
 
-.lp-title::before,
-.lp-section-title::before {
-  content: "$ ";
+.lp-title::before {
+  content: "$ view ";
   color: var(--lp-terminal-signal);
   font-weight: 500;
+}
+
+.lp-title::after {
+  content: "_";
+  margin-left: 0.2em;
+  color: var(--lp-terminal-signal);
+  font-weight: 500;
+  animation: terminal-cursor 1.15s steps(1, end) infinite;
+}
+
+.lp-section-title::before {
+  content: "$ ls ";
+  color: var(--lp-terminal-signal);
+  font-weight: 500;
+}
+
+@keyframes terminal-cursor {
+  0%,
+  48% {
+    opacity: 0.85;
+  }
+  49%,
+  100% {
+    opacity: 0.18;
+  }
 }
 
 .lp-section-title {
@@ -313,7 +390,7 @@ html {
 }
 
 .lp-meta::before {
-  content: "[meta]";
+  content: "stdout:";
   margin-right: 0.35rem;
   color: var(--lp-terminal-cyan);
 }
@@ -377,20 +454,33 @@ html {
 
 .lp-content h1::before,
 .lp-section-intro h1::before {
-  content: "# ";
+  content: ":: ";
   color: var(--lp-terminal-signal);
 }
 
 .lp-content h2::before,
 .lp-section-intro h2::before {
-  content: "## ";
+  content: "├─ ";
   color: var(--lp-terminal-cyan);
 }
 
 .lp-content h3::before,
 .lp-section-intro h3::before {
-  content: "### ";
+  content: "└─ ";
   color: var(--lp-terminal-amber);
+}
+
+.lp-content h1::before,
+.lp-content h2::before,
+.lp-content h3::before,
+.lp-section-intro h1::before,
+.lp-section-intro h2::before,
+.lp-section-intro h3::before {
+  font-size: 0.72em;
+  font-weight: 500;
+  letter-spacing: 0;
+  opacity: 0.82;
+  vertical-align: 0.08em;
 }
 
 .lp-heading-anchor {
@@ -464,7 +554,7 @@ html {
 }
 
 .lp-content pre::before {
-  content: "$ session";
+  content: "leafpress@local:~$";
   display: block;
   padding: 0.35rem 0.7rem;
   border-bottom: 1px solid var(--lp-terminal-rule);
@@ -800,7 +890,16 @@ html {
 }
 
 .lp-search-icon {
+  display: none;
+}
+
+.lp-search-header::before {
+  content: "$ rg";
   color: var(--lp-terminal-signal);
+  font-family: var(--lp-font-mono);
+  font-size: var(--lp-font-sm);
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .lp-search-input {
@@ -871,6 +970,18 @@ html {
     linear-gradient(color-mix(in srgb, var(--lp-terminal-rule) 28%, transparent) 1px, transparent 1px),
     linear-gradient(90deg, color-mix(in srgb, var(--lp-terminal-rule) 28%, transparent) 1px, transparent 1px);
   background-size: 20px 20px;
+}
+
+.lp-graph-panel::before {
+  content: "leafpress@local:~$ graph --current";
+  flex: 0 0 auto;
+  padding: 0.55rem 3rem 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--lp-terminal-rule);
+  background: var(--lp-code-bg);
+  color: var(--lp-terminal-signal);
+  font-family: var(--lp-font-mono);
+  font-size: var(--lp-font-xs);
+  letter-spacing: 0.02em;
 }
 
 .lp-graph-node {
@@ -1016,6 +1127,18 @@ html {
     margin: -2.1rem -1rem 1.5rem;
   }
 
+  .lp-article::before {
+    content: "~/garden/notes  [view]";
+  }
+
+  .lp-section::before {
+    content: "~/garden  [index]";
+  }
+
+  .lp-title::before {
+    content: "$ ";
+  }
+
   .lp-index-item {
     align-items: flex-start;
     padding-left: 0.65rem;
@@ -1061,9 +1184,19 @@ html {
   .lp-graph-panel {
     transition: none;
   }
+
+  .lp-title::after {
+    animation: none;
+    opacity: 0.5;
+  }
 }
 
 .lp-body :where(a, button, input):focus-visible {
   outline: 2px solid var(--lp-terminal-signal);
   outline-offset: 3px;
+}
+
+* {
+  scrollbar-color: var(--lp-terminal-rule-strong) var(--lp-code-bg);
+  scrollbar-width: thin;
 }
