@@ -22,7 +22,7 @@ const workRoot = mkdtempSync(join(tmpdir(), "leafpress-theme-conformance-"));
 const publicRoot = join(workRoot, "public");
 const binaryPath = join(workRoot, "leafpress");
 
-const themes = ["classic", "aurora"];
+const themes = ["classic", "aurora", "paper"];
 const navStyles = ["base", "sticky", "glassy"];
 const activeStyles = ["base", "underlined", "box"];
 

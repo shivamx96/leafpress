@@ -6,15 +6,15 @@ the same browser-level contract.
 
 The primary matrix covers:
 
-- `classic` and `aurora`
+- `classic`, `aurora`, and `paper`
 - `base`, `sticky`, and `glassy` navigation
 - `base`, `underlined`, and `box` active navigation treatments
 - desktop and mobile viewports
 - light and dark color schemes
 
-Those dimensions produce 72 conformance states. Two additional smoke tests
+Those dimensions produce 108 conformance states. Three additional smoke tests
 exercise the fixture's article, index, tags, table, code, quote, callouts,
-backlinks, table of contents, theme toggle, search, and graph in both themes.
+backlinks, table of contents, theme toggle, search, and graph in every theme.
 
 Run the suite from the repository root:
 

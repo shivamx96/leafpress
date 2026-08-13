@@ -180,3 +180,21 @@ func TestStylesComposesAuroraBeforeFontsAndUserCSS(t *testing.T) {
 			baseAt, classicAt, auroraAt, fontsAt, userAt)
 	}
 }
+
+func TestStylesComposesPaperBeforeFontsAndUserCSS(t *testing.T) {
+	theme, err := config.Parse([]byte(`{"theme":{"preset":"paper"}}`))
+	if err != nil {
+		t.Fatalf("parse paper config: %v", err)
+	}
+	got := Styles(".custom { color: hotpink; }", theme.Theme)
+	baseAt := strings.Index(got, "/* leafpress Base Styles */")
+	classicAt := strings.Index(got, "/* leafpress Classic Theme */")
+	paperAt := strings.Index(got, "/* leafpress Paper Theme */")
+	fontsAt := strings.Index(got, "/* Self-hosted fonts */")
+	userAt := strings.Index(got, "/* User Styles */")
+	if baseAt != 0 || classicAt <= baseAt || paperAt <= classicAt ||
+		fontsAt <= paperAt || userAt <= fontsAt {
+		t.Errorf("stylesheet order = base:%d classic:%d paper:%d fonts:%d user:%d",
+			baseAt, classicAt, paperAt, fontsAt, userAt)
+	}
+}
