@@ -190,16 +190,24 @@ for (const theme of themes) {
       const terminalChrome = await page.evaluate(() => ({
         article: getComputedStyle(document.querySelector(".lp-article"), "::before").content,
         title: getComputedStyle(document.querySelector(".lp-title"), "::before").content,
+        titleAfter: getComputedStyle(document.querySelector(".lp-title"), "::after").content,
         toc: getComputedStyle(document.querySelector(".lp-toc-nav"), "::before").content,
+        metadata: getComputedStyle(document.querySelector(".lp-meta"), "::before").content,
+        contentHeading: getComputedStyle(document.querySelector(".lp-content h2"), "::before").content,
+        codeHeader: getComputedStyle(document.querySelector(".lp-content pre"), "::before").content,
         actionIcons: [...document.querySelectorAll(".lp-nav-actions svg")].map(
           (element) => getComputedStyle(element).display
         )
       }));
-      expect(terminalChrome.article).toContain("leafpress@local:~/garden/notes");
-      expect(terminalChrome.title).toBe('"$ view "');
-      expect(terminalChrome.toc).toBe('"tree ./document"');
+      expect(terminalChrome.article).toBe('"~/garden/notes"');
+      expect(terminalChrome.title).toBe('"$ "');
+      expect(terminalChrome.titleAfter).toBe("none");
+      expect(terminalChrome.toc).toBe('"contents"');
+      expect(terminalChrome.metadata).toBe("none");
+      expect(terminalChrome.contentHeading).toBe("none");
+      expect(terminalChrome.codeHeader).toBe("none");
       expect(terminalChrome.actionIcons.length).toBeGreaterThan(0);
-      expect(terminalChrome.actionIcons.every((display) => display === "none")).toBe(true);
+      expect(terminalChrome.actionIcons.some((display) => display !== "none")).toBe(true);
     }
 
     await page.locator(".lp-theme-toggle").click();
@@ -219,7 +227,7 @@ for (const theme of themes) {
       const searchCommand = await page
         .locator(".lp-search-header")
         .evaluate((element) => getComputedStyle(element, "::before").content);
-      expect(searchCommand).toBe('"$ rg"');
+      expect(searchCommand).toBe('"$"');
     }
     await page.keyboard.press("Escape");
 
@@ -230,7 +238,7 @@ for (const theme of themes) {
       const graphCommand = await page
         .locator(".lp-graph-panel")
         .evaluate((element) => getComputedStyle(element, "::before").content);
-      expect(graphCommand).toContain("graph --current");
+      expect(graphCommand).toBe('"graph"');
     }
     await page.keyboard.press("Escape");
 
@@ -286,6 +294,17 @@ for (const theme of themes) {
     await page.goto(`/${fixture}/notes/`);
     await expect(page.locator(".lp-section")).toBeVisible();
     await expect(page.locator(".lp-index-item").first()).toBeVisible();
+    if (theme === "terminal") {
+      const listChrome = await page.evaluate(() => ({
+        permissionPrefix: getComputedStyle(document.querySelector(".lp-index-item"), "::before")
+          .content,
+        totalPrefix: getComputedStyle(document.querySelector(".lp-section-count"), "::before").content,
+        footerStatus: getComputedStyle(document.querySelector(".lp-footer"), "::before").content
+      }));
+      expect(listChrome.permissionPrefix).toBe("none");
+      expect(listChrome.totalPrefix).toBe("none");
+      expect(listChrome.footerStatus).toBe("none");
+    }
 
     await page.goto(`/${fixture}/tags/`);
     await expect(page.locator(".lp-tag-cloud-item").first()).toBeVisible();
