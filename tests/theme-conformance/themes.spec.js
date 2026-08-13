@@ -186,6 +186,22 @@ for (const theme of themes) {
     await expect(page.locator(".lp-content blockquote")).toBeVisible();
     await expect(page.locator(".lp-backlinks")).toBeVisible();
 
+    if (theme === "terminal") {
+      const terminalChrome = await page.evaluate(() => ({
+        article: getComputedStyle(document.querySelector(".lp-article"), "::before").content,
+        title: getComputedStyle(document.querySelector(".lp-title"), "::before").content,
+        toc: getComputedStyle(document.querySelector(".lp-toc-nav"), "::before").content,
+        actionIcons: [...document.querySelectorAll(".lp-nav-actions svg")].map(
+          (element) => getComputedStyle(element).display
+        )
+      }));
+      expect(terminalChrome.article).toContain("leafpress@local:~/garden/notes");
+      expect(terminalChrome.title).toBe('"$ view "');
+      expect(terminalChrome.toc).toBe('"tree ./document"');
+      expect(terminalChrome.actionIcons.length).toBeGreaterThan(0);
+      expect(terminalChrome.actionIcons.every((display) => display === "none")).toBe(true);
+    }
+
     await page.locator(".lp-theme-toggle").click();
     await expect(page.locator("html")).toHaveAttribute("data-theme-preference", "dark");
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
@@ -199,11 +215,23 @@ for (const theme of themes) {
     await searchIndexLoaded;
     await page.locator(".lp-search-input").fill("callout");
     await expect(page.locator(".lp-search-result").first()).toBeVisible();
+    if (theme === "terminal") {
+      const searchCommand = await page
+        .locator(".lp-search-header")
+        .evaluate((element) => getComputedStyle(element, "::before").content);
+      expect(searchCommand).toBe('"$ rg"');
+    }
     await page.keyboard.press("Escape");
 
     await page.locator(".lp-graph-toggle").click();
     await expect(page.locator(".lp-graph-overlay")).toHaveClass(/\blp-graph-overlay--open\b/);
     await expect(page.locator(".lp-graph-node").first()).toBeVisible();
+    if (theme === "terminal") {
+      const graphCommand = await page
+        .locator(".lp-graph-panel")
+        .evaluate((element) => getComputedStyle(element, "::before").content);
+      expect(graphCommand).toContain("graph --current");
+    }
     await page.keyboard.press("Escape");
 
     await page.locator(".lp-theme-toggle").click();
