@@ -98,6 +98,7 @@ These are hardcoded. Any markdown outside these paths is content.
     ]
   },
   "theme": {
+    "preset": "classic",
     "fontBody": "Inter",
     "accent": "#50ac00"
   },
@@ -113,6 +114,7 @@ These are hardcoded. Any markdown outside these paths is content.
 | `build.outputDir` | `"_site"` | Build output directory |
 | `build.port` | `3000` | Dev server port |
 | `navigation.mode` | `"automatic"` | `"automatic"` (derive nav) or `"explicit"` (`navigation.items`) |
+| `theme.preset` | `"classic"` | Bundled visual theme |
 | `theme.fontBody` | `"Inter"` | Primary font family |
 | `theme.accent` | `"#50ac00"` | Accent color for links |
 | `features.graph` | `true` | Enable graph.json generation |
@@ -386,6 +388,7 @@ _site/
   },
   "navigation": { "mode": "automatic" },
   "theme": {
+    "preset": "classic",
     "fontBody": "Inter",
     "accent": "#50ac00"
   },

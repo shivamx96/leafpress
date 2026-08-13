@@ -479,6 +479,7 @@ func TestThemeBootstrapAndControlExposeSystemMode(t *testing.T) {
 	html := out.String()
 	for _, want := range []string{
 		`<meta name="color-scheme" content="light dark">`,
+		`<html lang="en" data-lp-theme="classic">`,
 		`data-theme-preference`,
 		`preference = 'system'`,
 		`lp-theme-icon-system`,

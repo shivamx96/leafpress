@@ -64,6 +64,7 @@ func TestThemeGardenFixtureBuildsThemeSurfaces(t *testing.T) {
 
 	components := readThemeFixtureFile(t, siteDir, "notes/components/index.html")
 	assertThemeFixtureContains(t, "component gallery", components,
+		`data-lp-theme="classic"`,
 		`class="lp-toc"`,
 		`class="lp-tag"`,
 		`<table>`,

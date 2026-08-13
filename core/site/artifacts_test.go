@@ -153,3 +153,12 @@ func TestStylesMatchesCLIComposition(t *testing.T) {
 		t.Error("user CSS should use the CLI composition marker and ordering")
 	}
 }
+
+func TestStylesDefaultsEmptyPresetToClassic(t *testing.T) {
+	theme := config.Default().Theme
+	want := Styles("", theme)
+	theme.Preset = ""
+	if got := Styles("", theme); got != want {
+		t.Error("empty preset did not preserve classic stylesheet compatibility")
+	}
+}

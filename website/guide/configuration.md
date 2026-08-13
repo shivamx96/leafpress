@@ -33,6 +33,7 @@ default site.
   },
 
   "theme": {
+    "preset": "classic",
     "fontHeading": "Bricolage Grotesque",
     "fontBody": "Inter",
     "fontMono": "JetBrains Mono",
@@ -84,6 +85,7 @@ default site.
 
 | Option | Default | Description |
 |--------|---------|-------------|
+| `preset` | `"classic"` | Bundled visual theme; currently `"classic"` |
 | `fontHeading` | `"Bricolage Grotesque"` | Heading font (bundled families are self-hosted) |
 | `fontBody` | `"Inter"` | Body font (bundled families are self-hosted) |
 | `fontMono` | `"JetBrains Mono"` | Code font (bundled families are self-hosted) |

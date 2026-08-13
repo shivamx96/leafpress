@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/shivamx96/leafpress/core/themes"
 )
 
 // --- Defaults ---
@@ -33,6 +35,9 @@ func TestDefault(t *testing.T) {
 	}
 	if cfg.Theme.Accent != "#50ac00" {
 		t.Errorf("Accent = %q, want %q", cfg.Theme.Accent, "#50ac00")
+	}
+	if cfg.Theme.Preset != themes.Classic {
+		t.Errorf("Theme.Preset = %q, want %q", cfg.Theme.Preset, themes.Classic)
 	}
 	if cfg.Theme.FontHeading != "Bricolage Grotesque" {
 		t.Errorf("FontHeading = %q, want %q", cfg.Theme.FontHeading, "Bricolage Grotesque")
@@ -149,6 +154,59 @@ func TestParse_UnsupportedContractVersion(t *testing.T) {
 func TestParse_InvalidNavigationMode(t *testing.T) {
 	if _, err := Parse([]byte(`{"navigation": {"mode": "sideways"}}`)); err == nil {
 		t.Error("navigation mode 'sideways' should be rejected")
+	}
+}
+
+func TestParse_ThemePresetAndOverrides(t *testing.T) {
+	cfg, err := Parse([]byte(`{"theme":{"preset":"classic","accent":"#123456"}}`))
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+	if cfg.Theme.Preset != themes.Classic || cfg.Theme.Accent != "#123456" {
+		t.Fatalf("resolved theme = %+v", cfg.Theme)
+	}
+	if cfg.Theme.FontHeading != "Bricolage Grotesque" || cfg.Theme.FontBody != "Inter" {
+		t.Fatalf("omitted fields did not inherit preset defaults: %+v", cfg.Theme)
+	}
+}
+
+func TestApplyThemeDefaultsPreservesExplicitValues(t *testing.T) {
+	defaults := Theme{
+		Preset:         "paper",
+		FontHeading:    "Newsreader",
+		FontBody:       "Source Serif 4",
+		FontMono:       "IBM Plex Mono",
+		Accent:         "#765432",
+		Background:     Background{Light: "#faf8f3", Dark: "#191714"},
+		NavStyle:       "sticky",
+		NavActiveStyle: "underlined",
+	}
+	theme := Theme{
+		Preset:         "paper",
+		FontBody:       "Inter",
+		Accent:         "#123456",
+		Background:     Background{Light: "#ffffff"},
+		NavActiveStyle: "box",
+	}
+	applyThemeDefaults(&theme, defaults)
+
+	if theme.FontBody != "Inter" || theme.Accent != "#123456" ||
+		theme.Background.Light != "#ffffff" || theme.NavActiveStyle != "box" {
+		t.Fatalf("explicit values were overwritten: %+v", theme)
+	}
+	if theme.FontHeading != "Newsreader" || theme.FontMono != "IBM Plex Mono" ||
+		theme.Background.Dark != "#191714" || theme.NavStyle != "sticky" {
+		t.Fatalf("omitted values did not inherit preset defaults: %+v", theme)
+	}
+}
+
+func TestParse_RejectsUnknownThemePreset(t *testing.T) {
+	_, err := Parse([]byte(`{"theme":{"preset":"aurora"}}`))
+	if err == nil {
+		t.Fatal("unknown theme preset should be rejected")
+	}
+	if !strings.Contains(err.Error(), `theme.preset must be one of "classic", got "aurora"`) {
+		t.Fatalf("unexpected preset error: %v", err)
 	}
 }
 
