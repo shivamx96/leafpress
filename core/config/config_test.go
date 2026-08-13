@@ -127,6 +127,9 @@ func TestParse_MatchesLoadDefaultsAndOverrides(t *testing.T) {
 	if cfg.Theme.Accent != "#123456" || cfg.Theme.NavStyle != "sticky" {
 		t.Fatalf("theme overrides not preserved: %+v", cfg.Theme)
 	}
+	if cfg.Theme.Preset != themes.Classic {
+		t.Fatalf("legacy theme without preset resolved to %q, want %q", cfg.Theme.Preset, themes.Classic)
+	}
 	if cfg.Theme.FontBody != "Inter" || cfg.Build.Port != 3000 || cfg.Build.OutputDir != "_site" {
 		t.Fatal("omitted config fields should retain CLI defaults")
 	}
@@ -291,6 +294,18 @@ func TestValidate_ValidConfig(t *testing.T) {
 	cfg := Default()
 	if err := cfg.Validate(); err != nil {
 		t.Errorf("default config should be valid, got: %v", err)
+	}
+}
+
+func TestValidate_EmptyThemePresetUsesClassic(t *testing.T) {
+	cfg := Default()
+	cfg.Theme.Preset = ""
+
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("legacy config with no theme preset should be valid: %v", err)
+	}
+	if got := cfg.Theme.ResolvedPreset(); got != themes.Classic {
+		t.Fatalf("resolved preset = %q, want %q", got, themes.Classic)
 	}
 }
 
