@@ -96,8 +96,25 @@
   white-space: nowrap;
 }
 
+.lp-content sup[id^="fnref:"],
+.lp-content .footnotes li[id^="fn:"] {
+  scroll-margin-top: calc(var(--lp-nav-height) + 2rem);
+}
+
+.lp-content sup[id^="fnref:"]:target {
+  border-radius: 0.15em;
+  background: color-mix(in srgb, var(--lp-accent) 16%, transparent);
+  outline: 2px solid var(--lp-accent);
+  outline-offset: 0.12em;
+}
+
 @media (max-width: 768px) {
   .lp-title {
     font-size: var(--lp-font-xl);
+  }
+
+  .lp-content sup[id^="fnref:"],
+  .lp-content .footnotes li[id^="fn:"] {
+    scroll-margin-top: calc(var(--lp-nav-height) + 5rem);
   }
 }
