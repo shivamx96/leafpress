@@ -206,8 +206,54 @@ for (const theme of themes) {
     await expect(page.locator(".lp-graph-node").first()).toBeVisible();
     await page.keyboard.press("Escape");
 
+    await page.locator(".lp-theme-toggle").click();
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+
     await page.goto(`/${fixture}/notes/callouts/`);
     expect(await page.locator(".lp-callout").count()).toBeGreaterThan(5);
+
+    if (theme === "terminal") {
+      await expect(page.locator(".lp-callout-icon").first()).toHaveCSS("display", "none");
+      const titlePresentation = await page.locator(".lp-callout-title").first().evaluate((element) => {
+        const computed = getComputedStyle(element);
+        return {
+          clipPath: computed.clipPath,
+          height: Number.parseFloat(computed.height),
+          width: Number.parseFloat(computed.width)
+        };
+      });
+      expect(titlePresentation.clipPath).not.toBe("none");
+      expect(titlePresentation.height).toBe(1);
+      expect(titlePresentation.width).toBe(1);
+
+      const statusContrasts = await page.locator(".lp-callout").evaluateAll((callouts) => {
+        const colorChannels = (value) => {
+          const canvas = document.createElement("canvas");
+          canvas.width = 1;
+          canvas.height = 1;
+          const context = canvas.getContext("2d");
+          context.fillStyle = value;
+          context.fillRect(0, 0, 1, 1);
+          return [...context.getImageData(0, 0, 1, 1).data].slice(0, 3);
+        };
+        const luminance = (value) => {
+          const channels = colorChannels(value).map((channel) => {
+            const normalized = channel / 255;
+            return normalized <= 0.04045
+              ? normalized / 12.92
+              : ((normalized + 0.055) / 1.055) ** 2.4;
+          });
+          return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+        };
+        return callouts.map((callout) => {
+          const foreground = luminance(getComputedStyle(callout, "::before").color);
+          const background = luminance(getComputedStyle(callout).backgroundColor);
+          return (Math.max(foreground, background) + 0.05) /
+            (Math.min(foreground, background) + 0.05);
+        });
+      });
+      expect(Math.min(...statusContrasts)).toBeGreaterThanOrEqual(4.5);
+    }
 
     await page.goto(`/${fixture}/notes/`);
     await expect(page.locator(".lp-section")).toBeVisible();
@@ -215,5 +261,23 @@ for (const theme of themes) {
 
     await page.goto(`/${fixture}/tags/`);
     await expect(page.locator(".lp-tag-cloud-item").first()).toBeVisible();
+
+    if (theme === "terminal") {
+      await page.setViewportSize(viewports.mobile);
+      await page.goto(`/${fixture}/notes/components/`);
+      await page.locator(".lp-graph-toggle").click();
+      const graphPanel = await page.locator(".lp-graph-panel").boundingBox();
+      expect(graphPanel).not.toBeNull();
+      expect(graphPanel.height).toBeLessThanOrEqual(viewports.mobile.height * 0.75);
+      await page.keyboard.press("Escape");
+
+      await page.goto(`/${fixture}/404.html`);
+      await expect(page.locator(".lp-not-found-title")).toHaveText("404");
+      await expect(page.locator(".lp-not-found-title")).toHaveCSS("font-size", "32px");
+      const errorPrefix = await page
+        .locator(".lp-not-found-title")
+        .evaluate((element) => getComputedStyle(element, "::before").content);
+      expect(errorPrefix).toBe('"ERR: "');
+    }
   });
 }

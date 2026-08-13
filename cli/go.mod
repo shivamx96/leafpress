@@ -5,7 +5,7 @@ go 1.25.5
 require (
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/gorilla/websocket v1.5.3
-	github.com/shivamx96/leafpress/core v1.0.0-beta.17.0.20260813093119-25e215e3b58a
+	github.com/shivamx96/leafpress/core v1.0.0-beta.17.0.20260813105226-47fc6ac9e4fa
 	github.com/spf13/cobra v1.10.2
 	golang.org/x/mod v0.31.0
 	golang.org/x/term v0.40.0
