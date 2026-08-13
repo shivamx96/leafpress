@@ -188,6 +188,24 @@ func TestParse_AuroraPresetDefaultsAndOverrides(t *testing.T) {
 	}
 }
 
+func TestParse_PaperPresetDefaultsAndOverrides(t *testing.T) {
+	cfg, err := Parse([]byte(`{"theme":{"preset":"paper","accent":"#123456"}}`))
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+	if cfg.Theme.Preset != themes.Paper || cfg.Theme.Accent != "#123456" {
+		t.Fatalf("resolved theme = %+v", cfg.Theme)
+	}
+	if cfg.Theme.FontHeading != "Newsreader" || cfg.Theme.FontBody != "Source Serif 4" ||
+		cfg.Theme.FontMono != "IBM Plex Mono" || cfg.Theme.NavStyle != "sticky" ||
+		cfg.Theme.NavActiveStyle != "underlined" {
+		t.Fatalf("paper defaults were not applied: %+v", cfg.Theme)
+	}
+	if cfg.Theme.Background.Light != "#faf8f3" || cfg.Theme.Background.Dark != "#191714" {
+		t.Fatalf("paper backgrounds were not applied: %+v", cfg.Theme.Background)
+	}
+}
+
 func TestApplyThemeDefaultsPreservesExplicitValues(t *testing.T) {
 	defaults := Theme{
 		Preset:         "paper",
@@ -223,7 +241,7 @@ func TestParse_RejectsUnknownThemePreset(t *testing.T) {
 	if err == nil {
 		t.Fatal("unknown theme preset should be rejected")
 	}
-	if !strings.Contains(err.Error(), `theme.preset must be one of "aurora", "classic", got "nebula"`) {
+	if !strings.Contains(err.Error(), `theme.preset must be one of "aurora", "classic", "paper", got "nebula"`) {
 		t.Fatalf("unexpected preset error: %v", err)
 	}
 }

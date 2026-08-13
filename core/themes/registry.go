@@ -13,6 +13,8 @@ const (
 	Aurora = "aurora"
 	// Classic is the original Leafpress appearance.
 	Classic = "classic"
+	// Paper is Leafpress's editorial, print-inspired appearance.
+	Paper = "paper"
 	// DefaultPreset is selected when theme.preset is omitted.
 	DefaultPreset = Classic
 )
@@ -54,6 +56,12 @@ var classicCSS string
 //go:embed styles/aurora.css
 var auroraCSS string
 
+// Paper keeps the original component coverage as a compatibility foundation,
+// then replaces the visual composition with an editorial print language.
+//
+//go:embed styles/paper.css
+var paperCSS string
+
 var registry = map[string]Definition{
 	Aurora: {
 		Name: Aurora,
@@ -79,6 +87,20 @@ var registry = map[string]Definition{
 			Accent:         "#50ac00",
 			NavStyle:       "base",
 			NavActiveStyle: "base",
+		},
+	},
+	Paper: {
+		Name: Paper,
+		CSS:  classicCSS + "\n" + paperCSS,
+		Defaults: Defaults{
+			FontHeading:     "Newsreader",
+			FontBody:        "Source Serif 4",
+			FontMono:        "IBM Plex Mono",
+			Accent:          "#765432",
+			BackgroundLight: "#faf8f3",
+			BackgroundDark:  "#191714",
+			NavStyle:        "sticky",
+			NavActiveStyle:  "underlined",
 		},
 	},
 }

@@ -76,3 +76,24 @@ func TestCSSForPresetSelectsAuroraVisualLayer(t *testing.T) {
 		}
 	}
 }
+
+func TestCSSForPresetSelectsPaperVisualLayer(t *testing.T) {
+	got := CSSForPreset("paper")
+	if got == DefaultCSS {
+		t.Fatal("paper unexpectedly reproduced the default stylesheet")
+	}
+	for _, want := range []string{
+		"leafpress Classic Theme",
+		"leafpress Paper Theme",
+		".lp-article",
+		".lp-index",
+		".lp-content table",
+		".lp-callout",
+		".lp-search-panel",
+		".lp-graph-panel",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("paper stylesheet is missing %q", want)
+		}
+	}
+}

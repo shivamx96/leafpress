@@ -10,8 +10,8 @@ func TestRegistryContainsBundledThemesAndClassicDefault(t *testing.T) {
 	if DefaultPreset != Classic {
 		t.Fatalf("default preset = %q, want %q", DefaultPreset, Classic)
 	}
-	if got := Names(); !reflect.DeepEqual(got, []string{Aurora, Classic}) {
-		t.Fatalf("theme names = %v, want [%s %s]", got, Aurora, Classic)
+	if got := Names(); !reflect.DeepEqual(got, []string{Aurora, Classic, Paper}) {
+		t.Fatalf("theme names = %v, want [%s %s %s]", got, Aurora, Classic, Paper)
 	}
 	definition, ok := Lookup(Classic)
 	if !ok {
@@ -39,6 +39,24 @@ func TestRegistryContainsBundledThemesAndClassicDefault(t *testing.T) {
 		aurora.Defaults.NavStyle != "glassy" ||
 		aurora.Defaults.BackgroundLight == "" || aurora.Defaults.BackgroundDark == "" {
 		t.Fatalf("aurora defaults are incomplete: %+v", aurora.Defaults)
+	}
+
+	paper, ok := Lookup(Paper)
+	if !ok {
+		t.Fatal("paper theme is not registered")
+	}
+	if !strings.Contains(paper.CSS, "leafpress Paper Theme") {
+		t.Fatal("paper stylesheet is missing its visual layer")
+	}
+	if paper.Defaults.FontHeading != "Newsreader" ||
+		paper.Defaults.FontBody != "Source Serif 4" ||
+		paper.Defaults.FontMono != "IBM Plex Mono" ||
+		paper.Defaults.Accent != "#765432" ||
+		paper.Defaults.NavStyle != "sticky" ||
+		paper.Defaults.NavActiveStyle != "underlined" ||
+		paper.Defaults.BackgroundLight != "#faf8f3" ||
+		paper.Defaults.BackgroundDark != "#191714" {
+		t.Fatalf("paper defaults are incomplete: %+v", paper.Defaults)
 	}
 }
 
