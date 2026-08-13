@@ -15,6 +15,12 @@ image: "/static/images/theme-swatch.svg"
 This page puts common article elements next to one another. It is linked from
 several notes, so a backlinks section should appear below the content.
 
+# Typography and rhythm
+## Typography and rhythm
+
+This page puts common article elements next to one another. It is linked from
+several notes, so a backlinks section should appear below the content.
+
 ## Typography and rhythm
 
 Body copy should remain comfortable over several lines. **Bold text** needs

@@ -162,3 +162,21 @@ func TestStylesDefaultsEmptyPresetToClassic(t *testing.T) {
 		t.Error("empty preset did not preserve classic stylesheet compatibility")
 	}
 }
+
+func TestStylesComposesAuroraBeforeFontsAndUserCSS(t *testing.T) {
+	theme, err := config.Parse([]byte(`{"theme":{"preset":"aurora"}}`))
+	if err != nil {
+		t.Fatalf("parse aurora config: %v", err)
+	}
+	got := Styles(".custom { color: hotpink; }", theme.Theme)
+	baseAt := strings.Index(got, "/* leafpress Base Styles */")
+	classicAt := strings.Index(got, "/* leafpress Classic Theme */")
+	auroraAt := strings.Index(got, "/* leafpress Aurora Theme */")
+	fontsAt := strings.Index(got, "/* Self-hosted fonts */")
+	userAt := strings.Index(got, "/* User Styles */")
+	if baseAt != 0 || classicAt <= baseAt || auroraAt <= classicAt ||
+		fontsAt <= auroraAt || userAt <= fontsAt {
+		t.Errorf("stylesheet order = base:%d classic:%d aurora:%d fonts:%d user:%d",
+			baseAt, classicAt, auroraAt, fontsAt, userAt)
+	}
+}

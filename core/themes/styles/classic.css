@@ -10,7 +10,6 @@ html {
 
 .lp-body {
   font-family: var(--lp-font-body);
-  font-size: var(--lp-font-base);
   line-height: 1.6;
   color: var(--lp-text);
   min-height: 100vh;
@@ -80,7 +79,6 @@ html {
 .lp-nav-title {
   font-family: var(--lp-font-heading);
   font-weight: 600;
-  font-size: var(--lp-font-lg);
   color: var(--lp-text);
   text-decoration: none;
 }
@@ -99,7 +97,6 @@ html {
 .lp-nav-link {
   color: var(--lp-text-muted);
   text-decoration: none;
-  font-size: var(--lp-font-sm);
 }
 
 .lp-nav-link:hover {
@@ -313,7 +310,6 @@ html {
 
 .lp-title {
   font-family: var(--lp-font-heading);
-  font-size: var(--lp-font-3xl);
   font-weight: 700;
   line-height: 1.2;
   margin-bottom: 0.5rem;
@@ -325,7 +321,6 @@ html {
   flex-wrap: wrap;
   gap: 0.25rem 0.5rem;
   color: var(--lp-text-muted);
-  font-size: var(--lp-font-sm);
 }
 
 .lp-reading-time {
@@ -398,7 +393,6 @@ html {
 .lp-tag {
   color: var(--lp-accent);
   text-decoration: none;
-  font-size: var(--lp-font-sm);
 }
 
 .lp-tag:hover {
@@ -422,11 +416,6 @@ html {
   font-weight: 600;
   line-height: 1.3;
 }
-
-.lp-content h1 { font-size: var(--lp-font-2xl); }
-.lp-content h2 { font-size: var(--lp-font-xl); }
-.lp-content h3 { font-size: var(--lp-font-lg); }
-.lp-content h4 { font-size: var(--lp-font-lg); }
 
 .lp-content p {
   margin-top: 0.75rem;
@@ -466,7 +455,6 @@ html {
 
 .lp-content blockquote {
   font-family: var(--lp-font-heading);
-  font-size: var(--lp-font-lg);
   position: relative;
   border: none;
   padding: 1rem 1.5rem 1rem 3rem;
@@ -927,14 +915,12 @@ html {
 
 .lp-section-title {
   font-family: var(--lp-font-heading);
-  font-size: var(--lp-font-3xl);
   font-weight: 700;
   margin-bottom: 0.5rem;
 }
 
 .lp-section-count {
   color: var(--lp-text-muted);
-  font-size: var(--lp-font-sm);
   margin-bottom: 1.0rem;
 }
 
@@ -956,11 +942,6 @@ html {
   line-height: 1.3;
   color: var(--lp-text);
 }
-
-.lp-section-intro h1 { font-size: var(--lp-font-2xl); }
-.lp-section-intro h2 { font-size: var(--lp-font-xl); }
-.lp-section-intro h3 { font-size: var(--lp-font-lg); }
-.lp-section-intro h4 { font-size: var(--lp-font-lg); }
 
 .lp-section-intro p {
   margin-bottom: 1rem;
@@ -1045,7 +1026,6 @@ html {
 .lp-tag-cloud-item {
   color: var(--lp-accent);
   text-decoration: none;
-  font-size: var(--lp-font-base);
 }
 
 .lp-tag-cloud-item:hover {
@@ -1063,7 +1043,6 @@ html {
   padding: 1.5rem 2rem;
   text-align: center;
   color: var(--lp-text-muted);
-  font-size: var(--lp-font-sm);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -1093,14 +1072,6 @@ html {
 @media (max-width: 768px) {
   .lp-main {
     padding: 1.5rem 1rem;
-  }
-
-  .lp-title {
-    font-size: var(--lp-font-xl);
-  }
-
-  .lp-meta {
-    font-size: var(--lp-font-sm);
   }
 
   .lp-reading-time + .lp-date-info::before {
@@ -1344,7 +1315,6 @@ html {
   flex: 1;
   border: none;
   background: none;
-  font-size: var(--lp-font-base);
   font-family: var(--lp-font-body);
   color: var(--lp-text);
   outline: none;
@@ -1409,7 +1379,6 @@ html {
 
 .lp-search-result-snippet {
   display: block;
-  font-size: var(--lp-font-sm);
   color: var(--lp-text-muted);
   white-space: nowrap;
   overflow: hidden;
@@ -1529,7 +1498,6 @@ html {
 
 .lp-callout-title {
   font-weight: 500;
-  font-size: var(--lp-font-sm);
   text-transform: uppercase;
   letter-spacing: 0.025em;
   margin-bottom: 0.5rem;
@@ -1546,7 +1514,6 @@ html {
 
 .lp-callout-content {
   color: var(--lp-text);
-  font-size: var(--lp-font-sm);
   line-height: 1.6;
 }
 

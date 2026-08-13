@@ -6,7 +6,7 @@
     "baseURL": "https://example.com"
   },
   "theme": {
-    "preset": "classic"
+    "preset": "aurora"
   },
   "features": {
     "graph": true,

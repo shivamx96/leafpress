@@ -5,3 +5,62 @@
   margin: 0;
   padding: 0;
 }
+
+/*
+ * Semantic typography is a product invariant. Presets may change font family,
+ * weight, tracking, color, and composition, but they should not change the
+ * information hierarchy or cause avoidable reflow when a reader switches themes.
+ */
+.lp-body,
+.lp-content {
+  font-size: var(--lp-font-base);
+}
+
+.lp-nav-title {
+  font-size: var(--lp-font-lg);
+}
+
+.lp-nav-link,
+.lp-meta,
+.lp-tag,
+.lp-section-count,
+.lp-footer,
+.lp-search-result-snippet,
+.lp-callout-title,
+.lp-callout-content {
+  font-size: var(--lp-font-sm);
+}
+
+.lp-title,
+.lp-section-title {
+  font-size: var(--lp-font-3xl);
+}
+
+.lp-content h1,
+.lp-section-intro h1 {
+  font-size: var(--lp-font-2xl);
+}
+
+.lp-content h2,
+.lp-section-intro h2 {
+  font-size: var(--lp-font-xl);
+}
+
+.lp-content h3,
+.lp-content h4,
+.lp-section-intro h3,
+.lp-section-intro h4,
+.lp-content blockquote {
+  font-size: var(--lp-font-lg);
+}
+
+.lp-tag-cloud-item,
+.lp-search-input {
+  font-size: var(--lp-font-base);
+}
+
+@media (max-width: 768px) {
+  .lp-title {
+    font-size: var(--lp-font-xl);
+  }
+}
