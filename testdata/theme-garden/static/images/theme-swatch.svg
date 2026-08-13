@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 360" role="img" aria-labelledby="title desc">
+  <title id="title">Theme color swatches</title>
+  <desc id="desc">Overlapping translucent pink, orange, yellow, and green circles.</desc>
+  <defs>
+    <linearGradient id="canvas" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#f9a8d4"/>
+      <stop offset="0.5" stop-color="#fed7aa"/>
+      <stop offset="1" stop-color="#d9f99d"/>
+    </linearGradient>
+  </defs>
+  <rect width="960" height="360" rx="36" fill="url(#canvas)"/>
+  <g fill-opacity=".72" stroke="#fff" stroke-width="8">
+    <circle cx="330" cy="180" r="92" fill="#db2777"/>
+    <circle cx="430" cy="180" r="92" fill="#f97316"/>
+    <circle cx="530" cy="180" r="92" fill="#eab308"/>
+    <circle cx="630" cy="180" r="92" fill="#22c55e"/>
+  </g>
+</svg>

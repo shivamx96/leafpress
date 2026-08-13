@@ -1,0 +1,24 @@
+{
+  "site": {
+    "title": "The Theme Garden",
+    "description": "A visual fixture for every Leafpress theme surface",
+    "author": "Leafpress",
+    "baseURL": "https://example.com"
+  },
+  "features": {
+    "graph": true,
+    "search": true,
+    "toc": true,
+    "backlinks": true,
+    "wikilinks": true,
+    "rss": true
+  },
+  "navigation": {
+    "mode": "automatic",
+    "includeTags": true
+  },
+  "build": {
+    "outputDir": "_site",
+    "port": 3100
+  }
+}
