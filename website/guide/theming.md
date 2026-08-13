@@ -17,7 +17,7 @@ Select a bundled visual theme with `theme.preset`:
 }
 ```
 
-Leafpress ships two presets:
+Leafpress ships three presets:
 
 - `classic` is the default and preserves Leafpress's original, focused reading
   experience.
@@ -25,6 +25,10 @@ Leafpress ships two presets:
   navigation, layered reading surfaces, card-based indexes and backlinks, and
   elevated search and graph panels. It includes coordinated light and dark
   appearances.
+- `paper` is an editorial, print-inspired composition with serif typography,
+  ruled reading sheets, sharp geometry, marginalia-like callouts, tabular
+  indexes, and document-style search and graph panels. It includes coordinated
+  light and dark appearances.
 
 Presets are complete component themes rather than color-only variations.
 They share Leafpress's semantic type scale, so switching presets preserves

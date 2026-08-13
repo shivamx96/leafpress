@@ -6,7 +6,9 @@
     "baseURL": "https://example.com"
   },
   "theme": {
-    "preset": "aurora"
+    "preset": "paper",
+    "navStyle": "sticky",
+    "navActiveStyle": "box"
   },
   "features": {
     "graph": true,

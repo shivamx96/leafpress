@@ -100,7 +100,7 @@ owner escape hatch injected verbatim into `<head>` (see Trust boundary).
 
 ### `theme`
 
-`preset` selects a bundled visual theme (`"classic"` or `"aurora"`) and
+`preset` selects a bundled visual theme (`"classic"`, `"aurora"`, or `"paper"`) and
 defaults to `"classic"`. Unknown names are rejected with the available preset
 list. The selected preset supplies
 the initial fonts, accent, backgrounds, and navigation defaults; explicitly

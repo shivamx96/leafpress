@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-const themes = ["classic", "aurora"];
+const themes = ["classic", "aurora", "paper"];
 const navStyles = ["base", "sticky", "glassy"];
 const activeStyles = ["base", "underlined", "box"];
 const colorSchemes = ["light", "dark"];
@@ -82,6 +82,21 @@ for (const theme of themes) {
                 activeTreatment.backgroundColor !== "rgba(0, 0, 0, 0)" ||
                   activeTreatment.backgroundImage !== "none"
               ).toBe(true);
+
+              if (theme === "paper") {
+                const inactiveBox = await page
+                  .locator(".lp-nav-link:not(.lp-nav-link--active)")
+                  .first()
+                  .boundingBox();
+                const activeBox = await activeLink.boundingBox();
+                expect(activeBox).not.toBeNull();
+                expect(inactiveBox).not.toBeNull();
+                expect(activeBox.height).toBeCloseTo(inactiveBox.height, 1);
+                expect(activeBox.y + activeBox.height / 2).toBeCloseTo(
+                  inactiveBox.y + inactiveBox.height / 2,
+                  1
+                );
+              }
             }
 
             const nav = page.locator(".lp-nav");
@@ -90,6 +105,15 @@ for (const theme of themes) {
             } else if (navStyle === "sticky") {
               await expect(nav).toHaveCSS("position", "sticky");
             } else {
+              const initialBox = theme === "paper" ? await nav.boundingBox() : null;
+              if (theme === "paper") {
+                await expect(nav).toHaveCSS("position", "fixed");
+                expect(initialBox).not.toBeNull();
+                expect(initialBox.x).toBeGreaterThan(0);
+                expect(initialBox.y).toBeGreaterThan(0);
+                expect(initialBox.width).toBeLessThan(viewport.width);
+              }
+
               await page.evaluate(() => window.scrollTo(0, 500));
               await expect(nav).toHaveClass(/\blp-nav--pill\b/);
               await expect(nav).toHaveCSS("position", "fixed");
@@ -99,6 +123,13 @@ for (const theme of themes) {
               expect(
                 await nav.evaluate((element) => element.getBoundingClientRect().top)
               ).toBeLessThanOrEqual(16);
+
+              if (theme === "paper") {
+                const scrolledBox = await nav.boundingBox();
+                expect(scrolledBox.x).toBeCloseTo(initialBox.x, 0);
+                expect(scrolledBox.y).toBeCloseTo(initialBox.y, 0);
+                expect(scrolledBox.width).toBeCloseTo(initialBox.width, 0);
+              }
             }
 
             expect(await numericFontSize(page.locator(".lp-body"))).toBeCloseTo(16, 1);
