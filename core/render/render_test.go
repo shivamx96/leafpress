@@ -102,6 +102,57 @@ func TestRunSharesOneClientScriptAcrossRenderedDocuments(t *testing.T) {
 	}
 }
 
+func TestRunLegacyThemeConfigWithoutPresetUsesClassic(t *testing.T) {
+	out := runJSON(t, `{
+	  "config": {
+	    "site": {"title": "Legacy Garden"},
+	    "navigation": {
+	      "mode": "explicit",
+	      "items": [{"label": "Legacy", "path": "/legacy/"}]
+	    },
+	    "theme": {
+	      "fontHeading": "Bricolage Grotesque",
+	      "fontBody": "Inter",
+	      "fontMono": "JetBrains Mono",
+	      "accent": "#123456",
+	      "background": {"light": "#ffffff", "dark": "#111111"},
+	      "navStyle": "sticky",
+	      "navActiveStyle": "underlined"
+	    }
+	  },
+	  "content": {"pages": [
+	    {"slug": "legacy", "title": "Legacy", "markdown": "Legacy content"}
+	  ]}
+	}`)
+
+	for _, html := range []string{out.Index, pageHTML(t, out, "legacy")} {
+		for _, want := range []string{
+			`data-lp-theme="classic"`,
+			`--lp-accent: #123456`,
+			`position: sticky`,
+		} {
+			if !strings.Contains(html, want) {
+				t.Errorf("legacy config output missing %q", want)
+			}
+		}
+	}
+	if html := pageHTML(t, out, "legacy"); !strings.Contains(html, "lp-nav-active-underlined") {
+		t.Fatal("legacy navActiveStyle override was not preserved")
+	}
+	if !strings.Contains(out.CSS, "/* leafpress Classic Theme */") {
+		t.Fatal("legacy config did not select the Classic stylesheet")
+	}
+	for _, unexpected := range []string{
+		"/* leafpress Aurora Theme */",
+		"/* leafpress Paper Theme */",
+		"/* leafpress Terminal Theme */",
+	} {
+		if strings.Contains(out.CSS, unexpected) {
+			t.Errorf("legacy config unexpectedly included %s", unexpected)
+		}
+	}
+}
+
 // Unknown or misplaced fields must be rejected as input errors (exit 1),
 // never silently ignored — otherwise a v1 payload or a typo renders an empty
 // default site. Covers the envelope, the nested config object, and every

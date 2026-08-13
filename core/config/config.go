@@ -117,6 +117,17 @@ type Theme struct {
 	NavActiveStyle string     `json:"navActiveStyle"` // "base", "box", or "underlined"
 }
 
+// ResolvedPreset returns the bundled preset selected by this theme. An empty
+// value preserves compatibility with Config and Theme values constructed by
+// Go callers before the preset field existed; JSON parsing resolves the same
+// omission while applying defaults.
+func (t Theme) ResolvedPreset() string {
+	if t.Preset == "" {
+		return themes.DefaultPreset
+	}
+	return t.Preset
+}
+
 // FontFace declares one custom local font file under static/fonts/. Families
 // declared here are self-hosted: they never load from a remote provider.
 // Weight, Style, and Display are optional; consumers treat empty values as
@@ -500,12 +511,13 @@ func (c *Config) Validate() error {
 		return err
 	}
 
-	if _, ok := themes.Lookup(c.Theme.Preset); !ok {
+	preset := c.Theme.ResolvedPreset()
+	if _, ok := themes.Lookup(preset); !ok {
 		quoted := make([]string, 0, len(themes.Names()))
 		for _, name := range themes.Names() {
 			quoted = append(quoted, strconv.Quote(name))
 		}
-		return fmt.Errorf("theme.preset must be one of %s, got %q", strings.Join(quoted, ", "), c.Theme.Preset)
+		return fmt.Errorf("theme.preset must be one of %s, got %q", strings.Join(quoted, ", "), preset)
 	}
 
 	// Validate accent color format (hex color)

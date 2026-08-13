@@ -250,7 +250,7 @@ func NotFound(tmpl *templates.Templates, siteData templates.SiteData) (string, e
 // URLs are site-relative, which resolves correctly because this stylesheet is
 // served from the site root.
 func Styles(userCSS string, theme config.Theme) string {
-	css := templates.CSSForPreset(theme.Preset)
+	css := templates.CSSForPreset(theme.ResolvedPreset())
 	if fontCSS := templates.FontCSS(theme); fontCSS != "" {
 		css += "\n\n/* Self-hosted fonts */\n" + fontCSS
 	}

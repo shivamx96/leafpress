@@ -564,7 +564,7 @@ func generateHeadingID(text string) string {
 
 // Template strings
 const baseTemplate = `<!DOCTYPE html>
-<html lang="en" data-lp-theme="{{.Site.Theme.Preset}}">
+<html lang="en" data-lp-theme="{{.Site.Theme.ResolvedPreset}}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">

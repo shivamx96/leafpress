@@ -492,6 +492,26 @@ func TestThemeBootstrapAndControlExposeSystemMode(t *testing.T) {
 	}
 }
 
+func TestThemeMarkerDefaultsEmptyPresetToClassic(t *testing.T) {
+	tmpl, err := New()
+	if err != nil {
+		t.Fatalf("New() error: %v", err)
+	}
+	theme := config.Default().Theme
+	theme.Preset = ""
+
+	var out bytes.Buffer
+	if err := tmpl.RenderIndex(&out, IndexData{
+		Site:  SiteData{Title: "Legacy Garden", Theme: theme},
+		Title: "Home",
+	}); err != nil {
+		t.Fatalf("RenderIndex() error: %v", err)
+	}
+	if !strings.Contains(out.String(), `<html lang="en" data-lp-theme="classic">`) {
+		t.Fatal("empty programmatic preset did not render the Classic theme marker")
+	}
+}
+
 func TestIndexIntroUsesSharedContentStyles(t *testing.T) {
 	tmpl, err := New()
 	if err != nil {
