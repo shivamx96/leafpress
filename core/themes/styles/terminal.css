@@ -930,6 +930,10 @@ html {
     padding: 0 1rem;
   }
 
+  .lp-nav-brand::before {
+    content: none;
+  }
+
   .lp-nav-links {
     gap: 0.8rem;
     overflow-x: auto;
