@@ -856,6 +856,34 @@ func TestBuildGraphEdgesDoNotDependOnBacklinks(t *testing.T) {
 	}
 }
 
+func TestBuildIgnoresWikilinksOutsideMarkdownText(t *testing.T) {
+	dir := newTestProject(t)
+	source := `# Note
+
+` + "`[[target]]`" + `
+
+` + "```\n[[target]]\n```" + `
+
+\[[target]]
+
+[label [[target]]](https://example.com)
+
+<span data-note="[[target]]">HTML</span>
+`
+	if err := os.WriteFile(filepath.Join(dir, "note.md"), []byte(source), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "target.md"), []byte("# Target\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := New(config.Default(), Options{}).Build(); err != nil {
+		t.Fatal(err)
+	}
+	assertFileNotContains(t, filepath.Join(dir, "_site", "target", "index.html"), `class="lp-backlink"`)
+	assertFileNotContains(t, filepath.Join(dir, "_site", "graph.json"), `"source": "note"`)
+}
+
 func TestBuildTagIndexDeduplicatesCaseVariantsPerPage(t *testing.T) {
 	page := &content.Page{Tags: []string{"Go", "go"}}
 	index := buildTagIndex([]*content.Page{page})
