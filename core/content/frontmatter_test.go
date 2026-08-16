@@ -1,6 +1,7 @@
 package content
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -32,6 +33,59 @@ func TestParseFrontmatter_NoFrontmatter(t *testing.T) {
 	}
 	if body != input {
 		t.Errorf("Body should be original content")
+	}
+}
+
+func TestParseFrontmatter_LongLinesAreNotTruncated(t *testing.T) {
+	longValue := strings.Repeat("x", 128*1024)
+	tests := []struct {
+		name  string
+		input string
+		check func(*testing.T, *Frontmatter, string)
+	}{
+		{
+			name:  "frontmatter",
+			input: "---\ndescription: " + longValue + "\n---\nBody",
+			check: func(t *testing.T, fm *Frontmatter, body string) {
+				if fm.Description != longValue {
+					t.Fatalf("description length = %d, want %d", len(fm.Description), len(longValue))
+				}
+				if body != "Body" {
+					t.Fatalf("body = %q, want Body", body)
+				}
+			},
+		},
+		{
+			name:  "body",
+			input: "---\ntitle: Long Body\n---\n" + longValue,
+			check: func(t *testing.T, fm *Frontmatter, body string) {
+				if fm.Title != "Long Body" {
+					t.Fatalf("title = %q, want Long Body", fm.Title)
+				}
+				if body != longValue {
+					t.Fatalf("body length = %d, want %d", len(body), len(longValue))
+				}
+			},
+		},
+		{
+			name:  "without frontmatter",
+			input: longValue,
+			check: func(t *testing.T, fm *Frontmatter, body string) {
+				if body != longValue {
+					t.Fatalf("body length = %d, want %d", len(body), len(longValue))
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fm, body, err := ParseFrontmatter(tt.input)
+			if err != nil {
+				t.Fatal(err)
+			}
+			tt.check(t, fm, body)
+		})
 	}
 }
 
