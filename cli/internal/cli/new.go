@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -31,21 +32,23 @@ func runNew(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("invalid page name: %s", name)
 	}
 
-	// Determine file path
-	filePath := slug + ".md"
-	if !strings.HasSuffix(name, ".md") {
-		filePath = slug + ".md"
+	// Keep the destination lexical path beneath the project. os.Root below
+	// enforces the same boundary while following existing symlinks.
+	filePath := filepath.FromSlash(slug + ".md")
+	if !filepath.IsLocal(filePath) {
+		return fmt.Errorf("invalid page name %q: destination must stay inside the project", name)
 	}
 
-	// Check if file already exists
-	if _, err := os.Stat(filePath); err == nil {
-		return fmt.Errorf("file already exists: %s", filePath)
+	project, err := os.OpenRoot(".")
+	if err != nil {
+		return fmt.Errorf("failed to open project directory: %w", err)
 	}
+	defer project.Close()
 
 	// Create parent directories if needed
 	dir := filepath.Dir(filePath)
 	if dir != "." {
-		if err := os.MkdirAll(dir, 0755); err != nil {
+		if err := project.MkdirAll(dir, 0755); err != nil {
 			return fmt.Errorf("failed to create directory %s: %w", dir, err)
 		}
 	}
@@ -64,8 +67,19 @@ growth: "seedling"
 
 `, title, time.Now().Format("2006-01-02"))
 
-	// Write file
-	if err := os.WriteFile(filePath, []byte(content), 0644); err != nil {
+	// Create exclusively so a file appearing between validation and creation
+	// is never overwritten.
+	file, err := project.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0644)
+	if errors.Is(err, os.ErrExist) {
+		return fmt.Errorf("file already exists: %s", filePath)
+	}
+	if err != nil {
+		return fmt.Errorf("failed to write file: %w", err)
+	}
+	_, writeErr := file.Write([]byte(content))
+	closeErr := file.Close()
+	if err := errors.Join(writeErr, closeErr); err != nil {
+		_ = project.Remove(filePath)
 		return fmt.Errorf("failed to write file: %w", err)
 	}
 
@@ -103,8 +117,10 @@ func slugify(name string) string {
 func generateTitle(slug string) string {
 	words := strings.Split(slug, "-")
 	for i, word := range words {
-		if len(word) > 0 {
-			words[i] = strings.ToUpper(string(word[0])) + word[1:]
+		runes := []rune(word)
+		if len(runes) > 0 {
+			runes[0] = unicode.ToUpper(runes[0])
+			words[i] = string(runes)
 		}
 	}
 	return strings.Join(words, " ")
