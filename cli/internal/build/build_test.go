@@ -65,6 +65,14 @@ func TestBuildSharesOneContentAddressedClientScript(t *testing.T) {
 	if !strings.Contains(client, "var LP_BASE_PATH") || !strings.Contains(client, "lp-copy-button") {
 		t.Fatal("shared client asset is missing expected client behavior")
 	}
+	for _, want := range []string{"requestAnimationFrame(runFrame)", "var grid = new Map()", "neighborIds = new Set()"} {
+		if !strings.Contains(client, want) {
+			t.Errorf("shared client asset is missing scalable graph behavior %q", want)
+		}
+	}
+	if strings.Contains(client, "for (var k = 0; k < iterations; k++)") {
+		t.Error("shared client asset retains the synchronous graph simulation loop")
+	}
 
 	oldPath := clientPath
 	cfg.Features.Search = false
