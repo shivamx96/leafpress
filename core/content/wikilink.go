@@ -1,9 +1,16 @@
 package content
 
 import (
-	"regexp"
+	"bytes"
 	"sort"
 	"strings"
+
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/ast"
+	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/renderer"
+	"github.com/yuin/goldmark/text"
+	"github.com/yuin/goldmark/util"
 )
 
 // WikiLink represents a parsed wiki-link
@@ -13,29 +20,160 @@ type WikiLink struct {
 	Raw    string // Original raw text including brackets
 }
 
-// wikiLinkRegex matches [[target]] or [[target|label]]
-var wikiLinkRegex = regexp.MustCompile(`\[\[([^\]|]+)(?:\|([^\]]+))?\]\]`)
+type wikiLinkNode struct {
+	ast.BaseInline
+	Link WikiLink
+}
 
-// ExtractWikiLinks extracts all wiki-links from content
-func ExtractWikiLinks(content string) []WikiLink {
-	matches := wikiLinkRegex.FindAllStringSubmatch(content, -1)
-	var links []WikiLink
+var kindWikiLink = ast.NewNodeKind("WikiLink")
 
-	for _, match := range matches {
-		target := strings.TrimSpace(match[1])
-		label := target
-		if len(match) > 2 && match[2] != "" {
-			label = strings.TrimSpace(match[2])
-		}
+func (n *wikiLinkNode) Kind() ast.NodeKind { return kindWikiLink }
 
-		links = append(links, WikiLink{
-			Target: target,
-			Label:  label,
-			Raw:    match[0],
-		})
+func (n *wikiLinkNode) Dump(source []byte, level int) {
+	ast.DumpHelper(n, source, level, map[string]string{
+		"Target": n.Link.Target,
+		"Label":  n.Link.Label,
+	}, nil)
+}
+
+type wikiLinkParser struct{}
+
+func (p *wikiLinkParser) Trigger() []byte { return []byte{'['} }
+
+func (p *wikiLinkParser) Parse(_ ast.Node, block text.Reader, pc parser.Context) ast.Node {
+	// A generated wikilink anchor cannot be nested inside an ordinary
+	// Markdown link or image label.
+	if pc.IsInLinkLabel() {
+		return nil
 	}
+	line, _ := block.PeekLine()
+	if len(line) < 4 || line[0] != '[' || line[1] != '[' {
+		return nil
+	}
+	closeAt := bytes.Index(line[2:], []byte("]]"))
+	if closeAt < 0 {
+		return nil
+	}
+	closeAt += 2
+	inner := line[2:closeAt]
+	// Match the established syntax: the target may not contain ] or |, and a
+	// label may contain | but not ].
+	if len(inner) == 0 || bytes.ContainsRune(inner, ']') {
+		return nil
+	}
+	parts := bytes.SplitN(inner, []byte{'|'}, 2)
+	if len(parts[0]) == 0 {
+		return nil
+	}
+	target := strings.TrimSpace(string(parts[0]))
+	label := target
+	if len(parts) == 2 {
+		if len(parts[1]) == 0 {
+			return nil
+		}
+		label = strings.TrimSpace(string(parts[1]))
+	}
+	raw := string(line[:closeAt+2])
+	block.Advance(closeAt + 2)
+	return &wikiLinkNode{Link: WikiLink{Target: target, Label: label, Raw: raw}}
+}
 
+type wikiLinkHTMLRenderer struct {
+	resolver         *LinkResolver
+	basePath         string
+	plainBrokenLinks bool
+}
+
+func (r *wikiLinkHTMLRenderer) RegisterFuncs(reg renderer.NodeRendererFuncRegisterer) {
+	reg.Register(kindWikiLink, r.renderWikiLink)
+}
+
+func (r *wikiLinkHTMLRenderer) renderWikiLink(
+	w util.BufWriter, _ []byte, node ast.Node, entering bool,
+) (ast.WalkStatus, error) {
+	if !entering {
+		return ast.WalkContinue, nil
+	}
+	link := node.(*wikiLinkNode).Link
+	label := util.EscapeHTML([]byte(link.Label))
+	if r.resolver == nil {
+		_, _ = w.Write(label)
+		return ast.WalkSkipChildren, nil
+	}
+	resolved := r.resolver.Resolve(link.Target)
+	if resolved.Broken {
+		if r.plainBrokenLinks {
+			_, _ = w.Write(label)
+		} else {
+			_, _ = w.WriteString(`<span class="lp-broken-link">`)
+			_, _ = w.Write(label)
+			_, _ = w.WriteString(`</span>`)
+		}
+		return ast.WalkSkipChildren, nil
+	}
+	_, _ = w.WriteString(`<a class="lp-wikilink" href="`)
+	_, _ = w.Write(util.EscapeHTML([]byte(r.basePath + resolved.Page.Permalink)))
+	_, _ = w.WriteString(`">`)
+	_, _ = w.Write(label)
+	_, _ = w.WriteString(`</a>`)
+	return ast.WalkSkipChildren, nil
+}
+
+type wikiLinkExtension struct {
+	renderer *wikiLinkHTMLRenderer
+}
+
+func (e *wikiLinkExtension) Extend(md goldmark.Markdown) {
+	md.Parser().AddOptions(parser.WithInlineParsers(
+		util.Prioritized(&wikiLinkParser{}, 150),
+	))
+	if e.renderer != nil {
+		md.Renderer().AddOptions(renderer.WithNodeRenderers(
+			util.Prioritized(e.renderer, 500),
+		))
+	}
+}
+
+var wikiLinkExtractor = goldmark.New(
+	goldmark.WithExtensions(&wikiLinkExtension{}),
+)
+
+// ExtractWikiLinks extracts wikilinks from Markdown syntax nodes. Code spans,
+// fenced/indented code, escaped brackets, raw HTML attributes, and ordinary
+// Markdown link/image labels are therefore excluded by the same parser rules
+// used for rendering.
+func ExtractWikiLinks(content string) []WikiLink {
+	var links []WikiLink
+	document := wikiLinkExtractor.Parser().Parse(text.NewReader([]byte(content)))
+	_ = ast.Walk(document, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
+		if entering && node.Kind() == kindWikiLink {
+			links = append(links, node.(*wikiLinkNode).Link)
+		}
+		return ast.WalkContinue, nil
+	})
 	return links
+}
+
+func wikiLinkWarnings(document ast.Node, resolver *LinkResolver) []string {
+	if resolver == nil {
+		return nil
+	}
+	var warnings []string
+	_ = ast.Walk(document, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
+		if !entering || node.Kind() != kindWikiLink {
+			return ast.WalkContinue, nil
+		}
+		link := node.(*wikiLinkNode).Link
+		resolved := resolver.Resolve(link.Target)
+		switch {
+		case resolved.Broken:
+			warnings = append(warnings, "broken link: [["+link.Target+"]]")
+		case resolved.Ambiguous:
+			warnings = append(warnings, "ambiguous link: [["+link.Target+"]]")
+		}
+		return ast.WalkContinue, nil
+	})
+	return warnings
 }
 
 // LinkResolver resolves wiki-links to actual pages

@@ -59,6 +59,43 @@ func TestExtractWikiLinks(t *testing.T) {
 				{Target: "page", Label: "label with spaces", Raw: "[[page |  label with spaces  ]]"},
 			},
 		},
+		{
+			name:     "inline code",
+			input:    "Use `[[not-a-link]]` literally",
+			expected: nil,
+		},
+		{
+			name:     "fenced and indented code",
+			input:    "```\n[[fenced]]\n```\n\n    [[indented]]",
+			expected: nil,
+		},
+		{
+			name:     "escaped brackets",
+			input:    `\[[escaped]]`,
+			expected: nil,
+		},
+		{
+			name:     "ordinary link label",
+			input:    `[label [[nested]]](https://example.com)`,
+			expected: nil,
+		},
+		{
+			name:     "Obsidian embed",
+			input:    `![[photo.png]]`,
+			expected: nil,
+		},
+		{
+			name:     "raw HTML attribute and comment",
+			input:    `<span data-note="[[attribute]]">text</span><!-- [[comment]] -->`,
+			expected: nil,
+		},
+		{
+			name:  "only visible Markdown link",
+			input: "`[[code]]` then [[visible]] and \\[[escaped]]",
+			expected: []WikiLink{
+				{Target: "visible", Label: "visible", Raw: "[[visible]]"},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -186,6 +223,15 @@ func TestPopulateOutLinksWithoutBacklinks(t *testing.T) {
 	}
 	if page.Backlinks != nil {
 		t.Errorf("backlinks = %v, want nil", page.Backlinks)
+	}
+}
+
+func TestPopulateOutLinksUsesMarkdownSyntaxBoundaries(t *testing.T) {
+	page := &Page{RawContent: "`[[code]]`\n\n```\n[[fenced]]\n```\n\n\\[[escaped]]\n\n![[image.png]]\n\n[[visible]]"}
+	PopulateOutLinks([]*Page{page})
+
+	if got := strings.Join(page.OutLinks, ","); got != "visible" {
+		t.Fatalf("outlinks = %q, want visible", got)
 	}
 }
 

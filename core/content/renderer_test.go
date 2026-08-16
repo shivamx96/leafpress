@@ -6,17 +6,17 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/yuin/goldmark"
-	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/ast"
+	goldmarkrenderer "github.com/yuin/goldmark/renderer"
 )
 
-type failingMarkdown struct {
-	goldmark.Markdown
-}
+type failingRenderer struct{}
 
-func (failingMarkdown) Convert([]byte, io.Writer, ...parser.ParseOption) error {
+func (failingRenderer) Render(io.Writer, []byte, ast.Node) error {
 	return errors.New("forced conversion failure")
 }
+
+func (failingRenderer) AddOptions(...goldmarkrenderer.Option) {}
 
 // --- Media type detection ---
 
@@ -276,6 +276,34 @@ func TestRender_WikilinkInQuadFencedCode(t *testing.T) {
 	}
 }
 
+func TestRender_WikilinkSyntaxMatchesBacklinkExtraction(t *testing.T) {
+	target := &Page{Slug: "target", Permalink: "/target/"}
+	r := NewRenderer(NewLinkResolver([]*Page{target}), true, "")
+	input := "\\[[target]] `[[target]]` [label [[target]]](https://example.com) <span data-x=\"[[target]]\">html</span> [[target]]"
+	html, warnings := r.Render(input)
+	if got := strings.Count(html, `class="lp-wikilink"`); got != 1 {
+		t.Fatalf("rendered wikilinks = %d, want 1:\n%s", got, html)
+	}
+	if len(warnings) != 0 {
+		t.Fatalf("warnings = %v, want none", warnings)
+	}
+}
+
+func TestRender_DoesNotCollideWithLegacyCodePlaceholderText(t *testing.T) {
+	r := NewRenderer(NewLinkResolver(nil), true, "")
+	input := "___CODE_BLOCK_0___\n\nUse `[[literal]]` syntax."
+	html, warnings := r.Render(input)
+	if !strings.Contains(html, "CODE_BLOCK_0") {
+		t.Fatalf("author placeholder-like text was replaced:\n%s", html)
+	}
+	if !strings.Contains(html, "<code>[[literal]]</code>") {
+		t.Fatalf("inline code was not preserved:\n%s", html)
+	}
+	if len(warnings) != 0 {
+		t.Fatalf("inline code produced wikilink warnings: %v", warnings)
+	}
+}
+
 // --- Broken wikilinks ---
 
 func TestRender_BrokenWikilinkDefault(t *testing.T) {
@@ -403,7 +431,7 @@ func TestRender_RawHTMLEscaping(t *testing.T) {
 
 func TestRender_ConversionErrorEscapesHostedFallback(t *testing.T) {
 	r := escapingRenderer(nil, false, "")
-	r.mdEscaped = failingMarkdown{Markdown: r.mdEscaped}
+	r.mdEscaped.SetRenderer(failingRenderer{})
 	got, warnings := r.Render(`<img src=x onerror=alert(1)>`)
 	if got != `&lt;img src=x onerror=alert(1)&gt;` {
 		t.Fatalf("fallback = %q, want escaped source", got)
