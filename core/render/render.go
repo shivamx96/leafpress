@@ -250,6 +250,9 @@ func Render(in *Input) (*Output, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err := content.ValidateOutputRoutes(pages); err != nil {
+		return nil, inputErrorf("invalid page routes: %v", err)
+	}
 
 	// Resolve wikilinks over exactly these pages; unresolved links degrade
 	// to plain text (anything unresolved is private by design).
