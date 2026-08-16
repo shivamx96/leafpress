@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -784,6 +785,8 @@ func (b *Builder) rebuildMarkdownFile(relPath string, changeType ChangeType) (*I
 
 	// Get the old page if it existed
 	oldPage := b.pagesByPath[relPath]
+	oldBacklinks := backlinkSources(b.pages)
+	oldNav := slices.Clone(b.siteData.Nav)
 
 	// Update the pages cache with the new/changed page
 	if oldPage != nil {
@@ -826,25 +829,13 @@ func (b *Builder) rebuildMarkdownFile(relPath string, changeType ChangeType) (*I
 	// If old page existed, check what changed
 	if oldPage != nil {
 		sectionsToRebuild[listingSection(oldPage)] = true
-		// Rebuild pages that had backlinks to this page (their backlinks section changed)
-		for _, backlinker := range oldPage.Backlinks {
-			pagesToRebuild[backlinker.SourcePath] = backlinker
-		}
-
-		// If tags changed, rebuild affected tag pages
-		oldTags := make(map[string]bool)
+		// Tag listings contain page metadata, so rebuild every listing the old
+		// or new page belongs to even when its tag membership is unchanged.
 		for _, t := range oldPage.Tags {
-			oldTags[strings.ToLower(t)] = true
+			tagsToRebuild[strings.ToLower(t)] = true
 		}
 		for _, t := range changedPage.Tags {
-			tLower := strings.ToLower(t)
-			if !oldTags[tLower] {
-				tagsToRebuild[tLower] = true // New tag
-			}
-			delete(oldTags, tLower)
-		}
-		for t := range oldTags {
-			tagsToRebuild[t] = true // Removed tag
+			tagsToRebuild[strings.ToLower(t)] = true
 		}
 	} else {
 		// All tags are new
@@ -865,24 +856,24 @@ func (b *Builder) rebuildMarkdownFile(relPath string, changeType ChangeType) (*I
 	}
 	b.logTiming("backlinks", time.Since(t0))
 
-	// If the changed page has new outlinks, rebuild pages it now links to
-	for _, target := range changedPage.OutLinks {
-		result := b.linkResolver.Resolve(target)
-		if result.Page != nil {
-			pagesToRebuild[result.Page.SourcePath] = result.Page
-		}
+	// Backlinks are rendered on target pages. Include every page whose
+	// backlink set changed, covering both added and removed outgoing links.
+	addBacklinkChanges(pagesToRebuild, b.pages, oldBacklinks)
+
+	// Creating a page or changing a title/slug can change how wikilinks from
+	// any source resolve. Automatic navigation is also embedded in every page.
+	// These relatively uncommon changes therefore invalidate all page HTML.
+	resolverChanged := oldPage == nil || oldPage.Title != changedPage.Title || oldPage.Slug != changedPage.Slug
+	if resolverChanged || !slices.Equal(oldNav, b.siteData.Nav) {
+		addAllPages(pagesToRebuild, b.pages)
 	}
 
 	// Render markdown for pages that need rebuilding
 	t0 = time.Now()
 	var pagesToRender []*content.Page
-	for _, p := range pagesToRebuild {
-		// Find the updated version from b.pages
-		for _, np := range b.pages {
-			if np.SourcePath == p.SourcePath {
-				pagesToRender = append(pagesToRender, np)
-				break
-			}
+	for _, page := range b.pages {
+		if pagesToRebuild[page.SourcePath] != nil {
+			pagesToRender = append(pagesToRender, page)
 		}
 	}
 	content.RenderPages(pagesToRender, b.cfg.Features.Wikilinks, b.linkResolver, b.siteData.BasePath)
@@ -923,12 +914,12 @@ func (b *Builder) rebuildMarkdownFile(relPath string, changeType ChangeType) (*I
 		b.logTiming("tags", time.Since(t0))
 	}
 
-	// Regenerate JSON files (search-index always; graph when enabled)
+	// Refresh every content-derived global artifact.
 	t0 = time.Now()
-	if err := b.generateJSONFiles(b.pages, b.cfg.Features.Graph, true); err != nil {
+	if err := b.refreshIncrementalContentArtifacts(); err != nil {
 		return nil, err
 	}
-	b.logTiming("json", time.Since(t0))
+	b.logTiming("artifacts", time.Since(t0))
 
 	return stats, nil
 }
@@ -947,25 +938,6 @@ func (b *Builder) handleDeletedFile(relPath string) (*IncrementalStats, error) {
 	os.Remove(outPath)
 	// Also try to remove the parent directory if empty
 	os.Remove(filepath.Dir(outPath))
-
-	// Rebuild pages that linked to this page. This is required for broken-link
-	// rendering even when the backlinks UI is disabled.
-	pagesToRebuild := make([]*content.Page, 0)
-	seenRebuild := make(map[*content.Page]bool)
-	for _, page := range b.pages {
-		if page == oldPage {
-			continue
-		}
-		for _, target := range page.OutLinks {
-			if result := b.linkResolver.Resolve(target); result.Page == oldPage {
-				if !seenRebuild[page] {
-					seenRebuild[page] = true
-					pagesToRebuild = append(pagesToRebuild, page)
-				}
-				break
-			}
-		}
-	}
 
 	// Remove from cached state
 	delete(b.pagesByPath, relPath)
@@ -990,9 +962,10 @@ func (b *Builder) handleDeletedFile(relPath string) (*IncrementalStats, error) {
 		content.PopulateOutLinks(b.pages)
 	}
 
-	// Re-render affected pages
-	content.RenderPages(pagesToRebuild, b.cfg.Features.Wikilinks, b.linkResolver, b.siteData.BasePath)
-	for _, page := range pagesToRebuild {
+	// Removing a page can break any title/slug alias and changes automatic
+	// navigation. Re-render all remaining pages with the new resolver.
+	content.RenderPages(b.pages, b.cfg.Features.Wikilinks, b.linkResolver, b.siteData.BasePath)
+	for _, page := range b.pages {
 		if page.IsIndex {
 			if err := b.renderSectionIndex(page, b.pages, b.siteData); err != nil {
 				return nil, err
@@ -1023,8 +996,8 @@ func (b *Builder) handleDeletedFile(relPath string) (*IncrementalStats, error) {
 		return nil, err
 	}
 
-	// Regenerate JSON files (search-index always; graph when enabled)
-	if err := b.generateJSONFiles(b.pages, b.cfg.Features.Graph, true); err != nil {
+	// Refresh every content-derived global artifact.
+	if err := b.refreshIncrementalContentArtifacts(); err != nil {
 		return nil, err
 	}
 
@@ -1040,6 +1013,53 @@ func listingSection(page *content.Page) string {
 		return ""
 	}
 	return section
+}
+
+func addAllPages(dst map[string]*content.Page, pages []*content.Page) {
+	for _, page := range pages {
+		dst[page.SourcePath] = page
+	}
+}
+
+// backlinkSources snapshots backlink identity without retaining mutable Page
+// slices. BuildBacklinks replaces those slices in place during an incremental
+// rebuild, so comparing the Page values themselves would compare new state to
+// new state.
+func backlinkSources(pages []*content.Page) map[string]map[string]bool {
+	result := make(map[string]map[string]bool, len(pages))
+	for _, page := range pages {
+		sources := make(map[string]bool, len(page.Backlinks))
+		for _, backlink := range page.Backlinks {
+			sources[backlink.SourcePath] = true
+		}
+		result[page.SourcePath] = sources
+	}
+	return result
+}
+
+func addBacklinkChanges(dst map[string]*content.Page, pages []*content.Page, old map[string]map[string]bool) {
+	for _, page := range pages {
+		before := old[page.SourcePath]
+		after := make(map[string]bool, len(page.Backlinks))
+		for _, backlink := range page.Backlinks {
+			after[backlink.SourcePath] = true
+		}
+		if !mapsEqual(before, after) {
+			dst[page.SourcePath] = page
+		}
+	}
+}
+
+func mapsEqual(a, b map[string]bool) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for key := range a {
+		if !b[key] {
+			return false
+		}
+	}
+	return true
 }
 
 func (b *Builder) rebuildSectionListing(sectionSlug string) error {
@@ -1096,6 +1116,9 @@ func (b *Builder) rebuildTagPages(tags map[string]bool, pages []*content.Page) e
 	b.pagesByTag = buildTagIndex(pages)
 
 	tagsDir := filepath.Join(b.outputDir, "tags")
+	if len(b.pagesByTag) == 0 {
+		return os.RemoveAll(tagsDir)
+	}
 
 	for tag := range tags {
 		tagDir := filepath.Join(tagsDir, tag)
@@ -1535,6 +1558,53 @@ func (b *Builder) materializeRequiredBuiltins(pages []*content.Page) error {
 		}
 		if err := os.WriteFile(outPath, builtin.Content(), 0644); err != nil {
 			return fmt.Errorf("failed to write %s: %w", logicalPath, err)
+		}
+	}
+	return nil
+}
+
+// reconcileContentOptionalBuiltins updates only assets selected by page
+// content. Theme font assets are independent of Markdown changes and do not
+// need to be rewritten on every incremental rebuild.
+func (b *Builder) reconcileContentOptionalBuiltins(pages []*content.Page) error {
+	usesMermaid := content.UsesMermaid(pages)
+	for _, logicalPath := range []string{assets.BuiltinMermaidJS, assets.BuiltinMermaidLicense} {
+		outPath := filepath.Join(b.outputDir, filepath.FromSlash(logicalPath))
+		if !usesMermaid {
+			if err := os.Remove(outPath); err != nil && !os.IsNotExist(err) {
+				return fmt.Errorf("failed to remove unused %s: %w", logicalPath, err)
+			}
+			continue
+		}
+		builtin, ok := assets.BuiltinByLogicalPath(logicalPath)
+		if !ok {
+			return fmt.Errorf("missing built-in asset %s", logicalPath)
+		}
+		if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
+			return err
+		}
+		if err := os.WriteFile(outPath, builtin.Content(), 0644); err != nil {
+			return fmt.Errorf("failed to write %s: %w", logicalPath, err)
+		}
+	}
+	return nil
+}
+
+func (b *Builder) refreshIncrementalContentArtifacts() error {
+	if err := b.reconcileContentOptionalBuiltins(b.pages); err != nil {
+		return err
+	}
+	if err := b.generateJSONFiles(b.pages, b.cfg.Features.Graph, true); err != nil {
+		return err
+	}
+	if sitegen.HasOrigin(b.cfg.Site.BaseURL) {
+		if err := b.generateSitemap(b.pages); err != nil {
+			return err
+		}
+		if b.cfg.Features.RSS {
+			if err := b.generateRSS(b.pages, b.siteData); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

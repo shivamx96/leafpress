@@ -6,8 +6,118 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/shivamx96/leafpress/core/assets"
 	"github.com/shivamx96/leafpress/core/config"
 )
+
+func TestIncrementalMarkdownRefreshesDependentPagesAndArtifacts(t *testing.T) {
+	dir := newTestProject(t)
+	sourcePath := filepath.Join(dir, "note.md")
+	targetPath := filepath.Join(dir, "target.md")
+	if err := os.WriteFile(sourcePath, []byte(`---
+title: Old Title
+date: 2026-01-01
+tags: [shared]
+---
+
+Links to [[Target]].
+`), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(targetPath, []byte("# Target\n\nTarget body.\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := config.Default()
+	cfg.Site.BaseURL = "https://example.com"
+	b := New(cfg, Options{})
+	if _, err := b.Build(); err != nil {
+		t.Fatal(err)
+	}
+	targetOutput := filepath.Join(dir, "_site", "target", "index.html")
+	assertFileContains(t, targetOutput, `class="lp-backlink" href="/note/">Old Title</a>`)
+
+	if err := os.WriteFile(sourcePath, []byte(`---
+title: New Title
+date: 2026-01-01
+modified: 2026-02-03
+tags: [shared]
+---
+
+The link is gone.
+
+`+"```mermaid\ngraph TD\nA --> B\n```\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := b.RebuildIncremental(sourcePath, ChangeModify); err != nil {
+		t.Fatal(err)
+	}
+
+	assertFileContains(t, targetOutput, ">New Title</a>") // automatic navigation
+	assertFileNotContains(t, targetOutput, `class="lp-backlink"`)
+	assertFileContains(t, filepath.Join(dir, "_site", "tags", "shared", "index.html"), ">New Title<")
+	assertFileNotContains(t, filepath.Join(dir, "_site", "tags", "shared", "index.html"), ">Old Title<")
+	assertFileContains(t, filepath.Join(dir, "_site", "feed.xml"), "<title>New Title</title>")
+	assertFileNotContains(t, filepath.Join(dir, "_site", "feed.xml"), "<title>Old Title</title>")
+	assertFileContains(t, filepath.Join(dir, "_site", "sitemap.xml"), "<lastmod>2026-02-03</lastmod>")
+	if _, err := os.Stat(filepath.Join(dir, "_site", filepath.FromSlash(assets.BuiltinMermaidJS))); err != nil {
+		t.Fatalf("incremental rebuild did not materialize Mermaid: %v", err)
+	}
+
+	if err := os.WriteFile(sourcePath, []byte("# New Title\n\nNo diagram now.\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := b.RebuildIncremental(sourcePath, ChangeModify); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "_site", filepath.FromSlash(assets.BuiltinMermaidJS))); !os.IsNotExist(err) {
+		t.Fatalf("unused Mermaid asset remains after incremental rebuild: %v", err)
+	}
+}
+
+func TestIncrementalMarkdownDeletionRefreshesGlobalState(t *testing.T) {
+	dir := newTestProject(t)
+	sourcePath := filepath.Join(dir, "note.md")
+	targetPath := filepath.Join(dir, "target.md")
+	if err := os.WriteFile(sourcePath, []byte(`---
+title: Source
+date: 2026-01-01
+tags: [only-tag]
+---
+
+[[Target]]
+
+`+"```mermaid\ngraph TD\nA --> B\n```\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(targetPath, []byte("# Target\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := config.Default()
+	cfg.Site.BaseURL = "https://example.com"
+	b := New(cfg, Options{})
+	if _, err := b.Build(); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(sourcePath); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := b.RebuildIncremental(sourcePath, ChangeDelete); err != nil {
+		t.Fatal(err)
+	}
+
+	targetOutput := filepath.Join(dir, "_site", "target", "index.html")
+	assertFileNotContains(t, targetOutput, "Source", `class="lp-backlink"`)
+	assertFileNotContains(t, filepath.Join(dir, "_site", "feed.xml"), "<title>Source</title>")
+	assertFileNotContains(t, filepath.Join(dir, "_site", "sitemap.xml"), "https://example.com/note/")
+	if _, err := os.Stat(filepath.Join(dir, "_site", "tags")); !os.IsNotExist(err) {
+		t.Fatalf("empty tags output remains after deletion: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "_site", filepath.FromSlash(assets.BuiltinMermaidJS))); !os.IsNotExist(err) {
+		t.Fatalf("unused Mermaid asset remains after deletion: %v", err)
+	}
+}
 
 func TestIncrementalSectionListingsTrackAddsAndDeletes(t *testing.T) {
 	dir := newTestProject(t)
@@ -187,6 +297,19 @@ func assertFileContains(t *testing.T, path string, wants ...string) {
 	for _, want := range wants {
 		if !strings.Contains(string(data), want) {
 			t.Errorf("%s does not contain %q", path, want)
+		}
+	}
+}
+
+func assertFileNotContains(t *testing.T, path string, unwanted ...string) {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, value := range unwanted {
+		if strings.Contains(string(data), value) {
+			t.Errorf("%s unexpectedly contains %q", path, value)
 		}
 	}
 }
