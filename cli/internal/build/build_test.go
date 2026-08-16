@@ -128,6 +128,69 @@ func TestBuildRefusesProjectRootOutputWithoutDeletingSources(t *testing.T) {
 	}
 }
 
+func TestBuildRejectsConflictingOutputRoutes(t *testing.T) {
+	tests := []struct {
+		name  string
+		files map[string]string
+		want  string
+	}{
+		{
+			name: "page and section index",
+			files: map[string]string{
+				"notes.md":        "# Notes\n",
+				"notes/_index.md": "# Notes Index\n",
+			},
+			want: `output route "/notes/"`,
+		},
+		{
+			name: "page and automatic section",
+			files: map[string]string{
+				"notes.md":     "# Notes\n",
+				"notes/one.md": "# One\n",
+			},
+			want: `output route "/notes/"`,
+		},
+		{
+			name: "page and generated tags",
+			files: map[string]string{
+				"tags.md": "# Tags\n",
+				"one.md":  "---\ntags: [go]\n---\n# One\n",
+			},
+			want: `output route "/tags/"`,
+		},
+		{
+			name: "unsafe tag path",
+			files: map[string]string{
+				"one.md": "---\ntags: [../outside]\n---\n# One\n",
+			},
+			want: `invalid tag "../outside"`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := newTestProject(t)
+			for name, body := range tt.files {
+				path := filepath.Join(dir, filepath.FromSlash(name))
+				if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(path, []byte(body), 0644); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			_, err := New(config.Default(), Options{}).Build()
+			if err == nil || !strings.Contains(err.Error(), tt.want) {
+				t.Fatalf("Build error = %v, want containing %q", err, tt.want)
+			}
+			if _, err := os.Stat(filepath.Join(dir, "_site")); !os.IsNotExist(err) {
+				t.Fatalf("failed build published output: %v", err)
+			}
+		})
+	}
+}
+
 func TestBuildRefusesTraversalOutputWithoutDeletingOutsideFiles(t *testing.T) {
 	parent := t.TempDir()
 	garden := filepath.Join(parent, "garden")

@@ -119,6 +119,40 @@ tags: [only-tag]
 	}
 }
 
+func TestIncrementalRejectsRouteCollisionBeforeChangingState(t *testing.T) {
+	dir := newTestProject(t)
+	b := New(config.Default(), Options{})
+	if _, err := b.Build(); err != nil {
+		t.Fatal(err)
+	}
+	published := filepath.Join(dir, "_site", "note", "index.html")
+	before, err := os.ReadFile(published)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	childPath := filepath.Join(dir, "note", "child.md")
+	if err := os.MkdirAll(filepath.Dir(childPath), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(childPath, []byte("# Child\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := b.RebuildIncremental(childPath, ChangeCreate); err == nil || !strings.Contains(err.Error(), `output route "/note/"`) {
+		t.Fatalf("RebuildIncremental error = %v, want route collision", err)
+	}
+	if b.pagesByPath[filepath.Join("note", "child.md")] != nil {
+		t.Fatal("rejected page was added to the builder cache")
+	}
+	after, err := os.ReadFile(published)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(after) != string(before) {
+		t.Fatal("rejected incremental build changed published output")
+	}
+}
+
 func TestIncrementalSectionListingsTrackAddsAndDeletes(t *testing.T) {
 	dir := newTestProject(t)
 	sectionDir := filepath.Join(dir, "field-notes")

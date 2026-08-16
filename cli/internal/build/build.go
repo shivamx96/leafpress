@@ -176,6 +176,9 @@ func (b *Builder) Build() (result *Stats, resultErr error) {
 	if !b.opts.IncludeDrafts {
 		pages = filterDrafts(pages)
 	}
+	if err := content.ValidateOutputRoutes(pages); err != nil {
+		return nil, fmt.Errorf("invalid output routes: %w", err)
+	}
 
 	// Build section index for O(1) lookups
 	b.pagesBySection = buildSectionIndex(pages)
@@ -785,6 +788,20 @@ func (b *Builder) rebuildMarkdownFile(relPath string, changeType ChangeType) (*I
 
 	// Get the old page if it existed
 	oldPage := b.pagesByPath[relPath]
+	candidatePages := make([]*content.Page, 0, len(b.pages)+1)
+	for _, page := range b.pages {
+		if page.SourcePath == relPath {
+			candidatePages = append(candidatePages, changedPage)
+		} else {
+			candidatePages = append(candidatePages, page)
+		}
+	}
+	if oldPage == nil {
+		candidatePages = append(candidatePages, changedPage)
+	}
+	if err := content.ValidateOutputRoutes(candidatePages); err != nil {
+		return nil, fmt.Errorf("invalid output routes after changing %s: %w", relPath, err)
+	}
 	oldBacklinks := backlinkSources(b.pages)
 	oldNav := slices.Clone(b.siteData.Nav)
 
