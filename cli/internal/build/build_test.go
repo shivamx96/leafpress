@@ -191,6 +191,23 @@ func TestBuildRejectsConflictingOutputRoutes(t *testing.T) {
 	}
 }
 
+func TestBuildPreservesLongMarkdownLines(t *testing.T) {
+	dir := newTestProject(t)
+	longLine := strings.Repeat("long-content-", 10_000)
+	if err := os.WriteFile(
+		filepath.Join(dir, "note.md"),
+		[]byte("---\ntitle: Long Note\n---\n"+longLine),
+		0644,
+	); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := New(config.Default(), Options{}).Build(); err != nil {
+		t.Fatal(err)
+	}
+	assertFileContains(t, filepath.Join(dir, "_site", "note", "index.html"), longLine)
+}
+
 func TestBuildRefusesTraversalOutputWithoutDeletingOutsideFiles(t *testing.T) {
 	parent := t.TempDir()
 	garden := filepath.Join(parent, "garden")

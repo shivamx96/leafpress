@@ -36,9 +36,17 @@ type Frontmatter struct {
 // ParseFrontmatter extracts frontmatter and content from markdown
 func ParseFrontmatter(content string) (*Frontmatter, string, error) {
 	scanner := bufio.NewScanner(strings.NewReader(content))
+	// Scanner's default 64 KiB token limit otherwise truncates a long Markdown
+	// line without the body collection loop noticing. The complete input is
+	// already resident in memory, so allow a token as large as that input and
+	// still check Scanner.Err at each termination point.
+	scanner.Buffer(make([]byte, min(len(content)+1, bufio.MaxScanTokenSize)), len(content)+1)
 
 	// Check for frontmatter delimiter
 	if !scanner.Scan() {
+		if err := scanner.Err(); err != nil {
+			return nil, "", fmt.Errorf("read first content line: %w", err)
+		}
 		return &Frontmatter{}, content, nil
 	}
 
@@ -58,6 +66,9 @@ func ParseFrontmatter(content string) (*Frontmatter, string, error) {
 			break
 		}
 		fmLines = append(fmLines, line)
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, "", fmt.Errorf("read frontmatter: %w", err)
 	}
 
 	if !foundEnd {
@@ -80,6 +91,9 @@ func ParseFrontmatter(content string) (*Frontmatter, string, error) {
 	var bodyLines []string
 	for scanner.Scan() {
 		bodyLines = append(bodyLines, scanner.Text())
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, "", fmt.Errorf("read Markdown body: %w", err)
 	}
 
 	body := strings.Join(bodyLines, "\n")
