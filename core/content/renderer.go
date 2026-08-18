@@ -18,6 +18,7 @@ import (
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/renderer/html"
+	gmtext "github.com/yuin/goldmark/text"
 	"github.com/yuin/goldmark/util"
 )
 
@@ -30,6 +31,7 @@ type Renderer struct {
 	basePath         string // Base path for links (e.g., "/repo-name" for GitHub Pages)
 	plainBrokenLinks bool   // Render unresolved wikilinks as plain text instead of a styled span
 	escapeRawHTML    bool   // Render raw HTML in markdown as visibly escaped text instead of passing it through
+	wikiRenderer     *wikiLinkHTMLRenderer
 }
 
 // Buffer pool for markdown rendering (reduces allocations)
@@ -44,7 +46,7 @@ var bufferPool = sync.Pool{
 // always). The escaping mode instead registers rawHTMLEscaper for the raw
 // HTML node kinds — and, since WithUnsafe is dropped, goldmark also filters
 // dangerous link/image URLs (javascript:, data:, ...) in that mode.
-func newGoldmark(escapeRawHTML bool, basePath string) goldmark.Markdown {
+func newGoldmark(escapeRawHTML bool, basePath string, wikiRenderer *wikiLinkHTMLRenderer) goldmark.Markdown {
 	rendererOpts := []renderer.Option{
 		html.WithHardWraps(),
 		html.WithXHTML(),
@@ -56,20 +58,25 @@ func newGoldmark(escapeRawHTML bool, basePath string) goldmark.Markdown {
 		rendererOpts = append(rendererOpts, html.WithUnsafe()) // Allow raw HTML in markdown
 	}
 
-	return goldmark.New(
-		goldmark.WithExtensions(
-			extension.GFM, // GitHub Flavored Markdown
-			extension.Typographer,
-			extension.NewFootnote(),
-			newInlineTagExtension(basePath),
-			highlighting.NewHighlighting(
-				highlighting.WithStyle("github"),
-				highlighting.WithFormatOptions(
-					chromahtml.WithClasses(true),
-					chromahtml.WithLineNumbers(false),
-				),
+	extensions := []goldmark.Extender{
+		extension.GFM, // GitHub Flavored Markdown
+		extension.Typographer,
+		extension.NewFootnote(),
+		newInlineTagExtension(basePath),
+		highlighting.NewHighlighting(
+			highlighting.WithStyle("github"),
+			highlighting.WithFormatOptions(
+				chromahtml.WithClasses(true),
+				chromahtml.WithLineNumbers(false),
 			),
 		),
+	}
+	if wikiRenderer != nil {
+		extensions = append(extensions, &wikiLinkExtension{renderer: wikiRenderer})
+	}
+
+	return goldmark.New(
+		goldmark.WithExtensions(extensions...),
 		goldmark.WithParserOptions(
 			parser.WithAutoHeadingID(),
 		),
@@ -79,12 +86,16 @@ func newGoldmark(escapeRawHTML bool, basePath string) goldmark.Markdown {
 
 // NewRenderer creates a new markdown renderer
 func NewRenderer(resolver *LinkResolver, enableWikilinks bool, basePath string) *Renderer {
-	return &Renderer{
-		md:              newGoldmark(false, basePath),
+	r := &Renderer{
 		resolver:        resolver,
 		enableWikilinks: enableWikilinks,
 		basePath:        basePath,
 	}
+	if enableWikilinks {
+		r.wikiRenderer = &wikiLinkHTMLRenderer{resolver: resolver, basePath: basePath}
+	}
+	r.md = newGoldmark(false, basePath, r.wikiRenderer)
+	return r
 }
 
 // SetPlainBrokenLinks controls how unresolved wikilinks are rendered.
@@ -93,6 +104,9 @@ func NewRenderer(resolver *LinkResolver, enableWikilinks bool, basePath string) 
 // render as plain display text instead — no anchor, no class.
 func (r *Renderer) SetPlainBrokenLinks(plain bool) {
 	r.plainBrokenLinks = plain
+	if r.wikiRenderer != nil {
+		r.wikiRenderer.plainBrokenLinks = plain
+	}
 }
 
 // SetEscapeRawHTML controls how raw HTML in markdown is rendered.
@@ -106,7 +120,7 @@ func (r *Renderer) SetPlainBrokenLinks(plain bool) {
 func (r *Renderer) SetEscapeRawHTML(escape bool) {
 	r.escapeRawHTML = escape
 	if escape && r.mdEscaped == nil {
-		r.mdEscaped = newGoldmark(true, r.basePath)
+		r.mdEscaped = newGoldmark(true, r.basePath, r.wikiRenderer)
 	}
 }
 
@@ -117,16 +131,20 @@ func (r *Renderer) Render(content string) (string, []string) {
 	// Extract fenced code blocks first, then inline code from the remainder
 	fencedBlocks := findFencedBlocks(content)
 	protected := content
-	for i, block := range fencedBlocks {
-		placeholder := fmt.Sprintf("___CODE_BLOCK_%d___", i)
-		protected = strings.Replace(protected, block, placeholder, 1)
+	codeTokens := make([]string, 0, len(fencedBlocks))
+	codeTokenSource := newTrustedChunks()
+	for _, block := range fencedBlocks {
+		token := codeTokenSource.wrap(block)
+		codeTokens = append(codeTokens, token)
+		protected = strings.Replace(protected, block, token, 1)
 	}
 	// Now extract inline code from content with fenced blocks already removed
 	inlineBlocks := inlineCodeRegex.FindAllString(protected, -1)
 	codeBlocks := append(fencedBlocks, inlineBlocks...)
-	for i, block := range inlineBlocks {
-		placeholder := fmt.Sprintf("___CODE_BLOCK_%d___", len(fencedBlocks)+i)
-		protected = strings.Replace(protected, block, placeholder, 1)
+	for _, block := range inlineBlocks {
+		token := codeTokenSource.wrap(block)
+		codeTokens = append(codeTokens, token)
+		protected = strings.Replace(protected, block, token, 1)
 	}
 
 	// In escape mode, renderer-generated HTML is swapped for placeholder
@@ -139,14 +157,10 @@ func (r *Renderer) Render(content string) (string, []string) {
 	// Pre-markdown processing (all on protected content)
 	processed := r.processObsidianImagesProtected(protected, trusted)
 	processed = r.processCalloutsProtected(processed, trusted)
-	if r.enableWikilinks {
-		processed = r.processWikiLinksProtected(processed, &warnings, trusted)
-	}
 
 	// Restore code blocks ONCE before markdown conversion
 	for i, block := range codeBlocks {
-		placeholder := fmt.Sprintf("___CODE_BLOCK_%d___", i)
-		processed = strings.Replace(processed, placeholder, block, 1)
+		processed = strings.Replace(processed, codeTokens[i], block, 1)
 	}
 
 	// Get buffer from pool (reduces allocations)
@@ -159,7 +173,12 @@ func (r *Renderer) Render(content string) (string, []string) {
 	if r.escapeRawHTML {
 		md = r.mdEscaped
 	}
-	if err := md.Convert([]byte(processed), buf); err != nil {
+	source := []byte(processed)
+	document := md.Parser().Parse(gmtext.NewReader(source))
+	if r.enableWikilinks {
+		warnings = append(warnings, wikiLinkWarnings(document, r.resolver)...)
+	}
+	if err := md.Renderer().Render(buf, source, document); err != nil {
 		warnings = append(warnings, "markdown conversion error: "+err.Error())
 		if r.escapeRawHTML {
 			return stdhtml.EscapeString(content), warnings
@@ -476,88 +495,6 @@ func (r *Renderer) processObsidianImages(content string) string {
 	return result
 }
 
-// processWikiLinksProtected replaces [[links]] with HTML anchors (assumes code blocks already protected).
-// When trusted is non-nil (escape mode), the generated open/close tags are
-// emitted as trusted placeholder tokens; the label stays inline so it is
-// still processed (and escaped) as markdown, exactly like the default path.
-func (r *Renderer) processWikiLinksProtected(content string, warnings *[]string, trusted *trustedChunks) string {
-	links := ExtractWikiLinks(content)
-
-	// tag wraps generated HTML tags as trusted placeholders in escape mode.
-	tag := func(html string) string {
-		if trusted != nil {
-			return trusted.wrap(html)
-		}
-		return html
-	}
-
-	result := content
-	for _, link := range links {
-		var replacement string
-		// Inline tags inside wiki-link labels are metadata false positives and
-		// would create invalid nested anchors after the generated wiki-link HTML
-		// reaches Goldmark. Preserve the visible hash through an HTML entity so
-		// the inline tag parser never sees it as syntax.
-		label := strings.ReplaceAll(link.Label, "#", "&#35;")
-
-		if r.resolver != nil {
-			resolved := r.resolver.Resolve(link.Target)
-
-			if resolved.Broken {
-				if r.plainBrokenLinks {
-					// Plain mode - render just the display text
-					replacement = label
-				} else {
-					// Broken link - render as span with class
-					replacement = tag(`<span class="lp-broken-link">`) + label + tag(`</span>`)
-				}
-				*warnings = append(*warnings, "broken link: [["+link.Target+"]]")
-			} else {
-				// Valid link
-				if resolved.Ambiguous {
-					*warnings = append(*warnings, "ambiguous link: [["+link.Target+"]]")
-				}
-				href := r.basePath + resolved.Page.Permalink
-				if trusted != nil {
-					// href bypasses the raw-HTML escaper via the trusted
-					// placeholder, so make it attribute-safe here.
-					href = stdhtml.EscapeString(href)
-				}
-				replacement = tag(`<a class="lp-wikilink" href="`+href+`">`) + label + tag(`</a>`)
-			}
-		} else {
-			// No resolver - just render the label
-			replacement = label
-		}
-
-		result = replaceFirst(result, link.Raw, replacement)
-	}
-
-	return result
-}
-
-func (r *Renderer) processWikiLinks(content string, warnings *[]string) string {
-	// Extract code blocks and inline code to protect them
-	codeBlocks := extractCodeBlocks(content)
-	protectedContent := content
-
-	// Replace code blocks with placeholders
-	for i, block := range codeBlocks {
-		placeholder := fmt.Sprintf("___CODE_BLOCK_%d___", i)
-		protectedContent = strings.Replace(protectedContent, block, placeholder, 1)
-	}
-
-	result := r.processWikiLinksProtected(protectedContent, warnings, nil)
-
-	// Restore code blocks
-	for i, block := range codeBlocks {
-		placeholder := fmt.Sprintf("___CODE_BLOCK_%d___", i)
-		result = strings.Replace(result, placeholder, block, 1)
-	}
-
-	return result
-}
-
 // extractCodeBlocks extracts code blocks and inline code from markdown
 // findFencedBlocks returns the fenced code blocks in content, in order,
 // following CommonMark fence rules: an opening fence of three or more backticks
@@ -636,24 +573,6 @@ func extractCodeBlocks(content string) []string {
 	blocks = append(blocks, inlineCodeRegex.FindAllString(content, -1)...)
 
 	return blocks
-}
-
-// replaceFirst replaces only the first occurrence
-func replaceFirst(s, old, new string) string {
-	i := indexOf(s, old)
-	if i < 0 {
-		return s
-	}
-	return s[:i] + new + s[i+len(old):]
-}
-
-func indexOf(s, substr string) int {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return i
-		}
-	}
-	return -1
 }
 
 // processPostMarkdown combines all post-markdown HTML processing in one function

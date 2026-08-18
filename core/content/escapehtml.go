@@ -61,8 +61,8 @@ func (r *rawHTMLEscaper) renderHTMLBlock(
 	return ast.WalkContinue, nil
 }
 
-// trustedChunks protects renderer-generated HTML (wikilink anchors, callout
-// wrappers, media embeds) from the raw-HTML escaper. Each trusted chunk is
+// trustedChunks protects renderer-generated HTML (callout wrappers and media
+// embeds) from the raw-HTML escaper. Each trusted chunk is
 // swapped for an unguessable plain-text token before markdown conversion and
 // restored afterwards. Tokens are alphanumeric so goldmark passes them
 // through untouched, and they carry a per-render random nonce so authors
