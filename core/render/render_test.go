@@ -771,6 +771,48 @@ func TestXSSBodyAndMetadataEscaped(t *testing.T) {
 	}
 }
 
+func TestXSSJavascriptURLSchemesStripped(t *testing.T) {
+	// Hosted mode drops goldmark's WithUnsafe and depends on its
+	// dangerous-URL filter. goldmark < 1.7.17 checked destinations
+	// before resolving entities, so these two forms leaked live hrefs.
+	tests := []struct {
+		name        string
+		markdown    string
+		mustHave    []string
+		mustNotHave []string
+	}{
+		{
+			name:        "javascript&colon;",
+			markdown:    `[click](javascript&colon;alert(1))`,
+			mustHave:    []string{`<a href="">click</a>`},
+			mustNotHave: []string{`href="javascript:`, `href="javascript&colon;`, `javascript:alert(1)`},
+		},
+		{
+			name:        "<javascript:...>",
+			markdown:    `<javascript:alert(1)>`,
+			mustHave:    []string{`<a href="">javascript:alert(1)</a>`},
+			mustNotHave: []string{`href="javascript:`},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			input := `{"render": {"slug": "g"}, "content": {"pages": [{"slug": "p", "title": "P", "markdown": ` + jsonString(tt.markdown) + `}]}}`
+			html := pageHTML(t, runJSON(t, input), "p")
+			for _, want := range tt.mustHave {
+				if !strings.Contains(html, want) {
+					t.Errorf("page HTML missing %q in:\n%s", want, html)
+				}
+			}
+			for _, raw := range tt.mustNotHave {
+				if strings.Contains(html, raw) {
+					t.Errorf("page HTML contains dangerous fragment %q in:\n%s", raw, html)
+				}
+			}
+		})
+	}
+}
+
 func TestXSSTOCHeadingTextRemainsEscaped(t *testing.T) {
 	out := runJSON(t, `{
 	  "render": {"slug": "g"},
