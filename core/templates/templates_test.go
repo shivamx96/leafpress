@@ -386,9 +386,21 @@ func TestClientScriptAssetIsContentAddressed(t *testing.T) {
 		"lp-graph-panel-body",
 		"lp-search-input",
 		"static/leafpress/mermaid/mermaid.min.js",
+		"requestAnimationFrame(runFrame)",
+		"var grid = new Map()",
+		"neighborIds = new Set()",
 	} {
 		if !strings.Contains(content, want) {
 			t.Errorf("client script missing %q", want)
+		}
+	}
+	for _, legacyHotPath := range []string{
+		"for (var k = 0; k < iterations; k++)",
+		"a.neighbors.indexOf(b)",
+		"b.tags.indexOf(a.tags[i])",
+	} {
+		if strings.Contains(content, legacyHotPath) {
+			t.Errorf("client script retains synchronous graph hot path %q", legacyHotPath)
 		}
 	}
 	if strings.Contains(content, "<script") || strings.Contains(content, "</script>") {

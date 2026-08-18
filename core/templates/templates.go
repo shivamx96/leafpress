@@ -995,20 +995,20 @@ const baseTemplate = `<!DOCTYPE html>
           graphBody.appendChild(svg);
 
           // Pass 1: Group nodes by primary tag for initial placement
-          var tagGroups = {};
+          var tagGroups = new Map();
           var untaggedNodes = [];
           data.nodes.forEach(function(d) {
             var primaryTag = (d.tags && d.tags.length > 0) ? d.tags[0] : null;
             if (primaryTag) {
-              if (!tagGroups[primaryTag]) tagGroups[primaryTag] = [];
-              tagGroups[primaryTag].push(d);
+              if (!tagGroups.has(primaryTag)) tagGroups.set(primaryTag, []);
+              tagGroups.get(primaryTag).push(d);
             } else {
               untaggedNodes.push(d);
             }
           });
 
           // Assign positions by tag group (arrange in sectors around center)
-          var tagNames = Object.keys(tagGroups);
+          var tagNames = Array.from(tagGroups.keys());
           var numGroups = tagNames.length;
           var centerX = width / 2;
           var centerY = height / 2;
@@ -1019,7 +1019,7 @@ const baseTemplate = `<!DOCTYPE html>
             var angle = (2 * Math.PI * groupIndex) / numGroups;
             var groupCenterX = centerX + radius * Math.cos(angle);
             var groupCenterY = centerY + radius * Math.sin(angle);
-            var groupNodes = tagGroups[tag];
+            var groupNodes = tagGroups.get(tag);
 
             groupNodes.forEach(function(d, i) {
               // Spread nodes within group
@@ -1052,13 +1052,13 @@ const baseTemplate = `<!DOCTYPE html>
             });
           });
 
-          var nodeMap = {};
-          nodes.forEach(function(n) { nodeMap[n.id] = n; });
+          var nodeMap = new Map();
+          nodes.forEach(function(n) { nodeMap.set(n.id, n); });
 
           var links = [];
           data.edges.forEach(function(edge) {
-            var source = nodeMap[edge.source];
-            var target = nodeMap[edge.target];
+            var source = nodeMap.get(edge.source);
+            var target = nodeMap.get(edge.target);
             if (source && target) {
               links.push({ source: source, target: target, sourceId: edge.source, targetId: edge.target });
             }
@@ -1068,34 +1068,54 @@ const baseTemplate = `<!DOCTYPE html>
           nodes.forEach(function(n) {
             n.degree = 0;
             n.neighbors = [];
+            n.neighborIds = new Set();
+            n.tagSet = new Set(n.tags);
           });
           links.forEach(function(link) {
             link.source.degree++;
             link.target.degree++;
             link.source.neighbors.push(link.target);
             link.target.neighbors.push(link.source);
+            link.source.neighborIds.add(link.target.id);
+            link.target.neighborIds.add(link.source.id);
+          });
+          nodes.forEach(function(node) {
+            node.clusterIds = new Set();
+            node.neighbors.forEach(function(neighbor) {
+              neighbor.neighbors.forEach(function(candidate) {
+                if (candidate !== node && !node.neighborIds.has(candidate.id)) {
+                  node.clusterIds.add(candidate.id);
+                }
+              });
+            });
+          });
+          var attractionTagGroups = new Map();
+          nodes.forEach(function(node) {
+            node.tags.forEach(function(tag) {
+              if (!attractionTagGroups.has(tag)) attractionTagGroups.set(tag, []);
+              attractionTagGroups.get(tag).push(node);
+            });
           });
           var maxDegree = Math.max.apply(null, nodes.map(function(n) { return n.degree; })) || 1;
 
           // Check if two nodes share neighbors (for clustering)
           function shareNeighbors(a, b) {
-            for (var i = 0; i < a.neighbors.length; i++) {
-              if (b.neighbors.indexOf(a.neighbors[i]) !== -1) return true;
-            }
-            return false;
+            return a.clusterIds.has(b.id);
           }
 
           // Check if two nodes are directly connected
           function areConnected(a, b) {
-            return a.neighbors.indexOf(b) !== -1;
+            return a.neighborIds.has(b.id);
           }
 
           // Count shared tags between two nodes (for tag-based clustering)
           function sharedTagCount(a, b) {
             var count = 0;
-            for (var i = 0; i < a.tags.length; i++) {
-              if (b.tags.indexOf(a.tags[i]) !== -1) count++;
-            }
+            var smaller = a.tagSet.size < b.tagSet.size ? a.tagSet : b.tagSet;
+            var larger = smaller === a.tagSet ? b.tagSet : a.tagSet;
+            smaller.forEach(function(tag) {
+              if (larger.has(tag)) count++;
+            });
             return count;
           }
 
@@ -1250,7 +1270,7 @@ const baseTemplate = `<!DOCTYPE html>
                 link.element.setAttribute('stroke', currentAccentColor);
                 link.element.setAttribute('stroke-width', '2.5');
 
-                var connected = link.sourceId === selected.id ? nodeMap[link.targetId] : nodeMap[link.sourceId];
+                var connected = nodeMap.get(link.sourceId === selected.id ? link.targetId : link.sourceId);
                 if (connected) {
                   connected.element.style.opacity = '1';
                   connected.element.setAttribute('r', '7');
@@ -1274,7 +1294,9 @@ const baseTemplate = `<!DOCTYPE html>
             });
           }
 
-          // Pass 2: Physics simulation with tag-based clustering and centrality
+          // Pass 2: frame-budgeted physics with spatially indexed repulsion.
+          // Link and tag attraction are linear in graph size; node repulsion
+          // only checks nearby grid cells instead of every pair on every tick.
           function simulate() {
             var n = nodes.length;
             if (n === 0) return;
@@ -1284,98 +1306,106 @@ const baseTemplate = `<!DOCTYPE html>
 
             // Link distance: longer for better spread
             var linkRestLength = Math.max(120, Math.min(280, idealSpacing * 0.75));
-            var tagRestLength = linkRestLength * 1.1;
-            var clusterRestLength = linkRestLength * 1.3;
             var collisionRadius = 25;
-
-            // Stronger repulsion for better spread
             var repulsionStrength = idealSpacing * idealSpacing * 1.2;
-
-            // Much weaker center force - let nodes spread naturally
             var centerForce = 0.006;
-
-            var iterations = Math.min(350, 120 + n * 6);
+            var iterations = Math.min(240, 80 + n * 2);
+            if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+              iterations = Math.min(iterations, 80);
+            }
             var padding = 35;
-
             var alpha = 0.3;
-            var alphaDecay = 0.995;
+            var alphaDecay = Math.pow(0.01, 1 / iterations);
+            var iteration = 0;
+            var cellSize = Math.max(collisionRadius * 2, idealSpacing * 1.5);
+            var repulsionRange = cellSize * 2;
 
-            for (var k = 0; k < iterations; k++) {
-              // Reset velocities
+            function applyPairForce(a, b) {
+              var dx = b.x - a.x;
+              var dy = b.y - a.y;
+              var distSquared = dx * dx + dy * dy;
+              if (distSquared > repulsionRange * repulsionRange) return;
+              if (distSquared < 1) {
+                dx = (Math.random() - 0.5) * 2;
+                dy = (Math.random() - 0.5) * 2;
+                distSquared = 1;
+              }
+              var dist = Math.sqrt(distSquared);
+              var related = areConnected(a, b) || sharedTagCount(a, b) > 0 || shareNeighbors(a, b);
+              var force = -repulsionStrength * (related ? 0.2 : 1) / distSquared;
+              if (dist < collisionRadius * 2) {
+                force -= (collisionRadius * 2 - dist) * 3;
+              }
+              var fx = (force * dx) / dist;
+              var fy = (force * dy) / dist;
+              a.vx += fx;
+              a.vy += fy;
+              b.vx -= fx;
+              b.vy -= fy;
+            }
+
+            function tick() {
               nodes.forEach(function(node) { node.vx = 0; node.vy = 0; });
 
-              // Node-node forces
-              for (var i = 0; i < n; i++) {
-                for (var j = i + 1; j < n; j++) {
-                  var a = nodes[i];
-                  var b = nodes[j];
-                  var dx = b.x - a.x;
-                  var dy = b.y - a.y;
-                  var dist = Math.sqrt(dx * dx + dy * dy);
-
-                  // Prevent division by zero
-                  if (dist < 1) {
-                    dx = (Math.random() - 0.5) * 2;
-                    dy = (Math.random() - 0.5) * 2;
-                    dist = 1;
-                  }
-
-                  var force = 0;
-                  var connected = areConnected(a, b);
-                  var sharedTags = sharedTagCount(a, b);
-                  var clustered = !connected && shareNeighbors(a, b);
-
-                  // Centrality weighting: high-degree nodes exert more influence
-                  var centralityMult = 1 + (getCentrality(a) + getCentrality(b)) * 0.5;
-
-                  if (connected) {
-                    // Connected nodes: strong spring attraction (link force = 1.0 in Obsidian)
-                    // Higher centrality = stronger pull
-                    var displacement = dist - linkRestLength;
-                    force = displacement * 0.1 * centralityMult;
-                  } else if (sharedTags > 0) {
-                    // Nodes with shared tags: attraction based on tag overlap
-                    var displacement = dist - tagRestLength;
-                    var tagStrength = 0.08 * Math.min(sharedTags, 3); // Cap at 3 shared tags
-                    if (displacement > 0) {
-                      force = displacement * tagStrength;
-                    } else {
-                      // Still repel if too close
-                      force = -repulsionStrength * 0.2 / (dist * dist);
-                    }
-                  } else if (clustered) {
-                    // Nodes sharing neighbors: weaker attraction
-                    var displacement = dist - clusterRestLength;
-                    if (displacement > 0) {
-                      force = displacement * 0.04;
-                    } else {
-                      force = -repulsionStrength * 0.3 / (dist * dist);
-                    }
-                  } else {
-                    // Unrelated nodes: repulsion with distance falloff
-                    force = -repulsionStrength / (dist * dist);
-
-                    // Reduced repulsion at large distances (allows clusters)
-                    if (dist > idealSpacing * 2) {
-                      force *= 0.25;
+              // Spatial hash: typical work is proportional to nearby nodes,
+              // while dense cells retain exact pairwise collision handling.
+              var grid = new Map();
+              nodes.forEach(function(node, index) {
+                var gx = Math.floor(node.x / cellSize);
+                var gy = Math.floor(node.y / cellSize);
+                var key = gx + ',' + gy;
+                if (!grid.has(key)) grid.set(key, []);
+                grid.get(key).push(index);
+              });
+              nodes.forEach(function(a, i) {
+                var gx = Math.floor(a.x / cellSize);
+                var gy = Math.floor(a.y / cellSize);
+                for (var ox = -2; ox <= 2; ox++) {
+                  for (var oy = -2; oy <= 2; oy++) {
+                    var nearby = grid.get((gx + ox) + ',' + (gy + oy));
+                    if (!nearby) continue;
+                    for (var p = 0; p < nearby.length; p++) {
+                      var j = nearby[p];
+                      if (j > i) applyPairForce(a, nodes[j]);
                     }
                   }
-
-                  // Collision avoidance
-                  if (dist < collisionRadius * 2) {
-                    force -= (collisionRadius * 2 - dist) * 3;
-                  }
-
-                  var fx = (force * dx) / dist;
-                  var fy = (force * dy) / dist;
-                  a.vx += fx;
-                  a.vy += fy;
-                  b.vx -= fx;
-                  b.vy -= fy;
                 }
-              }
+              });
 
-              // Center gravity (0.52 in Obsidian = strong pull toward center)
+              // Exact spring forces only traverse real graph edges.
+              links.forEach(function(link) {
+                var a = link.source;
+                var b = link.target;
+                var dx = b.x - a.x;
+                var dy = b.y - a.y;
+                var dist = Math.max(1, Math.sqrt(dx * dx + dy * dy));
+                var centralityMult = 1 + (getCentrality(a) + getCentrality(b)) * 0.5;
+                var force = (dist - linkRestLength) * 0.1 * centralityMult;
+                var fx = (force * dx) / dist;
+                var fy = (force * dy) / dist;
+                a.vx += fx;
+                a.vy += fy;
+                b.vx -= fx;
+                b.vy -= fy;
+              });
+
+              // Pull tagged nodes toward their group centroid in O(nodes).
+              attractionTagGroups.forEach(function(groupNodes) {
+                if (!groupNodes || groupNodes.length < 2) return;
+                var sumX = 0;
+                var sumY = 0;
+                groupNodes.forEach(function(node) {
+                  sumX += node.x;
+                  sumY += node.y;
+                });
+                var groupX = sumX / groupNodes.length;
+                var groupY = sumY / groupNodes.length;
+                groupNodes.forEach(function(node) {
+                  node.vx += (groupX - node.x) * 0.025;
+                  node.vy += (groupY - node.y) * 0.025;
+                });
+              });
+
               var cx = width / 2;
               var cy = height / 2;
               nodes.forEach(function(node) {
@@ -1385,71 +1415,73 @@ const baseTemplate = `<!DOCTYPE html>
                 node.vy += dy * centerForce;
               });
 
-              // Apply velocities with damping
               nodes.forEach(function(node) {
-                // Velocity damping
                 node.vx *= 0.85;
                 node.vy *= 0.85;
-
                 node.x += node.vx * alpha;
                 node.y += node.vy * alpha;
-
-                // Keep within bounds with padding
                 node.x = Math.max(padding, Math.min(width - padding, node.x));
                 node.y = Math.max(padding, Math.min(height - padding, node.y));
               });
-
               alpha *= alphaDecay;
-
-              // Early termination if simulation has settled
-              if (alpha < 0.005) break;
+              iteration++;
             }
 
-            // Update DOM positions
-            var centerY = height / 2;
-            nodes.forEach(function(node) {
-              node.element.setAttribute('cx', node.x);
-              node.element.setAttribute('cy', node.y);
-              if (node.label && node.labelLines) {
-                // Clear existing tspans
-                while (node.label.firstChild) {
-                  node.label.removeChild(node.label.firstChild);
+            function draw() {
+              var layoutCenterY = height / 2;
+              nodes.forEach(function(node) {
+                node.element.setAttribute('cx', node.x);
+                node.element.setAttribute('cy', node.y);
+                if (node.label && node.labelLines) {
+                  if (!node.labelSpans) {
+                    node.labelSpans = [];
+                    node.labelLines.forEach(function(line) {
+                      var tspan = document.createElementNS('http://www.w3.org/2000/svg', 'tspan');
+                      tspan.textContent = line;
+                      node.label.appendChild(tspan);
+                      node.labelSpans.push(tspan);
+                    });
+                  }
+                  var labelBelow = node.y < layoutCenterY;
+                  var lineHeight = 12;
+                  var offset = labelBelow ? 16 : -(8 + (node.labelLines.length - 1) * lineHeight);
+                  node.label.setAttribute('x', node.x);
+                  node.label.setAttribute('y', node.y);
+                  node.labelSpans.forEach(function(tspan, idx) {
+                    tspan.setAttribute('x', node.x);
+                    tspan.setAttribute('dy', idx === 0 ? offset : lineHeight);
+                  });
                 }
+              });
+              links.forEach(function(link) {
+                link.element.setAttribute('x1', link.source.x);
+                link.element.setAttribute('y1', link.source.y);
+                link.element.setAttribute('x2', link.target.x);
+                link.element.setAttribute('y2', link.target.y);
+              });
+            }
 
-                // Position label above or below based on node position
-                // Nodes in top half -> label below, nodes in bottom half -> label above
-                var labelBelow = node.y < centerY;
-                var lineHeight = 12;
-                var offset = labelBelow ? 16 : -(8 + (node.labelLines.length - 1) * lineHeight);
-
-                node.label.setAttribute('x', node.x);
-                node.label.setAttribute('y', node.y);
-
-                node.labelLines.forEach(function(line, idx) {
-                  var tspan = document.createElementNS('http://www.w3.org/2000/svg', 'tspan');
-                  tspan.setAttribute('x', node.x);
-                  tspan.setAttribute('dy', idx === 0 ? offset : lineHeight);
-                  tspan.textContent = line;
-                  node.label.appendChild(tspan);
-                });
+            function runFrame() {
+              var started = performance.now();
+              do {
+                tick();
+              } while (iteration < iterations && alpha >= 0.005 && performance.now() - started < 10);
+              draw();
+              if (iteration < iterations && alpha >= 0.005) {
+                requestAnimationFrame(runFrame);
+                return;
               }
-            });
-
-            links.forEach(function(link) {
-              link.element.setAttribute('x1', link.source.x);
-              link.element.setAttribute('y1', link.source.y);
-              link.element.setAttribute('x2', link.target.x);
-              link.element.setAttribute('y2', link.target.y);
-            });
-
-            // Highlight current node after simulation
-            if (currentSlug) {
-              var current = nodeMap[currentSlug];
-              if (current) {
-                current.element.setAttribute('r', '8');
-                if (current.label) current.label.style.opacity = '1';
+              if (currentSlug) {
+                var current = nodeMap.get(currentSlug);
+                if (current) {
+                  current.element.setAttribute('r', '8');
+                  if (current.label) current.label.style.opacity = '1';
+                }
               }
             }
+
+            draw();
+            requestAnimationFrame(runFrame);
           }
 
           simulate();
