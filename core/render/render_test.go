@@ -1270,6 +1270,23 @@ func TestPageReadingTimeRejectsNonPositiveOverride(t *testing.T) {
 	}
 }
 
+func TestRenderRejectsConflictingOutputRoutes(t *testing.T) {
+	_, err := Render(&Input{
+		Render: RenderOpts{Slug: "g"},
+		Content: Content{Pages: []InputPage{
+			{Slug: "notes", Title: "Notes"},
+			{Slug: "notes/one", Title: "One"},
+		}},
+	})
+	if err == nil || !strings.Contains(err.Error(), `output route "/notes/"`) {
+		t.Fatalf("expected route collision error, got %v", err)
+	}
+	var inputErr *InputError
+	if !errors.As(err, &inputErr) {
+		t.Fatalf("route collision should be an InputError, got %T", err)
+	}
+}
+
 func TestRootIndexReplacesGardenHome(t *testing.T) {
 	out := runJSON(t, `{
 	  "render": {"slug": "g"},

@@ -2,6 +2,7 @@ package content
 
 import (
 	"os"
+	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -248,9 +249,10 @@ func generateSlug(relPath string) string {
 	// Convert to forward slashes (for Windows compatibility)
 	slug = filepath.ToSlash(slug)
 
-	// Handle _index.md -> use parent directory
-	if strings.HasSuffix(slug, "_index") {
-		slug = filepath.Dir(slug)
+	// Handle the reserved _index.md basename only. A normal filename such as
+	// migration_index.md must retain its own route.
+	if path.Base(slug) == "_index" {
+		slug = path.Dir(slug)
 		if slug == "." {
 			slug = ""
 		}
