@@ -27,11 +27,13 @@ import (
 //     without a root index page omits / entirely. Guarded by
 //     TestParityHTMLPaths (the exclusion is asserted, not assumed).
 //   - Hosted hardening: the renderer escapes raw author HTML
-//     (SetEscapeRawHTML), degrades broken wikilinks to plain text
-//     (SetPlainBrokenLinks), and escapes site fields (safeSiteData); the
-//     CLI trusts local content. Full-page byte equality is therefore out of
-//     scope — structural HTML parity (hrefs, resolved links) is asserted
-//     instead in TestParityPageHTMLStructure.
+//     (SetEscapeRawHTML) and degrades broken wikilinks to plain text
+//     (SetPlainBrokenLinks); the CLI trusts local content. Full-page byte
+//     equality is therefore out of scope — structural HTML parity (hrefs,
+//     resolved links) is asserted instead in TestParityPageHTMLStructure.
+//     Site and page *metadata* escaping is no longer a divergence: both
+//     interfaces route it through site.SafeSiteData / site.EscapePageMeta,
+//     because an unescaped quote is a broken og: tag on either one.
 //   - Missing custom fonts: the CLI hard-fails the build; the renderer
 //     warns (a pure transform cannot check storage). Hosts must treat the
 //     warning as a publish blocker.

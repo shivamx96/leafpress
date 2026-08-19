@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"html"
 	"io"
 	"net/url"
 	"os"
@@ -60,9 +61,13 @@ type Builder struct {
 	siteData       templates.SiteData
 }
 
-// New creates a new Builder
+// New creates a new Builder.
+//
+// Explicit navigation labels and paths are escaped here, at the config trust
+// boundary, exactly as the embedded renderer does in resolveConfig.
 func New(cfg *config.Config, opts Options) *Builder {
 	cwd, err := os.Getwd()
+	sitegen.EscapeNavItems(&cfg.Navigation)
 	return &Builder{
 		cfg:       cfg,
 		opts:      opts,
@@ -180,6 +185,11 @@ func (b *Builder) Build() (result *Stats, resultErr error) {
 		return nil, fmt.Errorf("invalid output routes: %w", err)
 	}
 
+	// Escape page metadata before anything indexes or renders it: templates
+	// are text/template, so a quote in a title or description would otherwise
+	// break the og:/meta tag it lands in.
+	sitegen.EscapePageMeta(pages)
+
 	// Build section index for O(1) lookups
 	b.pagesBySection = buildSectionIndex(pages)
 
@@ -204,6 +214,7 @@ func (b *Builder) Build() (result *Stats, resultErr error) {
 	// Render markdown to HTML
 	t0 = time.Now()
 	warnings := content.RenderPages(pages, b.cfg.Features.Wikilinks, b.linkResolver, basePath)
+	pinSEODescriptions(pages)
 	b.logTiming("markdown", time.Since(t0))
 	stats.WarningCount += len(warnings)
 
@@ -215,11 +226,10 @@ func (b *Builder) Build() (result *Stats, resultErr error) {
 
 	// Generate site data. Navigation is resolved by the shared builder so the
 	// CLI and renderer produce identical nav from identical config.
-	siteData := templates.SiteData{
+	siteData := sitegen.SafeSiteData(templates.SiteData{
 		Title:       b.cfg.Site.Title,
 		Description: b.cfg.Site.Description,
 		Author:      b.cfg.Site.Author,
-		Nav:         sitegen.BuildNavigation(pages, b.cfg.Navigation),
 		Theme:       b.cfg.Theme,
 		BaseURL:     b.cfg.Site.BaseURL,
 		BasePath:    basePath,
@@ -229,7 +239,10 @@ func (b *Builder) Build() (result *Stats, resultErr error) {
 		Search:      b.cfg.Features.Search,
 		RSS:         b.cfg.Features.RSS,
 		HeadExtra:   b.cfg.Site.HeadExtra,
-	}
+	})
+	// Nav is assembled after escaping: its parts are already-escaped config
+	// items and page titles, and BasePath must stay a usable URL prefix.
+	siteData.Nav = sitegen.BuildNavigation(pages, b.cfg.Navigation)
 	clientScriptPath, clientScript, err := b.templates.ClientScriptAsset(siteData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate client script: %w", err)
@@ -775,6 +788,9 @@ func (b *Builder) rebuildMarkdownFile(relPath string, changeType ChangeType) (*I
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse %s: %w", relPath, err)
 	}
+	// Freshly parsed metadata is raw; the cached pages around it are already
+	// escaped. Escape here so an incremental rebuild matches a full build.
+	sitegen.EscapePageMeta([]*content.Page{changedPage})
 
 	// Skip drafts if needed
 	if !b.opts.IncludeDrafts && changedPage.Draft {
@@ -894,6 +910,7 @@ func (b *Builder) rebuildMarkdownFile(relPath string, changeType ChangeType) (*I
 		}
 	}
 	content.RenderPages(pagesToRender, b.cfg.Features.Wikilinks, b.linkResolver, b.siteData.BasePath)
+	pinSEODescriptions(pagesToRender)
 	b.logTiming("markdown", time.Since(t0))
 
 	// Render the affected pages
@@ -982,6 +999,7 @@ func (b *Builder) handleDeletedFile(relPath string) (*IncrementalStats, error) {
 	// Removing a page can break any title/slug alias and changes automatic
 	// navigation. Re-render all remaining pages with the new resolver.
 	content.RenderPages(b.pages, b.cfg.Features.Wikilinks, b.linkResolver, b.siteData.BasePath)
+	pinSEODescriptions(b.pages)
 	for _, page := range b.pages {
 		if page.IsIndex {
 			if err := b.renderSectionIndex(page, b.pages, b.siteData); err != nil {
@@ -1647,7 +1665,7 @@ func (b *Builder) generateRobotsTxt() error {
 // generateSitemap writes the sitemap.xml file
 func (b *Builder) generateSitemap(pages []*content.Page) error {
 	outPath := filepath.Join(b.outputDir, "sitemap.xml")
-	return os.WriteFile(outPath, []byte(sitegen.Sitemap(pages, b.cfg.Site.BaseURL)), 0644)
+	return os.WriteFile(outPath, []byte(sitegen.Sitemap(sitegen.RawPages(pages), b.cfg.Site.BaseURL)), 0644)
 }
 
 // generate404 writes the 404.html file
@@ -1660,18 +1678,23 @@ func (b *Builder) generate404(siteData templates.SiteData) error {
 	return os.WriteFile(outPath, []byte(html), 0644)
 }
 
-// generateRSS writes the feed.xml file
+// generateRSS writes the feed.xml file. RSS does its own XML encoding, so it
+// receives the un-escaped spelling of every title and description.
 func (b *Builder) generateRSS(pages []*content.Page, siteData templates.SiteData) error {
 	outPath := filepath.Join(b.outputDir, "feed.xml")
-	return os.WriteFile(outPath, []byte(sitegen.RSS(pages, siteData, b.cfg.Site.BaseURL, time.Time{})), 0644)
+	rawSite := sitegen.RawSiteData(siteData, b.cfg.Site.BaseURL)
+	feed := sitegen.RSS(sitegen.RawPages(pages), rawSite, b.cfg.Site.BaseURL, time.Time{})
+	return os.WriteFile(outPath, []byte(feed), 0644)
 }
 
 // generateJSONFiles creates graph.json and/or search-index.json in a single pass.
 // Callers pass genSearch=true in production: the index backs both full-text
 // search and hover link previews.
 func (b *Builder) generateJSONFiles(pages []*content.Page, genGraph, genSearch bool) error {
+	// JSON encoding handles its own quoting, so the index carries the
+	// un-escaped titles a reader actually typed.
 	graphJSON, searchJSON, err := sitegen.GraphSearch(
-		pages, b.linkResolver, b.siteData.BasePath, genGraph, genSearch,
+		sitegen.RawPages(pages), b.linkResolver, b.siteData.BasePath, genGraph, genSearch,
 	)
 	if err != nil {
 		return err
@@ -1690,6 +1713,19 @@ func (b *Builder) generateJSONFiles(pages []*content.Page, genGraph, genSearch b
 }
 
 // Helper functions
+
+// pinSEODescriptions freezes the auto-generated description to an escaped
+// value. Page.SEODescription otherwise derives it from HTMLContent through
+// PlainContent, which runs html.UnescapeString and would hand quotes and
+// angle brackets from body text straight to a meta attribute. Mirrors the
+// same pin in the embedded renderer.
+func pinSEODescriptions(pages []*content.Page) {
+	for _, page := range pages {
+		if page != nil && page.Description == "" {
+			page.Description = html.EscapeString(page.SEODescription())
+		}
+	}
+}
 
 func filterDrafts(pages []*content.Page) []*content.Page {
 	var result []*content.Page
