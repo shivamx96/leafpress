@@ -165,6 +165,29 @@ Nav paths must start with `/`.
 | `port` | `3000` | Dev server port |
 | `ignore` | `[]` | Glob patterns to exclude from builds, e.g. `["drafts/**", "*.draft.md", "private/**"]` |
 
+### Ignore patterns
+
+Patterns are matched against each path relative to the project root, using
+forward slashes on every platform:
+
+| Pattern | Matches |
+|---------|---------|
+| `drafts` | a file or folder named `drafts` at **any** depth, and everything inside it |
+| `drafts/**` | everything under a top-level `drafts/`, and the folder itself |
+| `*.draft.md` | that suffix at any depth — `a.draft.md`, `notes/b.draft.md` |
+| `notes/*.wip.md` | only direct children of a top-level `notes/` |
+| `a/**/tmp.md` | `tmp.md` anywhere beneath `a/` |
+
+A pattern containing a `/` is **anchored** to the project root; one without a
+`/` matches by name wherever it appears. Within a path segment, `*`, `?` and
+`[a-z]` behave as usual; `**` additionally spans folder boundaries and must be
+a whole segment. Naming a folder also excludes its contents, so `drafts` and
+`drafts/**` are equivalent.
+
+A malformed pattern (`draft-[0-9.md`, `a/**b/c`) fails the build rather than
+silently matching nothing — otherwise a typo would publish the very drafts the
+pattern was written to hold back.
+
 `outputDir` must be a relative directory inside the project and cannot contain
 `.` or `..` path segments. Leafpress places a hidden `.leafpress-output`
 ownership marker in generated output; it will not clean an existing non-empty

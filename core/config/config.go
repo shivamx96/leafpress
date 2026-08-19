@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/shivamx96/leafpress/core/assets"
+	"github.com/shivamx96/leafpress/core/content"
 	"github.com/shivamx96/leafpress/core/themes"
 )
 
@@ -509,6 +510,12 @@ func (c *Config) Validate() error {
 
 	if err := validateOutputDir(c.Build.OutputDir); err != nil {
 		return err
+	}
+
+	// A malformed glob would otherwise ignore nothing at all, silently
+	// publishing the drafts it was written to hold back.
+	if _, err := content.NewIgnoreMatcher(c.Build.Ignore); err != nil {
+		return fmt.Errorf("build.%w", err)
 	}
 
 	preset := c.Theme.ResolvedPreset()
