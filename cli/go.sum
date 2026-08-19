@@ -31,6 +31,8 @@ github.com/shivamx96/leafpress/core v1.0.0-beta.18.0.20260819182024-d51466ac50b3
 github.com/shivamx96/leafpress/core v1.0.0-beta.18.0.20260819182024-d51466ac50b3/go.mod h1:MOJgujj1K7arfeG+6F17IhmZyephcwrl3Q+/0v3B97I=
 github.com/shivamx96/leafpress/core v1.0.0-beta.18.0.20260819182056-3e7bff02005c h1:WtUel/5gWmHvEUJt9vLY1CVpR4UshTvKHGwH+yAgtdA=
 github.com/shivamx96/leafpress/core v1.0.0-beta.18.0.20260819182056-3e7bff02005c/go.mod h1:MOJgujj1K7arfeG+6F17IhmZyephcwrl3Q+/0v3B97I=
+github.com/shivamx96/leafpress/core v1.0.0-beta.18.0.20260819182949-c0450e18367e h1:XjOg0U2yGFYDyLO9bkPhF4AdDqKOq2zfor9eH+2eNwE=
+github.com/shivamx96/leafpress/core v1.0.0-beta.18.0.20260819182949-c0450e18367e/go.mod h1:MOJgujj1K7arfeG+6F17IhmZyephcwrl3Q+/0v3B97I=
 github.com/spf13/cobra v1.10.2 h1:DMTTonx5m65Ic0GOoRY2c16WCbHxOOw6xxezuLaBpcU=
 github.com/spf13/cobra v1.10.2/go.mod h1:7C1pvHqHw5A4vrJfjNwvOdzYu0Gml16OCs2GRiTUUS4=
 github.com/spf13/pflag v1.0.9 h1:9exaQaMOCwffKiiiYk6/BndUBv+iRViNW+4lEMi0PvY=
