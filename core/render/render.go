@@ -664,10 +664,7 @@ func resolveConfig(in *Input) (*config.Config, templates.SiteData, error) {
 		return nil, templates.SiteData{}, err
 	}
 
-	for i := range cfg.Navigation.Items {
-		cfg.Navigation.Items[i].Label = html.EscapeString(cfg.Navigation.Items[i].Label)
-		cfg.Navigation.Items[i].Path = html.EscapeString(cfg.Navigation.Items[i].Path)
-	}
+	sitegen.EscapeNavItems(&cfg.Navigation)
 
 	var footerAttribution *templates.FooterAttribution
 	if in.Render.FooterAttribution != nil {
@@ -691,7 +688,7 @@ func resolveConfig(in *Input) (*config.Config, templates.SiteData, error) {
 		HeadExtra:         cfg.Site.HeadExtra,
 		FooterAttribution: footerAttribution,
 	}
-	return cfg, safeSiteData(rawSite), nil
+	return cfg, sitegen.SafeSiteData(rawSite), nil
 }
 
 // parseConfig turns the optional shared config object into a validated Config,
@@ -721,25 +718,6 @@ func basePathFromURL(baseURL string) (string, error) {
 	return strings.TrimSuffix(parsed.EscapedPath(), "/"), nil
 }
 
-// safeSiteData protects text/template interpolation at the renderer trust
-// boundary. headExtra deliberately remains raw because it is an explicit
-// trusted Leafpress configuration escape hatch, matching the CLI. Nav is set
-// later from BuildNavigation, whose parts are already escaped.
-func safeSiteData(site templates.SiteData) templates.SiteData {
-	site.Title = html.EscapeString(site.Title)
-	site.Description = html.EscapeString(site.Description)
-	site.Author = html.EscapeString(site.Author)
-	site.BaseURL = html.EscapeString(site.BaseURL)
-	site.Image = html.EscapeString(site.Image)
-	if site.FooterAttribution != nil {
-		copy := *site.FooterAttribution
-		copy.Name = html.EscapeString(copy.Name)
-		copy.URL = html.EscapeString(copy.URL)
-		site.FooterAttribution = &copy
-	}
-	return site
-}
-
 func validateFooterAttribution(attribution *FooterAttribution) error {
 	if attribution == nil {
 		return nil
@@ -765,20 +743,8 @@ func renderArtifacts(
 	resolver *content.LinkResolver,
 	hasOrigin bool,
 ) ([]OutputArtifact, error) {
-	artifactPages := make([]*content.Page, 0, len(pages))
-	for _, page := range pages {
-		copy := *page
-		copy.Title = html.UnescapeString(copy.Title)
-		copy.Description = html.UnescapeString(copy.Description)
-		copy.Image = html.UnescapeString(copy.Image)
-		artifactPages = append(artifactPages, &copy)
-	}
-	rawSite := safeSite
-	rawSite.Title = html.UnescapeString(rawSite.Title)
-	rawSite.Description = html.UnescapeString(rawSite.Description)
-	rawSite.Author = html.UnescapeString(rawSite.Author)
-	rawSite.BaseURL = cfg.Site.BaseURL
-	rawSite.Image = html.UnescapeString(rawSite.Image)
+	artifactPages := sitegen.RawPages(pages)
+	rawSite := sitegen.RawSiteData(safeSite, cfg.Site.BaseURL)
 
 	// search-index.json is always emitted: full-text search UI and hover link
 	// previews share it. cfg.Features.Search only controls the search UI chrome/JS.
