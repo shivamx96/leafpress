@@ -25,10 +25,16 @@ func runInit(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to get current directory: %w", err)
 	}
 
-	// Check if config already exists
-	configPath := filepath.Join(cwd, "leafpress.json")
+	// Check if config already exists. Scaffold whichever file --config
+	// selected: silently writing leafpress.json instead would leave the
+	// project without the config every later command goes on to read.
+	configName := getConfigPath()
+	configPath := configName
+	if !filepath.IsAbs(configPath) {
+		configPath = filepath.Join(cwd, configPath)
+	}
 	if _, err := os.Stat(configPath); err == nil {
-		return fmt.Errorf("leafpress.json already exists. Remove it first to reinitialize")
+		return fmt.Errorf("%s already exists. Remove it first to reinitialize", configName)
 	}
 
 	// Create default config
@@ -36,7 +42,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 	if err := config.Write(configPath, cfg); err != nil {
 		return fmt.Errorf("failed to write config: %w", err)
 	}
-	fmt.Println("Created leafpress.json")
+	fmt.Printf("Created %s\n", configName)
 
 	// Create style.css
 	stylePath := filepath.Join(cwd, "style.css")

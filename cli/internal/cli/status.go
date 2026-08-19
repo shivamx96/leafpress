@@ -35,7 +35,7 @@ Examples:
 
 func runStatus() error {
 	// Load config
-	cfg, err := config.Load("leafpress.json")
+	cfg, err := config.Load(getConfigPath())
 	if err != nil {
 		return fmt.Errorf("failed to load config: %w", err)
 	}

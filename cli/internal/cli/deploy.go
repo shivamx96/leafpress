@@ -68,7 +68,7 @@ func runDeploy(providerFlag string, skipBuild, reconfigure, dryRun bool) error {
 	}()
 
 	// Load config
-	cfg, err := config.Load("leafpress.json")
+	cfg, err := config.Load(getConfigPath())
 	if err != nil {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
@@ -98,13 +98,13 @@ func runDeploy(providerFlag string, skipBuild, reconfigure, dryRun bool) error {
 			return err
 		}
 
-		// Save config to leafpress.json
+		// Save config to the active config file
 		if err := saveDeployConfig(cfg, providerConfig); err != nil {
 			return fmt.Errorf("failed to save configuration: %w", err)
 		}
 
 		fmt.Println()
-		fmt.Println("  Configuration saved to leafpress.json")
+		fmt.Printf("  Configuration saved to %s\n", getConfigPath())
 	} else {
 		// Use existing config
 		providerConfig = &deploy.ProviderConfig{
@@ -217,7 +217,8 @@ func runDeploy(providerFlag string, skipBuild, reconfigure, dryRun bool) error {
 	return nil
 }
 
-// saveDeployConfig updates leafpress.json with deploy configuration
+// saveDeployConfig updates the active config file with deploy configuration.
+// It rewrites whichever file --config selected, never a hardcoded name.
 func saveDeployConfig(cfg *config.Config, deployConfig *deploy.ProviderConfig) error {
 	cfg.Deploy = config.DeployConfig{
 		Provider: deployConfig.Provider,
@@ -225,7 +226,8 @@ func saveDeployConfig(cfg *config.Config, deployConfig *deploy.ProviderConfig) e
 	}
 
 	// Read existing file to preserve formatting
-	data, err := os.ReadFile("leafpress.json")
+	configPath := getConfigPath()
+	data, err := os.ReadFile(configPath)
 	if err != nil {
 		return err
 	}
@@ -257,7 +259,7 @@ func saveDeployConfig(cfg *config.Config, deployConfig *deploy.ProviderConfig) e
 		return err
 	}
 
-	return os.WriteFile("leafpress.json", newData, 0644)
+	return os.WriteFile(configPath, newData, 0644)
 }
 
 // applyGitHubPagesBaseURL sets site.baseURL in the raw config map (creating the
