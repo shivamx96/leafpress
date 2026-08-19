@@ -67,7 +67,10 @@ The token needs `repo` scope for pushing to repositories.
 
 ### GitHub Actions Example
 
-The easiest approach is to use GitHub's built-in `GITHUB_TOKEN`, which requires no setup:
+The easiest approach is to use GitHub's built-in `GITHUB_TOKEN`. It needs no
+secret of your own, but it **does** need write permission: the default token is
+read-only, so without the `permissions` block below the deploy fails when it
+pushes to `gh-pages`.
 
 ```yaml
 name: Deploy to GitHub Pages
@@ -75,6 +78,9 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
+
+permissions:
+  contents: write
 
 jobs:
   deploy:
@@ -95,7 +101,19 @@ jobs:
         run: leafpress deploy
 ```
 
-Alternatively, if you want to use a Personal Access Token instead, create one with `repo` scope and add it as a repository secret named `GITHUB_TOKEN`.
+Alternatively, use a Personal Access Token — needed when you deploy to a
+*different* repository than the one running the workflow, which the built-in
+token cannot reach. Create one with `repo` scope and add it as a repository
+secret. Pick any name except `GITHUB_TOKEN`: GitHub reserves the `GITHUB_`
+prefix and rejects secrets that use it. For example, with a secret named
+`LEAFPRESS_DEPLOY_TOKEN`:
+
+```yaml
+      - name: Deploy
+        env:
+          LEAFPRESS_GITHUB_TOKEN: ${{ secrets.LEAFPRESS_DEPLOY_TOKEN }}
+        run: leafpress deploy
+```
 
 ## Check What's Pending
 
