@@ -97,6 +97,12 @@ func (s *Scanner) Scan() ([]*Page, error) {
 			return nil
 		}
 
+		// A note reached through a link that leaves the garden is not the
+		// author's content to publish.
+		if err := CheckSymlinkEscape(s.rootDir, path, d.Type()); err != nil {
+			return err
+		}
+
 		// Get file info only for markdown files
 		info, err := d.Info()
 		if err != nil {
@@ -232,6 +238,15 @@ func (s *Scanner) parsePage(absPath, relPath string, info os.FileInfo) (*Page, e
 // ParseSingleFile parses a single markdown file and returns a Page
 func ParseSingleFile(rootDir, relPath string) (*Page, error) {
 	absPath := filepath.Join(rootDir, relPath)
+	lstat, err := os.Lstat(absPath)
+	if err != nil {
+		return nil, err
+	}
+	// The incremental path must apply the same boundary as a full scan, or a
+	// serve session would publish what a build refuses.
+	if err := CheckSymlinkEscape(rootDir, absPath, lstat.Mode()); err != nil {
+		return nil, err
+	}
 	info, err := os.Stat(absPath)
 	if err != nil {
 		return nil, err
