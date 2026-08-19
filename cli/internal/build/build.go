@@ -1538,7 +1538,7 @@ func (b *Builder) copyStatic() error {
 	}
 
 	dstDir := filepath.Join(b.outputDir, "static")
-	return copyDir(srcDir, dstDir)
+	return copyDir(srcDir, dstDir, b.rootDir)
 }
 
 // copyFavicons copies favicons from the user directory, falling back to the
@@ -1823,7 +1823,10 @@ func sortPages(pages []*content.Page, sortBy string) {
 	}
 }
 
-func copyDir(src, dst string) error {
+// copyDir mirrors src into dst. root is the project directory: static assets
+// reached through a symlink that leaves it are refused, on the same grounds
+// as escaping content files.
+func copyDir(src, dst, root string) error {
 	// Collect files and create directories in first pass
 	type fileCopy struct {
 		src string
@@ -1842,6 +1845,10 @@ func copyDir(src, dst string) error {
 				return filepath.SkipDir
 			}
 			return nil
+		}
+
+		if err := content.CheckSymlinkEscape(root, path, info.Mode()); err != nil {
+			return err
 		}
 
 		relPath, err := filepath.Rel(src, path)
