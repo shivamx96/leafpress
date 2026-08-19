@@ -1797,7 +1797,33 @@ const baseTemplate = `<!DOCTYPE html>
       var s = document.createElement('script');
       s.src = LP_BASE_PATH + '/static/leafpress/mermaid/mermaid.min.js';
       s.onload = function() {
-        mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: 'default', htmlLabels: false, flowchart: { htmlLabels: false, useHtmlLabels: false }, sequence: { useHtmlLabels: false } });
+        // securityLevel and htmlLabels are the hardening. Without 'secure',
+        // a diagram could undo both from its own source with an init
+        // directive -- %%{init: {'flowchart': {'htmlLabels': true}}}%% --
+        // because mermaid only refuses to apply directive keys listed here.
+        // The list is enforced at top-level key granularity, so the whole
+        // flowchart/sequence subtree has to be locked to pin the label flags
+        // inside them. Diagram-level overrides of those sections are the
+        // deliberate cost.
+        //
+        // Locking htmlLabels off also disables math: mermaid renders KaTeX
+        // through the HTML-label path only, so $$...$$ stays literal text
+        // rather than reaching the bundled KaTeX parser.
+        mermaid.initialize({
+          startOnLoad: false,
+          securityLevel: 'strict',
+          theme: 'default',
+          htmlLabels: false,
+          flowchart: { htmlLabels: false, useHtmlLabels: false },
+          sequence: { useHtmlLabels: false },
+          legacyMathML: false,
+          forceLegacyMathML: false,
+          secure: [
+            'secure', 'securityLevel', 'startOnLoad', 'maxTextSize',
+            'suppressErrorRendering', 'maxEdges', 'htmlLabels',
+            'flowchart', 'sequence', 'legacyMathML', 'forceLegacyMathML'
+          ]
+        });
         mermaid.run();
       };
       document.body.appendChild(s);
