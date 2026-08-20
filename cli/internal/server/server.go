@@ -18,6 +18,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/shivamx96/leafpress/cli/internal/build"
 	"github.com/shivamx96/leafpress/core/config"
+	"github.com/shivamx96/leafpress/core/content"
 )
 
 // Options configures the server
@@ -38,6 +39,10 @@ type Server struct {
 
 	// File watcher
 	watcher *fsnotify.Watcher
+
+	// ignore mirrors the scanner's exclusion rules so watch mode and a full
+	// build agree on what counts as content.
+	ignore *content.IgnoreMatcher
 }
 
 // New creates a new development server
@@ -52,6 +57,14 @@ func New(cfg *config.Config, builder *build.Builder, opts Options) *Server {
 
 // Start starts the development server
 func (s *Server) Start() error {
+	// Compile the ignore globs once; Config.Validate has already reported a
+	// malformed pattern, so this is belt and braces.
+	ignore, err := content.NewIgnoreMatcher(s.cfg.Build.Ignore)
+	if err != nil {
+		return err
+	}
+	s.ignore = ignore
+
 	// Find available port
 	port := s.cfg.Build.Port
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
@@ -321,8 +334,19 @@ func (s *Server) watchFiles() {
 			// Check if it's a file we care about
 			ext := filepath.Ext(event.Name)
 			base := filepath.Base(event.Name)
-			isStaticFile := strings.HasPrefix(relPath, "static"+string(filepath.Separator)) || relPath == "static"
+			isStaticFile := isStaticTree(relPath)
 			if ext != ".md" && ext != ".css" && base != "leafpress.json" && !isStaticFile {
+				continue
+			}
+
+			// Reserved names and ignore globs are not content. Without this
+			// an edit under docs/ or drafts/ published a page that the next
+			// full build would drop.
+			if !isStaticFile && base != "leafpress.json" &&
+				content.IsExcluded(relPath, s.ignore) {
+				if s.opts.Verbose {
+					log.Printf("Ignoring change in excluded path: %s", relPath)
+				}
 				continue
 			}
 
@@ -439,6 +463,14 @@ func (s *Server) rebuildIncremental(changedPath string, changeType build.ChangeT
 	}
 }
 
+// isStaticTree reports whether a project-relative path is static/ or inside
+// it. That tree is reserved for the scanner but still watched: its files are
+// copied verbatim into the site.
+func isStaticTree(relPath string) bool {
+	return relPath == "static" ||
+		strings.HasPrefix(relPath, "static"+string(filepath.Separator))
+}
+
 // addWatchDirs recursively adds directories to the watcher
 func (s *Server) addWatchDirs(root string) error {
 	return filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
@@ -451,10 +483,11 @@ func (s *Server) addWatchDirs(root string) error {
 			return nil
 		}
 
-		// Skip output and hidden directories
-		name := info.Name()
-		if name == "_site" || name == ".leafpress" || name == ".git" ||
-			name == "node_modules" || name == ".obsidian" {
+		// Prune exactly what the content scan prunes. static/ is the one
+		// reserved tree still worth watching: its files are copied into the
+		// site, so edits there must trigger a rebuild.
+		rel, relErr := filepath.Rel(root, path)
+		if relErr == nil && !isStaticTree(rel) && content.IsExcluded(rel, s.ignore) {
 			return filepath.SkipDir
 		}
 

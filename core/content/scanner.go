@@ -10,7 +10,9 @@ import (
 	"unicode"
 )
 
-// ReservedPaths contains paths that should be ignored during content scanning
+// ReservedPaths are top-level names the content scan never treats as content,
+// because Leafpress or the surrounding tooling owns them. Anything else is
+// content; authors exclude their own folders with build.ignore.
 var ReservedPaths = map[string]bool{
 	"leafpress.json": true,
 	"style.css":      true,
@@ -21,7 +23,28 @@ var ReservedPaths = map[string]bool{
 	".gitignore":     true,
 	".obsidian":      true,
 	"node_modules":   true,
-	"docs":           true, // Ignore docs folder
+}
+
+// IsExcluded reports whether a path relative to the garden root is outside
+// the content set: a reserved top-level name, a hidden entry, or an
+// ignore-glob match. Directory matches prune the whole subtree.
+//
+// The content scan and the serve watcher share this predicate. When they
+// disagree, `leafpress serve` publishes pages that `leafpress build` drops.
+func IsExcluded(relPath string, ignore *IgnoreMatcher) bool {
+	if relPath == "" || relPath == "." {
+		return false
+	}
+	segments := strings.Split(filepath.ToSlash(relPath), "/")
+	if ReservedPaths[segments[0]] {
+		return true
+	}
+	for _, segment := range segments {
+		if strings.HasPrefix(segment, ".") {
+			return true
+		}
+	}
+	return ignore.Match(relPath)
 }
 
 // Scanner scans the content directory for markdown files
@@ -71,25 +94,8 @@ func (s *Scanner) Scan() ([]*Page, error) {
 			return nil
 		}
 
-		// Check if this is a reserved path
-		topLevel := strings.Split(relPath, string(filepath.Separator))[0]
-		if ReservedPaths[topLevel] {
-			if d.IsDir() {
-				return filepath.SkipDir
-			}
-			return nil
-		}
-
-		// Check if this path should be ignored (from config)
-		if s.ignore.Match(relPath) {
-			if d.IsDir() {
-				return filepath.SkipDir
-			}
-			return nil
-		}
-
-		// Skip hidden files and directories
-		if strings.HasPrefix(d.Name(), ".") {
+		// Reserved names, hidden entries and configured ignore globs
+		if IsExcluded(relPath, s.ignore) {
 			if d.IsDir() {
 				return filepath.SkipDir
 			}

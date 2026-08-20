@@ -78,7 +78,15 @@ _site/
 node_modules/
 ```
 
-These are hardcoded. Any markdown outside these paths is content.
+These are hardcoded: Leafpress or the surrounding tooling owns each of them.
+Any markdown outside these paths is content — including `docs/`, which was
+reserved until it was found to silently drop a garden's own documentation.
+Authors exclude their own folders with `build.ignore`.
+
+The content scan and the `leafpress serve` watcher share one predicate
+(`content.IsExcluded`). They must not drift: when the watcher is the more
+permissive of the two, an incremental rebuild publishes pages that the next
+full build deletes.
 
 ---
 
