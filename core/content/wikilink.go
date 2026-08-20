@@ -2,6 +2,7 @@ package content
 
 import (
 	"bytes"
+	"html"
 	"sort"
 	"strings"
 
@@ -223,8 +224,14 @@ func NewLinkResolver(pages []*Page) *LinkResolver {
 	// resolve to hyphenated slugs (note-b). The embedded renderer has always
 	// done this for hosted gardens; registering here gives the CLI the same
 	// semantics, keeping wikilinks, backlinks, and graph edges in parity.
+	//
+	// Titles arrive HTML-escaped (see site.EscapePageMeta) but link targets
+	// are raw Markdown text, so register both spellings: a page titled "Q&A"
+	// must still resolve from [[Q&A]]. The second call is a no-op when the
+	// title contains nothing to escape.
 	for _, page := range pages {
 		resolver.AddAlias(page.Title, page)
+		resolver.AddAlias(html.UnescapeString(page.Title), page)
 	}
 
 	return resolver
