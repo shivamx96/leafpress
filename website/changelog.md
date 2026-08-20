@@ -4,6 +4,22 @@ date: 2025-01-06
 toc: false
 ---
 
+## v1.0.0-beta.19
+*August 20, 2026*
+
+- **`leafpress serve` now binds 127.0.0.1.** The dev server has no authentication and can publish drafts, so it no longer listens on every interface. Preview from another device with `leafpress serve --host 0.0.0.0`, which says so explicitly; the startup URL follows the bind address.
+- **`build.ignore` honors the documented glob patterns.** `drafts/**`, `*.draft.md`, `notes/*.wip.md`, and `a/**/tmp.md` now match — previously every documented example silently matched nothing — and a malformed pattern is a config error instead of a no-op. Note the widening: a bare name such as `drafts` hides that folder at any depth, per the gitignore convention. `docs/` is no longer reserved, so a garden can publish its own documentation; hide it with `build.ignore` if you would rather not.
+- **Content that points outside the garden is refused.** Symlinks under content or `static/` that resolve outside the project are rejected on scan, single-file parse, and static copy; `leafpress new` writes through `os.Root` so existing links cannot redirect it; and tag names that would escape the generated tags directory are rejected.
+- **Site and page metadata is escaped in CLI builds.** A double quote in a description closed the `content="..."` attribute early and truncated `og:description`. The CLI and the hosted renderer now share one set of escaping helpers, and wikilinks resolve from both the raw and escaped spelling of a title, so `[[Q&A]]` still works. Goldmark 1.8.5 also strips entity-encoded `javascript:` autolinks.
+- **Wikilinks are parsed as Markdown syntax nodes.** Links inside code spans and blocks, escapes, raw HTML attributes and comments, Obsidian embeds, and ordinary Markdown link labels no longer create backlinks or graph edges, and labels and hrefs are escaped on output.
+- **The graph opens without monopolizing the page.** Layout runs in 10 ms animation-frame slices, repulsion uses a spatial hash instead of all-pairs comparison, adjacency and tag data are pre-indexed, labels are built once, and `prefers-reduced-motion` does less work.
+- Mermaid is vendored at 11.16.1 with refreshed SHA-256 pins, and the hardening keys are locked so a diagram's own `%%{init: ...}%%` directive cannot re-enable `securityLevel: loose` or HTML labels. With HTML labels off, `$$...$$` math stays literal text.
+- `--config`/`-c` is honored by `deploy`, `status`, and `init`, which previously read or wrote `leafpress.json` regardless of the flag.
+- The serve watcher shares one exclusion predicate with the content scan, so reserved names and `build.ignore` can no longer disagree about what is content, and incremental rebuilds refresh navigation, wikilink aliases, backlinks, tag listings, RSS, sitemap, and graph/search data.
+- Conflicting output routes are rejected before a build instead of quietly overwriting, and ordinary files such as `migration_index.md` keep their own route.
+- Frontmatter values and Markdown body lines longer than 64 KiB are preserved instead of being truncated.
+- Documentation corrections: the GitHub Actions deploy example needs `permissions: contents: write` and a non-reserved secret name; the theming link scaffolded into `style.css` points at `/guide/theming/`; the deploy providers are exactly GitHub Pages, Vercel, and Netlify, with `leafpress build` as the escape hatch for any other host; and the Obsidian plugin is marked as not yet available.
+
 ## v1.0.0-beta.18
 *August 13, 2026*
 
