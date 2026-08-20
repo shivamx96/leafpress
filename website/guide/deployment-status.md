@@ -109,13 +109,16 @@ leafpress deploy
 
 The deploy will only upload files that have changed, making deployments faster for large sites.
 
-## Obsidian Plugin Integration
+## Building on the manifest
 
-The deployment manifest enables the Obsidian plugin to show you pending changes directly in Obsidian:
+The deploy state is a plain JSON file, so any tool can read it to answer
+"what would deploy right now?" without shelling out to `leafpress deploy`.
+That is what `leafpress status` does, and an editor integration would do the
+same to show a pending-changes badge.
 
-- See "3 files pending" badge in the sidebar
-- Know exactly which files need deployment before clicking "Deploy"
-- One-click deployment of only changed files
+An Obsidian plugin along those lines is designed but **not yet available** —
+see `docs/04_OBSIDIAN_PLUGIN_PRD.md` for the intended scope. Until it ships,
+use `leafpress status` from the terminal.
 
 ## Files to Ignore
 

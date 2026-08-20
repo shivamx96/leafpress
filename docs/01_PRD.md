@@ -417,7 +417,7 @@ _site/
 ```css
 /* leafpress Custom Styles
  * Override CSS variables or add custom rules below.
- * See: https://leafpress.in/docs/theming
+ * See: https://leafpress.in/guide/theming/
  */
 ```
 
