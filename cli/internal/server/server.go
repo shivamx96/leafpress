@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -24,7 +25,20 @@ import (
 // Options configures the server
 type Options struct {
 	Verbose bool
+
+	// Host is the interface the dev server binds to. Empty means the default,
+	// DefaultHost: loopback only. Set it to "0.0.0.0" to expose the preview on
+	// the local network.
+	Host string
 }
+
+// DefaultHost keeps `leafpress serve` on the loopback interface.
+//
+// The dev server has no authentication, serves whatever is in the output
+// directory, and rebuilds from local files. Binding every interface — the old
+// behaviour of an empty address — published a work-in-progress garden,
+// including drafts when --drafts is set, to everyone on the coffee-shop Wi-Fi.
+const DefaultHost = "127.0.0.1"
 
 // Server handles the development server with live reload
 type Server struct {
@@ -65,14 +79,18 @@ func (s *Server) Start() error {
 	}
 	s.ignore = ignore
 
-	// Find available port
+	// Find available port on the configured interface
+	host := s.opts.Host
+	if host == "" {
+		host = DefaultHost
+	}
 	port := s.cfg.Build.Port
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	listener, err := net.Listen("tcp", net.JoinHostPort(host, strconv.Itoa(port)))
 	if err != nil {
 		// Try to find another port
 		for i := 1; i <= 10; i++ {
 			port = s.cfg.Build.Port + i
-			listener, err = net.Listen("tcp", fmt.Sprintf(":%d", port))
+			listener, err = net.Listen("tcp", net.JoinHostPort(host, strconv.Itoa(port)))
 			if err == nil {
 				fmt.Printf("Port %d in use, using %d instead\n", s.cfg.Build.Port, port)
 				break
@@ -122,7 +140,10 @@ func (s *Server) Start() error {
 		server.Close()
 	}()
 
-	fmt.Printf("\n  Server running at http://localhost:%d\n", port)
+	fmt.Printf("\n  Server running at %s\n", displayURL(host, port))
+	if host != DefaultHost {
+		fmt.Printf("  Reachable from other machines on this network (--host %s)\n", host)
+	}
 	fmt.Println("  Press Ctrl+C to stop")
 
 	return server.Serve(listener)
@@ -461,6 +482,19 @@ func (s *Server) rebuildIncremental(changedPath string, changeType build.ChangeT
 			fmt.Printf("Notified %d browser(s) to reload\n", clientCount)
 		}
 	}
+}
+
+// displayURL renders the address a browser should open. A wildcard bind has
+// no single hostname, so point the reader at loopback, which is always one of
+// the interfaces it covers.
+func displayURL(host string, port int) string {
+	switch host {
+	case "0.0.0.0", "::", "":
+		host = "localhost"
+	case "127.0.0.1":
+		host = "localhost"
+	}
+	return "http://" + net.JoinHostPort(host, strconv.Itoa(port)) + "/"
 }
 
 // isStaticTree reports whether a project-relative path is static/ or inside

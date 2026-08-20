@@ -70,6 +70,17 @@ leafpress serve
 
 Open [http://localhost:3000](http://localhost:3000). Edit any markdown file—changes appear instantly.
 
+The dev server listens on `127.0.0.1` only, so your work-in-progress garden is
+not reachable from the rest of the network. To preview on a phone or another
+machine, opt in explicitly:
+
+```bash
+leafpress serve --host 0.0.0.0
+```
+
+There is no authentication, so only do that on a network you trust — and
+remember `--drafts` would expose unpublished pages too.
+
 ## Build for Production
 
 ```bash

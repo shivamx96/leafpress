@@ -10,7 +10,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var servePort int
+var (
+	servePort int
+	serveHost string
+)
 
 func serveCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -21,6 +24,8 @@ func serveCmd() *cobra.Command {
 	}
 
 	cmd.Flags().IntVarP(&servePort, "port", "p", 0, "override server port")
+	cmd.Flags().StringVar(&serveHost, "host", server.DefaultHost,
+		"interface to bind (use 0.0.0.0 to expose the preview on your network)")
 	cmd.Flags().BoolVarP(&includeDrafts, "drafts", "d", false, "include draft pages")
 
 	return cmd
@@ -57,6 +62,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 	// Start server
 	srv := server.New(cfg, builder, server.Options{
 		Verbose: isVerbose(),
+		Host:    serveHost,
 	})
 
 	return srv.Start()
