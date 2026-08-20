@@ -26,17 +26,17 @@ var ReservedPaths = map[string]bool{
 
 // Scanner scans the content directory for markdown files
 type Scanner struct {
-	rootDir     string
-	ignorePaths map[string]bool
+	rootDir string
+	ignore  *IgnoreMatcher
+	initErr error
 }
 
-// NewScanner creates a new content scanner
+// NewScanner creates a new content scanner. A malformed ignore pattern is
+// held until Scan so the constructor keeps its single-value signature;
+// Config.Validate reports the same problem earlier and more clearly.
 func NewScanner(rootDir string, ignore []string) *Scanner {
-	ignorePaths := make(map[string]bool)
-	for _, path := range ignore {
-		ignorePaths[path] = true
-	}
-	return &Scanner{rootDir: rootDir, ignorePaths: ignorePaths}
+	matcher, err := NewIgnoreMatcher(ignore)
+	return &Scanner{rootDir: rootDir, ignore: matcher, initErr: err}
 }
 
 // fileEntry holds info needed to parse a file
@@ -48,6 +48,10 @@ type fileEntry struct {
 
 // Scan walks the directory tree and returns all markdown files
 func (s *Scanner) Scan() ([]*Page, error) {
+	if s.initErr != nil {
+		return nil, s.initErr
+	}
+
 	// Phase 1: Collect file paths (fast, sequential walk)
 	var files []fileEntry
 
@@ -77,7 +81,7 @@ func (s *Scanner) Scan() ([]*Page, error) {
 		}
 
 		// Check if this path should be ignored (from config)
-		if s.ignorePaths[topLevel] {
+		if s.ignore.Match(relPath) {
 			if d.IsDir() {
 				return filepath.SkipDir
 			}

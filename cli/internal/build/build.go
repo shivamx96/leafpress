@@ -774,12 +774,13 @@ func (b *Builder) rebuildMarkdownFile(relPath string, changeType ChangeType) (*I
 		return b.handleDeletedFile(relPath)
 	}
 
-	// Check if file is in an ignored folder
-	topLevel := strings.Split(relPath, string(filepath.Separator))[0]
-	for _, ignored := range b.cfg.Build.Ignore {
-		if topLevel == ignored {
-			return stats, nil // File is in ignored folder, skip
-		}
+	// Skip files the full scan would have ignored, using the same matcher.
+	ignore, err := content.NewIgnoreMatcher(b.cfg.Build.Ignore)
+	if err != nil {
+		return nil, err
+	}
+	if ignore.Match(relPath) {
+		return stats, nil
 	}
 
 	// Parse only the changed file (not full scan)
