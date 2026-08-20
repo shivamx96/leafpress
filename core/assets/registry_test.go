@@ -109,7 +109,7 @@ var pinnedBuiltins = map[string]struct {
 	"static/leafpress/fonts/OFL-source-serif-4.txt":                            {sha256: "18aabf190848725e2576eefb5c29ba06aac1029d02132252a7f312eac2e50cf3"},
 	"static/leafpress/fonts/OFL-space-grotesk.txt":                             {sha256: "18a4de52385f6b988782639d5d0cc1326e5a8c2de9a7f01d7b20d9aedcc60943"},
 	BuiltinMermaidJS: {
-		sha256:      "a43bc1afd446f9c4cc66ac5dd45d02e8d65e26fc5344ec0ef787f88d6ddb6f9e",
+		sha256:      "18327bef70d96fb505fe7287d9f6a7362ebf07ff6576ddfaffb1a06f3e1a2954",
 		contentType: "text/javascript; charset=utf-8",
 	},
 	BuiltinMermaidLicense: {

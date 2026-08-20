@@ -44,7 +44,7 @@ removed, or altered. There is no manual registry version to bump.
 
 Vendored at `core/assets/builtin/mermaid/mermaid.min.js` (npm
 [`mermaid`](https://www.npmjs.com/package/mermaid) version
-`assets.MermaidVersion`, currently **11.4.1**). Logical paths:
+`assets.MermaidVersion`, currently **11.16.1**). Logical paths:
 
 - `static/leafpress/mermaid/mermaid.min.js`
 - `static/leafpress/mermaid/LICENSE.txt`
@@ -65,6 +65,16 @@ To bump Mermaid:
 6. Manually open a page with a ` ```mermaid ` block (light + dark) and
    confirm the script loads from `/static/leafpress/mermaid/mermaid.min.js`
    with **no** CDN request.
+7. Re-check the `secure` list in the `clientScriptMermaid` template against
+   the new release's own default (search the bundle for `secure:[`). Mermaid
+   ignores directive keys named there, and that list is the only thing
+   stopping a diagram from re-enabling `htmlLabels` with its own
+   `%%{init: ...}%%`. A release that adds a config key carrying HTML into
+   labels needs that key added to the list.
+
+KaTeX ships inside `mermaid.min.js`, so math costs no network request. It is
+disabled by locking `htmlLabels` off: mermaid renders math through the
+HTML-label path only, leaving `$$...$$` as literal text.
 
 ## Deprecations
 

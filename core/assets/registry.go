@@ -19,7 +19,7 @@ const (
 
 	// MermaidVersion is the npm version of the vendored mermaid.min.js.
 	// Bump this together with the file under builtin/mermaid/ (see docs/MAINTENANCE.md).
-	MermaidVersion = "11.4.1"
+	MermaidVersion = "11.16.1"
 )
 
 //go:embed builtin/favicon.ico
