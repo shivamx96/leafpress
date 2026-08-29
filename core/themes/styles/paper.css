@@ -230,7 +230,6 @@ html {
 
 .lp-title,
 .lp-section-title {
-  max-width: 22ch;
   color: var(--lp-paper-ink);
   font-style: italic;
   font-weight: 600;

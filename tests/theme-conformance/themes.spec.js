@@ -46,6 +46,30 @@ async function followLastFootnoteBack(page) {
 }
 
 for (const theme of themes) {
+  test(`${theme} titles use the available content width`, async ({ page }) => {
+    await page.setViewportSize(viewports.desktop);
+    await page.goto(`/${fixtureName(theme, "base", "base")}/notes/components/`);
+    await page.evaluate(() => document.fonts.ready);
+
+    const title = page.locator(".lp-title");
+    await title.evaluate((element) => {
+      element.textContent = "A Practical Guide to Connected Systems";
+    });
+
+    const layout = await title.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return {
+        availableWidth: element.parentElement.getBoundingClientRect().width,
+        lineHeight: Number.parseFloat(style.lineHeight),
+        height: element.getBoundingClientRect().height,
+        width: element.getBoundingClientRect().width
+      };
+    });
+
+    expect(layout.width).toBeCloseTo(layout.availableWidth, 0);
+    expect(layout.height).toBeLessThan(layout.lineHeight * 1.5);
+  });
+
   for (const navStyle of navStyles) {
     for (const activeStyle of activeStyles) {
       for (const [viewportName, viewport] of Object.entries(viewports)) {
