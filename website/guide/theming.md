@@ -211,6 +211,20 @@ Solid colors or gradients:
 - `"underlined"` — Underline on active link
 - `"box"` — Background box on active link
 
+## List Columns
+
+Choose one, two, or three columns for section and tag-page lists on desktop:
+
+```json
+{
+  "theme": {
+    "listColumns": 3
+  }
+}
+```
+
+The default is `2`. On mobile, Leafpress always uses a single column.
+
 ## Custom CSS
 
 For deeper customization, create `style.css` in your site root. Leafpress

@@ -44,6 +44,21 @@ func TestBaseCSSOwnsSemanticTypeScale(t *testing.T) {
 	}
 }
 
+func TestBaseCSSOwnsResponsiveListColumns(t *testing.T) {
+	for _, want := range []string{
+		".lp-index.lp-index--columns-1",
+		".lp-index.lp-index--columns-2",
+		".lp-index.lp-index--columns-3",
+		"repeat(2, minmax(0, 1fr))",
+		"repeat(3, minmax(0, 1fr))",
+		"@media (max-width: 768px)",
+	} {
+		if !strings.Contains(BaseCSS, want) {
+			t.Errorf("base stylesheet is missing responsive list rule %q", want)
+		}
+	}
+}
+
 func TestCSSForPresetSelectsClassicAndDefaultsDefensively(t *testing.T) {
 	if got := CSSForPreset("classic"); got != DefaultCSS {
 		t.Error("classic preset does not reproduce DefaultCSS")

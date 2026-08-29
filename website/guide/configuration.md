@@ -43,7 +43,8 @@ default site.
       "dark": "#1a1a1a"
     },
     "navStyle": "base",
-    "navActiveStyle": "base"
+    "navActiveStyle": "base",
+    "listColumns": 2
   },
 
   "features": {
@@ -96,6 +97,7 @@ default site.
 | `background.dark` | `"#1a1a1a"` | Dark mode background (color or gradient) |
 | `navStyle` | `"base"` | `"base"`, `"sticky"`, or `"glassy"` |
 | `navActiveStyle` | `"base"` | `"base"`, `"box"`, or `"underlined"` |
+| `listColumns` | `2` | List-page columns on desktop: `1`, `2`, or `3`. Mobile always uses one column |
 
 Gradients work too:
 ```json

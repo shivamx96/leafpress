@@ -116,6 +116,7 @@ type Theme struct {
 	Background     Background `json:"-"`              // Custom unmarshaling
 	NavStyle       string     `json:"navStyle"`       // "base", "sticky", or "glassy"
 	NavActiveStyle string     `json:"navActiveStyle"` // "base", "box", or "underlined"
+	ListColumns    int        `json:"listColumns"`    // 1, 2, or 3 columns on desktop
 }
 
 // ResolvedPreset returns the bundled preset selected by this theme. An empty
@@ -127,6 +128,16 @@ func (t Theme) ResolvedPreset() string {
 		return themes.DefaultPreset
 	}
 	return t.Preset
+}
+
+// ResolvedListColumns preserves the default for template data constructed by
+// Go callers without going through Parse. Parsed configuration still rejects
+// an explicit zero value during validation.
+func (t Theme) ResolvedListColumns() int {
+	if t.ListColumns == 0 {
+		return 2
+	}
+	return t.ListColumns
 }
 
 // FontFace declares one custom local font file under static/fonts/. Families
@@ -341,6 +352,7 @@ func defaultTheme(preset string) Theme {
 		Background:     Background{Light: defaults.BackgroundLight, Dark: defaults.BackgroundDark},
 		NavStyle:       defaults.NavStyle,
 		NavActiveStyle: defaults.NavActiveStyle,
+		ListColumns:    2,
 	}
 }
 
@@ -555,6 +567,10 @@ func (c *Config) Validate() error {
 	validNavActiveStyles := map[string]bool{"base": true, "box": true, "underlined": true}
 	if !validNavActiveStyles[c.Theme.NavActiveStyle] {
 		return fmt.Errorf("navActiveStyle must be 'base', 'box', or 'underlined', got '%s'", c.Theme.NavActiveStyle)
+	}
+
+	if c.Theme.ListColumns < 1 || c.Theme.ListColumns > 3 {
+		return fmt.Errorf("theme.listColumns must be 1, 2, or 3, got %d", c.Theme.ListColumns)
 	}
 
 	// Validate theme font family names. They are interpolated into the

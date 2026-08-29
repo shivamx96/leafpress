@@ -108,7 +108,8 @@ full build deletes.
   "theme": {
     "preset": "classic",
     "fontBody": "Inter",
-    "accent": "#50ac00"
+    "accent": "#50ac00",
+    "listColumns": 2
   },
   "features": { "graph": true },
   "build": { "outputDir": "_site", "port": 3000 }
@@ -125,6 +126,7 @@ full build deletes.
 | `theme.preset` | `"classic"` | Bundled visual theme (`"classic"`, `"aurora"`, `"paper"`, or `"terminal"`) |
 | `theme.fontBody` | `"Inter"` | Primary font family |
 | `theme.accent` | `"#50ac00"` | Accent color for links |
+| `theme.listColumns` | `2` | List-page columns on desktop (`1`, `2`, or `3`); mobile is always one column |
 | `features.graph` | `true` | Enable graph.json generation |
 
 ---

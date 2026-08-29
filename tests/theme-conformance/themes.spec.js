@@ -366,6 +366,29 @@ for (const theme of themes) {
     await page.goto(`/${fixture}/notes/`);
     await expect(page.locator(".lp-section")).toBeVisible();
     await expect(page.locator(".lp-index-item").first()).toBeVisible();
+    const index = page.locator(".lp-index");
+    await expect(index).toHaveClass(/\blp-index--columns-2\b/);
+    for (const columns of [1, 2, 3]) {
+      const renderedColumns = await index.evaluate((element, value) => {
+        element.classList.remove(
+          "lp-index--columns-1",
+          "lp-index--columns-2",
+          "lp-index--columns-3"
+        );
+        element.classList.add(`lp-index--columns-${value}`);
+        return getComputedStyle(element).gridTemplateColumns.split(" ").length;
+      }, columns);
+      expect(renderedColumns).toBe(columns);
+    }
+
+    await page.setViewportSize(viewports.mobile);
+    expect(
+      await index.evaluate((element) =>
+        getComputedStyle(element).gridTemplateColumns.split(" ").length
+      )
+    ).toBe(1);
+    await page.setViewportSize(viewports.desktop);
+
     if (theme === "terminal") {
       const listChrome = await page.evaluate(() => ({
         permissionPrefix: getComputedStyle(document.querySelector(".lp-index-item"), "::before")
