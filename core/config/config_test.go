@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -38,6 +39,9 @@ func TestDefault(t *testing.T) {
 	}
 	if cfg.Theme.Preset != themes.Classic {
 		t.Errorf("Theme.Preset = %q, want %q", cfg.Theme.Preset, themes.Classic)
+	}
+	if cfg.Theme.ListColumns != 2 {
+		t.Errorf("Theme.ListColumns = %d, want 2", cfg.Theme.ListColumns)
 	}
 	if cfg.Theme.FontHeading != "Bricolage Grotesque" {
 		t.Errorf("FontHeading = %q, want %q", cfg.Theme.FontHeading, "Bricolage Grotesque")
@@ -157,6 +161,24 @@ func TestParse_UnsupportedContractVersion(t *testing.T) {
 func TestParse_InvalidNavigationMode(t *testing.T) {
 	if _, err := Parse([]byte(`{"navigation": {"mode": "sideways"}}`)); err == nil {
 		t.Error("navigation mode 'sideways' should be rejected")
+	}
+}
+
+func TestParse_ListColumns(t *testing.T) {
+	for _, columns := range []int{1, 2, 3} {
+		cfg, err := Parse([]byte(fmt.Sprintf(`{"theme":{"listColumns":%d}}`, columns)))
+		if err != nil {
+			t.Fatalf("listColumns %d: %v", columns, err)
+		}
+		if cfg.Theme.ListColumns != columns {
+			t.Errorf("ListColumns = %d, want %d", cfg.Theme.ListColumns, columns)
+		}
+	}
+
+	for _, columns := range []int{-1, 0, 4} {
+		if _, err := Parse([]byte(fmt.Sprintf(`{"theme":{"listColumns":%d}}`, columns))); err == nil {
+			t.Errorf("listColumns %d should be rejected", columns)
+		}
 	}
 }
 

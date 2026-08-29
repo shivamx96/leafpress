@@ -1940,7 +1940,7 @@ const indexTemplate = `
   {{end}}
 
   {{if .ShowList}}
-  <ul class="lp-index">
+  <ul class="lp-index lp-index--columns-{{.Site.Theme.ResolvedListColumns}}">
     {{range .Pages}}
     <li class="lp-index-item">
       <a class="lp-index-link" href="{{$.Site.BasePath}}{{.Permalink}}">
@@ -2009,7 +2009,7 @@ const tagPageTemplate = `
 <div class="lp-section">
   <h1 class="lp-section-title">#{{.Tag}}</h1>
 
-  <ul class="lp-index">
+  <ul class="lp-index lp-index--columns-{{.Site.Theme.ResolvedListColumns}}">
     {{range .Pages}}
     <li class="lp-index-item">
       <a class="lp-index-link" href="{{$.Site.BasePath}}{{.Permalink}}">

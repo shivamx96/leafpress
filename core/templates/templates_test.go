@@ -551,3 +551,35 @@ func TestIndexIntroUsesSharedContentStyles(t *testing.T) {
 		t.Fatal("index intro dropped rendered code content")
 	}
 }
+
+func TestListColumnClassIsRenderedForIndexes(t *testing.T) {
+	tmpl, err := New()
+	if err != nil {
+		t.Fatalf("New() error: %v", err)
+	}
+
+	theme := config.Default().Theme
+	theme.ListColumns = 3
+	var out bytes.Buffer
+	if err := tmpl.RenderIndex(&out, IndexData{
+		Site:     SiteData{Title: "Test Garden", Theme: theme},
+		Title:    "Notes",
+		ShowList: true,
+	}); err != nil {
+		t.Fatalf("RenderIndex() error: %v", err)
+	}
+	if !strings.Contains(out.String(), `class="lp-index lp-index--columns-3"`) {
+		t.Fatal("section index is missing the configured list-column class")
+	}
+
+	out.Reset()
+	if err := tmpl.RenderTagPage(&out, TagPageData{
+		Site: SiteData{Title: "Test Garden", Theme: theme},
+		Tag:  "go",
+	}); err != nil {
+		t.Fatalf("RenderTagPage() error: %v", err)
+	}
+	if !strings.Contains(out.String(), `class="lp-index lp-index--columns-3"`) {
+		t.Fatal("tag page is missing the configured list-column class")
+	}
+}

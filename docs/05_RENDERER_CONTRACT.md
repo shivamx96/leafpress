@@ -44,7 +44,8 @@ the historical `config.Default()` values.
     "fontMono": "JetBrains Mono",
     "accent": "#50ac00",
     "navStyle": "base",
-    "navActiveStyle": "base"
+    "navActiveStyle": "base",
+    "listColumns": 2
   },
   "features": {
     "graph": true,
@@ -80,6 +81,7 @@ the historical `config.Default()` values.
 | | `fontHeading` / `fontBody` / `fontMono` | `"Bricolage Grotesque"` / `"Inter"` / `"JetBrains Mono"` |
 | | `accent` | `"#50ac00"` |
 | | `navStyle` / `navActiveStyle` | `"base"` / `"base"` |
+| | `listColumns` | `2` |
 | | `background` | light/dark theme defaults |
 | `features` | `graph` `search` `toc` `backlinks` `wikilinks` `rss` | `true` |
 | `navigation` | `mode` | `"automatic"` |
@@ -107,6 +109,9 @@ the initial fonts, accent, backgrounds, and navigation defaults; explicitly
 provided config fields override them. Custom `fonts[]` declarations and all
 values interpolated into the inline `<style>` block retain their existing
 validation.
+
+`listColumns` accepts `1`, `2`, or `3` and controls list-page columns on
+desktop. List pages always collapse to one column at the mobile breakpoint.
 
 The shared base stylesheet owns the semantic type scale for page titles,
 article headings, section headings, body copy, and component text. Presets may

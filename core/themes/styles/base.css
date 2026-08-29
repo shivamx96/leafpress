@@ -59,6 +59,22 @@
   font-size: var(--lp-font-base);
 }
 
+/* List density is configurable on larger screens and always linear on mobile. */
+.lp-index.lp-index--columns-1 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.lp-index.lp-index--columns-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.lp-index.lp-index--columns-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 /* Footnote structure and type scale remain stable across presets. */
 .lp-content .footnotes {
   margin-top: 2.5rem;
@@ -109,6 +125,12 @@
 }
 
 @media (max-width: 768px) {
+  .lp-index.lp-index--columns-1,
+  .lp-index.lp-index--columns-2,
+  .lp-index.lp-index--columns-3 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .lp-title {
     font-size: var(--lp-font-xl);
   }
