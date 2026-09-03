@@ -1,5 +1,10 @@
 # Repository instructions for coding agents
 
+## Public-facing documentation
+
+Whenever a change affects public-facing documentation, update the corresponding
+content in the `website` module as part of the same change.
+
 ## Cross-module Go changes
 
 Leafpress contains two independently versioned Go modules, `core` and `cli`.
