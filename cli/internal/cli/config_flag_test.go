@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -22,62 +21,6 @@ func withConfigFlag(t *testing.T, value string) {
 	previous := cfgFile
 	cfgFile = value
 	t.Cleanup(func() { cfgFile = previous })
-}
-
-// deploy and status read the config to decide the provider and to diff the
-// manifest. Reading leafpress.json while --config named another file meant
-// they answered for a project the user was not operating on.
-func TestDeployAndStatusReadConfigFlag(t *testing.T) {
-	dir := t.TempDir()
-	t.Chdir(dir)
-
-	// The flagged config configures a provider; the default name does not.
-	flagged := config.Default()
-	flagged.Deploy.Provider = "netlify"
-	if err := config.Write(filepath.Join(dir, "custom.json"), flagged); err != nil {
-		t.Fatal(err)
-	}
-	if err := config.Write(filepath.Join(dir, "leafpress.json"), config.Default()); err != nil {
-		t.Fatal(err)
-	}
-
-	withConfigFlag(t, "custom.json")
-
-	// Only the unconfigured default prints the "not set up yet" notice, so
-	// its absence proves runStatus read custom.json.
-	out := captureStdout(t, func() {
-		if err := runStatus(); err != nil {
-			t.Fatalf("status should read the flagged config: %v", err)
-		}
-	})
-	if strings.Contains(out, "No deployment configured yet") {
-		t.Errorf("status read leafpress.json instead of custom.json:\n%s", out)
-	}
-}
-
-// captureStdout collects everything fn prints.
-func captureStdout(t *testing.T, fn func()) string {
-	t.Helper()
-	r, w, err := os.Pipe()
-	if err != nil {
-		t.Fatal(err)
-	}
-	previous := os.Stdout
-	os.Stdout = w
-	done := make(chan string, 1)
-	go func() {
-		var buf strings.Builder
-		_, _ = io.Copy(&buf, r)
-		done <- buf.String()
-	}()
-
-	fn()
-
-	os.Stdout = previous
-	_ = w.Close()
-	out := <-done
-	_ = r.Close()
-	return out
 }
 
 // The wizard writes the provider back. Writing it to leafpress.json when

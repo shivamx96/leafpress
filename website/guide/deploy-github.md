@@ -115,16 +115,6 @@ prefix and rejects secrets that use it. For example, with a secret named
         run: leafpress deploy
 ```
 
-## Check What's Pending
-
-Before deploying, see what files have changed:
-
-```bash
-leafpress status
-```
-
-This shows which files are new, modified, or deleted since your last deployment. See [[guide/deployment-status|Deployment Status]] for details.
-
 ## Configuration
 
 Deploy settings are stored in `leafpress.json`:

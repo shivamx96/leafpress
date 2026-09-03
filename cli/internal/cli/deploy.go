@@ -194,24 +194,6 @@ func runDeploy(providerFlag string, skipBuild, reconfigure, dryRun bool) error {
 		fmt.Printf("  Dry run complete. Would deploy to: %s\n", result.URL)
 	} else {
 		fmt.Printf("  Deployed! Live at %s\n", result.URL)
-
-		// Save deployment manifest for tracking
-		manifest, err := deploy.LoadDeploymentManifest(".")
-		if err != nil {
-			fmt.Printf("  Warning: couldn't load deployment manifest: %v\n", err)
-		} else {
-			// Collect current source files to store in manifest
-			sourceFiles, err := CollectSourceFilesWithHashes(cfg.Build.OutputDir, cfg.Build.Ignore)
-			if err != nil {
-				fmt.Printf("  Warning: couldn't collect source files for manifest: %v\n", err)
-				sourceFiles = make(map[string]string) // Use empty map if collection fails
-			}
-
-			manifest.RecordDeployment(result, providerConfig.Provider, result.DeployedFiles, sourceFiles)
-			if err := manifest.Save("."); err != nil {
-				fmt.Printf("  Warning: couldn't save deployment manifest: %v\n", err)
-			}
-		}
 	}
 
 	return nil

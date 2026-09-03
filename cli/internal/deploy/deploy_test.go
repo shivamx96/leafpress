@@ -8,7 +8,6 @@ import (
 	"runtime"
 	"strings"
 	"testing"
-	"time"
 )
 
 func TestCredentialsStoreRoundTripAndPermissions(t *testing.T) {
@@ -44,41 +43,6 @@ func TestCredentialsStoreRoundTripAndPermissions(t *testing.T) {
 		if info.Mode().Perm() != 0600 {
 			t.Fatalf("credential mode = %o, want 600", info.Mode().Perm())
 		}
-	}
-}
-
-func TestDeploymentManifestPendingFiles(t *testing.T) {
-	m := NewDeploymentManifest()
-	m.RecordDeployment(
-		&DeployResult{DeployID: "one", URL: "https://example.com", DeployedAt: time.Now()},
-		"netlify",
-		map[string]string{"/site.html": "built"},
-		map[string]string{"note.md": "old", "deleted.md": "gone"},
-	)
-	pending := m.GetPendingFiles(map[string]string{"note.md": "new", "added.md": "added"})
-	for path, want := range map[string]string{
-		"note.md":    "new",
-		"added.md":   "added",
-		"deleted.md": "deleted",
-	} {
-		if pending[path] != want {
-			t.Errorf("pending[%q] = %q, want %q", path, pending[path], want)
-		}
-	}
-	if len(pending) != 3 {
-		t.Fatalf("pending = %v", pending)
-	}
-
-	dir := t.TempDir()
-	if err := m.Save(dir); err != nil {
-		t.Fatal(err)
-	}
-	loaded, err := LoadDeploymentManifest(dir)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if loaded.LastDeploy == nil || loaded.LastDeploy.DeployID != "one" {
-		t.Fatalf("loaded manifest = %+v", loaded)
 	}
 }
 
