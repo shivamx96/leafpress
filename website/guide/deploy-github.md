@@ -3,74 +3,37 @@ title: "Deploy to GitHub Pages"
 date: 2025-12-21
 ---
 
-The easiest way to deploy your leafpress site is with the built-in deploy command.
+Build your garden with leafpress and publish the generated `_site/` directory
+with GitHub's official Pages actions.
 
-## Quick Start
+## Configure the URL
 
-```bash
-leafpress deploy
+For a user or organization site named `<owner>.github.io`, set:
+
+```json
+{
+  "site": {
+    "baseURL": "https://<owner>.github.io"
+  }
+}
 ```
 
-That's it. The command handles authentication, building, and deployment in one step.
+For a project site, include the repository path:
 
-## First-Time Setup
-
-On first run, `leafpress deploy` will:
-
-1. Open your browser for GitHub authentication
-2. Let you select a repository
-3. Configure the deployment branch
-4. Build your site
-5. Push to GitHub Pages
-
-Your credentials are saved locally for future deploys.
-
-## Repository Types
-
-GitHub Pages supports two types of sites:
-
-**User/Organization Site** — Create a repo named `<username>.github.io` (e.g., `shivamx96.github.io`). Your site will be available at `https://<username>.github.io`. This is ideal for your main personal site or portfolio.
-
-**Project Site** — Any other repo name (e.g., `my-garden`). Your site will be at `https://<username>.github.io/<repo-name>`. leafpress automatically handles the subdirectory URL path.
-
-## Command Options
-
-```bash
-leafpress deploy [flags]
-
-Flags:
-  --dry-run        Validate without deploying
-  --skip-build     Deploy without rebuilding
-  --reconfigure    Re-run setup wizard
-  --provider       Specify provider (default: from config)
+```json
+{
+  "site": {
+    "baseURL": "https://<owner>.github.io/<repository>"
+  }
+}
 ```
 
-## How It Works
+The project-site path must be present when leafpress builds so generated links
+and assets resolve below `/<repository>/`.
 
-When you run `leafpress deploy`, it will:
+## GitHub Actions workflow
 
-- Create the `gh-pages` branch if it doesn't exist
-- Add `.nojekyll` to disable Jekyll processing
-- Set the correct `baseURL` for subdirectory hosting (project sites only)
-- Push your built site to GitHub
-
-## CI/CD Usage
-
-For automated deployments, set the `LEAFPRESS_GITHUB_TOKEN` environment variable instead of interactive OAuth:
-
-```bash
-export LEAFPRESS_GITHUB_TOKEN=ghp_your_token_here
-leafpress deploy
-```
-
-The token needs `repo` scope for pushing to repositories.
-
-### GitHub Actions Example
-
-The easiest approach is to use GitHub's built-in `GITHUB_TOKEN`. It needs no
-secret of your own, but it **does** need write permission: the default token is
-read-only, so without the `permissions` block below the deploy fails when it
-pushes to `gh-pages`.
+Create `.github/workflows/deploy.yml`:
 
 ```yaml
 name: Deploy to GitHub Pages
@@ -78,108 +41,70 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out repository
+        uses: actions/checkout@v7
 
-      - uses: actions/setup-go@v5
+      - name: Set up Go
+        uses: actions/setup-go@v7
         with:
-          go-version: '1.25.5'
+          go-version: "1.25.5"
 
       - name: Install leafpress
         run: go install github.com/shivamx96/leafpress/cli/cmd/leafpress@latest
 
-      - name: Deploy
-        env:
-          LEAFPRESS_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: leafpress deploy
+      - name: Build site
+        run: leafpress build
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload site
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
 ```
 
-Alternatively, use a Personal Access Token — needed when you deploy to a
-*different* repository than the one running the workflow, which the built-in
-token cannot reach. Create one with `repo` scope and add it as a repository
-secret. Pick any name except `GITHUB_TOKEN`: GitHub reserves the `GITHUB_`
-prefix and rejects secrets that use it. For example, with a secret named
-`LEAFPRESS_DEPLOY_TOKEN`:
+In the repository's **Settings → Pages** screen, select **GitHub Actions** as
+the publishing source. The workflow uses GitHub's short-lived token, so no
+personal access token or Leafpress credential file is needed.
 
-```yaml
-      - name: Deploy
-        env:
-          LEAFPRESS_GITHUB_TOKEN: ${{ secrets.LEAFPRESS_DEPLOY_TOKEN }}
-        run: leafpress deploy
-```
+If `build.outputDir` is not `_site`, update the workflow's artifact path.
 
-## Configuration
+## Custom domain
 
-Deploy settings are stored in `leafpress.json`:
-
-```json
-{
-  "deploy": {
-    "provider": "github-pages",
-    "settings": {
-      "repo": "username/repo-name",
-      "branch": "gh-pages"
-    }
-  }
-}
-```
-
-To reconfigure deployment settings:
-
-```bash
-leafpress deploy --reconfigure
-```
-
-## Custom Domain
-
-To use a custom domain with GitHub Pages:
-
-1. Go to your repository **Settings > Pages > Custom domain**
-2. Enter your domain and save
-3. Configure DNS with your domain registrar (GitHub provides instructions)
-4. Update `baseURL` in `leafpress.json`:
-
-```json
-{
-  "site": {
-    "baseURL": "https://yourdomain.com"
-  }
-}
-```
-
-## Security Best Practices
-
-**Token Management**:
-- Never commit tokens to git or any version control
-- Regenerate tokens if they're ever exposed
-- Use GitHub secrets for CI/CD tokens in Actions workflows
-- Consider rotating tokens periodically for added security
-
-**Token Expiration & Rotation**:
-- [GitHub Personal Access Tokens](https://github.com/settings/tokens) can be set to expire (recommended for security)
-- When a token expires, generate a new one and update your CI/CD secrets
-- Use the built-in `GITHUB_TOKEN` in GitHub Actions (it's ephemeral and handled by GitHub automatically)
-
-**GitHub Secrets** (for CI/CD):
-- Store `LEAFPRESS_GITHUB_TOKEN` in [repository secrets](https://docs.github.com/en/actions/security-guides/encrypted-secrets), never hardcode
-- Use `${{ secrets.GITHUB_TOKEN }}` for GitHub Actions, which requires no setup
-- Restrict secret access to workflows that need them
-
-**Token Scope**:
-- Use Personal Access Tokens with only `repo` scope (if using PAT instead of built-in token)
-- The built-in `GITHUB_TOKEN` has appropriate scope automatically
+Configure the domain in **Settings → Pages**, update its DNS records, and set
+`site.baseURL` to the custom production URL before the next build.
 
 ## Troubleshooting
 
-**Site not updating?** GitHub Pages can take a few minutes to update. Check the "Actions" tab in your repository for deployment status.
+- Inspect the workflow run and its deployment environment for the provider's
+  authoritative status.
+- Broken CSS or links on a project site usually mean `site.baseURL` is missing
+  the repository path.
+- A 404 for the whole site usually means Pages is not configured to use GitHub
+  Actions or the workflow lacks `pages: write` and `id-token: write`.
 
-**404 errors on pages?** Make sure GitHub Pages is enabled in your repository settings and set to deploy from the `gh-pages` branch.
-
-**CSS/links broken?** This usually means the `baseURL` isn't set correctly. Run `leafpress deploy --reconfigure` to fix it.
+See GitHub's [custom workflow documentation](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages)
+for the current Pages requirements.

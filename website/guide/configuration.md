@@ -4,9 +4,10 @@ date: 2025-12-21
 ---
 
 Configure leafpress through `leafpress.json` in your site root. Settings are
-grouped into sections — `site`, `theme`, `features`, `navigation`, `build`, and
-`deploy`. Every field is optional and has a sensible default, so a tiny config
-goes a long way.
+grouped into five active sections — `site`, `theme`, `features`, `navigation`,
+and `build`. Every field is optional and has a sensible default, so a tiny
+config goes a long way. The legacy `deploy` section remains accepted during
+migration but is not used.
 
 ## Minimal Config
 
@@ -203,8 +204,9 @@ promotion restores it before returning an error.
 
 ### `deploy`
 
-Deployment settings (provider and provider-specific options) are stored under
-`deploy` and managed by `leafpress deploy` — see the deploy guides.
+The legacy `deploy` object is accepted so existing configurations continue to
+build, but leafpress no longer reads it. You can remove it after migrating to a
+provider-native deployment workflow. See the deployment guides for examples.
 
 ## A note on `baseURL`, sitemap & RSS
 

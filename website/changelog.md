@@ -6,6 +6,9 @@ toc: false
 
 ## Unreleased
 
+- Removed `leafpress deploy` and its built-in provider authentication. Build
+  with leafpress, then publish `_site/` with the hosting provider's supported
+  CLI or CI integration.
 - Removed `leafpress status` and its local deployment manifest. Provider-native
   dashboards and CLIs are the source of truth for deployment state.
 

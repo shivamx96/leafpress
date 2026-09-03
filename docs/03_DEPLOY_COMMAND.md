@@ -1,103 +1,51 @@
-# Leafpress deploy command
+# Publishing Leafpress sites
 
-`leafpress deploy` builds the current garden and publishes `_site/` to GitHub
-Pages, Netlify, or Vercel. First use runs an interactive configuration wizard;
-later deploys reuse the project configuration and credential store.
-
-## Commands and flags
+Leafpress owns site generation and writes a portable static site to `_site/`
+or the configured `build.outputDir`. Publishing is delegated to the hosting
+provider's supported CLI or CI integration:
 
 ```text
-leafpress deploy
-leafpress deploy --provider github-pages
-leafpress deploy --skip-build
-leafpress deploy --reconfigure
-leafpress deploy --dry-run
+leafpress build
 ```
 
-- `--provider` selects `github-pages`, `netlify`, or `vercel`.
-- `--skip-build` deploys the existing output directory.
-- `--reconfigure` reruns provider authentication and setup.
-- `--dry-run` builds and validates without publishing.
+This boundary keeps provider authentication, project selection, retries,
+deployment readiness, and credential storage in provider-maintained tooling.
 
-## Stored configuration
+## Provider workflows
 
-Provider selection and non-secret settings are part of `leafpress.json`:
+- GitHub Pages: build in GitHub Actions, upload `_site/` with
+  `actions/upload-pages-artifact`, and publish it with `actions/deploy-pages`.
+- Netlify: run `netlify deploy --prod --dir=_site` after building.
+- Vercel: run `vercel deploy --prod --cwd _site` after building and select the
+  target project with Vercel's project-linking or `--project` support.
+- Other static hosts: upload the contents of `_site/` and configure the host to
+  serve `404.html` for missing routes.
+
+The copyable workflows live in the website deployment guides.
+
+## Canonical URL
+
+Set `site.baseURL` to the final production URL before building. Leafpress uses
+it for canonical links, Open Graph URLs, `sitemap.xml`, RSS, and any deployment
+subpath such as a GitHub Pages project site:
 
 ```json
 {
-  "deploy": {
-    "provider": "github-pages",
-    "settings": {
-      "repo": "example/my-garden",
-      "branch": "gh-pages"
-    }
+  "site": {
+    "baseURL": "https://example.github.io/my-garden"
   }
 }
 ```
 
-Credentials are JSON outside the project directory. On macOS and Linux the
-default is `~/.config/leafpress/credentials.json`; on Windows it is under the
-user's roaming application-data directory. The file is written with owner-only
-permissions where the platform supports Unix modes.
+## Compatibility and migration
 
-```json
-{
-  "github-pages": {
-    "provider": "github-pages",
-    "accessToken": "...",
-    "username": "example"
-  }
-}
-```
+The legacy `deploy` object remains accepted in `leafpress.json` for
+configuration compatibility, but Leafpress does not read it. It can be removed
+after migrating to provider-native tooling.
 
-Automation can avoid the credential file by setting one of:
-
-```text
-LEAFPRESS_GITHUB_TOKEN
-LEAFPRESS_NETLIFY_TOKEN
-LEAFPRESS_VERCEL_TOKEN
-```
-
-The environment variable takes precedence over stored credentials.
-
-## Authentication
-
-- GitHub Pages uses GitHub's OAuth device flow.
-- Vercel uses its device authorization flow.
-- Netlify requests a Personal Access Token with hidden terminal input. In a
-  non-interactive environment, use `LEAFPRESS_NETLIFY_TOKEN` instead.
-
-Tokens are sent only in provider authorization headers or Git's environment
-configuration; they are not embedded in remote URLs.
-
-## Provider behavior
-
-### GitHub Pages
-
-The wizard selects a repository and deploy branch (default `gh-pages`). Each
-deployment clones or initializes that branch in a temporary directory, replaces
-its contents with the built site, adds `.nojekyll`, commits with a Leafpress
-deployment identity, and pushes over authenticated HTTPS.
-
-### Netlify
-
-The wizard selects or creates a site. Deployment hashes files, asks Netlify
-which blobs are missing, uploads only required hashes, and finalizes the deploy.
-
-### Vercel
-
-The wizard selects or creates a project. Deployment uploads the build files and
-creates a production deployment using the configured project/team identifiers.
-
-## Failure behavior
-
-- A build error stops deployment before any provider mutation.
-- Missing or invalid credentials produce a reconfiguration instruction.
-- Provider and Git failures are returned to the caller.
-- `Ctrl+C` cancels the active deployment context.
-
-## Implementation boundary
-
-Providers implement `internal/deploy.Provider`, which owns authentication,
-credential validation, configuration, and deployment. The CLI owns config
-loading, optional build execution, and provider selection.
+Older Leafpress versions stored provider tokens in
+`~/.config/leafpress/credentials.json` on macOS and Linux, or the equivalent
+roaming application-data directory on Windows. After upgrading, delete that
+file if no older Leafpress installation needs it and revoke tokens that are no
+longer used. The former `.leafpress-deploy-state.json` file is also unused and
+can be removed.

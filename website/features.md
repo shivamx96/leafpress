@@ -46,7 +46,9 @@ Everything you need to build a digital garden, nothing you don't.
 
 ## Publishing
 
-**One-Command Deploy** — `leafpress deploy` handles authentication, building, and deployment to GitHub Pages, Netlify, or Vercel. No manual setup required. Any other host works too: `leafpress build` writes plain static files you can upload anywhere.
+**Portable Publishing** — `leafpress build` writes plain static files to `_site/`.
+Publish that directory with your hosting provider's own CLI, dashboard, or CI
+integration without giving leafpress access to a hosting account.
 
 **SEO Ready** — Automatic robots.txt, Open Graph tags, Twitter cards, plus sitemap.xml when `site.baseURL` is set.
 

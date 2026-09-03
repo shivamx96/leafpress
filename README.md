@@ -24,20 +24,18 @@ leafpress serve
 
 Visit `http://localhost:3000` to see your site live.
 
-## Deploy
+## Publish
 
-One-command deployment to your choice of hosting:
+Build the portable static site, then publish `_site/` with your hosting
+provider's CLI or CI integration:
 
 ```bash
-leafpress deploy
+leafpress build
 ```
 
-Supports:
-- **GitHub Pages** – Free hosting for public repos
-- **Vercel** – Fast edge CDN with automatic deployments
-- **Netlify** – Global CDN with one-click rollbacks
-
-See the [deployment guide](https://leafpress.in/guide/deploy-github) for details.
+See the guides for [GitHub Pages](https://leafpress.in/guide/deploy-github),
+[Vercel](https://leafpress.in/guide/deploy-vercel), and
+[Netlify](https://leafpress.in/guide/deploy-netlify).
 
 ## Features
 
@@ -57,7 +55,7 @@ See the [deployment guide](https://leafpress.in/guide/deploy-github) for details
 - Design system with CSS custom properties (font scale, border radius)
 - SEO ready (sitemap, RSS, Open Graph)
 - Fast parallel builds with incremental rebuilds during `serve`
-- One-command deploy to GitHub Pages, Vercel, or Netlify
+- Portable static output for any hosting provider
 
 ## Documentation
 
