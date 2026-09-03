@@ -7,18 +7,10 @@ toc: false
 ## v1.0.0-beta.20
 *September 3, 2026*
 
-- **Breaking: removed `leafpress deploy` and its built-in provider authentication.**
-  Build with leafpress, then publish `_site/` with the hosting provider's
-  supported CLI or CI integration. Existing `deploy` configuration remains
-  accepted but is ignored so gardens can migrate without a config parsing
-  failure.
-- **Breaking: removed `leafpress status` and its local deployment manifest.**
-  Provider-native dashboards and CLIs are now the source of truth for
-  deployment state.
-- Added `theme.listColumns` to select one, two, or three columns for section and
-  tag-page lists on desktop; mobile layouts remain single-column.
-- Fixed Aurora and Paper page titles wrapping earlier than their containers
-  required.
+- **Breaking: removed `leafpress deploy` and its built-in provider authentication.** Build with leafpress, then publish `_site/` with the hosting provider's supported CLI or CI integration. Existing `deploy` configuration remains accepted but is ignored so gardens can migrate without a config parsing failure.
+- **Breaking: removed `leafpress status` and its local deployment manifest.** Provider-native dashboards and CLIs are now the source of truth for deployment state.
+- Added `theme.listColumns` to select one, two, or three columns for section and tag-page lists on desktop; mobile layouts remain single-column.
+- Fixed Aurora and Paper page titles wrapping earlier than their containers required.
 
 ## v1.0.0-beta.19
 *August 20, 2026*
