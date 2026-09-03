@@ -17,7 +17,8 @@ This creates your site in `_site/` (or your configured `outputDir`). Upload this
 
 ## Netlify
 
-For the simplest setup, see [[guide/deploy-netlify|Deploy to Netlify]] for one-command deployment with `leafpress deploy --provider netlify`.
+See [[guide/deploy-netlify|Deploy to Netlify]] for deployment with Netlify's
+official CLI.
 
 For Git-based continuous deployment:
 
