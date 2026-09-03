@@ -4,6 +4,11 @@ date: 2025-01-06
 toc: false
 ---
 
+## Unreleased
+
+- Removed `leafpress status` and its local deployment manifest. Provider-native
+  dashboards and CLIs are the source of truth for deployment state.
+
 ## v1.0.0-beta.19
 *August 20, 2026*
 

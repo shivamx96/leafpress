@@ -25,7 +25,6 @@ leafpress is a CLI-driven static site generator purpose-built for digital garden
 | `leafpress build` | Generates static site into `_site/` |
 | `leafpress new <name>` | Creates a new page with frontmatter template |
 | `leafpress deploy` | Deploys to GitHub Pages, Netlify, or Vercel |
-| `leafpress status` | Shows changes since the last deployment |
 | `leafpress update` | Updates the CLI from the latest release |
 | `leafpress version` | Prints the installed version |
 

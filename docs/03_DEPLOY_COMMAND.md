@@ -12,14 +12,12 @@ leafpress deploy --provider github-pages
 leafpress deploy --skip-build
 leafpress deploy --reconfigure
 leafpress deploy --dry-run
-leafpress status
 ```
 
 - `--provider` selects `github-pages`, `netlify`, or `vercel`.
 - `--skip-build` deploys the existing output directory.
 - `--reconfigure` reruns provider authentication and setup.
 - `--dry-run` builds and validates without publishing.
-- `status` compares current source hashes with the last deployment manifest.
 
 ## Stored configuration
 
@@ -91,25 +89,15 @@ which blobs are missing, uploads only required hashes, and finalizes the deploy.
 The wizard selects or creates a project. Deployment uploads the build files and
 creates a production deployment using the configured project/team identifiers.
 
-## Deployment state
-
-After a successful non-dry-run deployment, Leafpress writes
-`.leafpress-deploy-state.json` in the project root. It records the last deploy,
-up to ten history entries, deployed-file hashes, and source-file hashes. This is
-the data used by `leafpress status` to report added, modified, and deleted files.
-It does not contain provider credentials.
-
 ## Failure behavior
 
 - A build error stops deployment before any provider mutation.
 - Missing or invalid credentials produce a reconfiguration instruction.
-- Provider and Git failures are returned without recording a successful deploy.
+- Provider and Git failures are returned to the caller.
 - `Ctrl+C` cancels the active deployment context.
-- Manifest write failures are warnings after a provider deployment succeeds;
-  the published site remains live, but `status` may lack the latest state.
 
 ## Implementation boundary
 
 Providers implement `internal/deploy.Provider`, which owns authentication,
 credential validation, configuration, and deployment. The CLI owns config
-loading, optional build execution, provider selection, and manifest recording.
+loading, optional build execution, and provider selection.
