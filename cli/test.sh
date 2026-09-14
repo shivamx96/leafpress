@@ -718,8 +718,8 @@ cat > leafpress.json << 'EOF'
 }
 EOF
 "$LEAFPRESS" build > /dev/null 2>&1
-# Should NOT have position: sticky or lp-nav-placeholder
-if ! grep -q "position: sticky" _site/index.html && ! grep -q "lp-nav-placeholder" _site/index.html; then
+# Check rendered markup; shared navigation JS may reference the optional spacer.
+if ! grep -q "position: sticky" _site/index.html && ! grep -q 'class="lp-nav-placeholder"' _site/index.html; then
     pass
 else
     fail "Base nav style should not be sticky"
