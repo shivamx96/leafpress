@@ -92,6 +92,15 @@ the historical `config.Default()` values.
 | `deploy` | `provider` / `settings` | `""` / `{}` |
 | top | `contractVersion` | `2` |
 
+On mobile, bundled navigation uses a single-line site title, a visible search
+button when enabled, and a Site menu disclosure for theme switching, graph,
+and RSS. Section links scroll horizontally. Sticky and glassy navigation measure
+their rendered dimensions to maintain heading clearance and resize-aware spacing.
+On mobile, scrolled glassy navigation shows only the brand, search, and menu
+button. Its section links are available inside the Site menu in that state.
+The floating mobile bar uses its own content-based width, capped at 24rem and
+inset from the viewport, rather than matching the article container.
+
 ### `site`
 
 Site identity and SEO. `baseURL` is the site's canonical **absolute** URL

@@ -114,7 +114,7 @@
 
 .lp-content sup[id^="fnref:"],
 .lp-content .footnotes li[id^="fn:"] {
-  scroll-margin-top: calc(var(--lp-nav-height) + 2rem);
+  scroll-margin-top: var(--lp-nav-offset, calc(var(--lp-nav-height) + 2rem));
 }
 
 .lp-content sup[id^="fnref:"]:target {
@@ -137,6 +137,6 @@
 
   .lp-content sup[id^="fnref:"],
   .lp-content .footnotes li[id^="fn:"] {
-    scroll-margin-top: calc(var(--lp-nav-height) + 5rem);
+    scroll-margin-top: var(--lp-nav-offset, calc(var(--lp-nav-height) + 5rem));
   }
 }

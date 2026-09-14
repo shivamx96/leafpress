@@ -92,18 +92,6 @@ html {
   border-radius: 2px;
   background: color-mix(in srgb, var(--lp-terminal-panel-raised) 94%, transparent);
   box-shadow: 4px 4px 0 var(--lp-terminal-shadow);
-  animation: terminal-nav-in 120ms steps(2, end) forwards;
-}
-
-@keyframes terminal-nav-in {
-  from {
-    opacity: 0;
-    transform: translateX(-50%) translateY(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
 }
 
 .lp-nav-container {
