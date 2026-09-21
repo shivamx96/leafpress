@@ -395,7 +395,7 @@ func TestSiteConfigAndStyleMatchLeafpressSemantics(t *testing.T) {
 	      "background":{"light":"#fafafa","dark":"#101010"},
 	      "navStyle":"sticky","navActiveStyle":"underlined"
 	    },
-	    "features":{"graph":true,"search":true,"toc":false,"backlinks":true,"wikilinks":true,"rss":true},
+	    "features":{"graph":true,"search":true,"toc":false,"backlinks":true,"wikilinks":true,"rss":true,"sharing":true},
 	    "build":{"outputDir":"ignored-by-renderer","port":4444,"ignore":["private/**"]},
 	    "deploy":{"provider":"netlify","settings":{"site":"demo"}}
 	  },
@@ -423,6 +423,7 @@ func TestSiteConfigAndStyleMatchLeafpressSemantics(t *testing.T) {
 		`name="configured" content="yes"`,
 		`class="lp-graph-toggle"`,
 		`class="lp-search-toggle"`,
+		`class="lp-share-actions"`,
 		`href="/notes/feed.xml"`,
 		`class="lp-wikilink" href="/notes/beta/"`,
 	} {
@@ -494,6 +495,9 @@ func TestConfigDefaultsAndFeatureDisables(t *testing.T) {
 	artifact(t, defaults, "graph.json")
 	artifact(t, defaults, "search-index.json")
 	artifact(t, defaults, "feed.xml")
+	if strings.Contains(one, `class="lp-share-actions"`) {
+		t.Error("page sharing should remain opt-in")
+	}
 	// Automatic navigation (the default mode) lists the garden's root notes.
 	if !strings.Contains(one, `class="lp-nav-link"`) {
 		t.Error("automatic navigation should list root notes by default")
@@ -501,7 +505,7 @@ func TestConfigDefaultsAndFeatureDisables(t *testing.T) {
 
 	disabled := runJSON(t, `{
 	  "render":{"slug":"g"},
-	  "config":{"features":{"graph":false,"search":false,"toc":false,"backlinks":false,"wikilinks":false,"rss":false}},
+	  "config":{"features":{"graph":false,"search":false,"toc":false,"backlinks":false,"wikilinks":false,"rss":false,"sharing":false}},
 	  "content":{"pages":[
 	    {"slug":"one","title":"One","markdown":"## Heading\n\n[[two]]"},
 	    {"slug":"two","title":"Two","markdown":"body"}
@@ -511,6 +515,7 @@ func TestConfigDefaultsAndFeatureDisables(t *testing.T) {
 	for _, absent := range []string{
 		`class="lp-toc"`, `class="lp-backlink"`, `class="lp-wikilink"`,
 		`class="lp-graph-toggle"`, `class="lp-search-toggle"`, `feed.xml`,
+		`class="lp-share-actions"`,
 	} {
 		if strings.Contains(combined, absent) {
 			t.Errorf("disabled feature still emitted %q", absent)

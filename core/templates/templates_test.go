@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/shivamx96/leafpress/core/config"
+	"github.com/shivamx96/leafpress/core/content"
 )
 
 // --- Heading ID generation ---
@@ -367,6 +368,7 @@ func TestClientScriptAssetIsContentAddressed(t *testing.T) {
 		Theme:    config.Default().Theme,
 		Graph:    true,
 		Search:   true,
+		Sharing:  true,
 	}
 	assetPath, content, err := tmpl.ClientScriptAsset(site)
 	if err != nil {
@@ -385,6 +387,7 @@ func TestClientScriptAssetIsContentAddressed(t *testing.T) {
 		`window.addEventListener('storage'`,
 		"lp-graph-panel-body",
 		"lp-search-input",
+		"lp-share-actions",
 		"static/leafpress/mermaid/mermaid.min.js",
 		"requestAnimationFrame(runFrame)",
 		"var grid = new Map()",
@@ -417,6 +420,18 @@ func TestClientScriptAssetIsContentAddressed(t *testing.T) {
 	}
 	if strings.Contains(withoutSearch, "lp-search-input") {
 		t.Fatal("search-disabled client asset contains search UI code")
+	}
+
+	site.Sharing = false
+	withoutSharingPath, withoutSharing, err := tmpl.ClientScriptAsset(site)
+	if err != nil {
+		t.Fatalf("ClientScriptAsset(sharing disabled) error: %v", err)
+	}
+	if withoutSharingPath == withoutSearchPath || withoutSharing == withoutSearch {
+		t.Fatal("sharing feature change did not invalidate the client asset")
+	}
+	if strings.Contains(withoutSharing, "lp-share-actions") {
+		t.Fatal("sharing-disabled client asset contains sharing UI code")
 	}
 }
 
@@ -470,6 +485,60 @@ func TestClientScriptAssetLoadsFromHead(t *testing.T) {
 		!strings.Contains(inline, "var LP_BASE_PATH") ||
 		!strings.Contains(inline, "static/leafpress/mermaid/mermaid.min.js") {
 		t.Fatal("inline fallback must preserve both legacy client script blocks")
+	}
+}
+
+func TestPageRendersAccessibleShareActions(t *testing.T) {
+	tmpl, err := New()
+	if err != nil {
+		t.Fatalf("New() error: %v", err)
+	}
+
+	var out bytes.Buffer
+	data := PageData{
+		Site: SiteData{
+			Title:    "Test Garden",
+			BaseURL:  "https://example.com/garden",
+			BasePath: "/garden",
+			Theme:    config.Default().Theme,
+			Sharing:  true,
+		},
+		Page: &content.Page{
+			Title:     "A Page to Share",
+			Slug:      "notes/share-me",
+			Permalink: "/notes/share-me/",
+		},
+		Content: "<p>Shareable content.</p>",
+	}
+	err = tmpl.RenderPage(&out, data)
+	if err != nil {
+		t.Fatalf("RenderPage() error: %v", err)
+	}
+
+	html := out.String()
+	for _, want := range []string{
+		`class="lp-share-actions" role="group" aria-label="Page sharing"`,
+		`class="lp-share-button lp-share-native" aria-label="Share this page" title="Share this page" hidden`,
+		`class="lp-share-button lp-share-copy-button" aria-label="Copy link" title="Copy link"`,
+		`class="lp-share-status" role="status" aria-live="polite"`,
+	} {
+		if !strings.Contains(html, want) {
+			t.Errorf("rendered page is missing share markup %q", want)
+		}
+	}
+	for _, unwanted := range []string{"role=\"dialog\"", "lp-share-overlay", "bsky.app", "linkedin.com", "mailto:"} {
+		if strings.Contains(html, unwanted) {
+			t.Errorf("rendered page retains platform-specific sharing target %q", unwanted)
+		}
+	}
+
+	out.Reset()
+	data.Site.Sharing = false
+	if err := tmpl.RenderPage(&out, data); err != nil {
+		t.Fatalf("RenderPage(sharing disabled) error: %v", err)
+	}
+	if strings.Contains(out.String(), `class="lp-share-actions"`) {
+		t.Error("sharing-disabled page rendered the sharing actions")
 	}
 }
 

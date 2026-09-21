@@ -443,12 +443,88 @@ html {
   margin-bottom: 0.5rem;
 }
 
+.lp-header-details {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
 .lp-meta {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 0.25rem 0.5rem;
   color: var(--lp-text-muted);
+}
+
+.lp-share-actions {
+  flex: 0 0 auto;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.lp-share-button {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  min-height: 36px;
+  padding: 0;
+  border: 1px solid var(--lp-border);
+  border-radius: var(--lp-radius-full);
+  background: var(--lp-bg);
+  color: var(--lp-text-muted);
+  font: inherit;
+  font-size: var(--lp-font-sm);
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s, background-color 0.2s;
+}
+
+.lp-share-button[hidden] {
+  display: none;
+}
+
+.lp-share-button:hover,
+.lp-share-button:focus-visible {
+  border-color: var(--lp-accent);
+  background: var(--lp-code-bg);
+  color: var(--lp-accent);
+}
+
+.lp-share-status {
+  position: absolute;
+  top: calc(100% + 0.45rem);
+  right: 0;
+  z-index: 20;
+  width: max-content;
+  max-width: min(15rem, calc(100vw - 2rem));
+  padding: 0.4rem 0.55rem;
+  border: 1px solid var(--lp-border);
+  border-radius: var(--lp-radius-sm);
+  background: var(--lp-code-bg);
+  color: var(--lp-text);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  font-size: var(--lp-font-xs);
+  line-height: 1.3;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-0.2rem);
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s;
+}
+
+.lp-share-status--visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-share-status {
+    transition: none;
+  }
 }
 
 .lp-reading-time {
@@ -851,6 +927,17 @@ html {
 
 .lp-graph-link {
   transition: all 0.2s ease;
+}
+
+@media (max-width: 600px) {
+  .lp-header-details {
+    align-items: flex-start;
+  }
+
+  .lp-share-button {
+    width: 44px;
+    min-height: 44px;
+  }
 }
 
 .lp-graph-label {

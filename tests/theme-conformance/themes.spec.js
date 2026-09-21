@@ -249,6 +249,12 @@ for (const theme of themes) {
   test(`${theme} exposes the full fixture and reader tools`, async ({ page }) => {
     await page.setViewportSize(viewports.desktop);
     await page.emulateMedia({ colorScheme: "light" });
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, "share", {
+        configurable: true,
+        value: async (details) => { window.__leafpressSharedDetails = details; }
+      });
+    });
     const fixture = fixtureName(theme, "base", "base");
     await page.goto(`/${fixture}/notes/components/`);
 
@@ -261,6 +267,32 @@ for (const theme of themes) {
     await expect(page.locator(".footnotes")).toBeVisible();
     await expect(page.locator(".footnote-backref")).toHaveCount(2);
     await expect(page.locator(".lp-backlinks")).toBeVisible();
+
+    const shareActions = page.getByRole("group", { name: "Page sharing" });
+    const nativeShare = page.getByRole("button", { name: "Share this page" });
+    const copyLink = page.getByRole("button", { name: "Copy link" });
+    await expect(shareActions).toBeVisible();
+    await expect(nativeShare).toBeVisible();
+    await expect(copyLink).toBeVisible();
+    await expect(shareActions.locator("button")).toHaveCount(2);
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(nativeShare).toHaveAttribute("title", "Share this page");
+    await expect(copyLink).toHaveAttribute("title", "Copy link");
+
+    const canonicalURL = page.url();
+    await page.context().grantPermissions(["clipboard-write"], {
+      origin: new URL(page.url()).origin
+    });
+    await copyLink.click();
+    await expect(page.locator(".lp-share-status")).toHaveText("Link copied.");
+    await expect(page.locator(".lp-share-status")).toHaveClass(/\blp-share-status--visible\b/);
+
+    await nativeShare.click();
+    expect(await page.evaluate(() => window.__leafpressSharedDetails)).toEqual({
+      title: "Component Gallery",
+      text: "Typography, tables, code, media, tasks, and other article surfaces.",
+      url: canonicalURL
+    });
 
     const lastFootnote = page.locator(".footnote-ref").last();
     const footnoteTarget = await lastFootnote.getAttribute("href");
@@ -435,3 +467,27 @@ for (const theme of themes) {
     }
   });
 }
+
+test("page sharing stays compact and inline on mobile", async ({ page }) => {
+  await page.setViewportSize(viewports.mobile);
+  await page.goto(`/${fixtureName("classic", "base", "base")}/notes/components/`);
+
+  const header = page.locator(".lp-header-details");
+  const actions = page.getByRole("group", { name: "Page sharing" });
+  const copyLink = page.getByRole("button", { name: "Copy link" });
+  await expect(actions).toBeVisible();
+  await expect(copyLink).toBeVisible();
+  await expect(page.locator(".lp-share-native")).toBeHidden();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+
+  const headerBox = await header.boundingBox();
+  const actionsBox = await actions.boundingBox();
+  const copyBox = await copyLink.boundingBox();
+  expect(headerBox).not.toBeNull();
+  expect(actionsBox).not.toBeNull();
+  expect(copyBox).not.toBeNull();
+  expect(actionsBox.x).toBeGreaterThanOrEqual(headerBox.x);
+  expect(actionsBox.x + actionsBox.width).toBeLessThanOrEqual(headerBox.x + headerBox.width);
+  expect(copyBox.width).toBeGreaterThanOrEqual(44);
+  expect(copyBox.height).toBeGreaterThanOrEqual(44);
+});

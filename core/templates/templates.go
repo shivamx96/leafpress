@@ -131,6 +131,7 @@ type SiteData struct {
 	Graph             bool
 	Search            bool
 	RSS               bool
+	Sharing           bool
 	HeadExtra         string // Custom HTML to inject in <head>
 	FooterAttribution *FooterAttribution
 	ClientScriptPath  string // Content-hashed shared client bundle, relative to the site root
@@ -782,6 +783,8 @@ const baseTemplate = `<!DOCTYPE html>
     </div>
   </div>{{end}}
 
+  {{block "pageOverlays" .}}{{end}}
+
   {{if not .Site.ClientScriptPath}}<script>{{template "clientScriptMain" .}}</script>
   <script>{{template "clientScriptMermaid" .}}</script>{{end}}
   {{define "clientScriptMain"}}
@@ -1046,6 +1049,87 @@ const baseTemplate = `<!DOCTYPE html>
         pre.style.position = 'relative';
         pre.appendChild(button);
       });
+
+      {{if .Site.Sharing}}// Page sharing
+      (function() {
+        var actions = document.querySelector('.lp-share-actions');
+        if (!actions) return;
+
+        var copyBtn = actions.querySelector('.lp-share-copy-button');
+        var status = actions.querySelector('.lp-share-status');
+        var nativeBtn = actions.querySelector('.lp-share-native');
+        var nativeShareAvailable = typeof navigator.share === 'function' && window.isSecureContext;
+        var resetTimer = null;
+
+        function pageDetails() {
+          var canonical = document.querySelector('link[rel="canonical"]');
+          var description = document.querySelector('meta[name="description"]');
+          var url = canonical && canonical.href ? canonical.href : window.location.href.split('#')[0];
+          return {
+            title: document.querySelector('.lp-title').textContent.trim(),
+            text: description ? description.content : '',
+            url: url
+          };
+        }
+
+        function setStatus(message) {
+          clearTimeout(resetTimer);
+          status.textContent = message;
+          status.classList.toggle('lp-share-status--visible', Boolean(message));
+          if (message) {
+            resetTimer = setTimeout(function() {
+              status.textContent = '';
+              status.classList.remove('lp-share-status--visible');
+            }, 2000);
+          }
+        }
+
+        function copyTextFallback(value) {
+          return new Promise(function(resolve, reject) {
+            var fallback = document.createElement('textarea');
+            fallback.value = value;
+            fallback.setAttribute('readonly', '');
+            fallback.style.position = 'fixed';
+            fallback.style.opacity = '0';
+            document.body.appendChild(fallback);
+            fallback.select();
+            try {
+              if (!document.execCommand('copy')) throw new Error('Copy command failed');
+              resolve();
+            } catch (error) {
+              reject(error);
+            } finally {
+              fallback.remove();
+            }
+          });
+        }
+
+        function copyText(value) {
+          if (navigator.clipboard && window.isSecureContext) {
+            return navigator.clipboard.writeText(value).catch(function() {
+              return copyTextFallback(value);
+            });
+          }
+          return copyTextFallback(value);
+        }
+
+        copyBtn.addEventListener('click', function() {
+          copyText(pageDetails().url).then(function() {
+            setStatus('Link copied.');
+          }).catch(function() {
+            setStatus('Unable to copy link.');
+          });
+        });
+
+        if (nativeShareAvailable) {
+          nativeBtn.hidden = false;
+          nativeBtn.addEventListener('click', function() {
+            navigator.share(pageDetails()).catch(function(error) {
+              if (error.name !== 'AbortError') setStatus('Sharing is unavailable right now.');
+            });
+          });
+        }
+      })();{{end}}
       {{if .Site.Graph}}
       // Graph Overlay
       (function() {
@@ -1981,20 +2065,39 @@ const pageTemplate = `
   <article class="lp-article">
     <header class="lp-header">
       <h1 class="lp-title">{{.Page.Title}}</h1>
-      <div class="lp-meta">
-        {{if .Page.Growth}}
-        <span class="lp-growth lp-growth--{{.Page.Growth}}" data-growth="{{.Page.Growth}}">{{growthEmoji .Page.Growth}}</span>
-        {{end}}
-        {{if .Page.ReadingTime}}
-        <span class="lp-reading-time">{{.Page.ReadingTimeDisplay}}</span>
-        {{end}}
-        {{if and .Page.HasModified (not .Page.Date.IsZero)}}
-        <span class="lp-date-info">Updated <time class="lp-modified" datetime="{{.Page.ISOModified}}">{{.Page.FormattedModified}}</time> · Created <time class="lp-date" datetime="{{.Page.ISODate}}">{{.Page.FormattedDate}}</time></span>
-        {{else if .Page.HasModified}}
-        <span class="lp-date-info">Updated <time class="lp-modified" datetime="{{.Page.ISOModified}}">{{.Page.FormattedModified}}</time></span>
-        {{else if not .Page.Date.IsZero}}
-        <span class="lp-date-info">Created <time class="lp-date" datetime="{{.Page.ISODate}}">{{.Page.FormattedDate}}</time></span>
-        {{end}}
+      <div class="lp-header-details">
+        <div class="lp-meta">
+          {{if .Page.Growth}}
+          <span class="lp-growth lp-growth--{{.Page.Growth}}" data-growth="{{.Page.Growth}}">{{growthEmoji .Page.Growth}}</span>
+          {{end}}
+          {{if .Page.ReadingTime}}
+          <span class="lp-reading-time">{{.Page.ReadingTimeDisplay}}</span>
+          {{end}}
+          {{if and .Page.HasModified (not .Page.Date.IsZero)}}
+          <span class="lp-date-info">Updated <time class="lp-modified" datetime="{{.Page.ISOModified}}">{{.Page.FormattedModified}}</time> · Created <time class="lp-date" datetime="{{.Page.ISODate}}">{{.Page.FormattedDate}}</time></span>
+          {{else if .Page.HasModified}}
+          <span class="lp-date-info">Updated <time class="lp-modified" datetime="{{.Page.ISOModified}}">{{.Page.FormattedModified}}</time></span>
+          {{else if not .Page.Date.IsZero}}
+          <span class="lp-date-info">Created <time class="lp-date" datetime="{{.Page.ISODate}}">{{.Page.FormattedDate}}</time></span>
+          {{end}}
+        </div>
+        {{if .Site.Sharing}}<div class="lp-share-actions" role="group" aria-label="Page sharing">
+          <button type="button" class="lp-share-button lp-share-native" aria-label="Share this page" title="Share this page" hidden>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="18" cy="5" r="3"></circle>
+              <circle cx="6" cy="12" r="3"></circle>
+              <circle cx="18" cy="19" r="3"></circle>
+              <path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4"></path>
+            </svg>
+          </button>
+          <button type="button" class="lp-share-button lp-share-copy-button" aria-label="Copy link" title="Copy link">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="9" y="9" width="13" height="13" rx="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+          </button>
+          <span class="lp-share-status" role="status" aria-live="polite"></span>
+        </div>{{end}}
       </div>
       {{if .Page.Tags}}
       <div class="lp-tags">
@@ -2021,6 +2124,8 @@ const pageTemplate = `
     {{end}}
   </article>
 </div>
+{{end}}
+{{define "pageOverlays"}}
 {{end}}
 `
 

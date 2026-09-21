@@ -685,6 +685,7 @@ func resolveConfig(in *Input) (*config.Config, templates.SiteData, error) {
 		Graph:             cfg.Features.Graph,
 		Search:            cfg.Features.Search,
 		RSS:               cfg.Features.RSS,
+		Sharing:           cfg.Features.Sharing,
 		HeadExtra:         cfg.Site.HeadExtra,
 		FooterAttribution: footerAttribution,
 	}
