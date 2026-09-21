@@ -38,7 +38,7 @@ Most static site generators make you choose: simple but limited, or powerful but
 - **Video & audio embeds** via Obsidian syntax (`![[video.mp4]]`)
 - **Image width control** with `![[image.png|500]]`
 - **RSS feed** with nav icon (toggle in config)
-- **Page sharing** with copy-link, social, email, and native device options
+- **Optional page sharing** with native device sharing and copy-link actions
 - **SEO ready** with Open Graph and meta tags, plus `sitemap.xml` when `baseURL` is set
 - **Callouts** for notes, warnings, tips (`> [!note]`)
 - **Syntax highlighting** for code blocks

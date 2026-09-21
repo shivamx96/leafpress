@@ -53,7 +53,8 @@ the historical `config.Default()` values.
     "toc": true,
     "backlinks": true,
     "wikilinks": true,
-    "rss": true
+    "rss": true,
+    "sharing": false
   },
   "navigation": {
     "mode": "automatic",

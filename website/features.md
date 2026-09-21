@@ -54,7 +54,7 @@ integration without giving leafpress access to a hosting account.
 
 **RSS Feed** — Auto-generated feed.xml with nav icon. Toggle with `features.rss` in config (requires `site.baseURL`).
 
-**Page Sharing** — Every note includes a share dialog with copy-link, Bluesky, LinkedIn, email, and native device options. It opens as a centered dialog on desktop and a bottom sheet on mobile.
+**Page Sharing** — Opt into a focused share dialog with native device sharing and copy-link actions. It opens as a centered dialog on desktop and a bottom sheet on mobile; browsers without native sharing still offer copy-link.
 
 **Custom 404** — Styled error page, ready for any hosting platform.
 

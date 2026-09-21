@@ -368,6 +368,7 @@ func TestClientScriptAssetIsContentAddressed(t *testing.T) {
 		Theme:    config.Default().Theme,
 		Graph:    true,
 		Search:   true,
+		Sharing:  true,
 	}
 	assetPath, content, err := tmpl.ClientScriptAsset(site)
 	if err != nil {
@@ -386,6 +387,7 @@ func TestClientScriptAssetIsContentAddressed(t *testing.T) {
 		`window.addEventListener('storage'`,
 		"lp-graph-panel-body",
 		"lp-search-input",
+		"lp-share-overlay",
 		"static/leafpress/mermaid/mermaid.min.js",
 		"requestAnimationFrame(runFrame)",
 		"var grid = new Map()",
@@ -418,6 +420,18 @@ func TestClientScriptAssetIsContentAddressed(t *testing.T) {
 	}
 	if strings.Contains(withoutSearch, "lp-search-input") {
 		t.Fatal("search-disabled client asset contains search UI code")
+	}
+
+	site.Sharing = false
+	withoutSharingPath, withoutSharing, err := tmpl.ClientScriptAsset(site)
+	if err != nil {
+		t.Fatalf("ClientScriptAsset(sharing disabled) error: %v", err)
+	}
+	if withoutSharingPath == withoutSearchPath || withoutSharing == withoutSearch {
+		t.Fatal("sharing feature change did not invalidate the client asset")
+	}
+	if strings.Contains(withoutSharing, "lp-share-overlay") {
+		t.Fatal("sharing-disabled client asset contains sharing UI code")
 	}
 }
 
@@ -481,12 +495,13 @@ func TestPageRendersAccessibleShareDialog(t *testing.T) {
 	}
 
 	var out bytes.Buffer
-	err = tmpl.RenderPage(&out, PageData{
+	data := PageData{
 		Site: SiteData{
 			Title:    "Test Garden",
 			BaseURL:  "https://example.com/garden",
 			BasePath: "/garden",
 			Theme:    config.Default().Theme,
+			Sharing:  true,
 		},
 		Page: &content.Page{
 			Title:     "A Page to Share",
@@ -494,7 +509,8 @@ func TestPageRendersAccessibleShareDialog(t *testing.T) {
 			Permalink: "/notes/share-me/",
 		},
 		Content: "<p>Shareable content.</p>",
-	})
+	}
+	err = tmpl.RenderPage(&out, data)
 	if err != nil {
 		t.Fatalf("RenderPage() error: %v", err)
 	}
@@ -505,29 +521,27 @@ func TestPageRendersAccessibleShareDialog(t *testing.T) {
 		`aria-haspopup="dialog"`,
 		`class="lp-share-panel" role="dialog" aria-modal="true"`,
 		`aria-labelledby="lp-share-title"`,
-		`class="lp-share-copy-button"`,
-		`data-share="bluesky"`,
-		`data-share="linkedin"`,
-		`data-share="email"`,
+		`class="lp-share-action lp-share-native"`,
+		`class="lp-share-action lp-share-copy-button"`,
 		`class="lp-share-close"`,
 	} {
 		if !strings.Contains(html, want) {
 			t.Errorf("rendered page is missing share markup %q", want)
 		}
 	}
-	if strings.Index(html, `class="lp-share-copy-button"`) > strings.Index(html, `class="lp-share-options"`) {
-		t.Error("copy link action must appear before sharing destinations")
+	for _, unwanted := range []string{"bsky.app", "linkedin.com", "mailto:"} {
+		if strings.Contains(html, unwanted) {
+			t.Errorf("rendered page retains platform-specific sharing target %q", unwanted)
+		}
 	}
 
 	out.Reset()
-	if err := tmpl.RenderIndex(&out, IndexData{
-		Site:  SiteData{Title: "Test Garden", Theme: config.Default().Theme},
-		Title: "Home",
-	}); err != nil {
-		t.Fatalf("RenderIndex() error: %v", err)
+	data.Site.Sharing = false
+	if err := tmpl.RenderPage(&out, data); err != nil {
+		t.Fatalf("RenderPage(sharing disabled) error: %v", err)
 	}
 	if strings.Contains(out.String(), `id="lp-share-overlay"`) {
-		t.Error("non-article index rendered the page sharing dialog")
+		t.Error("sharing-disabled page rendered the sharing dialog")
 	}
 }
 

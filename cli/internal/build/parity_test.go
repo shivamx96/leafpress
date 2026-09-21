@@ -66,7 +66,8 @@ const parityConfig = `{
     "toc": true,
     "backlinks": true,
     "wikilinks": true,
-    "rss": true
+    "rss": true,
+    "sharing": true
   }
 }`
 

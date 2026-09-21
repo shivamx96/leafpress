@@ -249,6 +249,12 @@ for (const theme of themes) {
   test(`${theme} exposes the full fixture and reader tools`, async ({ page }) => {
     await page.setViewportSize(viewports.desktop);
     await page.emulateMedia({ colorScheme: "light" });
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, "share", {
+        configurable: true,
+        value: async (details) => { window.__leafpressSharedDetails = details; }
+      });
+    });
     const fixture = fixtureName(theme, "base", "base");
     await page.goto(`/${fixture}/notes/components/`);
 
@@ -268,23 +274,18 @@ for (const theme of themes) {
     await shareToggle.click();
     await expect(shareOverlay).toHaveClass(/\blp-share-overlay--open\b/);
     await expect(shareDialog).toBeVisible();
-    await expect(page.getByRole("button", { name: "Copy link" })).toBeFocused();
+    await expect(page.locator(".lp-share-native")).toBeVisible();
+    await expect(page.locator(".lp-share-native")).toBeFocused();
 
     const canonicalURL = page.url();
     await expect(page.locator(".lp-share-url")).toHaveValue(canonicalURL);
-    const destinations = await page.locator(".lp-share-destination").evaluateAll((links) =>
-      Object.fromEntries(links.map((link) => [link.dataset.share, link.href]))
-    );
-    expect(new URL(destinations.bluesky).searchParams.get("text")).toBe(
-      `Component Gallery — ${canonicalURL}`
-    );
-    expect(new URL(destinations.linkedin).searchParams.get("url")).toBe(canonicalURL);
-    expect(destinations.email).toContain(`subject=${encodeURIComponent("Component Gallery")}`);
+    await expect(shareDialog.locator(".lp-share-action")).toHaveCount(2);
+    await expect(shareDialog.locator("a")).toHaveCount(0);
 
     await page.context().grantPermissions(["clipboard-write"], {
       origin: new URL(page.url()).origin
     });
-    await page.getByRole("button", { name: "Copy link" }).click();
+    await page.locator(".lp-share-copy-button").click();
     await expect(page.locator(".lp-share-status")).toHaveText("Link copied to clipboard.");
     await page.locator(".lp-share-close").focus();
     await page.keyboard.press("Tab");
@@ -292,6 +293,15 @@ for (const theme of themes) {
     await page.keyboard.press("Escape");
     await expect(shareDialog).toBeHidden();
     await expect(shareToggle).toBeFocused();
+
+    await shareToggle.click();
+    await page.locator(".lp-share-native").click();
+    await expect(shareDialog).toBeHidden();
+    expect(await page.evaluate(() => window.__leafpressSharedDetails)).toEqual({
+      title: "Component Gallery",
+      text: "Typography, tables, code, media, tasks, and other article surfaces.",
+      url: canonicalURL
+    });
 
     const lastFootnote = page.locator(".footnote-ref").last();
     const footnoteTarget = await lastFootnote.getAttribute("href");

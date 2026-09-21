@@ -131,6 +131,7 @@ type SiteData struct {
 	Graph             bool
 	Search            bool
 	RSS               bool
+	Sharing           bool
 	HeadExtra         string // Custom HTML to inject in <head>
 	FooterAttribution *FooterAttribution
 	ClientScriptPath  string // Content-hashed shared client bundle, relative to the site root
@@ -1049,7 +1050,7 @@ const baseTemplate = `<!DOCTYPE html>
         pre.appendChild(button);
       });
 
-      // Page sharing
+      {{if .Site.Sharing}}// Page sharing
       (function() {
         var overlay = document.getElementById('lp-share-overlay');
         var toggleBtn = document.querySelector('.lp-share-toggle');
@@ -1063,6 +1064,7 @@ const baseTemplate = `<!DOCTYPE html>
         var urlInput = overlay.querySelector('.lp-share-url');
         var status = overlay.querySelector('.lp-share-status');
         var nativeBtn = overlay.querySelector('.lp-share-native');
+        var nativeShareAvailable = typeof navigator.share === 'function' && window.isSecureContext;
         var resetTimer = null;
         var previousBodyOverflow = '';
 
@@ -1080,13 +1082,6 @@ const baseTemplate = `<!DOCTYPE html>
         function prepareShare() {
           var details = pageDetails();
           urlInput.value = details.url;
-          overlay.querySelector('[data-share="bluesky"]').href =
-            'https://bsky.app/intent/compose?text=' + encodeURIComponent(details.title + ' — ' + details.url);
-          overlay.querySelector('[data-share="linkedin"]').href =
-            'https://www.linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent(details.url);
-          overlay.querySelector('[data-share="email"]').href =
-            'mailto:?subject=' + encodeURIComponent(details.title) +
-            '&body=' + encodeURIComponent((details.text ? details.text + '\n\n' : '') + details.url);
           return details;
         }
 
@@ -1096,7 +1091,7 @@ const baseTemplate = `<!DOCTYPE html>
           overlay.classList.add('lp-share-overlay--open');
           overlay.setAttribute('aria-hidden', 'false');
           document.body.style.overflow = 'hidden';
-          copyBtn.focus();
+          (nativeShareAvailable ? nativeBtn : copyBtn).focus();
         }
 
         function closeShare() {
@@ -1158,11 +1153,7 @@ const baseTemplate = `<!DOCTYPE html>
           });
         });
 
-        overlay.querySelectorAll('.lp-share-destination').forEach(function(link) {
-          link.addEventListener('click', closeShare);
-        });
-
-        if (navigator.share) {
+        if (nativeShareAvailable) {
           nativeBtn.hidden = false;
           nativeBtn.addEventListener('click', function() {
             navigator.share(prepareShare()).then(closeShare).catch(function(error) {
@@ -1194,7 +1185,7 @@ const baseTemplate = `<!DOCTYPE html>
             closeShare();
           }
         });
-      })();
+      })();{{end}}
       {{if .Site.Graph}}
       // Graph Overlay
       (function() {
@@ -2146,7 +2137,7 @@ const pageTemplate = `
           <span class="lp-date-info">Created <time class="lp-date" datetime="{{.Page.ISODate}}">{{.Page.FormattedDate}}</time></span>
           {{end}}
         </div>
-        <button type="button" class="lp-share-toggle" aria-haspopup="dialog" aria-controls="lp-share-overlay">
+        {{if .Site.Sharing}}<button type="button" class="lp-share-toggle" aria-haspopup="dialog" aria-controls="lp-share-overlay">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <circle cx="18" cy="5" r="3"></circle>
             <circle cx="6" cy="12" r="3"></circle>
@@ -2154,7 +2145,7 @@ const pageTemplate = `
             <path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4"></path>
           </svg>
           <span>Share</span>
-        </button>
+        </button>{{end}}
       </div>
       {{if .Page.Tags}}
       <div class="lp-tags">
@@ -2183,7 +2174,7 @@ const pageTemplate = `
 </div>
 {{end}}
 {{define "pageOverlays"}}
-<div class="lp-share-overlay" id="lp-share-overlay" aria-hidden="true">
+{{if .Site.Sharing}}<div class="lp-share-overlay" id="lp-share-overlay" aria-hidden="true">
   <div class="lp-share-backdrop"></div>
   <section class="lp-share-panel" role="dialog" aria-modal="true" aria-labelledby="lp-share-title">
     <div class="lp-share-header">
@@ -2192,43 +2183,32 @@ const pageTemplate = `
     </div>
     <div class="lp-share-body">
       <label class="lp-share-copy-label-text" for="lp-share-url">Page link</label>
-      <div class="lp-share-copy-row">
-        <input class="lp-share-url" id="lp-share-url" type="text" readonly>
-        <button type="button" class="lp-share-copy-button">
+      <input class="lp-share-url" id="lp-share-url" type="text" readonly>
+      <div class="lp-share-actions">
+        <button type="button" class="lp-share-action lp-share-native" hidden>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="18" cy="5" r="3"></circle>
+            <circle cx="6" cy="12" r="3"></circle>
+            <circle cx="18" cy="19" r="3"></circle>
+            <path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4"></path>
+          </svg>
+          <span class="lp-share-action-text"><strong>Share…</strong><small>Use apps on this device</small></span>
+        </button>
+        <button type="button" class="lp-share-action lp-share-copy-button">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <rect x="9" y="9" width="13" height="13" rx="2"></rect>
             <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
           </svg>
-          <span class="lp-share-copy-label">Copy link</span>
+          <span class="lp-share-action-text"><strong class="lp-share-copy-label">Copy link</strong><small>Save the page URL</small></span>
         </button>
       </div>
       <p class="lp-share-status" role="status" aria-live="polite"></p>
-
-      <p class="lp-share-options-label">Share with</p>
-      <div class="lp-share-options">
-        <a class="lp-share-destination" data-share="bluesky" href="https://bsky.app/intent/compose" target="_blank" rel="noopener noreferrer">
-          <span class="lp-share-destination-icon" aria-hidden="true">B</span>
-          <span>Bluesky</span>
-        </a>
-        <a class="lp-share-destination" data-share="linkedin" href="https://www.linkedin.com/sharing/share-offsite/" target="_blank" rel="noopener noreferrer">
-          <span class="lp-share-destination-icon" aria-hidden="true">in</span>
-          <span>LinkedIn</span>
-        </a>
-        <a class="lp-share-destination" data-share="email" href="mailto:">
-          <span class="lp-share-destination-icon" aria-hidden="true">@</span>
-          <span>Email</span>
-        </a>
-        <button type="button" class="lp-share-native" hidden>
-          <span class="lp-share-destination-icon" aria-hidden="true">•••</span>
-          <span>More</span>
-        </button>
-      </div>
     </div>
     <div class="lp-share-footer">
       <button type="button" class="lp-share-close">Close</button>
     </div>
   </section>
-</div>
+</div>{{end}}
 {{end}}
 `
 

@@ -238,6 +238,7 @@ func (b *Builder) Build() (result *Stats, resultErr error) {
 		Graph:       b.cfg.Features.Graph,
 		Search:      b.cfg.Features.Search,
 		RSS:         b.cfg.Features.RSS,
+		Sharing:     b.cfg.Features.Sharing,
 		HeadExtra:   b.cfg.Site.HeadExtra,
 	})
 	// Nav is assembled after escaping: its parts are already-escaped config

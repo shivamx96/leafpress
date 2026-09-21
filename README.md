@@ -50,7 +50,7 @@ See the guides for [GitHub Pages](https://leafpress.in/guide/deploy-github),
 - Local video and audio embeds
 - Obsidian image width syntax (`![[image.png|500]]`)
 - RSS feed with nav icon
-- Page sharing with copy-link, social, email, and native device options
+- Optional page sharing with native device sharing and copy-link actions
 - Dark mode with system preference detection
 - Link previews on hover
 - Design system with CSS custom properties (font scale, border radius)

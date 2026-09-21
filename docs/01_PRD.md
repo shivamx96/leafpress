@@ -126,6 +126,7 @@ full build deletes.
 | `theme.accent` | `"#50ac00"` | Accent color for links |
 | `theme.listColumns` | `2` | List-page columns on desktop (`1`, `2`, or `3`); mobile is always one column |
 | `features.graph` | `true` | Enable graph.json generation |
+| `features.sharing` | `false` | Show native-share and copy-link actions on pages |
 
 ---
 
@@ -406,7 +407,8 @@ _site/
     "toc": true,
     "backlinks": true,
     "wikilinks": true,
-    "rss": true
+    "rss": true,
+    "sharing": false
   },
   "build": { "outputDir": "_site", "port": 3000 }
 }

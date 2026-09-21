@@ -51,9 +51,9 @@ type Site struct {
 	HeadExtra   string `json:"headExtra"` // Custom HTML to inject in <head>
 }
 
-// Features groups the reader-feature toggles. All default to true in both the
-// CLI and the renderer, so introducing a config never flips a feature relative
-// to omitting it.
+// Features groups the reader-feature toggles. Established reader features
+// default to true in both the CLI and renderer. Sharing is opt-in because it
+// adds a visible action to every article.
 type Features struct {
 	Graph     bool `json:"graph"`
 	Search    bool `json:"search"`
@@ -61,6 +61,7 @@ type Features struct {
 	Backlinks bool `json:"backlinks"`
 	Wikilinks bool `json:"wikilinks"`
 	RSS       bool `json:"rss"`
+	Sharing   bool `json:"sharing"`
 }
 
 // Navigation configures the site nav bar. Mode is chosen explicitly and
@@ -425,6 +426,7 @@ func Default() *Config {
 			Backlinks: true,
 			Wikilinks: true,
 			RSS:       true,
+			Sharing:   false,
 		},
 		Navigation: Navigation{
 			Mode:  NavAutomatic,

@@ -54,7 +54,8 @@ default site.
     "search": true,
     "wikilinks": true,
     "backlinks": true,
-    "rss": true
+    "rss": true,
+    "sharing": false
   },
 
   "navigation": {
@@ -122,6 +123,7 @@ Gradients work too:
 | `wikilinks` | `true` | Enable wiki-link processing |
 | `backlinks` | `true` | Show backlinks section on pages |
 | `rss` | `true` | Generate RSS feed and show feed icon in nav (requires `site.baseURL`) |
+| `sharing` | `false` | Show a page-sharing dialog with native device sharing (when supported) and copy-link |
 
 ### `navigation`
 

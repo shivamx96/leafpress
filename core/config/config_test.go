@@ -32,7 +32,10 @@ func TestDefault(t *testing.T) {
 		t.Errorf("Navigation.Mode = %q, want %q", cfg.Navigation.Mode, NavAutomatic)
 	}
 	if !cfg.Features.Graph || !cfg.Features.Search || !cfg.Features.TOC || !cfg.Features.Backlinks || !cfg.Features.Wikilinks || !cfg.Features.RSS {
-		t.Error("all features should be enabled by default")
+		t.Error("established features should be enabled by default")
+	}
+	if cfg.Features.Sharing {
+		t.Error("sharing should be opt-in")
 	}
 	if cfg.Theme.Accent != "#50ac00" {
 		t.Errorf("Accent = %q, want %q", cfg.Theme.Accent, "#50ac00")
@@ -84,7 +87,7 @@ func TestLoad_MinimalConfig(t *testing.T) {
 func TestLoad_DisableFeatures(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "leafpress.json")
-	os.WriteFile(path, []byte(`{"site": {"title": "Test"}, "features": {"graph": false, "rss": false}}`), 0644)
+	os.WriteFile(path, []byte(`{"site": {"title": "Test"}, "features": {"graph": false, "rss": false, "sharing": true}}`), 0644)
 
 	cfg, err := Load(path)
 	if err != nil {
@@ -98,6 +101,9 @@ func TestLoad_DisableFeatures(t *testing.T) {
 	}
 	if !cfg.Features.Search {
 		t.Error("Search should still be true (default)")
+	}
+	if !cfg.Features.Sharing {
+		t.Error("Sharing should be true when explicitly enabled")
 	}
 }
 
@@ -127,6 +133,9 @@ func TestParse_MatchesLoadDefaultsAndOverrides(t *testing.T) {
 	}
 	if !cfg.Features.Search || !cfg.Features.TOC || !cfg.Features.Backlinks || !cfg.Features.Wikilinks {
 		t.Fatal("omitted feature flags should retain CLI defaults")
+	}
+	if cfg.Features.Sharing {
+		t.Fatal("omitted sharing flag should retain its opt-in default")
 	}
 	if cfg.Theme.Accent != "#123456" || cfg.Theme.NavStyle != "sticky" {
 		t.Fatalf("theme overrides not preserved: %+v", cfg.Theme)

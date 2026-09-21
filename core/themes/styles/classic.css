@@ -950,8 +950,7 @@ html {
 }
 
 .lp-share-eyebrow,
-.lp-share-copy-label-text,
-.lp-share-options-label {
+.lp-share-copy-label-text {
   color: var(--lp-text-muted);
   font-size: var(--lp-font-xs);
   font-weight: 600;
@@ -974,15 +973,11 @@ html {
   margin-bottom: 0.5rem;
 }
 
-.lp-share-copy-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.5rem;
-}
-
 .lp-share-url {
+  width: 100%;
   min-width: 0;
   min-height: 44px;
+  margin-bottom: 0.75rem;
   padding: 0.65rem 0.75rem;
   border: 1px solid var(--lp-border);
   border-radius: var(--lp-radius-md);
@@ -991,92 +986,76 @@ html {
   font: 0.8rem var(--lp-font-mono);
 }
 
-.lp-share-copy-button,
-.lp-share-close {
-  min-height: 44px;
+.lp-share-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.75rem;
+}
+
+.lp-share-action {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+  min-height: 68px;
+  padding: 0.75rem;
   border: 1px solid var(--lp-accent);
   border-radius: var(--lp-radius-md);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s, background-color 0.2s, filter 0.2s;
+}
+
+.lp-share-native {
   background: var(--lp-accent);
   color: white;
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.lp-share-copy-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  padding: 0.65rem 0.85rem;
-}
-
-.lp-share-copy-button:hover {
-  filter: brightness(0.92);
-}
-
-.lp-share-status {
-  min-height: 1.25rem;
-  margin-top: 0.4rem;
-  color: var(--lp-text-muted);
-  font-size: var(--lp-font-xs);
-}
-
-.lp-share-options-label {
-  margin: 0.75rem 0 0.5rem;
-}
-
-.lp-share-options {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(4.5rem, 1fr));
-  gap: 0.5rem;
-}
-
-.lp-share-destination,
-.lp-share-native {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.45rem;
-  min-width: 0;
-  min-height: 76px;
-  padding: 0.6rem 0.35rem;
-  border: 1px solid var(--lp-border);
-  border-radius: var(--lp-radius-md);
-  background: transparent;
-  color: var(--lp-text);
-  font: inherit;
-  font-size: var(--lp-font-xs);
-  text-align: center;
-  text-decoration: none;
-  cursor: pointer;
-  transition: border-color 0.2s, color 0.2s, background-color 0.2s;
 }
 
 .lp-share-native[hidden] {
   display: none;
 }
 
-.lp-share-destination:hover,
 .lp-share-native:hover {
-  border-color: var(--lp-accent);
-  background: var(--lp-code-bg);
-  color: var(--lp-accent);
+  filter: brightness(0.92);
 }
 
-.lp-share-destination-icon {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--lp-radius-full);
+.lp-share-copy-button {
+  background: transparent;
+  color: var(--lp-text);
+}
+
+.lp-share-copy-button:hover {
   background: var(--lp-code-bg);
-  color: var(--lp-accent);
-  font-family: var(--lp-font-body);
+}
+
+.lp-share-action > svg {
+  flex: 0 0 auto;
+}
+
+.lp-share-action-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 0.1rem;
+}
+
+.lp-share-action-text strong {
   font-size: var(--lp-font-sm);
-  font-weight: 700;
-  line-height: 1;
+  font-weight: 650;
+}
+
+.lp-share-action-text small {
+  font-size: var(--lp-font-xs);
+  font-weight: 400;
+  opacity: 0.78;
+}
+
+.lp-share-status {
+  min-height: 1.25rem;
+  margin-top: 0.5rem;
+  color: var(--lp-text-muted);
+  font-size: var(--lp-font-sm);
 }
 
 .lp-share-footer {
@@ -1086,9 +1065,14 @@ html {
 
 .lp-share-close {
   width: 100%;
-  border-color: var(--lp-border);
+  min-height: 44px;
+  border: 1px solid var(--lp-border);
+  border-radius: var(--lp-radius-md);
   background: transparent;
   color: var(--lp-text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .lp-share-close:hover {
@@ -1129,6 +1113,9 @@ html {
     transform: translateY(0);
   }
 
+  .lp-share-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
