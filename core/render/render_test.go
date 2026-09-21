@@ -423,7 +423,7 @@ func TestSiteConfigAndStyleMatchLeafpressSemantics(t *testing.T) {
 		`name="configured" content="yes"`,
 		`class="lp-graph-toggle"`,
 		`class="lp-search-toggle"`,
-		`class="lp-share-toggle"`,
+		`class="lp-share-actions"`,
 		`href="/notes/feed.xml"`,
 		`class="lp-wikilink" href="/notes/beta/"`,
 	} {
@@ -495,7 +495,7 @@ func TestConfigDefaultsAndFeatureDisables(t *testing.T) {
 	artifact(t, defaults, "graph.json")
 	artifact(t, defaults, "search-index.json")
 	artifact(t, defaults, "feed.xml")
-	if strings.Contains(one, `class="lp-share-toggle"`) {
+	if strings.Contains(one, `class="lp-share-actions"`) {
 		t.Error("page sharing should remain opt-in")
 	}
 	// Automatic navigation (the default mode) lists the garden's root notes.
@@ -515,7 +515,7 @@ func TestConfigDefaultsAndFeatureDisables(t *testing.T) {
 	for _, absent := range []string{
 		`class="lp-toc"`, `class="lp-backlink"`, `class="lp-wikilink"`,
 		`class="lp-graph-toggle"`, `class="lp-search-toggle"`, `feed.xml`,
-		`class="lp-share-toggle"`,
+		`class="lp-share-actions"`,
 	} {
 		if strings.Contains(combined, absent) {
 			t.Errorf("disabled feature still emitted %q", absent)

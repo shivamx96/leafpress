@@ -268,35 +268,26 @@ for (const theme of themes) {
     await expect(page.locator(".footnote-backref")).toHaveCount(2);
     await expect(page.locator(".lp-backlinks")).toBeVisible();
 
-    const shareToggle = page.getByRole("button", { name: "Share", exact: true });
-    const shareOverlay = page.locator(".lp-share-overlay");
-    const shareDialog = page.getByRole("dialog", { name: "Share “Component Gallery”" });
-    await shareToggle.click();
-    await expect(shareOverlay).toHaveClass(/\blp-share-overlay--open\b/);
-    await expect(shareDialog).toBeVisible();
-    await expect(page.locator(".lp-share-native")).toBeVisible();
-    await expect(page.locator(".lp-share-native")).toBeFocused();
+    const shareActions = page.getByRole("group", { name: "Page sharing" });
+    const nativeShare = page.getByRole("button", { name: "Share this page" });
+    const copyLink = page.getByRole("button", { name: "Copy link" });
+    await expect(shareActions).toBeVisible();
+    await expect(nativeShare).toBeVisible();
+    await expect(copyLink).toBeVisible();
+    await expect(shareActions.locator("button")).toHaveCount(2);
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(nativeShare).toHaveAttribute("title", "Share this page");
+    await expect(copyLink).toHaveAttribute("title", "Copy link");
 
     const canonicalURL = page.url();
-    await expect(page.locator(".lp-share-url")).toHaveValue(canonicalURL);
-    await expect(shareDialog.locator(".lp-share-action")).toHaveCount(2);
-    await expect(shareDialog.locator("a")).toHaveCount(0);
-
     await page.context().grantPermissions(["clipboard-write"], {
       origin: new URL(page.url()).origin
     });
-    await page.locator(".lp-share-copy-button").click();
-    await expect(page.locator(".lp-share-status")).toHaveText("Link copied to clipboard.");
-    await page.locator(".lp-share-close").focus();
-    await page.keyboard.press("Tab");
-    await expect(page.locator(".lp-share-url")).toBeFocused();
-    await page.keyboard.press("Escape");
-    await expect(shareDialog).toBeHidden();
-    await expect(shareToggle).toBeFocused();
+    await copyLink.click();
+    await expect(page.locator(".lp-share-status")).toHaveText("Link copied.");
+    await expect(page.locator(".lp-share-status")).toHaveClass(/\blp-share-status--visible\b/);
 
-    await shareToggle.click();
-    await page.locator(".lp-share-native").click();
-    await expect(shareDialog).toBeHidden();
+    await nativeShare.click();
     expect(await page.evaluate(() => window.__leafpressSharedDetails)).toEqual({
       title: "Component Gallery",
       text: "Typography, tables, code, media, tasks, and other article surfaces.",
@@ -477,24 +468,26 @@ for (const theme of themes) {
   });
 }
 
-test("page sharing uses a mobile bottom sheet", async ({ page }) => {
+test("page sharing stays compact and inline on mobile", async ({ page }) => {
   await page.setViewportSize(viewports.mobile);
   await page.goto(`/${fixtureName("classic", "base", "base")}/notes/components/`);
-  await page.getByRole("button", { name: "Share", exact: true }).click();
 
-  const panel = page.locator(".lp-share-panel");
-  await expect(panel).toBeVisible();
-  await expect.poll(async () => {
-    const settledBox = await panel.boundingBox();
-    return settledBox.y + settledBox.height;
-  }).toBeCloseTo(viewports.mobile.height, 0);
-  const box = await panel.boundingBox();
-  expect(box).not.toBeNull();
-  expect(box.x).toBeCloseTo(0, 0);
-  expect(box.width).toBeCloseTo(viewports.mobile.width, 0);
-  for (const control of await panel.locator("button, a, input").all()) {
-    if (await control.isVisible()) {
-      expect((await control.boundingBox()).height).toBeGreaterThanOrEqual(44);
-    }
-  }
+  const header = page.locator(".lp-header-details");
+  const actions = page.getByRole("group", { name: "Page sharing" });
+  const copyLink = page.getByRole("button", { name: "Copy link" });
+  await expect(actions).toBeVisible();
+  await expect(copyLink).toBeVisible();
+  await expect(page.locator(".lp-share-native")).toBeHidden();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+
+  const headerBox = await header.boundingBox();
+  const actionsBox = await actions.boundingBox();
+  const copyBox = await copyLink.boundingBox();
+  expect(headerBox).not.toBeNull();
+  expect(actionsBox).not.toBeNull();
+  expect(copyBox).not.toBeNull();
+  expect(actionsBox.x).toBeGreaterThanOrEqual(headerBox.x);
+  expect(actionsBox.x + actionsBox.width).toBeLessThanOrEqual(headerBox.x + headerBox.width);
+  expect(copyBox.width).toBeGreaterThanOrEqual(44);
+  expect(copyBox.height).toBeGreaterThanOrEqual(44);
 });

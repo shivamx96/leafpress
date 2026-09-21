@@ -65,7 +65,7 @@ func TestBuildSharesOneContentAddressedClientScript(t *testing.T) {
 	if !strings.Contains(client, "var LP_BASE_PATH") || !strings.Contains(client, "lp-copy-button") {
 		t.Fatal("shared client asset is missing expected client behavior")
 	}
-	if strings.Contains(client, "lp-share-overlay") {
+	if strings.Contains(client, "lp-share-actions") {
 		t.Fatal("default build retained opt-in sharing code")
 	}
 	for _, want := range []string{"requestAnimationFrame(runFrame)", "var grid = new Map()", "neighborIds = new Set()"} {
@@ -83,15 +83,15 @@ func TestBuildSharesOneContentAddressedClientScript(t *testing.T) {
 		t.Fatal(err)
 	}
 	clientPath, client = readClientScript(t, siteDir)
-	if clientPath == oldPath || !strings.Contains(client, "lp-share-overlay") {
+	if clientPath == oldPath || !strings.Contains(client, "lp-share-actions") {
 		t.Fatal("enabling sharing did not add or invalidate the client script")
 	}
 	noteHTML, err := os.ReadFile(filepath.Join(siteDir, "note", "index.html"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(noteHTML), `class="lp-share-toggle"`) {
-		t.Fatal("sharing-enabled build is missing the page action")
+	if !strings.Contains(string(noteHTML), `class="lp-share-actions"`) {
+		t.Fatal("sharing-enabled build is missing the page actions")
 	}
 
 	oldPath = clientPath

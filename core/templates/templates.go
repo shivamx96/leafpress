@@ -1052,21 +1052,14 @@ const baseTemplate = `<!DOCTYPE html>
 
       {{if .Site.Sharing}}// Page sharing
       (function() {
-        var overlay = document.getElementById('lp-share-overlay');
-        var toggleBtn = document.querySelector('.lp-share-toggle');
-        if (!overlay || !toggleBtn) return;
+        var actions = document.querySelector('.lp-share-actions');
+        if (!actions) return;
 
-        var panel = overlay.querySelector('.lp-share-panel');
-        var backdrop = overlay.querySelector('.lp-share-backdrop');
-        var closeBtn = overlay.querySelector('.lp-share-close');
-        var copyBtn = overlay.querySelector('.lp-share-copy-button');
-        var copyLabel = overlay.querySelector('.lp-share-copy-label');
-        var urlInput = overlay.querySelector('.lp-share-url');
-        var status = overlay.querySelector('.lp-share-status');
-        var nativeBtn = overlay.querySelector('.lp-share-native');
+        var copyBtn = actions.querySelector('.lp-share-copy-button');
+        var status = actions.querySelector('.lp-share-status');
+        var nativeBtn = actions.querySelector('.lp-share-native');
         var nativeShareAvailable = typeof navigator.share === 'function' && window.isSecureContext;
         var resetTimer = null;
-        var previousBodyOverflow = '';
 
         function pageDetails() {
           var canonical = document.querySelector('link[rel="canonical"]');
@@ -1079,29 +1072,16 @@ const baseTemplate = `<!DOCTYPE html>
           };
         }
 
-        function prepareShare() {
-          var details = pageDetails();
-          urlInput.value = details.url;
-          return details;
-        }
-
-        function openShare() {
-          prepareShare();
-          previousBodyOverflow = document.body.style.overflow;
-          overlay.classList.add('lp-share-overlay--open');
-          overlay.setAttribute('aria-hidden', 'false');
-          document.body.style.overflow = 'hidden';
-          (nativeShareAvailable ? nativeBtn : copyBtn).focus();
-        }
-
-        function closeShare() {
-          overlay.classList.remove('lp-share-overlay--open');
-          overlay.setAttribute('aria-hidden', 'true');
-          document.body.style.overflow = previousBodyOverflow;
+        function setStatus(message) {
           clearTimeout(resetTimer);
-          copyLabel.textContent = 'Copy link';
-          status.textContent = '';
-          toggleBtn.focus();
+          status.textContent = message;
+          status.classList.toggle('lp-share-status--visible', Boolean(message));
+          if (message) {
+            resetTimer = setTimeout(function() {
+              status.textContent = '';
+              status.classList.remove('lp-share-status--visible');
+            }, 2000);
+          }
         }
 
         function copyTextFallback(value) {
@@ -1133,58 +1113,22 @@ const baseTemplate = `<!DOCTYPE html>
           return copyTextFallback(value);
         }
 
-        toggleBtn.addEventListener('click', openShare);
-        backdrop.addEventListener('click', closeShare);
-        closeBtn.addEventListener('click', closeShare);
-
         copyBtn.addEventListener('click', function() {
-          clearTimeout(resetTimer);
-          copyText(urlInput.value).then(function() {
-            copyLabel.textContent = 'Copied';
-            status.textContent = 'Link copied to clipboard.';
-            resetTimer = setTimeout(function() {
-              copyLabel.textContent = 'Copy link';
-              status.textContent = '';
-            }, 2000);
+          copyText(pageDetails().url).then(function() {
+            setStatus('Link copied.');
           }).catch(function() {
-            urlInput.focus();
-            urlInput.select();
-            status.textContent = 'Select and copy the link.';
+            setStatus('Unable to copy link.');
           });
         });
 
         if (nativeShareAvailable) {
           nativeBtn.hidden = false;
           nativeBtn.addEventListener('click', function() {
-            navigator.share(prepareShare()).then(closeShare).catch(function(error) {
-              if (error.name !== 'AbortError') status.textContent = 'Sharing is unavailable right now.';
+            navigator.share(pageDetails()).catch(function(error) {
+              if (error.name !== 'AbortError') setStatus('Sharing is unavailable right now.');
             });
           });
         }
-
-        panel.addEventListener('keydown', function(event) {
-          if (event.key !== 'Tab') return;
-          var focusable = Array.prototype.filter.call(
-            panel.querySelectorAll('button:not([hidden]), a[href], input:not([disabled])'),
-            function(element) { return element.getClientRects().length > 0; }
-          );
-          if (!focusable.length) return;
-          var first = focusable[0];
-          var last = focusable[focusable.length - 1];
-          if (event.shiftKey && document.activeElement === first) {
-            event.preventDefault();
-            last.focus();
-          } else if (!event.shiftKey && document.activeElement === last) {
-            event.preventDefault();
-            first.focus();
-          }
-        });
-
-        document.addEventListener('keydown', function(event) {
-          if (event.key === 'Escape' && overlay.classList.contains('lp-share-overlay--open')) {
-            closeShare();
-          }
-        });
       })();{{end}}
       {{if .Site.Graph}}
       // Graph Overlay
@@ -2137,15 +2081,23 @@ const pageTemplate = `
           <span class="lp-date-info">Created <time class="lp-date" datetime="{{.Page.ISODate}}">{{.Page.FormattedDate}}</time></span>
           {{end}}
         </div>
-        {{if .Site.Sharing}}<button type="button" class="lp-share-toggle" aria-haspopup="dialog" aria-controls="lp-share-overlay">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="18" cy="5" r="3"></circle>
-            <circle cx="6" cy="12" r="3"></circle>
-            <circle cx="18" cy="19" r="3"></circle>
-            <path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4"></path>
-          </svg>
-          <span>Share</span>
-        </button>{{end}}
+        {{if .Site.Sharing}}<div class="lp-share-actions" role="group" aria-label="Page sharing">
+          <button type="button" class="lp-share-button lp-share-native" aria-label="Share this page" title="Share this page" hidden>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="18" cy="5" r="3"></circle>
+              <circle cx="6" cy="12" r="3"></circle>
+              <circle cx="18" cy="19" r="3"></circle>
+              <path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4"></path>
+            </svg>
+          </button>
+          <button type="button" class="lp-share-button lp-share-copy-button" aria-label="Copy link" title="Copy link">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="9" y="9" width="13" height="13" rx="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+          </button>
+          <span class="lp-share-status" role="status" aria-live="polite"></span>
+        </div>{{end}}
       </div>
       {{if .Page.Tags}}
       <div class="lp-tags">
@@ -2174,41 +2126,6 @@ const pageTemplate = `
 </div>
 {{end}}
 {{define "pageOverlays"}}
-{{if .Site.Sharing}}<div class="lp-share-overlay" id="lp-share-overlay" aria-hidden="true">
-  <div class="lp-share-backdrop"></div>
-  <section class="lp-share-panel" role="dialog" aria-modal="true" aria-labelledby="lp-share-title">
-    <div class="lp-share-header">
-      <p class="lp-share-eyebrow">Send this page</p>
-      <h2 class="lp-share-title" id="lp-share-title">Share “{{.Page.Title}}”</h2>
-    </div>
-    <div class="lp-share-body">
-      <label class="lp-share-copy-label-text" for="lp-share-url">Page link</label>
-      <input class="lp-share-url" id="lp-share-url" type="text" readonly>
-      <div class="lp-share-actions">
-        <button type="button" class="lp-share-action lp-share-native" hidden>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="18" cy="5" r="3"></circle>
-            <circle cx="6" cy="12" r="3"></circle>
-            <circle cx="18" cy="19" r="3"></circle>
-            <path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4"></path>
-          </svg>
-          <span class="lp-share-action-text"><strong>Share…</strong><small>Use apps on this device</small></span>
-        </button>
-        <button type="button" class="lp-share-action lp-share-copy-button">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <rect x="9" y="9" width="13" height="13" rx="2"></rect>
-            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-          </svg>
-          <span class="lp-share-action-text"><strong class="lp-share-copy-label">Copy link</strong><small>Save the page URL</small></span>
-        </button>
-      </div>
-      <p class="lp-share-status" role="status" aria-live="polite"></p>
-    </div>
-    <div class="lp-share-footer">
-      <button type="button" class="lp-share-close">Close</button>
-    </div>
-  </section>
-</div>{{end}}
 {{end}}
 `
 

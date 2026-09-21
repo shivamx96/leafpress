@@ -387,7 +387,7 @@ func TestClientScriptAssetIsContentAddressed(t *testing.T) {
 		`window.addEventListener('storage'`,
 		"lp-graph-panel-body",
 		"lp-search-input",
-		"lp-share-overlay",
+		"lp-share-actions",
 		"static/leafpress/mermaid/mermaid.min.js",
 		"requestAnimationFrame(runFrame)",
 		"var grid = new Map()",
@@ -430,7 +430,7 @@ func TestClientScriptAssetIsContentAddressed(t *testing.T) {
 	if withoutSharingPath == withoutSearchPath || withoutSharing == withoutSearch {
 		t.Fatal("sharing feature change did not invalidate the client asset")
 	}
-	if strings.Contains(withoutSharing, "lp-share-overlay") {
+	if strings.Contains(withoutSharing, "lp-share-actions") {
 		t.Fatal("sharing-disabled client asset contains sharing UI code")
 	}
 }
@@ -488,7 +488,7 @@ func TestClientScriptAssetLoadsFromHead(t *testing.T) {
 	}
 }
 
-func TestPageRendersAccessibleShareDialog(t *testing.T) {
+func TestPageRendersAccessibleShareActions(t *testing.T) {
 	tmpl, err := New()
 	if err != nil {
 		t.Fatalf("New() error: %v", err)
@@ -517,19 +517,16 @@ func TestPageRendersAccessibleShareDialog(t *testing.T) {
 
 	html := out.String()
 	for _, want := range []string{
-		`class="lp-share-toggle"`,
-		`aria-haspopup="dialog"`,
-		`class="lp-share-panel" role="dialog" aria-modal="true"`,
-		`aria-labelledby="lp-share-title"`,
-		`class="lp-share-action lp-share-native"`,
-		`class="lp-share-action lp-share-copy-button"`,
-		`class="lp-share-close"`,
+		`class="lp-share-actions" role="group" aria-label="Page sharing"`,
+		`class="lp-share-button lp-share-native" aria-label="Share this page" title="Share this page" hidden`,
+		`class="lp-share-button lp-share-copy-button" aria-label="Copy link" title="Copy link"`,
+		`class="lp-share-status" role="status" aria-live="polite"`,
 	} {
 		if !strings.Contains(html, want) {
 			t.Errorf("rendered page is missing share markup %q", want)
 		}
 	}
-	for _, unwanted := range []string{"bsky.app", "linkedin.com", "mailto:"} {
+	for _, unwanted := range []string{"role=\"dialog\"", "lp-share-overlay", "bsky.app", "linkedin.com", "mailto:"} {
 		if strings.Contains(html, unwanted) {
 			t.Errorf("rendered page retains platform-specific sharing target %q", unwanted)
 		}
@@ -540,8 +537,8 @@ func TestPageRendersAccessibleShareDialog(t *testing.T) {
 	if err := tmpl.RenderPage(&out, data); err != nil {
 		t.Fatalf("RenderPage(sharing disabled) error: %v", err)
 	}
-	if strings.Contains(out.String(), `id="lp-share-overlay"`) {
-		t.Error("sharing-disabled page rendered the sharing dialog")
+	if strings.Contains(out.String(), `class="lp-share-actions"`) {
+		t.Error("sharing-disabled page rendered the sharing actions")
 	}
 }
 
