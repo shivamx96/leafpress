@@ -560,7 +560,8 @@ func TestThemeBootstrapAndControlExposeSystemMode(t *testing.T) {
 	html := out.String()
 	for _, want := range []string{
 		`<meta name="color-scheme" content="light dark">`,
-		`<html lang="en" data-lp-theme="classic">`,
+		`<html lang="en" class="lp-no-js" data-lp-theme="classic">`,
+		`document.documentElement.classList.replace('lp-no-js', 'lp-js')`,
 		`data-theme-preference`,
 		`preference = 'system'`,
 		`lp-theme-icon-system`,
@@ -588,7 +589,7 @@ func TestThemeMarkerDefaultsEmptyPresetToClassic(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("RenderIndex() error: %v", err)
 	}
-	if !strings.Contains(out.String(), `<html lang="en" data-lp-theme="classic">`) {
+	if !strings.Contains(out.String(), `<html lang="en" class="lp-no-js" data-lp-theme="classic">`) {
 		t.Fatal("empty programmatic preset did not render the Classic theme marker")
 	}
 }

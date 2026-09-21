@@ -565,7 +565,7 @@ func generateHeadingID(text string) string {
 
 // Template strings
 const baseTemplate = `<!DOCTYPE html>
-<html lang="en" data-lp-theme="{{.Site.Theme.ResolvedPreset}}">
+<html lang="en" class="lp-no-js" data-lp-theme="{{.Site.Theme.ResolvedPreset}}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -573,6 +573,7 @@ const baseTemplate = `<!DOCTYPE html>
   <script>
     // Resolve the theme before styles load to avoid flashing the wrong scheme.
     (function() {
+      document.documentElement.classList.replace('lp-no-js', 'lp-js');
       var preference = 'system';
       try {
         var storedPreference = localStorage.getItem('theme');
