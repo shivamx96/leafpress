@@ -1087,6 +1087,7 @@ const baseTemplate = `<!DOCTYPE html>
 
         function copyTextFallback(value) {
           return new Promise(function(resolve, reject) {
+            var previouslyFocused = document.activeElement;
             var fallback = document.createElement('textarea');
             fallback.value = value;
             fallback.setAttribute('readonly', '');
@@ -1101,6 +1102,9 @@ const baseTemplate = `<!DOCTYPE html>
               reject(error);
             } finally {
               fallback.remove();
+              if (previouslyFocused && typeof previouslyFocused.focus === 'function') {
+                previouslyFocused.focus();
+              }
             }
           });
         }

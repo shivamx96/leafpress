@@ -468,6 +468,42 @@ for (const theme of themes) {
   });
 }
 
+for (const clipboardMode of ["missing", "rejected"]) {
+  test(`clipboard ${clipboardMode} fallback restores focus`, async ({ page }) => {
+    await page.addInitScript((mode) => {
+      const clipboard = mode === "missing"
+        ? undefined
+        : { writeText: () => Promise.reject(new Error("Clipboard access denied")) };
+      Object.defineProperty(navigator, "clipboard", {
+        configurable: true,
+        value: clipboard
+      });
+      document.execCommand = (command) => {
+        window.__leafpressFallbackCopy = {
+          command,
+          activeElement: document.activeElement.tagName,
+          value: document.activeElement.value
+        };
+        return true;
+      };
+    }, clipboardMode);
+
+    await page.goto(`/${fixtureName("classic", "base", "base")}/notes/components/`);
+    const copyLink = page.getByRole("button", { name: "Copy link" });
+    await copyLink.focus();
+    await copyLink.click();
+
+    await expect(page.locator(".lp-share-status")).toHaveText("Link copied.");
+    await expect(copyLink).toBeFocused();
+    expect(await page.evaluate(() => window.__leafpressFallbackCopy)).toEqual({
+      command: "copy",
+      activeElement: "TEXTAREA",
+      value: page.url()
+    });
+    await expect(page.locator("textarea")).toHaveCount(0);
+  });
+}
+
 test("page sharing stays compact and inline on mobile", async ({ page }) => {
   await page.setViewportSize(viewports.mobile);
   await page.goto(`/${fixtureName("classic", "base", "base")}/notes/components/`);
