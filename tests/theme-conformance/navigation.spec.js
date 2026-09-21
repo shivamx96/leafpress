@@ -12,6 +12,29 @@ async function expectHeadingClear(page) {
 }
 
 for (const theme of themes) {
+  test(`${theme} keeps RSS accessible on mobile without JavaScript`, async ({ browser, baseURL }) => {
+    const context = await browser.newContext({
+      baseURL,
+      javaScriptEnabled: false,
+      hasTouch: true,
+      viewport: { width: 320, height: 844 }
+    });
+    const page = await context.newPage();
+
+    try {
+      await page.goto(`/${theme}-glassy-box/notes/components/`);
+      await expect(page.locator("html")).toHaveClass(/\blp-no-js\b/);
+      await expect(page.getByRole("button", { name: "Site menu", exact: true })).toBeHidden();
+      await expect(page.getByRole("link", { name: "RSS feed", exact: true })).toBeVisible();
+      await expect(page.getByRole("link", { name: "RSS feed", exact: true })).toHaveAttribute(
+        "href",
+        `/${theme}-glassy-box/feed.xml`
+      );
+    } finally {
+      await context.close();
+    }
+  });
+
   for (const navStyle of ["base", "sticky", "glassy"]) {
     test(`${theme} ${navStyle} mobile navigation stays compact and headings remain clear`, async ({ page }) => {
       await page.setViewportSize({ width: 320, height: 844 });

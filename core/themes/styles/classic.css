@@ -95,6 +95,18 @@ html {
   display: none;
 }
 
+/* Keep ordinary navigation links available when client-side enhancements do not run. */
+html.lp-no-js .lp-nav .lp-search-toggle,
+html.lp-no-js .lp-nav .lp-nav-menu-toggle,
+html.lp-no-js .lp-nav .lp-nav-tools > button,
+html.lp-no-js .lp-nav .lp-nav-menu-links {
+  display: none;
+}
+
+html.lp-no-js .lp-nav .lp-nav-tools {
+  display: contents;
+}
+
 .lp-nav-title {
   font-family: var(--lp-font-heading);
   font-weight: 600;
@@ -249,6 +261,15 @@ html {
     color: var(--lp-text);
     border-radius: var(--lp-radius-sm);
     text-decoration: none;
+  }
+
+  html.lp-no-js .lp-nav .lp-rss-link {
+    width: auto;
+    justify-content: flex-start;
+  }
+
+  html.lp-no-js .lp-nav .lp-rss-link .lp-nav-tool-label {
+    display: inline;
   }
 
   /* While reading, float only the brand and controls; sections live in the menu. */
