@@ -501,9 +501,10 @@ html {
   width: max-content;
   max-width: min(15rem, calc(100vw - 2rem));
   padding: 0.4rem 0.55rem;
+  border: 1px solid var(--lp-border);
   border-radius: var(--lp-radius-sm);
-  background: var(--lp-text);
-  color: var(--lp-bg);
+  background: var(--lp-code-bg);
+  color: var(--lp-text);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
   font-size: var(--lp-font-xs);
   line-height: 1.3;
