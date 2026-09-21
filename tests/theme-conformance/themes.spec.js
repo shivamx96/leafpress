@@ -262,6 +262,37 @@ for (const theme of themes) {
     await expect(page.locator(".footnote-backref")).toHaveCount(2);
     await expect(page.locator(".lp-backlinks")).toBeVisible();
 
+    const shareToggle = page.getByRole("button", { name: "Share", exact: true });
+    const shareOverlay = page.locator(".lp-share-overlay");
+    const shareDialog = page.getByRole("dialog", { name: "Share “Component Gallery”" });
+    await shareToggle.click();
+    await expect(shareOverlay).toHaveClass(/\blp-share-overlay--open\b/);
+    await expect(shareDialog).toBeVisible();
+    await expect(page.getByRole("button", { name: "Copy link" })).toBeFocused();
+
+    const canonicalURL = page.url();
+    await expect(page.locator(".lp-share-url")).toHaveValue(canonicalURL);
+    const destinations = await page.locator(".lp-share-destination").evaluateAll((links) =>
+      Object.fromEntries(links.map((link) => [link.dataset.share, link.href]))
+    );
+    expect(new URL(destinations.bluesky).searchParams.get("text")).toBe(
+      `Component Gallery — ${canonicalURL}`
+    );
+    expect(new URL(destinations.linkedin).searchParams.get("url")).toBe(canonicalURL);
+    expect(destinations.email).toContain(`subject=${encodeURIComponent("Component Gallery")}`);
+
+    await page.context().grantPermissions(["clipboard-write"], {
+      origin: new URL(page.url()).origin
+    });
+    await page.getByRole("button", { name: "Copy link" }).click();
+    await expect(page.locator(".lp-share-status")).toHaveText("Link copied to clipboard.");
+    await page.locator(".lp-share-close").focus();
+    await page.keyboard.press("Tab");
+    await expect(page.locator(".lp-share-url")).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(shareDialog).toBeHidden();
+    await expect(shareToggle).toBeFocused();
+
     const lastFootnote = page.locator(".footnote-ref").last();
     const footnoteTarget = await lastFootnote.getAttribute("href");
     expect(footnoteTarget).toMatch(/^#fn:/);
@@ -435,3 +466,25 @@ for (const theme of themes) {
     }
   });
 }
+
+test("page sharing uses a mobile bottom sheet", async ({ page }) => {
+  await page.setViewportSize(viewports.mobile);
+  await page.goto(`/${fixtureName("classic", "base", "base")}/notes/components/`);
+  await page.getByRole("button", { name: "Share", exact: true }).click();
+
+  const panel = page.locator(".lp-share-panel");
+  await expect(panel).toBeVisible();
+  await expect.poll(async () => {
+    const settledBox = await panel.boundingBox();
+    return settledBox.y + settledBox.height;
+  }).toBeCloseTo(viewports.mobile.height, 0);
+  const box = await panel.boundingBox();
+  expect(box).not.toBeNull();
+  expect(box.x).toBeCloseTo(0, 0);
+  expect(box.width).toBeCloseTo(viewports.mobile.width, 0);
+  for (const control of await panel.locator("button, a, input").all()) {
+    if (await control.isVisible()) {
+      expect((await control.boundingBox()).height).toBeGreaterThanOrEqual(44);
+    }
+  }
+});

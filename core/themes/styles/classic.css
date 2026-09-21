@@ -443,12 +443,42 @@ html {
   margin-bottom: 0.5rem;
 }
 
+.lp-header-details {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
 .lp-meta {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 0.25rem 0.5rem;
   color: var(--lp-text-muted);
+}
+
+.lp-share-toggle {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 36px;
+  padding: 0.4rem 0.65rem;
+  border: 1px solid var(--lp-border);
+  border-radius: var(--lp-radius-full);
+  background: var(--lp-bg);
+  color: var(--lp-text-muted);
+  font: inherit;
+  font-size: var(--lp-font-sm);
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s, background-color 0.2s;
+}
+
+.lp-share-toggle:hover {
+  border-color: var(--lp-accent);
+  color: var(--lp-accent);
 }
 
 .lp-reading-time {
@@ -851,6 +881,261 @@ html {
 
 .lp-graph-link {
   transition: all 0.2s ease;
+}
+
+/* Page sharing */
+.lp-share-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2100;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.lp-share-overlay.lp-share-overlay--open {
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.lp-share-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.lp-share-overlay--open .lp-share-backdrop {
+  opacity: 1;
+}
+
+[data-theme="dark"] .lp-share-backdrop {
+  background: rgba(0, 0, 0, 0.65);
+}
+
+.lp-share-panel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(30rem, calc(100% - 2rem));
+  max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  transform: translate(-50%, calc(-50% + 10px)) scale(0.98);
+  border: 1px solid var(--lp-border);
+  border-radius: var(--lp-radius-lg);
+  background: var(--lp-bg);
+  color: var(--lp-text);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.24);
+  opacity: 0;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.lp-share-overlay--open .lp-share-panel {
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+}
+
+.lp-share-header,
+.lp-share-body,
+.lp-share-footer {
+  padding: 1.25rem;
+}
+
+.lp-share-header {
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--lp-border);
+}
+
+.lp-share-eyebrow,
+.lp-share-copy-label-text,
+.lp-share-options-label {
+  color: var(--lp-text-muted);
+  font-size: var(--lp-font-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.lp-share-eyebrow {
+  margin-bottom: 0.35rem;
+}
+
+.lp-share-title {
+  font-family: var(--lp-font-heading);
+  font-size: var(--lp-font-xl);
+  line-height: 1.25;
+}
+
+.lp-share-copy-label-text {
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.lp-share-copy-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+}
+
+.lp-share-url {
+  min-width: 0;
+  min-height: 44px;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--lp-border);
+  border-radius: var(--lp-radius-md);
+  background: var(--lp-code-bg);
+  color: var(--lp-text-muted);
+  font: 0.8rem var(--lp-font-mono);
+}
+
+.lp-share-copy-button,
+.lp-share-close {
+  min-height: 44px;
+  border: 1px solid var(--lp-accent);
+  border-radius: var(--lp-radius-md);
+  background: var(--lp-accent);
+  color: white;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.lp-share-copy-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.65rem 0.85rem;
+}
+
+.lp-share-copy-button:hover {
+  filter: brightness(0.92);
+}
+
+.lp-share-status {
+  min-height: 1.25rem;
+  margin-top: 0.4rem;
+  color: var(--lp-text-muted);
+  font-size: var(--lp-font-xs);
+}
+
+.lp-share-options-label {
+  margin: 0.75rem 0 0.5rem;
+}
+
+.lp-share-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(4.5rem, 1fr));
+  gap: 0.5rem;
+}
+
+.lp-share-destination,
+.lp-share-native {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-width: 0;
+  min-height: 76px;
+  padding: 0.6rem 0.35rem;
+  border: 1px solid var(--lp-border);
+  border-radius: var(--lp-radius-md);
+  background: transparent;
+  color: var(--lp-text);
+  font: inherit;
+  font-size: var(--lp-font-xs);
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s, background-color 0.2s;
+}
+
+.lp-share-native[hidden] {
+  display: none;
+}
+
+.lp-share-destination:hover,
+.lp-share-native:hover {
+  border-color: var(--lp-accent);
+  background: var(--lp-code-bg);
+  color: var(--lp-accent);
+}
+
+.lp-share-destination-icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--lp-radius-full);
+  background: var(--lp-code-bg);
+  color: var(--lp-accent);
+  font-family: var(--lp-font-body);
+  font-size: var(--lp-font-sm);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.lp-share-footer {
+  padding-top: 1rem;
+  border-top: 1px solid var(--lp-border);
+}
+
+.lp-share-close {
+  width: 100%;
+  border-color: var(--lp-border);
+  background: transparent;
+  color: var(--lp-text);
+}
+
+.lp-share-close:hover {
+  border-color: var(--lp-text-muted);
+  background: var(--lp-code-bg);
+}
+
+@media (max-width: 600px) {
+  .lp-header-details {
+    align-items: flex-start;
+  }
+
+  .lp-share-toggle {
+    min-width: 44px;
+    min-height: 44px;
+    padding-inline: 0.7rem;
+  }
+
+  .lp-share-overlay {
+    display: flex;
+    align-items: flex-end;
+  }
+
+  .lp-share-panel {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: 100%;
+    max-height: calc(100vh - 1rem);
+    max-height: calc(100dvh - 1rem);
+    padding-bottom: env(safe-area-inset-bottom);
+    transform: translateY(100%);
+    border-width: 1px 0 0;
+    border-radius: var(--lp-radius-lg) var(--lp-radius-lg) 0 0;
+  }
+
+  .lp-share-overlay--open .lp-share-panel {
+    transform: translateY(0);
+  }
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-share-backdrop,
+  .lp-share-panel {
+    transition: none;
+  }
 }
 
 .lp-graph-label {

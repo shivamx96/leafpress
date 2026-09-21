@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/shivamx96/leafpress/core/config"
+	"github.com/shivamx96/leafpress/core/content"
 )
 
 // --- Heading ID generation ---
@@ -470,6 +471,63 @@ func TestClientScriptAssetLoadsFromHead(t *testing.T) {
 		!strings.Contains(inline, "var LP_BASE_PATH") ||
 		!strings.Contains(inline, "static/leafpress/mermaid/mermaid.min.js") {
 		t.Fatal("inline fallback must preserve both legacy client script blocks")
+	}
+}
+
+func TestPageRendersAccessibleShareDialog(t *testing.T) {
+	tmpl, err := New()
+	if err != nil {
+		t.Fatalf("New() error: %v", err)
+	}
+
+	var out bytes.Buffer
+	err = tmpl.RenderPage(&out, PageData{
+		Site: SiteData{
+			Title:    "Test Garden",
+			BaseURL:  "https://example.com/garden",
+			BasePath: "/garden",
+			Theme:    config.Default().Theme,
+		},
+		Page: &content.Page{
+			Title:     "A Page to Share",
+			Slug:      "notes/share-me",
+			Permalink: "/notes/share-me/",
+		},
+		Content: "<p>Shareable content.</p>",
+	})
+	if err != nil {
+		t.Fatalf("RenderPage() error: %v", err)
+	}
+
+	html := out.String()
+	for _, want := range []string{
+		`class="lp-share-toggle"`,
+		`aria-haspopup="dialog"`,
+		`class="lp-share-panel" role="dialog" aria-modal="true"`,
+		`aria-labelledby="lp-share-title"`,
+		`class="lp-share-copy-button"`,
+		`data-share="bluesky"`,
+		`data-share="linkedin"`,
+		`data-share="email"`,
+		`class="lp-share-close"`,
+	} {
+		if !strings.Contains(html, want) {
+			t.Errorf("rendered page is missing share markup %q", want)
+		}
+	}
+	if strings.Index(html, `class="lp-share-copy-button"`) > strings.Index(html, `class="lp-share-options"`) {
+		t.Error("copy link action must appear before sharing destinations")
+	}
+
+	out.Reset()
+	if err := tmpl.RenderIndex(&out, IndexData{
+		Site:  SiteData{Title: "Test Garden", Theme: config.Default().Theme},
+		Title: "Home",
+	}); err != nil {
+		t.Fatalf("RenderIndex() error: %v", err)
+	}
+	if strings.Contains(out.String(), `id="lp-share-overlay"`) {
+		t.Error("non-article index rendered the page sharing dialog")
 	}
 }
 

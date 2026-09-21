@@ -782,6 +782,8 @@ const baseTemplate = `<!DOCTYPE html>
     </div>
   </div>{{end}}
 
+  {{block "pageOverlays" .}}{{end}}
+
   {{if not .Site.ClientScriptPath}}<script>{{template "clientScriptMain" .}}</script>
   <script>{{template "clientScriptMermaid" .}}</script>{{end}}
   {{define "clientScriptMain"}}
@@ -1046,6 +1048,153 @@ const baseTemplate = `<!DOCTYPE html>
         pre.style.position = 'relative';
         pre.appendChild(button);
       });
+
+      // Page sharing
+      (function() {
+        var overlay = document.getElementById('lp-share-overlay');
+        var toggleBtn = document.querySelector('.lp-share-toggle');
+        if (!overlay || !toggleBtn) return;
+
+        var panel = overlay.querySelector('.lp-share-panel');
+        var backdrop = overlay.querySelector('.lp-share-backdrop');
+        var closeBtn = overlay.querySelector('.lp-share-close');
+        var copyBtn = overlay.querySelector('.lp-share-copy-button');
+        var copyLabel = overlay.querySelector('.lp-share-copy-label');
+        var urlInput = overlay.querySelector('.lp-share-url');
+        var status = overlay.querySelector('.lp-share-status');
+        var nativeBtn = overlay.querySelector('.lp-share-native');
+        var resetTimer = null;
+        var previousBodyOverflow = '';
+
+        function pageDetails() {
+          var canonical = document.querySelector('link[rel="canonical"]');
+          var description = document.querySelector('meta[name="description"]');
+          var url = canonical && canonical.href ? canonical.href : window.location.href.split('#')[0];
+          return {
+            title: document.querySelector('.lp-title').textContent.trim(),
+            text: description ? description.content : '',
+            url: url
+          };
+        }
+
+        function prepareShare() {
+          var details = pageDetails();
+          urlInput.value = details.url;
+          overlay.querySelector('[data-share="bluesky"]').href =
+            'https://bsky.app/intent/compose?text=' + encodeURIComponent(details.title + ' — ' + details.url);
+          overlay.querySelector('[data-share="linkedin"]').href =
+            'https://www.linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent(details.url);
+          overlay.querySelector('[data-share="email"]').href =
+            'mailto:?subject=' + encodeURIComponent(details.title) +
+            '&body=' + encodeURIComponent((details.text ? details.text + '\n\n' : '') + details.url);
+          return details;
+        }
+
+        function openShare() {
+          prepareShare();
+          previousBodyOverflow = document.body.style.overflow;
+          overlay.classList.add('lp-share-overlay--open');
+          overlay.setAttribute('aria-hidden', 'false');
+          document.body.style.overflow = 'hidden';
+          copyBtn.focus();
+        }
+
+        function closeShare() {
+          overlay.classList.remove('lp-share-overlay--open');
+          overlay.setAttribute('aria-hidden', 'true');
+          document.body.style.overflow = previousBodyOverflow;
+          clearTimeout(resetTimer);
+          copyLabel.textContent = 'Copy link';
+          status.textContent = '';
+          toggleBtn.focus();
+        }
+
+        function copyTextFallback(value) {
+          return new Promise(function(resolve, reject) {
+            var fallback = document.createElement('textarea');
+            fallback.value = value;
+            fallback.setAttribute('readonly', '');
+            fallback.style.position = 'fixed';
+            fallback.style.opacity = '0';
+            document.body.appendChild(fallback);
+            fallback.select();
+            try {
+              if (!document.execCommand('copy')) throw new Error('Copy command failed');
+              resolve();
+            } catch (error) {
+              reject(error);
+            } finally {
+              fallback.remove();
+            }
+          });
+        }
+
+        function copyText(value) {
+          if (navigator.clipboard && window.isSecureContext) {
+            return navigator.clipboard.writeText(value).catch(function() {
+              return copyTextFallback(value);
+            });
+          }
+          return copyTextFallback(value);
+        }
+
+        toggleBtn.addEventListener('click', openShare);
+        backdrop.addEventListener('click', closeShare);
+        closeBtn.addEventListener('click', closeShare);
+
+        copyBtn.addEventListener('click', function() {
+          clearTimeout(resetTimer);
+          copyText(urlInput.value).then(function() {
+            copyLabel.textContent = 'Copied';
+            status.textContent = 'Link copied to clipboard.';
+            resetTimer = setTimeout(function() {
+              copyLabel.textContent = 'Copy link';
+              status.textContent = '';
+            }, 2000);
+          }).catch(function() {
+            urlInput.focus();
+            urlInput.select();
+            status.textContent = 'Select and copy the link.';
+          });
+        });
+
+        overlay.querySelectorAll('.lp-share-destination').forEach(function(link) {
+          link.addEventListener('click', closeShare);
+        });
+
+        if (navigator.share) {
+          nativeBtn.hidden = false;
+          nativeBtn.addEventListener('click', function() {
+            navigator.share(prepareShare()).then(closeShare).catch(function(error) {
+              if (error.name !== 'AbortError') status.textContent = 'Sharing is unavailable right now.';
+            });
+          });
+        }
+
+        panel.addEventListener('keydown', function(event) {
+          if (event.key !== 'Tab') return;
+          var focusable = Array.prototype.filter.call(
+            panel.querySelectorAll('button:not([hidden]), a[href], input:not([disabled])'),
+            function(element) { return element.getClientRects().length > 0; }
+          );
+          if (!focusable.length) return;
+          var first = focusable[0];
+          var last = focusable[focusable.length - 1];
+          if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last.focus();
+          } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+          }
+        });
+
+        document.addEventListener('keydown', function(event) {
+          if (event.key === 'Escape' && overlay.classList.contains('lp-share-overlay--open')) {
+            closeShare();
+          }
+        });
+      })();
       {{if .Site.Graph}}
       // Graph Overlay
       (function() {
@@ -1981,20 +2130,31 @@ const pageTemplate = `
   <article class="lp-article">
     <header class="lp-header">
       <h1 class="lp-title">{{.Page.Title}}</h1>
-      <div class="lp-meta">
-        {{if .Page.Growth}}
-        <span class="lp-growth lp-growth--{{.Page.Growth}}" data-growth="{{.Page.Growth}}">{{growthEmoji .Page.Growth}}</span>
-        {{end}}
-        {{if .Page.ReadingTime}}
-        <span class="lp-reading-time">{{.Page.ReadingTimeDisplay}}</span>
-        {{end}}
-        {{if and .Page.HasModified (not .Page.Date.IsZero)}}
-        <span class="lp-date-info">Updated <time class="lp-modified" datetime="{{.Page.ISOModified}}">{{.Page.FormattedModified}}</time> · Created <time class="lp-date" datetime="{{.Page.ISODate}}">{{.Page.FormattedDate}}</time></span>
-        {{else if .Page.HasModified}}
-        <span class="lp-date-info">Updated <time class="lp-modified" datetime="{{.Page.ISOModified}}">{{.Page.FormattedModified}}</time></span>
-        {{else if not .Page.Date.IsZero}}
-        <span class="lp-date-info">Created <time class="lp-date" datetime="{{.Page.ISODate}}">{{.Page.FormattedDate}}</time></span>
-        {{end}}
+      <div class="lp-header-details">
+        <div class="lp-meta">
+          {{if .Page.Growth}}
+          <span class="lp-growth lp-growth--{{.Page.Growth}}" data-growth="{{.Page.Growth}}">{{growthEmoji .Page.Growth}}</span>
+          {{end}}
+          {{if .Page.ReadingTime}}
+          <span class="lp-reading-time">{{.Page.ReadingTimeDisplay}}</span>
+          {{end}}
+          {{if and .Page.HasModified (not .Page.Date.IsZero)}}
+          <span class="lp-date-info">Updated <time class="lp-modified" datetime="{{.Page.ISOModified}}">{{.Page.FormattedModified}}</time> · Created <time class="lp-date" datetime="{{.Page.ISODate}}">{{.Page.FormattedDate}}</time></span>
+          {{else if .Page.HasModified}}
+          <span class="lp-date-info">Updated <time class="lp-modified" datetime="{{.Page.ISOModified}}">{{.Page.FormattedModified}}</time></span>
+          {{else if not .Page.Date.IsZero}}
+          <span class="lp-date-info">Created <time class="lp-date" datetime="{{.Page.ISODate}}">{{.Page.FormattedDate}}</time></span>
+          {{end}}
+        </div>
+        <button type="button" class="lp-share-toggle" aria-haspopup="dialog" aria-controls="lp-share-overlay">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="18" cy="5" r="3"></circle>
+            <circle cx="6" cy="12" r="3"></circle>
+            <circle cx="18" cy="19" r="3"></circle>
+            <path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4"></path>
+          </svg>
+          <span>Share</span>
+        </button>
       </div>
       {{if .Page.Tags}}
       <div class="lp-tags">
@@ -2020,6 +2180,54 @@ const pageTemplate = `
     </aside>
     {{end}}
   </article>
+</div>
+{{end}}
+{{define "pageOverlays"}}
+<div class="lp-share-overlay" id="lp-share-overlay" aria-hidden="true">
+  <div class="lp-share-backdrop"></div>
+  <section class="lp-share-panel" role="dialog" aria-modal="true" aria-labelledby="lp-share-title">
+    <div class="lp-share-header">
+      <p class="lp-share-eyebrow">Send this page</p>
+      <h2 class="lp-share-title" id="lp-share-title">Share “{{.Page.Title}}”</h2>
+    </div>
+    <div class="lp-share-body">
+      <label class="lp-share-copy-label-text" for="lp-share-url">Page link</label>
+      <div class="lp-share-copy-row">
+        <input class="lp-share-url" id="lp-share-url" type="text" readonly>
+        <button type="button" class="lp-share-copy-button">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="9" y="9" width="13" height="13" rx="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+          <span class="lp-share-copy-label">Copy link</span>
+        </button>
+      </div>
+      <p class="lp-share-status" role="status" aria-live="polite"></p>
+
+      <p class="lp-share-options-label">Share with</p>
+      <div class="lp-share-options">
+        <a class="lp-share-destination" data-share="bluesky" href="https://bsky.app/intent/compose" target="_blank" rel="noopener noreferrer">
+          <span class="lp-share-destination-icon" aria-hidden="true">B</span>
+          <span>Bluesky</span>
+        </a>
+        <a class="lp-share-destination" data-share="linkedin" href="https://www.linkedin.com/sharing/share-offsite/" target="_blank" rel="noopener noreferrer">
+          <span class="lp-share-destination-icon" aria-hidden="true">in</span>
+          <span>LinkedIn</span>
+        </a>
+        <a class="lp-share-destination" data-share="email" href="mailto:">
+          <span class="lp-share-destination-icon" aria-hidden="true">@</span>
+          <span>Email</span>
+        </a>
+        <button type="button" class="lp-share-native" hidden>
+          <span class="lp-share-destination-icon" aria-hidden="true">•••</span>
+          <span>More</span>
+        </button>
+      </div>
+    </div>
+    <div class="lp-share-footer">
+      <button type="button" class="lp-share-close">Close</button>
+    </div>
+  </section>
 </div>
 {{end}}
 `
