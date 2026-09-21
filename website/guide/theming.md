@@ -197,6 +197,16 @@ Solid colors or gradients:
 - `"sticky"` — Fixed bar at top
 - `"glassy"` — Glassmorphic blur effect (appears as floating pill on scroll)
 
+On mobile, the site title stays on one line and section links scroll horizontally.
+Search remains beside the title; the **Site menu** contains theme switching,
+the knowledge graph, and RSS when enabled. Long titles are shortened visually
+with an ellipsis. Sticky and glassy bars keep heading links clear of the header
+and adjust their spacing when the viewport or fonts change.
+While scrolling on mobile, glassy navigation becomes a single-row floating bar;
+section links move into the Site menu until you return to the top.
+The floating bar sizes to its contents, with a width cap and extra side clearance,
+so it remains visually separate from the article.
+
 ### Active Link Style
 
 ```json

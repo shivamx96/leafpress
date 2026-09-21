@@ -29,3 +29,17 @@ npm run test:themes
 Generated gardens live in a temporary directory and are removed when the test
 server stops. Playwright retains a trace and screenshot for failures and writes
 its HTML report to `playwright-report/`.
+
+## Mobile navigation regression checks
+
+`navigation.spec.js` adds 16 regression tests for long branding, overflow links,
+heading fragments, changing header dimensions, viewport changes, and the mobile
+Site menu disclosure, including section links in the compact floating state. Run them against WebKit with:
+
+```sh
+npx playwright install webkit
+LEAFPRESS_CONFORMANCE_BROWSER=webkit npm run test:themes -- navigation.spec.js
+```
+
+WebKit on macOS uses Option-Tab in the keyboard test to include links in focus
+navigation. Browser-engine checks do not replace a real-device Safari review.

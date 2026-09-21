@@ -668,55 +668,66 @@ const baseTemplate = `<!DOCTYPE html>
 </head>
 <body class="lp-body">
   {{if eq .Site.Theme.NavStyle "glassy"}}<div class="lp-nav-placeholder"></div>{{end}}
-  <nav class="lp-nav">
+  <nav class="lp-nav" aria-label="Main navigation" data-nav-style="{{.Site.Theme.NavStyle}}">
     <div class="lp-nav-container">
       <div class="lp-nav-brand">
-        <a class="lp-nav-title" href="{{.Site.BasePath}}/">{{.Site.Title}}</a>
+        <a class="lp-nav-title" title="{{.Site.Title}}" href="{{.Site.BasePath}}/">{{.Site.Title}}</a>
         <div class="lp-nav-actions">
-          {{if .Site.RSS}}<a href="{{.Site.BasePath}}/feed.xml" class="lp-rss-link" aria-label="RSS feed" title="RSS feed" target="_blank">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M4 11a9 9 0 0 1 9 9"></path>
-              <path d="M4 4a16 16 0 0 1 16 16"></path>
-              <circle cx="5" cy="19" r="1"></circle>
-            </svg>
-          </a>{{end}}
-          {{if .Site.Graph}}<button class="lp-graph-toggle" aria-label="Open knowledge graph" title="Explore graph">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="6" cy="6" r="3"></circle>
-              <circle cx="18" cy="6" r="3"></circle>
-              <circle cx="6" cy="18" r="3"></circle>
-              <circle cx="18" cy="18" r="3"></circle>
-              <line x1="8.5" y1="7.5" x2="15.5" y2="16.5"></line>
-              <line x1="8.5" y1="16.5" x2="15.5" y2="7.5"></line>
-            </svg>
-          </button>{{end}}
           {{if .Site.Search}}<button class="lp-search-toggle" aria-label="Search" title="Search (⌘K)">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="11" cy="11" r="6"></circle>
               <line x1="21" y1="21" x2="15.5" y2="15.5"></line>
             </svg>
           </button>{{end}}
-          <button class="lp-theme-toggle" aria-label="Change theme" title="Change theme">
-            <svg class="lp-theme-icon lp-theme-icon-system" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="4" width="18" height="13" rx="2"></rect>
-              <line x1="8" y1="21" x2="16" y2="21"></line>
-              <line x1="12" y1="17" x2="12" y2="21"></line>
-            </svg>
-            <svg class="lp-theme-icon lp-theme-icon-light" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="5"></circle>
-              <line x1="12" y1="1" x2="12" y2="3"></line>
-              <line x1="12" y1="21" x2="12" y2="23"></line>
-              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-              <line x1="1" y1="12" x2="3" y2="12"></line>
-              <line x1="21" y1="12" x2="23" y2="12"></line>
-              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-            </svg>
-            <svg class="lp-theme-icon lp-theme-icon-dark" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          <button class="lp-nav-menu-toggle" aria-label="Site menu" aria-expanded="false" aria-controls="lp-nav-tools">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+              <path d="M4 6h16M4 12h16M4 18h16"></path>
             </svg>
           </button>
+          <div class="lp-nav-tools" id="lp-nav-tools" role="group" aria-label="Site menu">
+            <div class="lp-nav-menu-links" role="group" aria-label="Sections"></div>
+            {{if .Site.RSS}}<a href="{{.Site.BasePath}}/feed.xml" class="lp-rss-link" aria-label="RSS feed" title="RSS feed" target="_blank">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 11a9 9 0 0 1 9 9"></path>
+                <path d="M4 4a16 16 0 0 1 16 16"></path>
+                <circle cx="5" cy="19" r="1"></circle>
+              </svg>
+              <span class="lp-nav-tool-label">RSS feed</span>
+            </a>{{end}}
+            {{if .Site.Graph}}<button class="lp-graph-toggle" aria-label="Open knowledge graph" title="Explore graph">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="6" cy="6" r="3"></circle>
+                <circle cx="18" cy="6" r="3"></circle>
+                <circle cx="6" cy="18" r="3"></circle>
+                <circle cx="18" cy="18" r="3"></circle>
+                <line x1="8.5" y1="7.5" x2="15.5" y2="16.5"></line>
+                <line x1="8.5" y1="16.5" x2="15.5" y2="7.5"></line>
+              </svg>
+              <span class="lp-nav-tool-label">Knowledge graph</span>
+            </button>{{end}}
+            <button class="lp-theme-toggle" aria-label="Change theme" title="Change theme">
+              <svg class="lp-theme-icon lp-theme-icon-system" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="13" rx="2"></rect>
+                <line x1="8" y1="21" x2="16" y2="21"></line>
+                <line x1="12" y1="17" x2="12" y2="21"></line>
+              </svg>
+              <svg class="lp-theme-icon lp-theme-icon-light" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="5"></circle>
+                <line x1="12" y1="1" x2="12" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="23"></line>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                <line x1="1" y1="12" x2="3" y2="12"></line>
+                <line x1="21" y1="12" x2="23" y2="12"></line>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+              </svg>
+              <svg class="lp-theme-icon lp-theme-icon-dark" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+              </svg>
+              <span class="lp-nav-tool-label">Change theme</span>
+            </button>
+          </div>
         </div>
       </div>
       <div class="lp-nav-links">
@@ -891,25 +902,124 @@ const baseTemplate = `<!DOCTYPE html>
         });
       }
 
-      {{if eq .Site.Theme.NavStyle "glassy"}}
-      // Floating pill navbar on scroll
+      // Mobile reader tools use a disclosure with ordinary links and buttons.
       var nav = document.querySelector('.lp-nav');
-      var navPlaceholder = document.querySelector('.lp-nav-placeholder');
-      if (nav && navPlaceholder) {
-        var navHeight = nav.offsetHeight;
-        navPlaceholder.style.height = navHeight + 'px';
-
-        window.addEventListener('scroll', function() {
-          if (window.scrollY > navHeight) {
-            nav.classList.add('lp-nav--pill');
-            navPlaceholder.classList.add('lp-nav-placeholder--active');
-          } else {
-            nav.classList.remove('lp-nav--pill');
-            navPlaceholder.classList.remove('lp-nav-placeholder--active');
+      var navMenuToggle = document.querySelector('.lp-nav-menu-toggle');
+      var navTools = document.querySelector('.lp-nav-tools');
+      var mobileNav = window.matchMedia('(max-width: 768px)');
+      function closeNavTools(restoreFocus) {
+        navMenuToggle.setAttribute('aria-expanded', 'false');
+        navTools.classList.remove('lp-nav-tools--open');
+        if (restoreFocus) navMenuToggle.focus();
+      }
+      navMenuToggle.addEventListener('click', function() {
+        var open = navMenuToggle.getAttribute('aria-expanded') !== 'true';
+        if (open) {
+          var menuLinks = navTools.querySelector('.lp-nav-menu-links');
+          menuLinks.replaceChildren();
+          nav.querySelectorAll('.lp-nav-links a').forEach(function(link) {
+            var item = link.cloneNode(true);
+            item.removeAttribute('id');
+            item.className = 'lp-nav-menu-link';
+            if (link.classList.contains('lp-nav-link--active')) item.setAttribute('aria-current', 'page');
+            menuLinks.appendChild(item);
+          });
+        }
+        // Safari does not focus buttons on pointer activation. Keep focus in
+        // the disclosure so its focusout handler does not immediately close it.
+        navMenuToggle.focus();
+        navMenuToggle.setAttribute('aria-expanded', String(open));
+        navTools.classList.toggle('lp-nav-tools--open', open);
+      });
+      document.addEventListener('click', function(event) {
+        if (!navTools.contains(event.target) && !navMenuToggle.contains(event.target)) {
+          closeNavTools(false);
+        }
+      });
+      document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape' && navMenuToggle.getAttribute('aria-expanded') === 'true') {
+          closeNavTools(true);
+        }
+      });
+      nav.addEventListener('focusout', function() {
+        requestAnimationFrame(function() {
+          // Safari can briefly focus body between pointerdown and click on a
+          // button. Let the click handler finish before hiding its target.
+          var focused = document.activeElement;
+          if (focused !== document.body && focused !== navMenuToggle && !navTools.contains(focused)) {
+            closeNavTools(false);
           }
         });
+      });
+      navTools.addEventListener('click', function(event) {
+        if (mobileNav.matches && event.target.closest('a, button')) {
+          closeNavTools(!event.target.closest('.lp-graph-toggle'));
+        }
+      });
+      window.addEventListener('resize', function() {
+        var focusHidden = mobileNav.matches && navTools.contains(document.activeElement);
+        closeNavTools(focusHidden);
+      });
+
+      // Keep normal-flow spacing separate from the floating bar's dimensions.
+      var navPlaceholder = document.querySelector('.lp-nav-placeholder');
+      var navThreshold = 0;
+      var navFrame = 0;
+      function measureNav() {
+        var wasPill = nav.classList.contains('lp-nav--pill');
+        nav.classList.remove('lp-nav--pill');
+        var style = getComputedStyle(nav);
+        var naturalHeight = nav.getBoundingClientRect().height;
+        var naturalSpace = naturalHeight + (parseFloat(style.marginTop) || 0) + (parseFloat(style.marginBottom) || 0);
+        var alwaysFixed = style.position === 'fixed';
+        if (alwaysFixed) naturalSpace = naturalHeight + (parseFloat(style.top) || 0);
+        var offset = style.position === 'sticky' ? naturalHeight + (parseFloat(style.top) || 0) : 0;
+        navThreshold = naturalSpace;
+        if (navPlaceholder) {
+          nav.classList.add('lp-nav--pill');
+          var floatingStyle = getComputedStyle(nav);
+          var floatingSpace = nav.getBoundingClientRect().height + (parseFloat(floatingStyle.top) || 0);
+          offset = Math.max(offset, floatingSpace);
+          navPlaceholder.style.height = naturalSpace + 'px';
+        }
+        nav.classList.toggle('lp-nav--pill', wasPill);
+        document.documentElement.style.setProperty('--lp-nav-offset', Math.ceil(offset + 16) + 'px');
+        updateNavScroll();
       }
-      {{end}}
+      function updateNavScroll() {
+        if (!navPlaceholder) return;
+        var floating = window.scrollY > (mobileNav.matches ? 8 : navThreshold);
+        nav.classList.toggle('lp-nav--pill', floating);
+        navPlaceholder.classList.toggle('lp-nav-placeholder--active', floating);
+      }
+      function scheduleNavMeasurement() {
+        if (navFrame) return;
+        navFrame = requestAnimationFrame(function() {
+          navFrame = 0;
+          measureNav();
+        });
+      }
+      measureNav();
+      if (window.ResizeObserver) new ResizeObserver(scheduleNavMeasurement).observe(nav, { box: 'border-box' });
+      window.addEventListener('resize', scheduleNavMeasurement);
+      window.addEventListener('scroll', updateNavScroll, { passive: true });
+
+      // A direct fragment URL may be positioned before fonts and nav settle.
+      // Stop correcting it as soon as the reader interacts with the page.
+      var initialHash = window.location.hash;
+      var readerInteracted = false;
+      ['pointerdown', 'touchstart', 'wheel', 'keydown'].forEach(function(type) {
+        window.addEventListener(type, function() { readerInteracted = true; }, { once: true, passive: true });
+      });
+      function alignInitialFragment() {
+        measureNav();
+        if (!initialHash || readerInteracted || window.location.hash !== initialHash) return;
+        var target;
+        try { target = document.getElementById(decodeURIComponent(initialHash.slice(1))); } catch (error) { return; }
+        if (target) target.scrollIntoView();
+      }
+      window.addEventListener('load', alignInitialFragment);
+      if (document.fonts) document.fonts.ready.then(alignInitialFragment);
 
       // Copy buttons
       document.querySelectorAll('pre.chroma').forEach(function(pre) {
@@ -953,6 +1063,7 @@ const baseTemplate = `<!DOCTYPE html>
           overlay.classList.add('lp-graph-overlay--open');
           overlay.setAttribute('aria-hidden', 'false');
           document.body.style.overflow = 'hidden';
+          closeBtn.focus();
 
           if (!graphRendered && graphData) {
             renderGraph(graphData);
@@ -972,6 +1083,7 @@ const baseTemplate = `<!DOCTYPE html>
           overlay.classList.remove('lp-graph-overlay--open');
           overlay.setAttribute('aria-hidden', 'true');
           document.body.style.overflow = '';
+          (mobileNav.matches ? navMenuToggle : toggleBtn).focus();
         }
 
         toggleBtn.addEventListener('click', openGraph);

@@ -14,7 +14,7 @@ export default defineConfig({
     : [["list"], ["html", { open: "never" }]],
   use: {
     baseURL,
-    browserName: "chromium",
+    browserName: process.env.LEAFPRESS_CONFORMANCE_BROWSER ?? "chromium",
     screenshot: "only-on-failure",
     trace: "retain-on-failure"
   },

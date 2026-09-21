@@ -178,9 +178,14 @@ for (const theme of themes) {
 
               if (theme === "paper") {
                 const scrolledBox = await nav.boundingBox();
-                expect(scrolledBox.x).toBeCloseTo(initialBox.x, 0);
                 expect(scrolledBox.y).toBeCloseTo(initialBox.y, 0);
-                expect(scrolledBox.width).toBeCloseTo(initialBox.width, 0);
+                if (viewportName === "mobile") {
+                  expect(scrolledBox.width).toBeLessThan(initialBox.width);
+                  expect(scrolledBox.x + scrolledBox.width / 2).toBeCloseTo(viewport.width / 2, 0);
+                } else {
+                  expect(scrolledBox.x).toBeCloseTo(initialBox.x, 0);
+                  expect(scrolledBox.width).toBeCloseTo(initialBox.width, 0);
+                }
               }
             }
 
@@ -209,6 +214,12 @@ for (const theme of themes) {
             expect(horizontalOverflow).toBeLessThanOrEqual(1);
 
             if (viewportName === "mobile") {
+              // Full section navigation is shown at the top; the floating bar
+              // offers those links through its menu while the reader scrolls.
+              if (navStyle === "glassy") {
+                await page.evaluate(() => window.scrollTo(0, 0));
+                await expect(nav).not.toHaveClass(/\blp-nav--pill\b/);
+              }
               const alignment = await page.evaluate(() => {
                 const title = document.querySelector(".lp-nav-title");
                 const firstLink = document.querySelector(".lp-nav-link");
@@ -407,6 +418,7 @@ for (const theme of themes) {
     if (theme === "terminal") {
       await page.setViewportSize(viewports.mobile);
       await page.goto(`/${fixture}/notes/components/`);
+      await page.getByRole("button", { name: "Site menu", exact: true }).click();
       await page.locator(".lp-graph-toggle").click();
       const graphPanel = await page.locator(".lp-graph-panel").boundingBox();
       expect(graphPanel).not.toBeNull();
