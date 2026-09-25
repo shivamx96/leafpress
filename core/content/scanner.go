@@ -153,7 +153,7 @@ func (s *Scanner) Scan() ([]*Page, error) {
 				f := files[idx]
 				page, err := s.parsePage(f.absPath, f.relPath, f.info)
 				if err != nil {
-					errOnce.Do(func() { parseErr = err })
+					errOnce.Do(func() { parseErr = fmt.Errorf("%s: %w", f.relPath, err) })
 					return
 				}
 				pages[idx] = page
@@ -212,7 +212,7 @@ func (s *Scanner) parsePage(absPath, relPath string, info os.FileInfo) (*Page, e
 	source := sourceRoute(relPath)
 	slug, err := pageSlug(source, fm.Slug, isIndex)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", filepath.ToSlash(relPath), err)
+		return nil, err
 	}
 
 	// Generate title from the original filename if not set, so "Q&A.md"
@@ -269,7 +269,11 @@ func ParseSingleFile(rootDir, relPath string) (*Page, error) {
 	}
 
 	scanner := &Scanner{rootDir: rootDir}
-	return scanner.parsePage(absPath, relPath, info)
+	page, err := scanner.parsePage(absPath, relPath, info)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", relPath, err)
+	}
+	return page, nil
 }
 
 // generateOutputPath creates the output file path

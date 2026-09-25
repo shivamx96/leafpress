@@ -82,6 +82,19 @@ func TestMalformedJSONExitsOne(t *testing.T) {
 	}
 }
 
+func TestTrailingInputRejectedWithoutOutput(t *testing.T) {
+	for _, suffix := range []string{"{}", "null", "garbage", "// comment"} {
+		var stdout, stderr bytes.Buffer
+		if code := run(strings.NewReader(hostileGarden+suffix), &stdout, &stderr); code != 1 || stdout.Len() != 0 {
+			t.Fatalf("suffix %q: exit=%d stdout=%q stderr=%q", suffix, code, stdout.String(), stderr.String())
+		}
+	}
+	var stdout, stderr bytes.Buffer
+	if code := run(strings.NewReader(hostileGarden+"\n\t"), &stdout, &stderr); code != 0 {
+		t.Fatalf("trailing whitespace rejected: %s", stderr.String())
+	}
+}
+
 func TestInvalidInputExitsOne(t *testing.T) {
 	// render.slug now defaults with a warning, so the exit-1 contract is
 	// exercised with genuinely invalid input: an unsupported contract version

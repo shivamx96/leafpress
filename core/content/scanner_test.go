@@ -4,8 +4,23 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 )
+
+func TestScannerErrorsNameSourceFile(t *testing.T) {
+	root := t.TempDir()
+	if err := os.WriteFile(filepath.Join(root, "broken.md"), []byte("---\ntitle: [\n---\nbody"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	_, fullErr := NewScanner(root, nil).Scan()
+	_, incrementalErr := ParseSingleFile(root, "broken.md")
+	for _, err := range []error{fullErr, incrementalErr} {
+		if err == nil || !strings.Contains(err.Error(), "broken.md") || !strings.Contains(err.Error(), "YAML") {
+			t.Errorf("error must identify source and cause: %v", err)
+		}
+	}
+}
 
 func TestScannerPathDerivations(t *testing.T) {
 	tests := []struct {

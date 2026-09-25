@@ -169,7 +169,7 @@ func TestScanReportsFileWithInvalidFrontmatterSlug(t *testing.T) {
 		func() error { _, err := NewScanner(root, nil).Scan(); return err },
 		func() error { _, err := ParseSingleFile(root, "note.md"); return err },
 	} {
-		if err := scan(); err == nil || !strings.Contains(err.Error(), "note.md") || !strings.Contains(err.Error(), `use "My-Note"`) {
+		if err := scan(); err == nil || strings.Count(err.Error(), "note.md") != 1 || !strings.Contains(err.Error(), `use "My-Note"`) {
 			t.Errorf("error = %v", err)
 		}
 	}

@@ -11,6 +11,27 @@ import (
 	"github.com/shivamx96/leafpress/core/themes"
 )
 
+func TestParseRejectsTrailingJSONContent(t *testing.T) {
+	for _, suffix := range []string{"{}", "null", "false", "garbage", "// comment"} {
+		if _, err := Parse([]byte("{} " + suffix)); err == nil {
+			t.Errorf("accepted trailing content %q", suffix)
+		}
+	}
+	if _, err := Parse([]byte("{} \n\t")); err != nil {
+		t.Fatalf("trailing whitespace: %v", err)
+	}
+}
+
+func TestLoadReportsInvalidConfigFilename(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "custom.json")
+	if err := os.WriteFile(path, []byte("{} garbage"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Load(path); err == nil || !strings.Contains(err.Error(), "custom.json") {
+		t.Fatalf("error must name the config file: %v", err)
+	}
+}
+
 // --- Defaults ---
 
 func TestDefault(t *testing.T) {
