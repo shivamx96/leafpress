@@ -30,6 +30,7 @@ import (
 type Options struct {
 	IncludeDrafts bool
 	Verbose       bool
+	Strict        bool // Refuse to publish a full build with warnings.
 }
 
 // Stats contains build statistics
@@ -218,7 +219,7 @@ func (b *Builder) Build() (result *Stats, resultErr error) {
 	b.logTiming("markdown", time.Since(t0))
 	stats.WarningCount += len(warnings)
 
-	if b.opts.Verbose {
+	if b.opts.Verbose || b.opts.Strict {
 		for _, w := range warnings {
 			fmt.Printf("  warning: %s\n", w)
 		}
@@ -399,6 +400,10 @@ func (b *Builder) Build() (result *Stats, resultErr error) {
 	}
 	b.logTiming("rss", time.Since(t0))
 
+	// Check before promotion so strict failures preserve the last good output.
+	if b.opts.Strict && stats.WarningCount > 0 {
+		return nil, fmt.Errorf("strict build failed with %d warning(s); output was not published", stats.WarningCount)
+	}
 	t0 = time.Now()
 	if err := outputTx.commit(b.promoteHook); err != nil {
 		stateCommitted = outputTx.committed

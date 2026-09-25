@@ -13,6 +13,9 @@ First, generate the static files:
 leafpress build
 ```
 
+Use `leafpress build --strict` in CI to stop publication when the build reports
+warnings, such as broken wiki-links.
+
 This creates your site in `_site/` (or your configured `outputDir`). Upload this folder to any web host.
 
 ## Netlify
