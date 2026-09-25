@@ -78,3 +78,27 @@ func TestParseSingleFileMergesFrontmatterAndInlineTags(t *testing.T) {
 		t.Fatalf("page.Tags = %v, want %v", page.Tags, want)
 	}
 }
+
+func TestScannerLeavesUntitledHomeForSiteTitle(t *testing.T) {
+	root := t.TempDir()
+	for name, body := range map[string]string{"index.md": "# Heading\n", "notes/_index.md": "Notes\n"} {
+		path := filepath.Join(root, filepath.FromSlash(name))
+		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(body), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	pages, err := NewScanner(root, nil).Scan()
+	if err != nil {
+		t.Fatal(err)
+	}
+	titles := make(map[string]string)
+	for _, page := range pages {
+		titles[page.Slug] = page.Title
+	}
+	if titles[""] != "" || titles["notes"] != "Notes" {
+		t.Fatalf("titles = %q; want an empty home title and a derived section title", titles)
+	}
+}
