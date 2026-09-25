@@ -347,3 +347,39 @@ func assertFileNotContains(t *testing.T, path string, unwanted ...string) {
 		}
 	}
 }
+
+func TestFilenamesWithSpacesPublishCleanURLsAndFollowFrontmatterSlug(t *testing.T) {
+	dir := newTestProject(t)
+	notePath := filepath.Join(dir, "My Note.md")
+	if err := os.WriteFile(notePath, []byte("Body.\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "note.md"), []byte("See [[My Note]] and [[Q&A]].\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "Q&A.md"), []byte("Answers.\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	b := New(config.Default(), Options{})
+	if _, err := b.Build(); err != nil {
+		t.Fatal(err)
+	}
+	site := filepath.Join(dir, "_site")
+	assertFileContains(t, filepath.Join(site, "My-Note", "index.html"), ">My Note<")
+	assertFileContains(t, filepath.Join(site, "Q-A", "index.html"), ">Q&amp;A<")
+	assertFileContains(t, filepath.Join(site, "note", "index.html"), `href="/My-Note/">My Note</a>`, `href="/Q-A/">Q&amp;A</a>`)
+
+	// The preview server applies a frontmatter slug and removes the old URL.
+	if err := os.WriteFile(notePath, []byte("---\nslug: first-note\n---\nBody.\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := b.RebuildIncremental(notePath, ChangeModify); err != nil {
+		t.Fatal(err)
+	}
+	assertFileContains(t, filepath.Join(site, "first-note", "index.html"), ">My Note<")
+	assertFileContains(t, filepath.Join(site, "note", "index.html"), `href="/first-note/">My Note</a>`)
+	if _, err := os.Stat(filepath.Join(site, "My-Note")); !os.IsNotExist(err) {
+		t.Fatalf("old URL remains after the frontmatter slug changed: %v", err)
+	}
+}
