@@ -6,7 +6,7 @@ toc: false
 
 ## Unreleased
 
-- CI now checks both Go modules for reachable vulnerabilities using Go 1.25.13, and Dependabot checks Go dependencies and GitHub Actions for updates weekly. The release checklist includes local vulnerability scans.
+- CI now installs the latest Go vulnerability scanner and checks both Go modules for reachable vulnerabilities using Go 1.25.13, and Dependabot checks Go dependencies and GitHub Actions for updates weekly. The release checklist includes local vulnerability scans and scanner installation instructions.
 - Updated `golang.org/x/text` to v0.39.0 in Core and the CLI to fix [GO-2026-5970](https://pkg.go.dev/vuln/GO-2026-5970), an infinite loop on invalid UTF-8 input that can affect automatic navigation and section index titles.
 
 ## v1.0.0-beta.20

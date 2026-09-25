@@ -114,6 +114,9 @@ jobs:
             cli/go.sum
 
       - name: Install govulncheck
+        env:
+          # The latest scanner may require a newer Go than the project.
+          GOTOOLCHAIN: auto
         run: go install golang.org/x/vuln/cmd/govulncheck@latest
 
       - name: Check vulnerabilities (core)

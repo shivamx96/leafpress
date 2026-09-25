@@ -11,7 +11,8 @@ this file is only *what to do* and *how to verify*.
       used in CI.
 - [ ] **Dependency vulnerabilities:** use the Go version pinned in
       `.github/workflows/test.yml` and install the latest scanner with
-      `go install golang.org/x/vuln/cmd/govulncheck@latest` and ensure the Go
+      `GOTOOLCHAIN=auto go install golang.org/x/vuln/cmd/govulncheck@latest`
+      (allows a newer toolchain for scanner installation only). Ensure the Go
       binary directory (`go env GOBIN`, or `$(go env GOPATH)/bin` when unset)
       is on `PATH`. Run `govulncheck ./...` from `core/` and
       `GOWORK=off govulncheck ./...` from `cli/` to check its published Core
