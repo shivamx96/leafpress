@@ -3,6 +3,7 @@ package content
 import (
 	"bytes"
 	"html"
+	"path"
 	"sort"
 	"strings"
 
@@ -209,6 +210,26 @@ func NewLinkResolver(pages []*Page) *LinkResolver {
 		parts := strings.Split(page.Slug, "/")
 		name := strings.ToLower(parts[len(parts)-1])
 		resolver.nameMap[name] = append(resolver.nameMap[name], page)
+	}
+
+	// Links name files as the author wrote them ([[My Note]]), but slugs are
+	// URL-safe (My-Note) or set in frontmatter. Register the original path and
+	// filename too; published slugs keep precedence for the exact-path match.
+	for _, page := range pages {
+		if page.SourcePath == "" {
+			continue
+		}
+		source := sourceRoute(page.SourcePath)
+		if key := strings.ToLower(source); key != "" {
+			if _, exists := resolver.slugMap[key]; !exists {
+				resolver.slugMap[key] = page
+			}
+		}
+		name := strings.ToLower(path.Base(source))
+		parts := strings.Split(page.Slug, "/")
+		if source != "" && name != strings.ToLower(parts[len(parts)-1]) {
+			resolver.nameMap[name] = append(resolver.nameMap[name], page)
+		}
 	}
 
 	// Sort nameMap slices by slug for deterministic ambiguous link resolution

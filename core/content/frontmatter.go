@@ -12,6 +12,7 @@ import (
 // Frontmatter represents the YAML frontmatter of a page
 type Frontmatter struct {
 	Title       string   `yaml:"title"`
+	Slug        string   `yaml:"slug"`        // URL name override; the folder still sets the section
 	Description string   `yaml:"description"` // SEO meta description
 	Date        string   `yaml:"date"`
 	Tags        []string `yaml:"tags"`

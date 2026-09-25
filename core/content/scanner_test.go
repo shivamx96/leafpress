@@ -18,10 +18,15 @@ func TestScannerPathDerivations(t *testing.T) {
 		{path: "notes/hello.md", slug: "notes/hello", output: filepath.Join("notes", "hello", "index.html"), permalink: "/notes/hello/"},
 		{path: "notes/_index.md", slug: "notes", output: filepath.Join("notes", "index.html"), permalink: "/notes/"},
 		{path: "notes/migration_index.md", slug: "notes/migration_index", output: filepath.Join("notes", "migration_index", "index.html"), permalink: "/notes/migration_index/"},
+		{path: "My Projects/Q&A (draft).md", slug: "My-Projects/Q-A-draft", output: filepath.Join("My-Projects", "Q-A-draft", "index.html"), permalink: "/My-Projects/Q-A-draft/"},
+		{path: "My Projects/_index.md", slug: "My-Projects", output: filepath.Join("My-Projects", "index.html"), permalink: "/My-Projects/"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.path, func(t *testing.T) {
-			slug := generateSlug(filepath.FromSlash(tt.path))
+			slug, err := pageSlug(sourceRoute(filepath.FromSlash(tt.path)), "", filepath.Base(tt.path) == "_index.md")
+			if err != nil {
+				t.Fatal(err)
+			}
 			if slug != tt.slug {
 				t.Errorf("slug = %q, want %q", slug, tt.slug)
 			}
