@@ -6,6 +6,8 @@ toc: false
 
 ## Unreleased
 
+- Builds now stop on page URLs that would not work on every platform: Windows device names such as `CON` and routes that differ only in letter case, such as `Notes.md` beside a `notes/` folder. The embedded renderer applies the same validation to host-supplied slugs and rejects whitespace, URL delimiters (`#`, `?`, `%`, `&`), quotes, and filesystem-unsafe punctuation. Unicode names remain supported.
+
 - Page URLs are now URL-safe even when filenames contain spaces or punctuation: `My Note.md` publishes at `/My-Note/` and `Q&A.md` at `/Q-A/`, with letter case and Unicode kept. Filenames that were already URL-safe keep their URLs. A new `slug` frontmatter field sets a page's URL name, and wiki-links still resolve by the original filename. **Breaking:** pages whose filenames contain spaces or punctuation move to the cleaned URL, so update external links to them or set `slug` to choose the new URL.
 
 - The documentation website now revalidates mutable assets such as styles and Mermaid after deployments; one-year immutable caching applies only to the content-hashed client bundle. Custom hosting guidance explains the same policy.

@@ -194,9 +194,6 @@ func inputErrorf(format string, args ...any) error {
 }
 
 var (
-	// unsafeSlugChars are characters that would break hrefs/attributes when a
-	// slug is interpolated into template output.
-	unsafeSlugChars = "\"'<>\\ \t\r\n"
 	// tagRegex restricts tags to letters/digits/underscore/hyphen (the
 	// hosted tag shape); tags are interpolated into hrefs and text unescaped.
 	tagRegex = regexp.MustCompile(`^[\p{L}\p{N}_-]+$`)
@@ -231,7 +228,7 @@ func Render(in *Input) (*Output, error) {
 		slug = "garden"
 		warnings = append(warnings, `render.slug not provided; defaulting to "garden" (hosts should supply an explicit slug)`)
 	}
-	if strings.ContainsAny(slug, unsafeSlugChars) || hasDotSegment(slug) {
+	if err := content.ValidateSlug(slug); err != nil {
 		return nil, inputErrorf("render.slug is invalid: %q", in.Render.Slug)
 	}
 
@@ -451,18 +448,6 @@ func Render(in *Input) (*Output, error) {
 		Artifacts:       artifacts,
 		Warnings:        warnings,
 	}, nil
-}
-
-// hasDotSegment reports whether a slash-separated path contains a "." or ".."
-// segment. Such segments are rejected: the renderer emits slugs and output
-// paths that hosts materialize, so a dot segment could escape a garden's route.
-func hasDotSegment(p string) bool {
-	for _, seg := range strings.Split(p, "/") {
-		if seg == "." || seg == ".." {
-			return true
-		}
-	}
-	return false
 }
 
 // callerAssets validates the caller-supplied asset manifest: the declaration
@@ -809,7 +794,7 @@ func buildPages(in []InputPage) ([]*content.Page, error) {
 		if slug == "" && !ip.IsIndex {
 			return nil, inputErrorf("pages[%d].slug is required", i)
 		}
-		if strings.ContainsAny(slug, unsafeSlugChars) || hasDotSegment(slug) {
+		if err := content.ValidateSlug(slug); err != nil {
 			return nil, inputErrorf("pages[%d].slug is invalid: %q", i, ip.Slug)
 		}
 		if seen[slug] {

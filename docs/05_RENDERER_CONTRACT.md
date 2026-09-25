@@ -243,8 +243,11 @@ Each entry in `content.pages`:
 
 - `slug` is required for ordinary pages and may carry path segments; section
   membership derives from the slug's directory, exactly like the CLI build.
-  Slugs and derived output paths reject unsafe characters and `.`/`..` path
-  segments.
+  Slugs share the CLI path validator: whitespace, control characters, URL
+  delimiters (`#`, `?`, `%`, `&`), quotes, filesystem-unsafe punctuation, empty
+  or dot segments, trailing dots, and Windows device names are rejected. Unicode
+  letters are supported. Output route collisions are checked case-insensitively
+  for portability across hosting and development filesystems.
 - `isIndex` marks a section home (the CLI's `_index.md`): `slug` is the section
   path, `markdown` becomes the intro above the child listing. An `isIndex` page
   with slug `""` is the garden home. `sort` (`date` | `title` | `growth`) and
