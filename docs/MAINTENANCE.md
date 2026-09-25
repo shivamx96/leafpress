@@ -10,7 +10,7 @@ this file is only *what to do* and *how to verify*.
 - [ ] `go test ./...` from both module roots that ship (`core/`, `cli/`) as
       used in CI.
 - [ ] **Dependency vulnerabilities:** use the Go version pinned in
-      `.github/workflows/test.yml` and install the latest scanner with
+      `.go-version` and install the latest scanner with
       `GOTOOLCHAIN=auto go install golang.org/x/vuln/cmd/govulncheck@latest`
       (allows a newer toolchain for scanner installation only). Ensure the Go
       binary directory (`go env GOBIN`, or `$(go env GOPATH)/bin` when unset)

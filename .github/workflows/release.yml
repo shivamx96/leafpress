@@ -6,9 +6,15 @@ on:
       - "v*"
 
 permissions:
-  contents: write
+  contents: read
+
+env:
+  GOTOOLCHAIN: local
 
 jobs:
+  validate:
+    uses: ./.github/workflows/test.yml
+
   verify-modules:
     runs-on: ubuntu-latest
     steps:
@@ -19,7 +25,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v7
         with:
-          go-version: "1.25.5"
+          go-version-file: .go-version
           cache-dependency-path: |
             core/go.sum
             cli/go.sum
@@ -50,7 +56,7 @@ jobs:
           test "$("${GOBIN}/leafpress" version)" = "leafpress ${VERSION}"
 
   build:
-    needs: verify-modules
+    needs: [validate, verify-modules]
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -74,7 +80,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v7
         with:
-          go-version: "1.25.5"
+          go-version-file: .go-version
           cache-dependency-path: |
             core/go.sum
             cli/go.sum
@@ -83,6 +89,7 @@ jobs:
         id: version
         run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
+      # Keep Go symbols for accurate binary vulnerability scans; omit DWARF only.
       - name: Build CLI
         env:
           GOOS: ${{ matrix.goos }}
@@ -94,7 +101,7 @@ jobs:
           if [ "${{ matrix.goos }}" = "windows" ]; then
             BINARY_NAME="leafpress.exe"
           fi
-          go build -ldflags="-s -w -X main.version=${{ steps.version.outputs.VERSION }}" -o $BINARY_NAME ./cmd/leafpress
+          go build -ldflags="-w -X main.version=${{ steps.version.outputs.VERSION }}" -o $BINARY_NAME ./cmd/leafpress
 
       # The render bridge ships as its own artifact so hosted integrations can
       # download just this binary (pinned + checksum-verified), not the CLI.
@@ -109,7 +116,22 @@ jobs:
           if [ "${{ matrix.goos }}" = "windows" ]; then
             BINARY_NAME="leafpress-render.exe"
           fi
-          go build -ldflags="-s -w" -o $BINARY_NAME ./cmd/leafpress-render
+          go build -ldflags="-w" -o $BINARY_NAME ./cmd/leafpress-render
+
+      - name: Install vulnerability scanner
+        env:
+          GOTOOLCHAIN: auto
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+
+      - name: Scan release binaries
+        shell: bash
+        run: |
+          SUFFIX=""
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            SUFFIX=".exe"
+          fi
+          govulncheck -mode=binary "cli/leafpress${SUFFIX}"
+          govulncheck -mode=binary "core/leafpress-render${SUFFIX}"
 
       - name: Package (Unix)
         if: matrix.goos != 'windows'
@@ -132,6 +154,8 @@ jobs:
           path: dist/*
 
   release:
+    permissions:
+      contents: write
     needs: build
     runs-on: ubuntu-latest
     steps:
