@@ -6,6 +6,8 @@ toc: false
 
 ## Unreleased
 
+- Generated section titles and automatic navigation labels keep folder names as written, so a `Q&A/` folder without an `_index.md` is titled "Q&A" rather than "Q A". Preview rebuilds now title sections the same way as full builds, and folders whose names clean to the same URL, such as `Field Notes/` and `Field-Notes/`, stop the build instead of merging.
+
 - A home page without a frontmatter `title` now uses the site title in its heading, page metadata, search index, and graph instead of showing `.`, matching the embedded renderer.
 
 - `leafpress new` now rejects absolute and parent-traversing input paths before slugifying them, including Windows drive paths that previously became unintended local filenames.

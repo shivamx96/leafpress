@@ -36,7 +36,9 @@ A page's URL comes from its path: `notes/éclair.md` publishes at
 and dots are kept as written, including their case. Each run of spaces or other
 characters becomes a single hyphen, or is dropped at the start or end of a name,
 and trailing dots are removed. `Field Notes/Q&A (draft).md` publishes at
-`/Field-Notes/Q-A-draft/`. Folder names follow the same rule.
+`/Field-Notes/Q-A-draft/`. Folder names follow the same rule, but a folder
+without an `_index.md` keeps its name as written in its generated section title
+and navigation label, so `Q&A/` is titled "Q&A".
 
 Set `slug` in frontmatter to choose the page's URL name yourself. The folder
 still decides the section:
@@ -53,7 +55,8 @@ contain slashes. Section and home index pages take their URL from their folder,
 so they do not accept `slug`.
 
 If two pages would share a URL, the build stops and names both files. This
-includes cleaned names that meet, such as `My Note.md` and `My-Note.md`, and
+includes cleaned names that meet, such as `My Note.md` and `My-Note.md` or the
+folders `Field Notes/` and `Field-Notes/`, and
 URLs that differ only in letter case, such as `Notes.md` beside a `notes/`
 folder, because case-insensitive filesystems and hosts cannot keep them apart.
 Rename one or give it a different `slug`. Windows device names such as `CON`,

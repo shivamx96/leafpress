@@ -420,3 +420,42 @@ func TestUntitledHomeUsesSiteTitle(t *testing.T) {
 	}
 	assertFileContains(t, home, `<h1 class="lp-title">Front Door</h1>`)
 }
+
+func TestGeneratedSectionTitlesKeepFolderNames(t *testing.T) {
+	dir := newTestProject(t)
+	for name, body := range map[string]string{
+		"Q&A/first.md":        "First answer.\n",
+		"field-notes/rain.md": "Rain.\n",
+	} {
+		path := filepath.Join(dir, filepath.FromSlash(name))
+		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(body), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	b := New(config.Default(), Options{})
+	if _, err := b.Build(); err != nil {
+		t.Fatal(err)
+	}
+	site := filepath.Join(dir, "_site")
+	qa := filepath.Join(site, "Q-A", "index.html")
+	notes := filepath.Join(site, "field-notes", "index.html")
+	assertFileContains(t, qa, `<h1 class="lp-section-title">Q&amp;A</h1>`)
+	assertFileContains(t, notes, `<h1 class="lp-section-title">Field Notes</h1>`)
+	assertFileContains(t, filepath.Join(site, "note", "index.html"), `href="/Q-A/"`, `>Q&amp;A</a>`)
+
+	// Preview rebuilds regenerate the same titles.
+	for _, name := range []string{"Q&A/first.md", "field-notes/rain.md"} {
+		path := filepath.Join(dir, filepath.FromSlash(name))
+		if err := os.WriteFile(path, []byte("Edited.\n"), 0644); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := b.RebuildIncremental(path, ChangeModify); err != nil {
+			t.Fatal(err)
+		}
+	}
+	assertFileContains(t, qa, `<h1 class="lp-section-title">Q&amp;A</h1>`)
+	assertFileContains(t, notes, `<h1 class="lp-section-title">Field Notes</h1>`)
+}

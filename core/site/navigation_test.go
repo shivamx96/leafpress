@@ -57,3 +57,24 @@ func mustDate(t *testing.T, value string) time.Time {
 	}
 	return date
 }
+
+func TestSectionTitleUsesFolderNameAsWritten(t *testing.T) {
+	members := []*content.Page{{SourcePath: "Q&A/first.md", Slug: "Q-A/first"}}
+	if got := SectionTitle("Q-A", members); got != "Q&amp;A" {
+		t.Errorf("SectionTitle(Q-A) = %q, want escaped folder name", got)
+	}
+	if got := SectionTitle("b", []*content.Page{{SourcePath: "<b>/x.md", Slug: "b/x"}}); got != "&lt;B&gt;" {
+		t.Errorf("folder name reached markup unescaped: %q", got)
+	}
+	// Renderer pages carry no source path: fall back to the slug.
+	if got := SectionTitle("essays/field-notes", []*content.Page{{Slug: "essays/field-notes/x"}}); got != "Field Notes" {
+		t.Errorf("slug fallback = %q, want Field Notes", got)
+	}
+
+	nav := BuildNavigation([]*content.Page{
+		{SourcePath: "Q&A/first.md", Slug: "Q-A/first", Permalink: "/Q-A/first/"},
+	}, config.Navigation{Mode: config.NavAutomatic})
+	if len(nav) != 1 || nav[0].Label != "Q&amp;A" || nav[0].Path != "/Q-A/" {
+		t.Fatalf("automatic nav = %+v", nav)
+	}
+}

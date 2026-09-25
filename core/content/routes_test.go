@@ -113,3 +113,21 @@ func TestReservedFilenameErrorSuggestsSlug(t *testing.T) {
 		t.Fatalf("error = %v", err)
 	}
 }
+
+func TestFoldersCleaningToOneSectionAreRejected(t *testing.T) {
+	err := ValidateOutputRoutes([]*Page{
+		{SourcePath: "Field Notes/rain.md", Slug: "Field-Notes/rain"},
+		{SourcePath: "Field-Notes/sun.md", Slug: "Field-Notes/sun"},
+	})
+	if err == nil || !strings.Contains(err.Error(), `"Field Notes"`) || !strings.Contains(err.Error(), `"Field-Notes"`) || !strings.Contains(err.Error(), "/Field-Notes/") {
+		t.Fatalf("error = %v", err)
+	}
+	// Pages in the same folder, including its _index.md, are one section.
+	if err := ValidateOutputRoutes([]*Page{
+		{SourcePath: "Q&A/_index.md", Slug: "Q-A", IsIndex: true},
+		{SourcePath: "Q&A/one.md", Slug: "Q-A/one"},
+		{SourcePath: "Q&A/Deep Dive/two.md", Slug: "Q-A/Deep-Dive/two"},
+	}); err != nil {
+		t.Fatalf("one folder rejected: %v", err)
+	}
+}

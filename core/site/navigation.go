@@ -1,6 +1,7 @@
 package site
 
 import (
+	"html"
 	"path"
 	"sort"
 	"strings"
@@ -88,6 +89,22 @@ func TitleCase(s string) string {
 	return cases.Title(language.English).String(strings.ReplaceAll(s, "-", " "))
 }
 
+// SectionTitle is the display title of a section without an explicit index
+// page: its folder name as the author wrote it ("Q&A", not the "Q-A" URL),
+// title-cased by TitleCase. members are pages inside the section; renderer
+// pages carry no source path, so the slug's last segment is the fallback. The
+// result is HTML-escaped like page titles, because folder names reach markup.
+func SectionTitle(section string, members []*content.Page) string {
+	name := path.Base(section)
+	for _, member := range members {
+		if folder, ok := content.FolderName(section, member); ok {
+			name = folder
+			break
+		}
+	}
+	return html.EscapeString(TitleCase(name))
+}
+
 // HasOrigin reports whether baseURL supplies an absolute origin. Artifacts that
 // require absolute URLs (sitemap <loc>, the robots Sitemap directive, RSS
 // links) must be skipped when this is false, rather than emitted with invalid
@@ -132,7 +149,7 @@ func sectionOf(slug string) string {
 // section home instead of being flattened into the garden home.
 func autoSectionEntry(slug string, children []*content.Page) *content.Page {
 	entry := &content.Page{
-		Title:     TitleCase(path.Base(slug)),
+		Title:     SectionTitle(slug, children),
 		Slug:      slug,
 		Permalink: "/" + slug + "/",
 		IsIndex:   true,

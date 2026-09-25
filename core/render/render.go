@@ -372,7 +372,7 @@ func Render(in *Input) (*Output, error) {
 		var buf bytes.Buffer
 		if err := tmpl.RenderIndex(&buf, templates.IndexData{
 			Site:        site,
-			Title:       sitegen.TitleCase(path.Base(dir)),
+			Title:       sitegen.SectionTitle(dir, children[dir]),
 			Pages:       sorted,
 			ShowList:    true,
 			CurrentPath: "/" + dir + "/",
