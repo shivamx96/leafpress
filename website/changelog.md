@@ -4,6 +4,10 @@ date: 2025-01-06
 toc: false
 ---
 
+## Unreleased
+
+- Updated `golang.org/x/text` to v0.39.0 in Core and the CLI to fix [GO-2026-5970](https://pkg.go.dev/vuln/GO-2026-5970), an infinite loop on invalid UTF-8 input that can affect automatic navigation and section index titles.
+
 ## v1.0.0-beta.20
 *September 3, 2026*
 
