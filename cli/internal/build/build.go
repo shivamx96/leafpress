@@ -22,8 +22,6 @@ import (
 	"github.com/shivamx96/leafpress/core/content"
 	sitegen "github.com/shivamx96/leafpress/core/site"
 	"github.com/shivamx96/leafpress/core/templates"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 )
 
 // Options configures the build process
@@ -1142,10 +1140,9 @@ func (b *Builder) rebuildAutoIndex(sectionSlug string, pages []*content.Page) er
 	}
 	defer f.Close()
 
-	title := cases.Title(language.English).String(filepath.Base(sectionSlug))
 	data := templates.IndexData{
 		Site:        b.siteData,
-		Title:       title,
+		Title:       sitegen.SectionTitle(sectionSlug, sectionPages),
 		Pages:       sectionPages,
 		ShowList:    true,
 		CurrentPath: "/" + sectionSlug + "/",
@@ -1376,14 +1373,11 @@ func (b *Builder) generateAutoIndexes(pages []*content.Page, siteData templates.
 					continue
 				}
 
-				// Hyphens read as word separators ("field-notes" → "Field
-				// Notes"), consistent with generateTitleFromSlug's fallback
-				// for _index.md titles.
-				title := cases.Title(language.English).String(
-					strings.ReplaceAll(filepath.Base(dir), "-", " "))
+				// Title the section from its folder name as written, as
+				// automatic navigation does.
 				data := templates.IndexData{
 					Site:        siteData,
-					Title:       title,
+					Title:       sitegen.SectionTitle(dir, sectionPages),
 					Pages:       sectionPages,
 					ShowList:    true,
 					CurrentPath: "/" + dir + "/",
