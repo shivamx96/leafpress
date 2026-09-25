@@ -79,6 +79,16 @@ server {
 }
 ```
 
+### Asset caching
+
+Use a long `max-age` with `immutable` only for the generated client bundle at
+`static/leafpress/app.<32-character-hash>.js`. Its URL changes with its content.
+
+Other assets, including `style.css`, Mermaid, fonts, and images, can change at
+the same URL. Serve them with `Cache-Control: no-cache` so browsers revalidate
+cached copies, or assign your own content-versioned URLs before enabling long
+cache lifetimes. Purging a CDN alone does not clear visitors' browser caches.
+
 ### Build and Run
 
 ```bash

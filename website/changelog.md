@@ -6,6 +6,8 @@ toc: false
 
 ## Unreleased
 
+- The documentation website now revalidates mutable assets such as styles and Mermaid after deployments; one-year immutable caching applies only to the content-hashed client bundle. Custom hosting guidance explains the same policy.
+
 - Release builds now use the same patched Go toolchain as CI, require the release commit to pass the test suite, and scan every platform binary for known vulnerabilities before publishing.
 
 - CI now installs the latest Go vulnerability scanner and checks both Go modules for reachable vulnerabilities using Go 1.25.13, and Dependabot checks Go dependencies and GitHub Actions for updates weekly. The release checklist includes local vulnerability scans and scanner installation instructions.
