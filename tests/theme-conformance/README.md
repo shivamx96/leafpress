@@ -43,3 +43,14 @@ LEAFPRESS_CONFORMANCE_BROWSER=webkit npm run test:themes -- navigation.spec.js
 
 WebKit on macOS uses Option-Tab in the keyboard test to include links in focus
 navigation. Browser-engine checks do not replace a real-device Safari review.
+
+## Secondary browser smoke checks
+
+CI runs `browser-smoke.spec.js` on Firefox and WebKit (four tests per engine),
+while Chromium retains the complete conformance matrix. To reproduce locally:
+
+```sh
+npx playwright install firefox webkit
+LEAFPRESS_CONFORMANCE_BROWSER=firefox npm run test:themes -- browser-smoke.spec.js
+LEAFPRESS_CONFORMANCE_BROWSER=webkit npm run test:themes -- browser-smoke.spec.js
+```

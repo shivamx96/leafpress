@@ -51,13 +51,13 @@ jobs:
       - name: Unit tests with coverage (core)
         working-directory: ./core
         run: |
-          go test -coverprofile=coverage.out ./...
+          go test -race -coverprofile=coverage.out ./...
           go tool cover -func=coverage.out
 
       - name: Unit tests with coverage (cli)
         working-directory: ./cli
         run: |
-          go test -coverprofile=coverage.out ./...
+          go test -race -coverprofile=coverage.out ./...
           go tool cover -func=coverage.out
 
       - name: Run tests
@@ -136,6 +136,64 @@ jobs:
       - name: Check vulnerabilities (cli standalone)
         working-directory: ./cli
         run: GOWORK=off govulncheck ./...
+
+  native-smoke:
+    name: Native smoke (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: .go-version
+          cache-dependency-path: cli/go.sum
+      # Keep expensive suites on Linux; exercise actual OS filesystem,
+      # running-executable replacement, and watcher behavior here.
+      - name: Test native CLI behavior outside the workspace
+        working-directory: cli
+        env:
+          GOWORK: "off"
+        run: >-
+          go test -mod=readonly -timeout=5m
+          ./cmd/leafpress ./internal/cli ./internal/build ./internal/server
+          -run 'TestNative|TestReplaceExecutable|TestExtractBinary|TestBuildRejectsUnsafe|TestBuildRefuses|TestFailedFullBuild|TestPromotionFailure|TestIncremental|TestFilenamesWithSpaces|TestStaticHandler|TestAddWatchDirs|TestDefaultHost|TestDisplayURL|TestRunNew'
+
+  browser-smoke:
+    name: Reader smoke (${{ matrix.browser }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [firefox, webkit]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: .go-version
+          cache-dependency-path: |
+            core/go.sum
+            cli/go.sum
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps ${{ matrix.browser }}
+      - name: Exercise essential reader flows
+        env:
+          LEAFPRESS_CONFORMANCE_BROWSER: ${{ matrix.browser }}
+        run: npm run test:themes -- browser-smoke.spec.js
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: browser-smoke-${{ matrix.browser }}
+          path: playwright-report/
+          retention-days: 14
 
   theme-conformance:
     name: Theme conformance

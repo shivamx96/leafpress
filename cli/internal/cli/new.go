@@ -25,6 +25,11 @@ Supports nested paths like 'projects/my-project'.`,
 
 func runNew(cmd *cobra.Command, args []string) error {
 	name := args[0]
+	// Check the original input before slugify removes Windows drive syntax
+	// and separators. Otherwise an absolute path silently becomes a local name.
+	if !filepath.IsLocal(name) {
+		return fmt.Errorf("invalid page name %q: destination must stay inside the project", name)
+	}
 
 	// Convert name to slug
 	slug := slugify(name)
