@@ -6,6 +6,7 @@ toc: false
 
 ## Unreleased
 
+- `leafpress new` now rejects absolute and parent-traversing input paths before slugifying them, including Windows drive paths that previously became unintended local filenames.
 - CI now exercises native installation, executable replacement, builds, and preview watching on macOS and Windows. Linux retains the complete suite with race detection; Firefox and WebKit run focused reader checks alongside full Chromium conformance.
 
 - Added `leafpress build --strict` to fail on warnings before replacing published output. Config and renderer JSON now reject trailing content, and config/frontmatter errors identify their source file.
