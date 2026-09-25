@@ -6,9 +6,15 @@ on:
       - "v*"
 
 permissions:
-  contents: write
+  contents: read
+
+env:
+  GOTOOLCHAIN: local
 
 jobs:
+  validate:
+    uses: ./.github/workflows/test.yml
+
   verify-modules:
     runs-on: ubuntu-latest
     steps:
@@ -19,7 +25,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v7
         with:
-          go-version: "1.25.5"
+          go-version-file: .go-version
           cache-dependency-path: |
             core/go.sum
             cli/go.sum
@@ -50,7 +56,7 @@ jobs:
           test "$("${GOBIN}/leafpress" version)" = "leafpress ${VERSION}"
 
   build:
-    needs: verify-modules
+    needs: [validate, verify-modules]
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -74,7 +80,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v7
         with:
-          go-version: "1.25.5"
+          go-version-file: .go-version
           cache-dependency-path: |
             core/go.sum
             cli/go.sum
@@ -111,6 +117,21 @@ jobs:
           fi
           go build -ldflags="-s -w" -o $BINARY_NAME ./cmd/leafpress-render
 
+      - name: Install vulnerability scanner
+        env:
+          GOTOOLCHAIN: auto
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+
+      - name: Scan release binaries
+        shell: bash
+        run: |
+          SUFFIX=""
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            SUFFIX=".exe"
+          fi
+          govulncheck -mode=binary "cli/leafpress${SUFFIX}"
+          govulncheck -mode=binary "core/leafpress-render${SUFFIX}"
+
       - name: Package (Unix)
         if: matrix.goos != 'windows'
         run: |
@@ -132,6 +153,8 @@ jobs:
           path: dist/*
 
   release:
+    permissions:
+      contents: write
     needs: build
     runs-on: ubuntu-latest
     steps:

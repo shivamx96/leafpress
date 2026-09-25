@@ -44,3 +44,16 @@ cannot make a valid release fail.
 
 Never publish the CLI tag before its required core tag: Go's module proxy must
 be able to resolve the core dependency when it indexes the CLI module.
+
+## Release validation
+
+`.go-version` pins the toolchain shared by tests, vulnerability scans, and
+release builds. Update this file when adopting a Go security patch. Automatic
+toolchain upgrades are disabled for project checks and builds; only installing
+the latest vulnerability scanner may use a newer compiler.
+
+The release workflow calls the test workflow at the release commit and requires
+all checks to pass before building archives. It then scans both compiled
+binaries for every release target before packaging. A failed test or reachable
+vulnerability blocks publication. The workflow grants write access only to the
+final GitHub release job.
