@@ -8,7 +8,9 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -138,7 +140,44 @@ func TestReplaceExecutable(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if info.Mode().Perm() != 0751 {
+	if runtime.GOOS != "windows" && info.Mode().Perm() != 0751 {
 		t.Errorf("mode = %o, want 751", info.Mode().Perm())
+	}
+}
+
+// Windows handles replacement of a running image differently from an ordinary
+// file. Execute a copy of the test binary so this verifies the actual updater
+// operation without modifying the test runner itself.
+func TestReplaceExecutableWhileRunning(t *testing.T) {
+	if os.Getenv("LEAFPRESS_UPDATE_TEST_CHILD") == "1" {
+		path, err := os.Executable()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := replaceExecutable(path, []byte("replacement")); err != nil {
+			t.Fatal(err)
+		}
+		return
+	}
+	current, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(current)
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(t.TempDir(), "updater.exe")
+	if err := os.WriteFile(path, data, 0755); err != nil {
+		t.Fatal(err)
+	}
+	cmd := exec.Command(path, "-test.run=^TestReplaceExecutableWhileRunning$")
+	cmd.Env = append(os.Environ(), "LEAFPRESS_UPDATE_TEST_CHILD=1")
+	if output, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("running executable replacement: %v\n%s", err, output)
+	}
+	data, err = os.ReadFile(path)
+	if err != nil || string(data) != "replacement" {
+		t.Fatalf("replacement not installed: %v", err)
 	}
 }

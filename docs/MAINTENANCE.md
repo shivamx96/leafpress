@@ -99,3 +99,18 @@ HTML-label path only, leaving `$$...$$` as literal text.
 - Renderer contract (`docs/05_RENDERER_CONTRACT.md`) and asset ADR
   (`docs/07_ASSET_ARCHITECTURE.md`) must match CLI + `leafpress-render`
   behavior; prefer fixing code+docs in the same change when they drift.
+
+## CI platform coverage
+
+Linux runs the complete Go suite with the race detector, shell and benchmark
+smoke checks, vulnerability scans, nginx cache checks, and Chromium conformance.
+macOS and Windows run a focused standalone CLI suite: installation, scaffolding,
+build/output safety, running-executable replacement, filesystem watching, and
+serving the rebuilt page. These jobs execute native binaries; cross-compilation
+in the release matrix alone cannot exercise operating-system behavior.
+
+Firefox and WebKit each run four essential-reader smoke tests on Linux. These
+check article rendering, theme switching, search, and graph interactions without
+repeating the full Chromium visual matrix. The release workflow reuses all of
+these checks, so failures block publication. Real-device Safari review remains
+a release maintenance task.

@@ -6,6 +6,8 @@ toc: false
 
 ## Unreleased
 
+- CI now exercises native installation, executable replacement, builds, and preview watching on macOS and Windows. Linux retains the complete suite with race detection; Firefox and WebKit run focused reader checks alongside full Chromium conformance.
+
 - Added `leafpress build --strict` to fail on warnings before replacing published output. Config and renderer JSON now reject trailing content, and config/frontmatter errors identify their source file.
 
 - Builds now stop on page URLs that would not work on every platform: Windows device names such as `CON` and routes that differ only in letter case, such as `Notes.md` beside a `notes/` folder. The embedded renderer applies the same validation to host-supplied slugs and rejects whitespace, URL delimiters (`#`, `?`, `%`, `&`), quotes, and filesystem-unsafe punctuation. Unicode names remain supported.
