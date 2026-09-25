@@ -9,6 +9,15 @@ this file is only *what to do* and *how to verify*.
 - [ ] Bump version / prepare release notes (`website/changelog.md`, tags).
 - [ ] `go test ./...` from both module roots that ship (`core/`, `cli/`) as
       used in CI.
+- [ ] **Dependency vulnerabilities:** use the Go version pinned in
+      `.github/workflows/test.yml` and install the latest scanner with
+      `GOTOOLCHAIN=auto go install golang.org/x/vuln/cmd/govulncheck@latest`
+      (allows a newer toolchain for scanner installation only). Ensure the Go
+      binary directory (`go env GOBIN`, or `$(go env GOPATH)/bin` when unset)
+      is on `PATH`. Run `govulncheck ./...` from `core/` and
+      `GOWORK=off govulncheck ./...` from `cli/` to check its published Core
+      dependency. Both commands must exit successfully with zero reachable
+      vulnerabilities, as required by CI.
 - [ ] Smoke a CLI build of `website/` (or a fixture garden): pages render,
       graph/search/previews work, no unexpected console/network calls.
 - [ ] Confirm the cross-interface parity suite still passes
