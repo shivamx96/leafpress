@@ -63,7 +63,7 @@ Rename one or give it a different `slug`. Windows device names such as `CON`,
 
 All fields are optional:
 
-- `title` — Page title (falls back to a title generated from the filename)
+- `title` — Page title (falls back to a title generated from the filename; an untitled home page uses the site title)
 - `slug` — URL name for the page, replacing the name derived from its filename (see [Page filenames and URLs](#page-filenames-and-urls))
 - `date` — Publication date (YYYY-MM-DD)
 - `modified` — Last modified date

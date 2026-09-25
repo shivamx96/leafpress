@@ -189,6 +189,7 @@ func (b *Builder) Build() (result *Stats, resultErr error) {
 	// Escape page metadata before anything indexes or renders it: templates
 	// are text/template, so a quote in a title or description would otherwise
 	// break the og:/meta tag it lands in.
+	sitegen.ApplyHomeTitle(pages, b.cfg.Site.Title)
 	sitegen.EscapePageMeta(pages)
 
 	// Build section index for O(1) lookups
@@ -797,6 +798,7 @@ func (b *Builder) rebuildMarkdownFile(relPath string, changeType ChangeType) (*I
 	}
 	// Freshly parsed metadata is raw; the cached pages around it are already
 	// escaped. Escape here so an incremental rebuild matches a full build.
+	sitegen.ApplyHomeTitle([]*content.Page{changedPage}, b.cfg.Site.Title)
 	sitegen.EscapePageMeta([]*content.Page{changedPage})
 
 	// Skip drafts if needed

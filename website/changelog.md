@@ -6,6 +6,8 @@ toc: false
 
 ## Unreleased
 
+- A home page without a frontmatter `title` now uses the site title in its heading, page metadata, search index, and graph instead of showing `.`, matching the embedded renderer.
+
 - `leafpress new` now rejects absolute and parent-traversing input paths before slugifying them, including Windows drive paths that previously became unintended local filenames.
 - CI now exercises native installation, executable replacement, builds, and preview watching on macOS and Windows. Linux retains the complete suite with race detection; Firefox and WebKit run focused reader checks alongside full Chromium conformance.
 

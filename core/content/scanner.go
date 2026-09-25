@@ -216,9 +216,10 @@ func (s *Scanner) parsePage(absPath, relPath string, info os.FileInfo) (*Page, e
 	}
 
 	// Generate title from the original filename if not set, so "Q&A.md"
-	// keeps its punctuation even though its URL is Q-A.
+	// keeps its punctuation even though its URL is Q-A. The home page has no
+	// name to derive one from; builds give it the site title instead.
 	title := fm.Title
-	if title == "" {
+	if title == "" && source != "" {
 		title = generateTitleFromSlug(path.Base(source))
 	}
 
