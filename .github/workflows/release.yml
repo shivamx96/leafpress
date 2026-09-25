@@ -89,6 +89,7 @@ jobs:
         id: version
         run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
+      # Keep Go symbols for accurate binary vulnerability scans; omit DWARF only.
       - name: Build CLI
         env:
           GOOS: ${{ matrix.goos }}
@@ -100,7 +101,7 @@ jobs:
           if [ "${{ matrix.goos }}" = "windows" ]; then
             BINARY_NAME="leafpress.exe"
           fi
-          go build -ldflags="-s -w -X main.version=${{ steps.version.outputs.VERSION }}" -o $BINARY_NAME ./cmd/leafpress
+          go build -ldflags="-w -X main.version=${{ steps.version.outputs.VERSION }}" -o $BINARY_NAME ./cmd/leafpress
 
       # The render bridge ships as its own artifact so hosted integrations can
       # download just this binary (pinned + checksum-verified), not the CLI.
@@ -115,7 +116,7 @@ jobs:
           if [ "${{ matrix.goos }}" = "windows" ]; then
             BINARY_NAME="leafpress-render.exe"
           fi
-          go build -ldflags="-s -w" -o $BINARY_NAME ./cmd/leafpress-render
+          go build -ldflags="-w" -o $BINARY_NAME ./cmd/leafpress-render
 
       - name: Install vulnerability scanner
         env:

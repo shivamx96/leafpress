@@ -54,6 +54,8 @@ the latest vulnerability scanner may use a newer compiler.
 
 The release workflow calls the test workflow at the release commit and requires
 all checks to pass before building archives. It then scans both compiled
-binaries for every release target before packaging. A failed test or reachable
+binaries for every release target before packaging. Release binaries retain Go
+symbols (only DWARF debug data is stripped) so scans can identify linked code
+instead of conservatively flagging entire dependency modules. A failed test or reachable
 vulnerability blocks publication. The workflow grants write access only to the
 final GitHub release job.
