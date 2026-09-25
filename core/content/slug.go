@@ -118,3 +118,29 @@ func pageSlug(source, frontmatterSlug string, isIndex bool) (string, error) {
 	}
 	return strings.Join(segments, "/"), nil
 }
+
+// FolderName returns the name of folder section as the author wrote it, read
+// from a page inside that folder ("Q&A" for section "Q-A"). It reports false
+// when page has no source path, as with renderer input, or does not belong to
+// section. Folder segments map one to one onto slug segments; a frontmatter
+// slug replaces only the page's own name.
+func FolderName(section string, page *Page) (string, bool) {
+	if section == "" || page == nil || page.SourcePath == "" {
+		return "", false
+	}
+	sectionParts := strings.Split(section, "/")
+	sourceParts := strings.Split(sourceRoute(page.SourcePath), "/")
+	slugParts := strings.Split(page.Slug, "/")
+	if len(sourceParts) != len(slugParts) || len(sectionParts) > len(slugParts) {
+		return "", false
+	}
+	if !page.IsIndex && len(sectionParts) == len(slugParts) {
+		return "", false // an ordinary page is not a folder
+	}
+	for i, part := range sectionParts {
+		if slugParts[i] != part {
+			return "", false
+		}
+	}
+	return sourceParts[len(sectionParts)-1], true
+}

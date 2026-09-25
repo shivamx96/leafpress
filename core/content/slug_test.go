@@ -174,3 +174,28 @@ func TestScanReportsFileWithInvalidFrontmatterSlug(t *testing.T) {
 		}
 	}
 }
+
+func TestFolderName(t *testing.T) {
+	page := &Page{SourcePath: filepath.FromSlash("Q&A/Field Notes/My Note.md"), Slug: "Q-A/Field-Notes/first-note"}
+	section := &Page{SourcePath: filepath.FromSlash("Q&A/_index.md"), Slug: "Q-A", IsIndex: true}
+	tests := []struct {
+		section string
+		page    *Page
+		want    string
+		ok      bool
+	}{
+		{"Q-A", page, "Q&A", true},
+		{"Q-A/Field-Notes", page, "Field Notes", true},
+		{"Q-A", section, "Q&A", true},
+		{"Q-A/Field-Notes/first-note", page, "", false}, // a page, not a folder
+		{"Other", page, "", false},
+		{"", page, "", false},
+		{"Q-A", &Page{Slug: "Q-A/renderer-page"}, "", false}, // no source path
+	}
+	for _, tt := range tests {
+		got, ok := FolderName(tt.section, tt.page)
+		if got != tt.want || ok != tt.ok {
+			t.Errorf("FolderName(%q, %s) = %q, %v; want %q, %v", tt.section, tt.page.Slug, got, ok, tt.want, tt.ok)
+		}
+	}
+}

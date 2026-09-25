@@ -63,6 +63,31 @@ func ValidateOutputRoutes(pages []*Page) error {
 		return nil
 	}
 
+	// Folders whose names clean to the same URL ("Field Notes" and
+	// "Field-Notes") would silently merge into one section.
+	folders := make(map[string]string)
+	for _, page := range pages {
+		if page == nil || page.SourcePath == "" {
+			continue
+		}
+		slugParts := strings.Split(page.Slug, "/")
+		folderCount := len(slugParts) - 1
+		if page.IsIndex {
+			folderCount = len(slugParts)
+		}
+		for i := 1; i <= folderCount; i++ {
+			section := strings.Join(slugParts[:i], "/")
+			name, ok := FolderName(section, page)
+			if !ok {
+				break
+			}
+			if previous, exists := folders[section]; exists && previous != name {
+				return fmt.Errorf("folders %q and %q both publish at %s; rename one of them", previous, name, displayRoute(section))
+			}
+			folders[section] = name
+		}
+	}
+
 	indexBySection := make(map[string]bool)
 	for _, page := range pages {
 		if page == nil {
