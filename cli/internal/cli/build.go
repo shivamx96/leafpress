@@ -24,6 +24,7 @@ func buildCmd() *cobra.Command {
 	}
 
 	cmd.Flags().BoolVarP(&includeDrafts, "drafts", "d", false, "include draft pages")
+	cmd.Flags().Bool("strict", false, "fail on build warnings without replacing existing output")
 	cmd.Flags().StringVar(&cpuProfile, "cpuprofile", "", "write CPU profile to file")
 	cmd.Flags().StringVar(&memProfile, "memprofile", "", "write memory profile to file")
 
@@ -53,9 +54,14 @@ func runBuild(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create builder
+	strict, err := cmd.Flags().GetBool("strict")
+	if err != nil {
+		return err
+	}
 	builder := build.New(cfg, build.Options{
 		IncludeDrafts: includeDrafts,
 		Verbose:       isVerbose(),
+		Strict:        strict,
 	})
 
 	// Run build

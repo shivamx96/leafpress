@@ -273,6 +273,7 @@ Each entry in `content.pages`:
 - **Explicit navigation mode.** Nav is `automatic` or `explicit` by the `mode`
   value alone.
 - **No silent loss.** Conflicting or unknown fields are rejected, not ignored.
+  Input must contain exactly one JSON value; trailing JSON or garbage is invalid.
 - **Safe paths.** Every slug and output path is rejected if it contains unsafe
   characters or dot segments.
 - **Known origin for absolute URLs.** When `site.baseURL` is empty, artifacts

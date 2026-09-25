@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -449,7 +450,11 @@ func Load(path string) (*Config, error) {
 		}
 		return nil, fmt.Errorf("failed to read config: %w", err)
 	}
-	return Parse(data)
+	cfg, err := Parse(data)
+	if err != nil {
+		return nil, fmt.Errorf("config %q: %w", path, err)
+	}
+	return cfg, nil
 }
 
 // Parse decodes leafpress.json bytes using the exact same default overlay and
@@ -467,6 +472,11 @@ func Parse(data []byte) (*Config, error) {
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(cfg); err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
+	}
+
+	var trailing json.RawMessage
+	if err := dec.Decode(&trailing); err != io.EOF {
+		return nil, fmt.Errorf("failed to parse config: expected exactly one JSON value with no trailing content")
 	}
 
 	// Apply defaults for missing values. Starting from Default() and

@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html"
+	"io"
 	"net/url"
 	"path"
 	"regexp"
@@ -212,6 +213,11 @@ func Run(raw []byte) (*Output, error) {
 	if err := dec.Decode(&in); err != nil {
 		return nil, inputErrorf("invalid input JSON: %v", err)
 	}
+	var trailing json.RawMessage
+	if err := dec.Decode(&trailing); err != io.EOF {
+		return nil, inputErrorf("invalid input JSON: expected exactly one JSON value with no trailing content")
+	}
+
 	return Render(&in)
 }
 

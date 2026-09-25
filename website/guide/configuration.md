@@ -9,6 +9,18 @@ and `build`. Every field is optional and has a sensible default, so a tiny
 config goes a long way. The legacy `deploy` section remains accepted during
 migration but is not used.
 
+Configuration must contain exactly one JSON object. Unknown fields and trailing
+content are rejected; errors identify the configuration file.
+
+## Strict builds
+
+For CI publishing, run `leafpress build --strict`. Any build warning, including
+broken wiki-links and fonts without a local source, fails the command before
+replacing the last successful output. Warning details are printed without
+requiring `--verbose`. An initial failed strict build publishes no site.
+Ordinary `leafpress build` still permits warnings. Strict mode applies to full
+builds, not development-server incremental rebuilds.
+
 ## Minimal Config
 
 ```json
