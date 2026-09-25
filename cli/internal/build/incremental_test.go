@@ -383,3 +383,40 @@ func TestFilenamesWithSpacesPublishCleanURLsAndFollowFrontmatterSlug(t *testing.
 		t.Fatalf("old URL remains after the frontmatter slug changed: %v", err)
 	}
 }
+
+func TestUntitledHomeUsesSiteTitle(t *testing.T) {
+	dir := newTestProject(t)
+	homePath := filepath.Join(dir, "index.md")
+	if err := os.WriteFile(homePath, []byte("# Welcome\n\nHome body.\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	cfg := config.Default()
+	cfg.Site.Title = "Q&A Garden"
+	cfg.Features.Graph = true
+	b := New(cfg, Options{})
+	if _, err := b.Build(); err != nil {
+		t.Fatal(err)
+	}
+	site := filepath.Join(dir, "_site")
+	home := filepath.Join(site, "index.html")
+	assertFileContains(t, home, `<h1 class="lp-title">Q&amp;A Garden</h1>`, `og:title" content="Q&amp;A Garden"`)
+	assertFileNotContains(t, home, `<h1 class="lp-title">.</h1>`)
+	assertFileContains(t, filepath.Join(site, "search-index.json"), `"title": "Q\u0026A Garden"`)
+	assertFileContains(t, filepath.Join(site, "graph.json"), `"title": "Q\u0026A Garden"`)
+
+	// Preview rebuilds apply the same fallback, and a frontmatter title wins.
+	if err := os.WriteFile(homePath, []byte("# Welcome\n\nEdited body.\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := b.RebuildIncremental(homePath, ChangeModify); err != nil {
+		t.Fatal(err)
+	}
+	assertFileContains(t, home, `<h1 class="lp-title">Q&amp;A Garden</h1>`, "Edited body.")
+	if err := os.WriteFile(homePath, []byte("---\ntitle: Front Door\n---\nBody.\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := b.RebuildIncremental(homePath, ChangeModify); err != nil {
+		t.Fatal(err)
+	}
+	assertFileContains(t, home, `<h1 class="lp-title">Front Door</h1>`)
+}
