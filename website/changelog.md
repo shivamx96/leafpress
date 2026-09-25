@@ -4,27 +4,19 @@ date: 2025-01-06
 toc: false
 ---
 
-## Unreleased
+## v1.0.0-beta.21
+*September 25, 2026*
 
-- Generated section titles and automatic navigation labels keep folder names as written, so a `Q&A/` folder without an `_index.md` is titled "Q&A" rather than "Q A". Preview rebuilds now title sections the same way as full builds, and folders whose names clean to the same URL, such as `Field Notes/` and `Field-Notes/`, stop the build instead of merging.
-
-- A home page without a frontmatter `title` now uses the site title in its heading, page metadata, search index, and graph instead of showing `.`, matching the embedded renderer.
-
-- `leafpress new` now rejects absolute and parent-traversing input paths before slugifying them, including Windows drive paths that previously became unintended local filenames.
-- CI now exercises native installation, executable replacement, builds, and preview watching on macOS and Windows. Linux retains the complete suite with race detection; Firefox and WebKit run focused reader checks alongside full Chromium conformance.
-
-- Added `leafpress build --strict` to fail on warnings before replacing published output. Config and renderer JSON now reject trailing content, and config/frontmatter errors identify their source file.
-
-- Builds now stop on page URLs that would not work on every platform: Windows device names such as `CON` and routes that differ only in letter case, such as `Notes.md` beside a `notes/` folder. The embedded renderer applies the same validation to host-supplied slugs and rejects whitespace, URL delimiters (`#`, `?`, `%`, `&`), quotes, and filesystem-unsafe punctuation. Unicode names remain supported.
-
-- Page URLs are now URL-safe even when filenames contain spaces or punctuation: `My Note.md` publishes at `/My-Note/` and `Q&A.md` at `/Q-A/`, with letter case and Unicode kept. Filenames that were already URL-safe keep their URLs. A new `slug` frontmatter field sets a page's URL name, and wiki-links still resolve by the original filename. **Breaking:** pages whose filenames contain spaces or punctuation move to the cleaned URL, so update external links to them or set `slug` to choose the new URL.
-
-- The documentation website now revalidates mutable assets such as styles and Mermaid after deployments; one-year immutable caching applies only to the content-hashed client bundle. Custom hosting guidance explains the same policy.
-
-- Release builds now use the same patched Go toolchain as CI, require the release commit to pass the test suite, and scan every platform binary for known vulnerabilities before publishing.
-
-- CI now installs the latest Go vulnerability scanner and checks both Go modules for reachable vulnerabilities using Go 1.25.13, and Dependabot checks Go dependencies and GitHub Actions for updates weekly. The release checklist includes local vulnerability scans and scanner installation instructions.
+- **Breaking: page URLs are cleaned from filenames.** Spaces and punctuation in file and folder names become hyphens, while letter case and Unicode are kept: `My Note.md` publishes at `/My-Note/`, `Q&A.md` at `/Q-A/`, and `Field Notes/` at `/Field-Notes/`. Filenames that were already URL-safe keep their URLs. Update external links to affected pages, or set the new `slug` frontmatter field to choose a page's URL name. Wiki-links still resolve by the original filename, and titles, section titles, and navigation labels keep the original punctuation.
+- **Breaking: builds reject routes that are not portable.** Windows device names such as `CON`, URLs that differ only in letter case (`Notes.md` beside a `notes/` folder), and files or folders whose names clean to the same URL (`My Note.md` and `My-Note.md`) stop the build and name what collided.
+- **Breaking for renderer hosts: stricter input.** `leafpress-render` applies the same route validation to host-supplied slugs and rejects whitespace, URL delimiters (`#`, `?`, `%`, `&`), quotes, filesystem-unsafe punctuation, Windows device names, and case-only collisions. Renderer input and `leafpress.json` must contain exactly one JSON value; trailing content is rejected.
+- Added `leafpress build --strict`, which prints warnings such as broken wiki-links and fails before replacing the last successful output. Config and frontmatter errors now name their source file.
+- A home page without a frontmatter `title` uses the site title in its heading, page metadata, search index, and graph instead of showing `.`, matching the embedded renderer.
+- Preview rebuilds title generated sections the same way as full builds; `field-notes/` no longer becomes "Field-Notes" after an edit.
+- `leafpress new` rejects absolute and parent-traversing input paths, including Windows drive paths that previously became unintended local filenames.
 - Updated `golang.org/x/text` to v0.39.0 in Core and the CLI to fix [GO-2026-5970](https://pkg.go.dev/vuln/GO-2026-5970), an infinite loop on invalid UTF-8 input that can affect automatic navigation and section index titles.
+- Release builds use the same patched Go toolchain as CI, require the release commit to pass the test suite, and scan every platform binary for known vulnerabilities before publishing. CI checks both Go modules for reachable vulnerabilities, runs native installation, build, update, and preview checks on macOS and Windows, and runs Firefox and WebKit reader checks alongside full Chromium conformance. Dependabot proposes Go and GitHub Actions updates weekly.
+- The documentation website revalidates mutable assets such as styles and Mermaid after deployments; one-year immutable caching applies only to the content-hashed client bundle. Custom hosting guidance explains the same policy.
 
 ## v1.0.0-beta.20
 *September 3, 2026*
