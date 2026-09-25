@@ -69,6 +69,9 @@ jobs:
           LEAFPRESS_BIN: ${{ github.workspace }}/cli/leafpress
         run: ./benchmark/test.sh
 
+      - name: Verify website cache headers
+        run: bash tests/website-cache.sh
+
       - name: Upload coverage reports
         uses: actions/upload-artifact@v7
         with:
