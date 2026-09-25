@@ -236,6 +236,45 @@ func TestBuildPreservesLongMarkdownLines(t *testing.T) {
 	assertFileContains(t, filepath.Join(dir, "_site", "note", "index.html"), longLine)
 }
 
+func TestBuildRejectsUnsafePageURLWithoutReplacingOutput(t *testing.T) {
+	// Names must be creatable on every native CI platform; Windows cannot
+	// create device names such as CON.md.
+	for _, tt := range []struct{ file, want string }{
+		{"NOTE/child.md", `generated section "NOTE"`}, // case-only collision with note.md
+		{"&.md", `filename "&"`},                      // nothing URL-safe remains
+	} {
+		t.Run(tt.file, func(t *testing.T) {
+			dir := newTestProject(t)
+			if err := os.WriteFile(filepath.Join(dir, "index.md"), []byte("# Published\n"), 0644); err != nil {
+				t.Fatal(err)
+			}
+			builder := New(config.Default(), Options{})
+			if _, err := builder.Build(); err != nil {
+				t.Fatal(err)
+			}
+			output := filepath.Join(dir, "_site", "index.html")
+			before, err := os.ReadFile(output)
+			if err != nil {
+				t.Fatal(err)
+			}
+			source := filepath.Join(dir, filepath.FromSlash(tt.file))
+			if err := os.MkdirAll(filepath.Dir(source), 0755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(source, []byte("# Unsafe\n"), 0644); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := builder.Build(); err == nil || !strings.Contains(err.Error(), tt.want) {
+				t.Fatalf("build error = %v, want containing %q", err, tt.want)
+			}
+			after, err := os.ReadFile(output)
+			if err != nil || string(after) != string(before) {
+				t.Fatalf("failed build changed published output: %v", err)
+			}
+		})
+	}
+}
+
 func TestBuildRefusesTraversalOutputWithoutDeletingOutsideFiles(t *testing.T) {
 	parent := t.TempDir()
 	garden := filepath.Join(parent, "garden")

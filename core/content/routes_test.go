@@ -72,3 +72,44 @@ func TestValidateOutputRoutes(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateSlug(t *testing.T) {
+	for _, slug := range []string{"", "notes/hello-world", "éclair/日本語", "notes/e\u0301clair", "release/v1.2", "com10"} {
+		if err := ValidateSlug(slug); err != nil {
+			t.Errorf("ValidateSlug(%q): %v", slug, err)
+		}
+	}
+	for _, slug := range []string{"has#fragment", "query?x", "encoded%2fpath", "a&b", "a b", "a\u00a0b", "a\x00b", "a\x7fb", "a\xff", `a\b`, `a"b`, "a'b", "<a>", "a:b", "a*b", "a|b", "../x", "a/./b", "a//b", "/a", "a/", "a.", "CON", "aux.txt", "notes/LPT1", "COM¹", "CONOUT$"} {
+		if err := ValidateSlug(slug); err == nil {
+			t.Errorf("ValidateSlug(%q) succeeded", slug)
+		}
+	}
+}
+
+func TestOutputRoutesRejectUnsafePathsAndCaseCollisions(t *testing.T) {
+	for _, pages := range [][]*Page{
+		{{SourcePath: "has#fragment.md", Slug: "has#fragment"}},
+		{{SourcePath: "a.md", Slug: "a", Tags: []string{"CON"}}},
+		{{SourcePath: "Notes.md", Slug: "Notes"}, {SourcePath: "notes.md", Slug: "notes"}},
+		{{SourcePath: "Notes.md", Slug: "Notes"}, {SourcePath: "notes/child.md", Slug: "notes/child"}},
+	} {
+		if err := ValidateOutputRoutes(pages); err == nil {
+			t.Errorf("ValidateOutputRoutes(%+v) succeeded", pages)
+		}
+	}
+}
+
+func TestCleanedSlugsPassRouteValidation(t *testing.T) {
+	for _, name := range []string{"My Note", "Q&A", "has#fragment", "a?b", "Wait...", `quote"and'apostrophe`, "tab\tname", "a:b*c|d", "<tag>", "éclair notes"} {
+		if err := ValidateSlug(SlugSegment(name)); err != nil {
+			t.Errorf("ValidateSlug(SlugSegment(%q) = %q): %v", name, SlugSegment(name), err)
+		}
+	}
+}
+
+func TestReservedFilenameErrorSuggestsSlug(t *testing.T) {
+	err := ValidateOutputRoutes([]*Page{{SourcePath: "notes/con.md", Slug: "notes/con"}})
+	if err == nil || !strings.Contains(err.Error(), `page "notes/con.md"`) || !strings.Contains(err.Error(), "slug in the page's frontmatter") {
+		t.Fatalf("error = %v", err)
+	}
+}

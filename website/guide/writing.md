@@ -52,8 +52,12 @@ frontmatter slug must already be URL-safe (`My-Note`, not `My Note`) and cannot
 contain slashes. Section and home index pages take their URL from their folder,
 so they do not accept `slug`.
 
-If two files produce the same URL, such as `My Note.md` and `My-Note.md`, the
-build stops and names both files. Rename one or give it a different `slug`.
+If two pages would share a URL, the build stops and names both files. This
+includes cleaned names that meet, such as `My Note.md` and `My-Note.md`, and
+URLs that differ only in letter case, such as `Notes.md` beside a `notes/`
+folder, because case-insensitive filesystems and hosts cannot keep them apart.
+Rename one or give it a different `slug`. Windows device names such as `CON`,
+`NUL`, or `COM1` are also rejected as page and folder names.
 
 ## Frontmatter
 
