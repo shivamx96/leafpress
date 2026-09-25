@@ -6,6 +6,8 @@ toc: false
 
 ## Unreleased
 
+- Page URLs are now URL-safe even when filenames contain spaces or punctuation: `My Note.md` publishes at `/My-Note/` and `Q&A.md` at `/Q-A/`, with letter case and Unicode kept. Filenames that were already URL-safe keep their URLs. A new `slug` frontmatter field sets a page's URL name, and wiki-links still resolve by the original filename. **Breaking:** pages whose filenames contain spaces or punctuation move to the cleaned URL, so update external links to them or set `slug` to choose the new URL.
+
 - The documentation website now revalidates mutable assets such as styles and Mermaid after deployments; one-year immutable caching applies only to the content-hashed client bundle. Custom hosting guidance explains the same policy.
 
 - Release builds now use the same patched Go toolchain as CI, require the release commit to pass the test suite, and scan every platform binary for known vulnerabilities before publishing.

@@ -30,6 +30,10 @@ func ValidateOutputRoutes(pages []*Page) error {
 			continue
 		}
 		if err := claim(page.Slug, pageRouteOwner(page)); err != nil {
+			if page.SourcePath != "" {
+				// Cleaned filenames can meet: "My Note.md" and "My-Note.md".
+				return fmt.Errorf("%w; rename one of the files or give one a different slug in its frontmatter", err)
+			}
 			return err
 		}
 		if page.IsIndex {

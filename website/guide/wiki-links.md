@@ -13,9 +13,11 @@ Link to any page using double brackets:
 [[page-slug]]
 ```
 
-The slug is the filename without `.md`:
+Link with the filename without `.md`, the page's URL slug, or its title:
 - `my-note.md` → `[[my-note]]`
 - `projects/website.md` → `[[projects/website]]`
+- `My Note.md` (published at `/My-Note/`) → `[[My Note]]` or `[[My-Note]]`
+- A page with `slug: first-note` in its frontmatter → `[[first-note]]` or its filename
 
 ### Custom Display Text
 

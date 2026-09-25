@@ -29,11 +29,38 @@ tags: [ideas, projects]
 Your content here.
 ```
 
+### Page filenames and URLs
+
+A page's URL comes from its path: `notes/éclair.md` publishes at
+`/notes/éclair/`. Letters (including Unicode), numbers, hyphens, underscores,
+and dots are kept as written, including their case. Each run of spaces or other
+characters becomes a single hyphen, or is dropped at the start or end of a name,
+and trailing dots are removed. `Field Notes/Q&A (draft).md` publishes at
+`/Field-Notes/Q-A-draft/`. Folder names follow the same rule.
+
+Set `slug` in frontmatter to choose the page's URL name yourself. The folder
+still decides the section:
+
+```markdown
+---
+slug: first-note
+---
+```
+
+With this frontmatter, `notes/My Note.md` publishes at `/notes/first-note/`. A
+frontmatter slug must already be URL-safe (`My-Note`, not `My Note`) and cannot
+contain slashes. Section and home index pages take their URL from their folder,
+so they do not accept `slug`.
+
+If two files produce the same URL, such as `My Note.md` and `My-Note.md`, the
+build stops and names both files. Rename one or give it a different `slug`.
+
 ## Frontmatter
 
 All fields are optional:
 
 - `title` — Page title (falls back to a title generated from the filename)
+- `slug` — URL name for the page, replacing the name derived from its filename (see [Page filenames and URLs](#page-filenames-and-urls))
 - `date` — Publication date (YYYY-MM-DD)
 - `modified` — Last modified date
 - `tags` — List of tags: `[tag1, tag2]`

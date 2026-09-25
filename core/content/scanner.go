@@ -1,6 +1,7 @@
 package content
 
 import (
+	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -204,17 +205,22 @@ func (s *Scanner) parsePage(absPath, relPath string, info os.FileInfo) (*Page, e
 	// Date is used for display/sorting, same as created
 	date := created
 
-	// Generate slug
-	slug := generateSlug(relPath)
-
-	// Generate title from filename if not set
-	title := fm.Title
-	if title == "" {
-		title = generateTitleFromSlug(filepath.Base(slug))
-	}
-
 	// Check if this is a section index
 	isIndex := filepath.Base(relPath) == "_index.md"
+
+	// Generate slug: frontmatter first, then the URL-safe file path
+	source := sourceRoute(relPath)
+	slug, err := pageSlug(source, fm.Slug, isIndex)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", filepath.ToSlash(relPath), err)
+	}
+
+	// Generate title from the original filename if not set, so "Q&A.md"
+	// keeps its punctuation even though its URL is Q-A.
+	title := fm.Title
+	if title == "" {
+		title = generateTitleFromSlug(path.Base(source))
+	}
 
 	// Generate output path and permalink
 	outputPath := generateOutputPath(slug, isIndex)
@@ -264,31 +270,6 @@ func ParseSingleFile(rootDir, relPath string) (*Page, error) {
 
 	scanner := &Scanner{rootDir: rootDir}
 	return scanner.parsePage(absPath, relPath, info)
-}
-
-// generateSlug creates a URL slug from a file path
-func generateSlug(relPath string) string {
-	// Remove .md extension
-	slug := strings.TrimSuffix(relPath, ".md")
-
-	// Convert to forward slashes (for Windows compatibility)
-	slug = filepath.ToSlash(slug)
-
-	// Handle the reserved _index.md basename only. A normal filename such as
-	// migration_index.md must retain its own route.
-	if path.Base(slug) == "_index" {
-		slug = path.Dir(slug)
-		if slug == "." {
-			slug = ""
-		}
-	}
-
-	// Handle index.md at root
-	if slug == "index" {
-		slug = ""
-	}
-
-	return slug
 }
 
 // generateOutputPath creates the output file path
