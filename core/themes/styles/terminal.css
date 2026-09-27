@@ -70,7 +70,7 @@ html {
 .lp-body {
   background: transparent;
   color: var(--lp-terminal-ink);
-  font-family: var(--lp-font-mono);
+  font-family: var(--lp-font-body);
   font-variant-ligatures: none;
   font-variant-numeric: tabular-nums;
   line-height: 1.65;
@@ -112,7 +112,7 @@ html {
 
 .lp-nav-title {
   color: var(--lp-terminal-ink);
-  font-family: var(--lp-font-mono);
+  font-family: var(--lp-font-heading);
   font-weight: 650;
   letter-spacing: -0.035em;
 }
@@ -129,7 +129,7 @@ html {
   position: relative;
   padding: 0.2rem 0;
   color: var(--lp-terminal-muted);
-  font-family: var(--lp-font-mono);
+  font-family: var(--lp-font-body);
   line-height: 1.35;
 }
 
@@ -299,7 +299,7 @@ html {
 .lp-title,
 .lp-section-title {
   color: var(--lp-terminal-ink);
-  font-family: var(--lp-font-mono);
+  font-family: var(--lp-font-heading);
   font-weight: 650;
   letter-spacing: -0.045em;
   line-height: 1.2;
@@ -379,7 +379,7 @@ html {
 .lp-section-intro h5,
 .lp-section-intro h6 {
   color: var(--lp-terminal-ink);
-  font-family: var(--lp-font-mono);
+  font-family: var(--lp-font-heading);
   font-weight: 650;
   letter-spacing: -0.035em;
 }
@@ -445,7 +445,7 @@ html {
   border-radius: 0;
   background: color-mix(in srgb, var(--lp-terminal-cyan) 4%, var(--lp-terminal-panel));
   color: var(--lp-terminal-ink);
-  font-family: var(--lp-font-mono);
+  font-family: var(--lp-font-body);
   font-style: normal;
   line-height: 1.65;
 }
@@ -627,7 +627,7 @@ html {
 }
 
 .lp-index-title {
-  font-family: var(--lp-font-mono);
+  font-family: var(--lp-font-heading);
   font-weight: 600;
 }
 
@@ -849,7 +849,7 @@ html {
 
 .lp-search-result-title {
   color: var(--lp-terminal-ink);
-  font-family: var(--lp-font-mono);
+  font-family: var(--lp-font-heading);
   font-weight: 650;
 }
 
@@ -912,7 +912,7 @@ html {
 
 .lp-link-preview-title {
   color: var(--lp-terminal-cyan);
-  font-family: var(--lp-font-mono);
+  font-family: var(--lp-font-heading);
 }
 
 .lp-link-preview-title::before {
@@ -929,7 +929,7 @@ html {
 
 .lp-not-found-title {
   color: var(--lp-terminal-red);
-  font-family: var(--lp-font-mono);
+  font-family: var(--lp-font-heading);
   font-size: var(--lp-font-3xl);
   line-height: 1.2;
 }

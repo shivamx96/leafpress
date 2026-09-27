@@ -86,3 +86,44 @@ func TestLookupRejectsUnknownPreset(t *testing.T) {
 		t.Error("unknown preset unexpectedly resolved")
 	}
 }
+
+func TestTerminalThemeRespectsSemanticFontRoles(t *testing.T) {
+	tests := []struct {
+		selector string
+		role     string
+	}{
+		{".lp-body", "body"},
+		{".lp-nav-title", "heading"},
+		{".lp-nav-link", "body"},
+		{".lp-title,\n.lp-section-title", "heading"},
+		{".lp-content h1,\n.lp-content h2,\n.lp-content h3,\n.lp-content h4,\n.lp-content h5,\n.lp-content h6,\n.lp-section-intro h1,\n.lp-section-intro h2,\n.lp-section-intro h3,\n.lp-section-intro h4,\n.lp-section-intro h5,\n.lp-section-intro h6", "heading"},
+		{".lp-content blockquote", "body"},
+		{".lp-index-title", "heading"},
+		{".lp-search-result-title", "heading"},
+		{".lp-link-preview-title", "heading"},
+		{".lp-not-found-title", "heading"},
+	}
+
+	for _, tt := range tests {
+		t.Run(strings.ReplaceAll(tt.selector, "\n", " "), func(t *testing.T) {
+			want := "font-family: var(--lp-font-" + tt.role + ")"
+			remaining := terminalCSS
+			for {
+				start := strings.Index(remaining, tt.selector+" {")
+				if start == -1 {
+					break
+				}
+				end := strings.Index(remaining[start:], "}")
+				if end == -1 {
+					t.Fatalf("terminal stylesheet has an unterminated rule for %q", tt.selector)
+				}
+				rule := remaining[start : start+end]
+				if strings.Contains(rule, want) {
+					return
+				}
+				remaining = remaining[start+end+1:]
+			}
+			t.Errorf("terminal rules for %q do not use the %s font role", tt.selector, tt.role)
+		})
+	}
+}
