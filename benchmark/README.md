@@ -1,4 +1,4 @@
-# Leafpress benchmarks
+# leafpress benchmarks
 
 The headline benchmark uses deterministic workload **v2**. It models a small
 digital garden rather than placing every note at the site root:
@@ -17,7 +17,7 @@ tags/
 ```
 
 Seventy percent of generated pages are notes and thirty percent are posts.
-Leafpress automatic navigation therefore renders **Notes**, **Posts**, and
+leafpress automatic navigation therefore renders **Notes**, **Posts**, and
 **Tags** instead of one navigation item per generated page. Content length,
 tags, code blocks, orphan pages, and cross-section links are deterministic and
 shared by every SSG generator. Each adapter also renders the same two section
@@ -51,14 +51,14 @@ To use locally installed SSGs:
 ```
 
 The flat-root automatic-navigation scenario remains available as an explicit
-Leafpress stress benchmark:
+leafpress stress benchmark:
 
 ```sh
 ./benchmark/run.sh stress
 ```
 
 The main report records build-time distributions, logical output bytes, file
-counts, the exact Leafpress binary hash, and the deterministic rotated run
+counts, the exact leafpress binary hash, and the deterministic rotated run
 order. Fixture generation completes before warmups so it is outside the timed
 interval and does not give the first measured generator a thermal advantage.
 The stress report additionally records navigation links and average HTML bytes

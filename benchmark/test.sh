@@ -114,7 +114,7 @@ for generator_name in "${generators[@]}"; do
 done
 
 leafpress_first="${TEST_ROOT}/leafpress-first"
-grep -Rq '\[\[post-' "$leafpress_first/notes" || fail "Leafpress notes do not contain cross-section wikilinks"
+grep -Rq '\[\[post-' "$leafpress_first/notes" || fail "leafpress notes do not contain cross-section wikilinks"
 
 bash "${SCRIPT_DIR}/generators/leafpress/build.sh" "$leafpress_first" >/dev/null
 rendered="$leafpress_first/_site/notes/note-1/index.html"
@@ -124,7 +124,7 @@ assert_contains 'href="/posts/">Posts' "$rendered"
 assert_contains 'href="/tags/">Tags' "$rendered"
 nav_count=$(grep -c '<a class="lp-nav-link' "$rendered")
 [[ $nav_count == 3 ]] || fail "expected exactly three navigation links, got $nav_count"
-[[ -f "$leafpress_first/_site/tags/index.html" && -f "$leafpress_first/_site/tags/tag0/index.html" ]] || fail "Leafpress tag pages are missing"
+[[ -f "$leafpress_first/_site/tags/index.html" && -f "$leafpress_first/_site/tags/tag0/index.html" ]] || fail "leafpress tag pages are missing"
 
 main_report="${TEST_ROOT}/main-report.md"
 BENCHMARK_RESULTS_FILE=$main_report BENCHMARK_RUNS=2 BENCHMARK_WARMUPS=1 \
@@ -134,7 +134,7 @@ assert_contains '**Workload**: v2 (hierarchical-notes-posts)' "$main_report"
 grep -Eq '^\*\*Date\*\*: [0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$' "$main_report" || \
     fail "main report timestamp is not UTC RFC 3339"
 assert_contains '**Scheduling**: deterministic interleaved rotation' "$main_report"
-assert_contains '**Leafpress SHA-256**:' "$main_report"
+assert_contains '**leafpress SHA-256**:' "$main_report"
 assert_contains '## Generated Output (logical bytes and file count)' "$main_report"
 assert_contains 'files)' "$main_report"
 assert_contains '| leafpress |' "$main_report"

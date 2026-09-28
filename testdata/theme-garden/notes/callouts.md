@@ -1,6 +1,6 @@
 ---
 title: "Callout Conservatory"
-description: "Every canonical Leafpress callout type in one article."
+description: "Every canonical leafpress callout type in one article."
 date: 2026-08-04
 tags: [showcase, design]
 growth: budding

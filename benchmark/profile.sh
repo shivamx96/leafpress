@@ -14,7 +14,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-echo -e "${YELLOW}LeafPress Build Profiler${NC}"
+echo -e "${YELLOW}leafpress Build Profiler${NC}"
 echo "========================"
 echo "Pages: $COUNT"
 echo ""

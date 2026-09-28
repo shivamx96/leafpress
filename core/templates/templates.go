@@ -154,7 +154,7 @@ func (t *Templates) ClientScriptAsset(site SiteData) (string, string, error) {
 	}
 
 	if len(scripts) == 0 {
-		return "", "", fmt.Errorf("Leafpress client script not found")
+		return "", "", fmt.Errorf("leafpress client script not found")
 	}
 	content := strings.Join(scripts, "\n\n") + "\n"
 

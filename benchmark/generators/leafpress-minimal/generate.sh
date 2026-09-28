@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Generate the minimal-feature Leafpress workload used for SSG comparisons.
+# Generate the minimal-feature leafpress workload used for SSG comparisons.
 
 set -euo pipefail
 

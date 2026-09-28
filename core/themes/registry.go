@@ -1,4 +1,4 @@
-// Package themes owns Leafpress's bundled visual themes and their defaults.
+// Package themes owns leafpress's bundled visual themes and their defaults.
 // It intentionally has no dependency on config or templates so both layers
 // can resolve the same registry without an import cycle.
 package themes
@@ -9,13 +9,13 @@ import (
 )
 
 const (
-	// Aurora is Leafpress's expressive, layered appearance.
+	// Aurora is leafpress's expressive, layered appearance.
 	Aurora = "aurora"
-	// Classic is the original Leafpress appearance.
+	// Classic is the original leafpress appearance.
 	Classic = "classic"
-	// Paper is Leafpress's editorial, print-inspired appearance.
+	// Paper is leafpress's editorial, print-inspired appearance.
 	Paper = "paper"
-	// Terminal is Leafpress's compact, command-line-inspired appearance.
+	// Terminal is leafpress's compact, command-line-inspired appearance.
 	Terminal = "terminal"
 	// DefaultPreset is selected when theme.preset is omitted.
 	DefaultPreset = Classic

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Generate the deliberately pathological flat-navigation Leafpress workload.
+# Generate the deliberately pathological flat-navigation leafpress workload.
 
 set -euo pipefail
 

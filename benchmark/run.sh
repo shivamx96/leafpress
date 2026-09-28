@@ -41,8 +41,8 @@ elif [ "$MODE" == "local" ]; then
     echo "Running locally (requires all SSGs to be installed)"
     echo ""
 
-    # Build Leafpress
-    echo "Building Leafpress..."
+    # Build leafpress
+    echo "Building leafpress..."
     cd "${SCRIPT_DIR}/../cli"
     go build -o "${SCRIPT_DIR}/leafpress" ./cmd/leafpress
 
@@ -65,6 +65,6 @@ else
     echo ""
     echo "  docker  - Run in Docker container (recommended)"
     echo "  local   - Run locally (requires SSGs to be installed)"
-    echo "  stress  - Run Leafpress's flat automatic-navigation stress case"
+    echo "  stress  - Run leafpress's flat automatic-navigation stress case"
     exit 1
 fi

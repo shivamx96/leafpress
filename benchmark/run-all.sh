@@ -253,8 +253,8 @@ fi
     echo "**CPU**: ${CPU_INFO}"
     echo "**Memory**: ${MEM_INFO}"
     echo "**Source revision**: \`${SOURCE_REVISION}\`"
-    echo "**Leafpress binary**: \`${LEAFPRESS_BIN:-N/A}\`"
-    echo "**Leafpress SHA-256**: \`${LEAFPRESS_SHA256}\`"
+    echo "**leafpress binary**: \`${LEAFPRESS_BIN:-N/A}\`"
+    echo "**leafpress SHA-256**: \`${LEAFPRESS_SHA256}\`"
     echo "**Workload**: v${WORKLOAD_VERSION} (hierarchical-notes-posts)"
     echo "**Warmups / measured runs**: ${WARMUPS} / ${RUNS}"
     echo "**Scheduling**: deterministic interleaved rotation"
@@ -419,7 +419,7 @@ done
     echo "- **Warmups**: ${WARMUPS} unmeasured clean builds precede ${RUNS} measured clean builds."
     echo "- **Scheduling**: Page-count and SSG order rotate deterministically between warmups and measured runs."
     echo "- **Workload v${WORKLOAD_VERSION}**: Deterministic 70/30 split across \`notes/\` and \`posts/\`, with section homes."
-    echo "- **Navigation**: Every adapter renders Notes, Posts, and Tags links; Leafpress derives them automatically."
+    echo "- **Navigation**: Every adapter renders Notes, Posts, and Tags links; leafpress derives them automatically."
     echo "- **Content**: 1–5 deterministic paragraphs; code blocks on approximately 40% of pages."
     echo "- **Links**: Approximately 15% orphan pages; other pages have 2–8 links with deterministic hub bias and cross-section targets."
     echo "- **Tags**: Two of 20 deterministic tags per page."
@@ -439,7 +439,7 @@ command -v hugo &>/dev/null && echo "| Hugo | $(hugo version 2>/dev/null | grep 
 command -v zola &>/dev/null && echo "| Zola | $(zola --version 2>/dev/null | grep -oE '[0-9.]+') |" >> "$REPORT_TMP"
 command -v eleventy &>/dev/null && echo "| Eleventy | $(eleventy --version 2>/dev/null) |" >> "$REPORT_TMP"
 command -v jekyll &>/dev/null && echo "| Jekyll | $(jekyll --version 2>/dev/null | grep -oE '[0-9.]+' | head -1) |" >> "$REPORT_TMP"
-[[ -x ${LEAFPRESS_BIN:-} ]] && echo "| Leafpress | ${LEAFPRESS_VERSION} |" >> "$REPORT_TMP"
+[[ -x ${LEAFPRESS_BIN:-} ]] && echo "| leafpress | ${LEAFPRESS_VERSION} |" >> "$REPORT_TMP"
 
 mv "$REPORT_TMP" "$OUTPUT_FILE"
 

@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-// Logical paths of the built-in assets Leafpress ships. They are stable
+// Logical paths of the built-in assets leafpress ships. They are stable
 // identifiers: consumers may persist them.
 const (
 	BuiltinFaviconICO     = BuiltinPrefix + "favicon.ico"
@@ -40,7 +40,7 @@ var mermaidJS []byte
 //go:embed builtin/mermaid/LICENSE.txt
 var mermaidLicense []byte
 
-// Builtin is a Leafpress-owned asset together with its embedded content.
+// Builtin is a leafpress-owned asset together with its embedded content.
 type Builtin struct {
 	Asset   Asset
 	content []byte

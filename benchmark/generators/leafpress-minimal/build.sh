@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build Leafpress site (minimal config)
+# Build leafpress site (minimal config)
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

@@ -37,4 +37,4 @@
 | Zola | 0.21.0 |
 | Eleventy | 3.1.2 |
 | Jekyll | 4.4.1 |
-| Leafpress | (local build) |
+| leafpress | (local build) |

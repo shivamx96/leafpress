@@ -17,7 +17,7 @@ import (
 	"strings"
 )
 
-// BuiltinPrefix is the logical-path namespace reserved for assets Leafpress
+// BuiltinPrefix is the logical-path namespace reserved for assets leafpress
 // itself ships (fonts, favicons). User projects must not place files there.
 const BuiltinPrefix = "static/leafpress/"
 
@@ -58,7 +58,7 @@ func Sum(data []byte) string {
 }
 
 // IsBuiltinPath reports whether a logical path lies in (or is exactly) the
-// namespace reserved for Leafpress-owned built-in assets. The bare directory
+// namespace reserved for leafpress-owned built-in assets. The bare directory
 // path matches too: a user file named "static/leafpress" would shadow the
 // reserved directory. It assumes a path that already passed
 // ValidateLogicalPath; it is a namespace classifier, not a standalone
@@ -109,7 +109,7 @@ func validatePathShape(kind, p string) error {
 }
 
 // windowsDeviceNames are segment base names Windows reserves regardless of
-// extension ("CON", "con.txt", and "COM1.woff2" all name devices). Leafpress
+// extension ("CON", "con.txt", and "COM1.woff2" all name devices). leafpress
 // publishes Windows binaries, so canonical paths must stay writable there.
 var windowsDeviceNames = map[string]bool{
 	"CON": true, "PRN": true, "AUX": true, "NUL": true,

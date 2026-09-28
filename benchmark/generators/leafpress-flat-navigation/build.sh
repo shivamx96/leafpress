@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build the Leafpress flat-navigation stress workload.
+# Build the leafpress flat-navigation stress workload.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LEAFPRESS=${LEAFPRESS_BIN:-"${SCRIPT_DIR}/../../leafpress"}

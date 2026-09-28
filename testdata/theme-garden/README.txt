@@ -1,4 +1,4 @@
-Leafpress theme garden
+leafpress theme garden
 ======================
 
 This garden is the stable content fixture for developing and reviewing bundled
