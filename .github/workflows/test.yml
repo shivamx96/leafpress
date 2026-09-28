@@ -178,7 +178,7 @@ jobs:
           cache-dependency-path: |
             core/go.sum
             cli/go.sum
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: "24"
           cache: npm
@@ -212,7 +212,7 @@ jobs:
             cli/go.sum
 
       - name: Set up Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: "24"
           cache: npm
