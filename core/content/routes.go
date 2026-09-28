@@ -112,7 +112,7 @@ func ValidateOutputRoutes(pages []*Page) error {
 		}
 	}
 
-	// A direct child causes Leafpress to synthesize its parent section route
+	// A direct child causes leafpress to synthesize its parent section route
 	// unless an explicit _index page already owns it.
 	for _, page := range pages {
 		if page == nil || page.IsIndex {

@@ -12,7 +12,7 @@ import (
 )
 
 // ReservedPaths are top-level names the content scan never treats as content,
-// because Leafpress or the surrounding tooling owns them. Anything else is
+// because leafpress or the surrounding tooling owns them. Anything else is
 // content; authors exclude their own folders with build.ignore.
 var ReservedPaths = map[string]bool{
 	"leafpress.json": true,

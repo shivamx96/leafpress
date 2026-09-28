@@ -7,7 +7,7 @@ content in the `website` module as part of the same change.
 
 ## Cross-module Go changes
 
-Leafpress contains two independently versioned Go modules, `core` and `cli`.
+leafpress contains two independently versioned Go modules, `core` and `cli`.
 The root `go.work` makes local development use `./core`, which can hide a stale
 Core version in `cli/go.mod`.
 

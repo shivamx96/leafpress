@@ -1,4 +1,4 @@
-// Package site generates the non-page artifacts of a Leafpress site without
+// Package site generates the non-page artifacts of a leafpress site without
 // touching the filesystem. The CLI writes these bytes to disk; embedders such
 // as leafpress-render return the same bytes through their own transport.
 package site
@@ -243,7 +243,7 @@ func NotFound(tmpl *templates.Templates, siteData templates.SiteData) (string, e
 	return buf.String(), nil
 }
 
-// Styles combines Leafpress's embedded base and selected theme stylesheets,
+// Styles combines leafpress's embedded base and selected theme stylesheets,
 // the theme's self-hosted @font-face rules, and the optional contents of the
 // CLI's style.css (or the renderer's styleCSS input). Font rules live here
 // rather than in each page head so they are downloaded once and cached; their

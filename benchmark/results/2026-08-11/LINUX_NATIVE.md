@@ -5,8 +5,8 @@
 **CPU**: AMD Ryzen 7 9800X3D 8-Core Processor
 **Memory**: 62GB
 **Source revision**: `27f6d902f26a`
-**Leafpress binary**: `/tmp/leafpress-beta17-benchmark/leafpress`
-**Leafpress SHA-256**: `d12c56de0e2b6cee648d6be6936b706a7de6dbb279c93eddd43f9af0a812d338`
+**leafpress binary**: `/tmp/leafpress-beta17-benchmark/leafpress`
+**leafpress SHA-256**: `d12c56de0e2b6cee648d6be6936b706a7de6dbb279c93eddd43f9af0a812d338`
 **Workload**: v2 (hierarchical-notes-posts)
 **Warmups / measured runs**: 2 / 10
 **Scheduling**: deterministic interleaved rotation
@@ -44,7 +44,7 @@
 - **Warmups**: 2 unmeasured clean builds precede 10 measured clean builds.
 - **Scheduling**: Page-count and SSG order rotate deterministically between warmups and measured runs.
 - **Workload v2**: Deterministic 70/30 split across `notes/` and `posts/`, with section homes.
-- **Navigation**: Every adapter renders Notes, Posts, and Tags links; Leafpress derives them automatically.
+- **Navigation**: Every adapter renders Notes, Posts, and Tags links; leafpress derives them automatically.
 - **Content**: 1–5 deterministic paragraphs; code blocks on approximately 40% of pages.
 - **Links**: Approximately 15% orphan pages; other pages have 2–8 links with deterministic hub bias and cross-section targets.
 - **Tags**: Two of 20 deterministic tags per page.
@@ -62,4 +62,4 @@ The intentionally pathological flat-root automatic-navigation workload is run se
 | Zola | 0.21.0 |
 | Eleventy | 3.1.2 |
 | Jekyll | 4.4.1 |
-| Leafpress | leafpress v1.0.0-beta.17 |
+| leafpress | leafpress v1.0.0-beta.17 |

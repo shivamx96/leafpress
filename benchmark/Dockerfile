@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y \
     xz-utils \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Go (for Hugo and Leafpress)
+# Install Go (for Hugo and leafpress)
 ENV GO_VERSION=1.25.5
 RUN arch="$(dpkg --print-architecture)" \
     && case "$arch" in \
@@ -94,7 +94,7 @@ COPY . /benchmark/
 # Make scripts executable
 RUN chmod +x /benchmark/*.sh /benchmark/generators/*/*.sh 2>/dev/null || true
 
-# Copy and build Leafpress from source (mounted at runtime, but we need a startup script)
+# Copy and build leafpress from source (mounted at runtime, but we need a startup script)
 COPY docker-entrypoint.sh /benchmark/docker-entrypoint.sh
 RUN chmod +x /benchmark/docker-entrypoint.sh
 

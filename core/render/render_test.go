@@ -360,7 +360,7 @@ func TestSiteIdentityAndFooterAttribution(t *testing.T) {
 			}
 		}
 		if strings.Contains(document, "leafpress.in") {
-			t.Error("custom hosted attribution should replace the default Leafpress attribution")
+			t.Error("custom hosted attribution should replace the default leafpress attribution")
 		}
 	}
 	if !strings.Contains(pageHTML(t, out, "welcome"), `href="/welcome/">Welcome</a>`) {
@@ -659,7 +659,7 @@ func TestOptionalFieldsDefaulted(t *testing.T) {
 		t.Error("index title should use the default site title")
 	}
 	if !strings.Contains(out.Index, `href="https://leafpress.in"`) {
-		t.Error("renderer output should retain the default Leafpress attribution")
+		t.Error("renderer output should retain the default leafpress attribution")
 	}
 	// Page title defaults to slug; reading time computed.
 	html := pageHTML(t, out, "my-note")

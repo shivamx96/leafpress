@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Generate the full-featured Leafpress workload.
+# Generate the full-featured leafpress workload.
 
 set -euo pipefail
 

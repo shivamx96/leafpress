@@ -14,7 +14,7 @@ GENERATOR="${SCRIPT_DIR}/generators/leafpress-flat-navigation/generate.sh"
 BUILDER="${SCRIPT_DIR}/generators/leafpress-flat-navigation/build.sh"
 
 if [[ ! -x ${LEAFPRESS_BIN:-} && ! -x "${SCRIPT_DIR}/leafpress" && ! -x /benchmark/leafpress ]]; then
-    echo "Leafpress benchmark binary not found; run this through ./run.sh stress." >&2
+    echo "leafpress benchmark binary not found; run this through ./run.sh stress." >&2
     exit 1
 fi
 
@@ -33,7 +33,7 @@ median() {
 }
 
 {
-    echo "# Leafpress Flat-Navigation Stress Results"
+    echo "# leafpress Flat-Navigation Stress Results"
     echo
     echo "**Date**: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
     echo "**System**: $(uname -s) $(uname -m)"

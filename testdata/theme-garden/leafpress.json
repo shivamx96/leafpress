@@ -1,8 +1,8 @@
 {
   "site": {
     "title": "The Theme Garden",
-    "description": "A visual fixture for every Leafpress theme surface",
-    "author": "Leafpress",
+    "description": "A visual fixture for every leafpress theme surface",
+    "author": "leafpress",
     "baseURL": "https://example.com"
   },
   "theme": {

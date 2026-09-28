@@ -8,7 +8,7 @@ growth: budding
 
 # The First Journal Entry
 
-The `journal` directory has no `_index.md`, so Leafpress generates its section
+The `journal` directory has no `_index.md`, so leafpress generates its section
 index automatically.
 
 Today we reviewed the [[notes/components|component gallery]], recorded a few
