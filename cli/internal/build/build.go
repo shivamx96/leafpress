@@ -621,7 +621,7 @@ func inspectOutputDirectory(root *os.Root, outputDir string) (bool, error) {
 			}
 			legacy := filepath.Clean(outputDir) == "_site" || legacyLeafpressOutput(root, outputDir)
 			if !empty && !legacy {
-				return false, fmt.Errorf("refusing to use existing output directory %q because Leafpress does not own it; choose an empty directory or remove it manually", outputDir)
+				return false, fmt.Errorf("refusing to use existing output directory %q because leafpress does not own it; choose an empty directory or remove it manually", outputDir)
 			}
 		}
 		return true, nil
@@ -1537,7 +1537,7 @@ func (b *Builder) copyStatic() error {
 	// static/leafpress is the namespace built-ins materialize into; user
 	// files there would be clobbered or shadow registry assets.
 	if _, err := os.Stat(filepath.Join(srcDir, "leafpress")); err == nil {
-		return fmt.Errorf("static/leafpress is reserved for Leafpress built-in assets; move user files to another directory under static/")
+		return fmt.Errorf("static/leafpress is reserved for leafpress built-in assets; move user files to another directory under static/")
 	}
 
 	dstDir := filepath.Join(b.outputDir, "static")

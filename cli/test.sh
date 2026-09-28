@@ -1,10 +1,10 @@
 #!/bin/bash
-# LeafPress Quick Test Suite
+# leafpress Quick Test Suite
 # Run this script to verify core functionality
 
 set -e  # Exit on error
 
-echo "🧪 LeafPress Test Suite"
+echo "🧪 leafpress Test Suite"
 echo "======================="
 echo ""
 
@@ -1092,7 +1092,7 @@ fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR"
 
-# Test 46: Leafpress footer link opens in new tab
+# Test 46: leafpress footer link opens in new tab
 test_case "Footer link opens in new tab"
 TESTDIR=$(mktemp -d)
 cd "$TESTDIR"
