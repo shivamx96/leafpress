@@ -76,7 +76,7 @@ _site/
 node_modules/
 ```
 
-These are hardcoded: Leafpress or the surrounding tooling owns each of them.
+These are hardcoded: leafpress or the surrounding tooling owns each of them.
 Any markdown outside these paths is content — including `docs/`, which was
 reserved until it was found to silently drop a garden's own documentation.
 Authors exclude their own folders with `build.ignore`.
@@ -296,7 +296,7 @@ Semantic HTML with `lp-` prefixed classes. User overrides via `style.css`.
 
 Renderer hosts may replace only the “Grown with” name and link through the
 structured `render.footerAttribution` field. Raw footer HTML and scripts are
-not accepted; CLI builds retain the Leafpress attribution.
+not accepted; CLI builds retain the leafpress attribution.
 
 ---
 
@@ -374,7 +374,7 @@ _site/
 │   ├── index.html          # All tags
 │   ├── go/index.html
 │   └── tools/index.html
-├── static/                 # User files plus Leafpress-owned assets
+├── static/                 # User files plus leafpress-owned assets
 │   ├── leafpress/app.<hash>.js # Shared content-addressed client bundle
 │   └── ...
 ├── style.css               # Merged: embedded + user overrides

@@ -1,6 +1,6 @@
 # Performance architecture
 
-Leafpress keeps full builds and local rebuilds responsive through:
+leafpress keeps full builds and local rebuilds responsive through:
 
 - parallel Markdown/page rendering and parallel tag/auto-index generation;
 - a shared `LinkResolver` for rendering, backlinks, and graph generation;
