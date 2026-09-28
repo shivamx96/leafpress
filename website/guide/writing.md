@@ -118,7 +118,7 @@ tags: [projects]
 Working on #leafpress and #static-sites.
 ```
 
-Inline tags become links to their generated tag pages. Leafpress merges them
+Inline tags become links to their generated tag pages. leafpress merges them
 with frontmatter tags, preserving the frontmatter spelling and removing
 case-insensitive duplicates.
 

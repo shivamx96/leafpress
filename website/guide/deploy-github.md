@@ -88,7 +88,7 @@ jobs:
 
 In the repository's **Settings → Pages** screen, select **GitHub Actions** as
 the publishing source. The workflow uses GitHub's short-lived token, so no
-personal access token or Leafpress credential file is needed.
+personal access token or leafpress credential file is needed.
 
 If `build.outputDir` is not `_site`, update the workflow's artifact path.
 

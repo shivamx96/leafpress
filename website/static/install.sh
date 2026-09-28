@@ -1,5 +1,5 @@
 #!/bin/sh
-# Leafpress installer script
+# leafpress installer script
 # Usage: curl -fsSL https://leafpress.in/install.sh | sh
 #
 # Supports: macOS (Intel/ARM), Linux (x86_64/ARM64)
