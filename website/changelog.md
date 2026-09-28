@@ -53,9 +53,9 @@ toc: false
 ## v1.0.0-beta.17
 *August 11, 2026*
 
-- **Reduced repeated JavaScript in generated sites.** Leafpress now emits one content-addressed client bundle shared by every page instead of embedding the same client code into every HTML document. Bundle paths change with relevant configuration, stale hashes disappear on full rebuilds, and native CLI and hosted-renderer output remain in parity.
+- **Reduced repeated JavaScript in generated sites.** leafpress now emits one content-addressed client bundle shared by every page instead of embedding the same client code into every HTML document. Bundle paths change with relevant configuration, stale hashes disappear on full rebuilds, and native CLI and hosted-renderer output remain in parity.
 - **Preloaded selected self-hosted fonts.** Pages preload one normal face for each configured heading, body, and monospace family in role order, while deduplicating reused families and leaving italic and extended-Latin faces demand-loaded.
-- **Made full builds transactional and output cleanup safer.** Builds render into staging and replace the published site only after every artifact succeeds; failures preserve the previous output. Output directories must remain inside the project, symlink escapes are blocked, and non-empty custom directories require Leafpress ownership before cleanup.
+- **Made full builds transactional and output cleanup safer.** Builds render into staging and replace the published site only after every artifact succeeds; failures preserve the previous output. Output directories must remain inside the project, symlink escapes are blocked, and non-empty custom directories require leafpress ownership before cleanup.
 - Section index introductions now use the same rich-content styling as ordinary pages.
 - Rebuilt the SSG benchmark around a deterministic notes/posts/tags workload, normalized routes and support pages across generators, rotated run order, logical output sizes, strict output contracts, pinned Docker inputs, and independently visible standalone CLI validation.
 
@@ -103,13 +103,13 @@ toc: false
 ## v1.0.0-beta.11
 *August 1, 2026*
 
-- **Fonts are self-hosted by default.** The default families (Crimson Pro, Inter, JetBrains Mono) now ship bundled with Leafpress and are served from your own site — a default build makes no request to Google Fonts. Other family names produce a build warning and fall back to system fonts; set the deprecated `theme.remoteFonts: true` to temporarily keep the old Google Fonts behavior while you migrate. The bundled set covers latin and latin-ext ranges, and each family's OFL license text ships alongside the font files.
-- **Custom local fonts.** Declare your own font files under `static/fonts/` with `theme.fonts` (family, file, weight, style, display); Leafpress validates the declaration, verifies the file exists, and generates portable `@font-face` CSS. Declared families never load remotely.
+- **Fonts are self-hosted by default.** The default families (Crimson Pro, Inter, JetBrains Mono) now ship bundled with leafpress and are served from your own site — a default build makes no request to Google Fonts. Other family names produce a build warning and fall back to system fonts; set the deprecated `theme.remoteFonts: true` to temporarily keep the old Google Fonts behavior while you migrate. The bundled set covers latin and latin-ext ranges, and each family's OFL license text ships alongside the font files.
+- **Custom local fonts.** Declare your own font files under `static/fonts/` with `theme.fonts` (family, file, weight, style, display); leafpress validates the declaration, verifies the file exists, and generates portable `@font-face` CSS. Declared families never load remotely.
 - `@font-face` rules moved from every page head into the generated `style.css` (cached once, smaller pages).
-- **Breaking:** `static/leafpress/` is now reserved for Leafpress built-in assets; builds fail with a clear error if user files are placed there. Move them anywhere else under `static/`.
+- **Breaking:** `static/leafpress/` is now reserved for leafpress built-in assets; builds fail with a clear error if user files are placed there. Move them anywhere else under `static/`.
 - **Portable asset contract for hosted consumers.** `leafpress-render` output now carries `assetManifest` (logical path, MIME type, SHA-256, size, site-relative output path for every asset the site requires) and a content-derived `assetRegistryId`; callers declare their own assets — custom fonts, favicon overrides — through the new `assets` input, and can request built-in bytes as base64 artifacts with `emitAssets`. Every artifact now carries an explicit `encoding` field. Synchronization is hash-driven per manifest entry; see `docs/05_RENDERER_CONTRACT.md`.
 - Declared asset paths (manifests, `theme.fonts`) are validated against one canonical, portable representation on both interfaces: no traversal, URL syntax, CSS-hostile characters, or Windows-reserved names. Bulk `static/` copying is unaffected.
-- Fixed `theme.background` being silently dropped when Leafpress writes `leafpress.json`.
+- Fixed `theme.background` being silently dropped when leafpress writes `leafpress.json`.
 - Title-form wikilinks (`[[Note B]]` for slug `note-b`) now resolve in CLI builds — links, backlinks, and graph edges — matching hosted rendering; alias conflicts resolve deterministically by slug.
 - A cross-interface parity suite now proves CLI exports and hosted rendering produce equivalent paths, artifacts, stylesheets, and assets.
 
@@ -124,7 +124,7 @@ toc: false
 
 - Fixed `go install github.com/shivamx96/leafpress/cli/cmd/leafpress@latest` for the multi-module repository by publishing scoped core/CLI module versions without local `replace` directives; Go-installed binaries now report their module version instead of `dev`
 - `leafpress-render` now accepts the canonical `leafpress.json` configuration shape, custom `style.css` content, and produces graph, search, RSS, sitemap, robots, and 404 artifacts
-- Folder sections, `index`/`_index` homes, root navigation, and all page-level frontmatter settings now share Leafpress CLI rendering semantics
+- Folder sections, `index`/`_index` homes, root navigation, and all page-level frontmatter settings now share leafpress CLI rendering semantics
 
 ## v1.0.0-beta.8
 *July 16, 2026*

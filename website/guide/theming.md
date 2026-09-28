@@ -17,9 +17,9 @@ Select a bundled visual theme with `theme.preset`:
 }
 ```
 
-Leafpress ships four presets:
+leafpress ships four presets:
 
-- `classic` is the default and preserves Leafpress's original, focused reading
+- `classic` is the default and preserves leafpress's original, focused reading
   experience.
 - `aurora` is an expressive composition with a gradient canvas, floating glass
   navigation, layered reading surfaces, card-based indexes and backlinks, and
@@ -36,7 +36,7 @@ Leafpress ships four presets:
   restrained phosphor palette.
 
 Presets are complete component themes rather than color-only variations.
-They share Leafpress's semantic type scale, so switching presets preserves
+They share leafpress's semantic type scale, so switching presets preserves
 heading hierarchy, body size, and component text sizing. Presets express their
 typographic identity through font family, weight, tracking, and composition.
 
@@ -61,7 +61,7 @@ Set options in `leafpress.json`:
 
 ## Fonts
 
-Leafpress sites are **self-hosted by default**: no request ever leaves your
+leafpress sites are **self-hosted by default**: no request ever leaves your
 site for a font. The curated catalog contains 17 families and serves only the
 families selected by your theme as `@font-face` rules in the generated
 stylesheet:
@@ -73,7 +73,7 @@ stylesheet:
 - Code: **JetBrains Mono**, **Geist Mono**, **IBM Plex Mono**,
   **Fira Code**, **Source Code Pro**, **Atkinson Hyperlegible Mono**
 
-Leafpress also preloads one normal face for each selected family in theme role
+leafpress also preloads one normal face for each selected family in theme role
 order (`fontHeading`, `fontBody`, then `fontMono`). Reused families and files
 are deduplicated; italic and extended-Latin faces remain demand-loaded.
 
@@ -96,7 +96,7 @@ system fonts; use a custom local font if you need full coverage for another
 script.
 
 Any other family name produces a build warning and falls back to the CSS
-system stacks — Leafpress no longer loads arbitrary fonts from Google.
+system stacks — leafpress no longer loads arbitrary fonts from Google.
 
 ### Migrating from Google Fonts
 
@@ -233,11 +233,11 @@ Choose one, two, or three columns for section and tag-page lists on desktop:
 }
 ```
 
-The default is `2`. On mobile, Leafpress always uses a single column.
+The default is `2`. On mobile, leafpress always uses a single column.
 
 ## Custom CSS
 
-For deeper customization, create `style.css` in your site root. Leafpress
+For deeper customization, create `style.css` in your site root. leafpress
 composes the shared base, selected bundled theme, self-hosted `@font-face`
 rules, and finally your custom stylesheet. Because `style.css` is last, it can
 override variables and classes without rewriting the selected theme.
