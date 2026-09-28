@@ -1,5 +1,5 @@
 #!/bin/bash
-# LeafPress Smoke Test - Quick verification of core functionality
+# leafpress Smoke Test - Quick verification of core functionality
 
 set -e
 
@@ -7,7 +7,7 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-echo "🚀 LeafPress Smoke Test"
+echo "🚀 leafpress Smoke Test"
 echo "======================"
 echo ""
 
