@@ -1,6 +1,6 @@
 # leafpress-render contract (v2)
 
-`leafpress-render` is the filesystem-free Leafpress build stack. It reads one
+`leafpress-render` is the filesystem-free leafpress build stack. It reads one
 JSON object from stdin and writes one JSON object to stdout. The CLI and this
 renderer share one configuration schema, templates, CSS, and generated-artifact
 code; the transport is the only difference.
@@ -359,7 +359,7 @@ the renderer does not have their bytes.
 ## Trust boundary
 
 `site.headExtra` and `content.styleCSS` are trusted owner configuration, just
-as they are in a local Leafpress project, and are emitted without escaping.
+as they are in a local leafpress project, and are emitted without escaping.
 Applications should not expose them to untrusted garden readers or
 collaborators without an explicit trust decision. Everything else that reaches
 template output — titles, descriptions, author, nav labels, theme values, tags,

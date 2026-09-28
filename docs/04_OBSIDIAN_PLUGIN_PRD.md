@@ -1,13 +1,13 @@
-# Leafpress Obsidian Plugin - PRD
+# leafpress Obsidian Plugin - PRD
 
 ## Overview
 Enable Obsidian users to initialize, preview, and build their vaults as
-Leafpress digital gardens without using a terminal. The plugin bundles the
-Leafpress CLI and opens the generated static output for use with any hosting
+leafpress digital gardens without using a terminal. The plugin bundles the
+leafpress CLI and opens the generated static output for use with any hosting
 provider.
 
 ## Goals
-- Make Leafpress accessible to non-technical Obsidian users
+- Make leafpress accessible to non-technical Obsidian users
 - One-click preview and build workflow
 - Keep hosting credentials and deployment outside the plugin
 - Cross-platform support (macOS, Linux, Windows)

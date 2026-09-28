@@ -5,7 +5,7 @@ Date: 2026-08-01
 
 ## Context
 
-Leafpress is the canonical static site generator that other product lines build
+leafpress is the canonical static site generator that other product lines build
 on. It is consumed through two interfaces that must stay in lockstep:
 
 - **The CLI** (`cli/`), which owns the filesystem: it scans a project directory,
@@ -28,7 +28,7 @@ Today assets are handled ad hoc:
 
 Hosted consumers of the renderer store its output however suits them — a
 relational database row keyed by path, an object store, a CDN, a plain
-filesystem — and those choices evolve independently of Leafpress. **This ADR
+filesystem — and those choices evolve independently of leafpress. **This ADR
 must therefore not depend on any particular hosted storage backend.** The
 contract below is storage-neutral: it describes assets with enough metadata
 (stable identity, content hash, size, output location) that any of those
@@ -52,7 +52,7 @@ backend. There is exactly one canonical representation:
   parentheses (CSS delimiters), backslashes, `:` (drive letters), spaces,
   and all control characters. Asset paths never need escaping; renderers
   escape segments anyway, defense in depth.
-- Segments must be portable to every filesystem Leafpress ships on: Windows
+- Segments must be portable to every filesystem leafpress ships on: Windows
   device names (`CON`, `NUL`, `COM1`, … — with or without an extension) and
   segments ending in a dot are rejected.
 - Case-sensitive, unique within a site.
@@ -71,7 +71,7 @@ cannot participate in the portable asset contract until renamed.
 
 Two sub-namespaces exist:
 
-- **`static/leafpress/**` — reserved for Leafpress-owned built-in assets**
+- **`static/leafpress/**` — reserved for leafpress-owned built-in assets**
   (fonts, favicons, future icons). User projects must not place files there;
   the CLI treats a user file under `static/leafpress/` as a build error.
 - **Everything else under `static/`** belongs to the user. `static/fonts/` is
@@ -124,7 +124,7 @@ never carries bytes.
 
 ### 4. Built-in asset registry
 
-Leafpress owns a small set of assets it ships inside the `core` module via
+leafpress owns a small set of assets it ships inside the `core` module via
 `go:embed`: default favicons, the curated font set, and content-optional
 scripts such as Mermaid (`static/leafpress/mermaid/…`). The registry:
 

@@ -1,6 +1,6 @@
 # Release process
 
-Leafpress is a multi-module Go repository:
+leafpress is a multi-module Go repository:
 
 - `github.com/shivamx96/leafpress/core`
 - `github.com/shivamx96/leafpress/cli`

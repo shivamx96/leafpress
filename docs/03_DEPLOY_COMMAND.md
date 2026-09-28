@@ -1,6 +1,6 @@
-# Publishing Leafpress sites
+# Publishing leafpress sites
 
-Leafpress owns site generation and writes a portable static site to `_site/`
+leafpress owns site generation and writes a portable static site to `_site/`
 or the configured `build.outputDir`. Publishing is delegated to the hosting
 provider's supported CLI or CI integration:
 
@@ -25,7 +25,7 @@ The copyable workflows live in the website deployment guides.
 
 ## Canonical URL
 
-Set `site.baseURL` to the final production URL before building. Leafpress uses
+Set `site.baseURL` to the final production URL before building. leafpress uses
 it for canonical links, Open Graph URLs, `sitemap.xml`, RSS, and any deployment
 subpath such as a GitHub Pages project site:
 
@@ -40,12 +40,12 @@ subpath such as a GitHub Pages project site:
 ## Compatibility and migration
 
 The legacy `deploy` object remains accepted in `leafpress.json` for
-configuration compatibility, but Leafpress does not read it. It can be removed
+configuration compatibility, but leafpress does not read it. It can be removed
 after migrating to provider-native tooling.
 
-Older Leafpress versions stored provider tokens in
+Older leafpress versions stored provider tokens in
 `~/.config/leafpress/credentials.json` on macOS and Linux, or the equivalent
 roaming application-data directory on Windows. After upgrading, delete that
-file if no older Leafpress installation needs it and revoke tokens that are no
+file if no older leafpress installation needs it and revoke tokens that are no
 longer used. The former `.leafpress-deploy-state.json` file is also unused and
 can be removed.
