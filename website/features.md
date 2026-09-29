@@ -64,7 +64,7 @@ integration without giving leafpress access to a hosting account.
 
 ## Theming
 
-**Typography** — A curated 17-family catalog is self-hosted for headings, body, and code, and you can add your own font files under `static/fonts/`. Only selected families ship with the built site; no third-party font requests.
+**Typography** — Use any Google Fonts family by name: leafpress downloads it once and self-hosts it, and the seven families the themes use are bundled so a new garden works offline. You can also add your own font files under `static/fonts/`. Only selected families ship with the built site; readers make no third-party font requests.
 
 **Colors** — Set your accent color. Light and dark backgrounds with gradient support.
 
