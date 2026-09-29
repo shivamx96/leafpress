@@ -107,6 +107,44 @@ jobs:
           GOWORK: "off"
         run: go test -mod=readonly ./...
 
+  minimum-go:
+    name: Minimum Go version
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      # Install the go directive from core/go.mod rather than .go-version so
+      # the oldest Go that source installs and Core consumers may use is tested.
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: core/go.mod
+          cache-dependency-path: |
+            core/go.sum
+            cli/go.sum
+
+      - name: Verify module Go versions match
+        run: |
+          core="$(awk '$1 == "go" { print $2 }' core/go.mod)"
+          cli="$(awk '$1 == "go" { print $2 }' cli/go.mod)"
+          work="$(awk '$1 == "go" { print $2 }' go.work)"
+          if [ "$core" != "$cli" ] || [ "$core" != "$work" ]; then
+            echo "go directives differ: core=$core cli=$cli go.work=$work"
+            exit 1
+          fi
+
+      - name: Vet and test (core)
+        working-directory: ./core
+        run: go vet ./... && go test ./...
+
+      - name: Vet and test (cli standalone)
+        working-directory: ./cli
+        env:
+          GOWORK: "off"
+        run: go vet ./... && go test -mod=readonly ./...
+
   govulncheck:
     name: Go vulnerability check
     runs-on: ubuntu-latest

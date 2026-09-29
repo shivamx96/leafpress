@@ -52,6 +52,16 @@ release builds. Update this file when adopting a Go security patch. Automatic
 toolchain upgrades are disabled for project checks and builds; only installing
 the latest vulnerability scanner may use a newer compiler.
 
+The `go` directive in `core/go.mod`, `cli/go.mod`, and `go.work` is a separate
+setting: the oldest Go that `go install` users and Core consumers need. Keep it
+at the `.0` release of the oldest Go version that still receives security
+fixes, and keep the three files equal. `.go-version` follows the newest
+patched release. When a new Go release ends support for the declared minimum,
+raise the directive with `GOWORK=off go get go@1.N.0 toolchain@none` in each
+module, update `go.work`, and update the requirement in
+`website/guide/installation.md`. The "Minimum Go version" CI job tests both
+modules with the declared version.
+
 The release workflow calls the test workflow at the release commit and requires
 all checks to pass before building archives. It then scans both compiled
 binaries for every release target before packaging. Release binaries retain Go
