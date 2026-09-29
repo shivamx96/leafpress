@@ -638,6 +638,30 @@ func TestTheme_BackgroundString(t *testing.T) {
 
 // --- Write ---
 
+// Write produces the file `leafpress init` hands to users, so it must be
+// tidy: no null placeholders a user has to decode, and a final newline so
+// editors and diffs do not flag the file.
+func TestWrite_DefaultFileIsTidy(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "leafpress.json")
+	if err := Write(path, Default()); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(data)
+	if !strings.HasSuffix(text, "}\n") {
+		t.Error("written config should end with a newline")
+	}
+	if strings.Contains(text, "null") {
+		t.Errorf("written default config should not contain null values:\n%s", text)
+	}
+	if !strings.Contains(text, `"ignore": []`) {
+		t.Errorf("build.ignore should be written as an empty list:\n%s", text)
+	}
+}
+
 func TestWrite_RoundTrip(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "leafpress.json")
