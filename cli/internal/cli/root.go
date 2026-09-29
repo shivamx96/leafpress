@@ -20,6 +20,12 @@ interlinked website with minimal configuration.
 
 Your garden folder IS the product. leafpress is invisible infrastructure.`,
 		Version: version,
+		// Cobra validates flags and arguments before this hook, so usage
+		// mistakes still print help. Failures after that point, such as a bad
+		// config or a strict-build warning, print only the error.
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			cmd.SilenceUsage = true
+		},
 	}
 
 	// Global flags

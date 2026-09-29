@@ -44,6 +44,31 @@ func TestNativeInstallBuildAndWatch(t *testing.T) {
 		}
 	}
 	run("version")
+
+	// Usage mistakes print help; runtime failures print only the error.
+	fail := func(args ...string) string {
+		t.Helper()
+		cmd := exec.CommandContext(ctx, binary, args...)
+		cmd.Dir = garden
+		output, err := cmd.CombinedOutput()
+		if err == nil {
+			t.Fatalf("%v succeeded, want failure\n%s", args, output)
+		}
+		return string(output)
+	}
+	if output := fail("build", "--no-such-flag"); !strings.Contains(output, "Usage:") {
+		t.Errorf("unknown flag should print usage:\n%s", output)
+	}
+	if err := os.WriteFile(filepath.Join(garden, "broken.json"), []byte(`{"sitee": {}}`), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if output := fail("build", "--config", "broken.json"); strings.Contains(output, "Usage:") {
+		t.Errorf("config error should not print usage:\n%s", output)
+	}
+	if err := os.Remove(filepath.Join(garden, "broken.json")); err != nil {
+		t.Fatal(err)
+	}
+
 	run("init")
 	run("new", "notes/native-page")
 	if err := os.WriteFile(filepath.Join(garden, "index.md"), []byte("# Native garden\n"), 0644); err != nil {
@@ -124,4 +149,19 @@ func TestNativeInstallBuildAndWatch(t *testing.T) {
 		t.Fatal(err)
 	}
 	waitFor("filesystem edit to rebuild the served page", func() bool { return hasPage("Native watcher refreshed") })
+
+	// Ctrl+C is a normal way to stop the preview. Windows cannot deliver an
+	// interrupt to a child process, so the shutdown path is covered there by
+	// the server package tests.
+	if runtime.GOOS != "windows" {
+		if err := serve.Process.Signal(os.Interrupt); err != nil {
+			t.Fatal(err)
+		}
+		if err := serve.Wait(); err != nil {
+			t.Errorf("serve exited with %v after Ctrl+C, want success", err)
+		}
+		if data, _ := os.ReadFile(logPath); strings.Contains(string(data), "Error:") {
+			t.Errorf("serve reported an error after Ctrl+C:\n%s", data)
+		}
+	}
 }

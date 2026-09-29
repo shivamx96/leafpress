@@ -1,18 +1,18 @@
 package server
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net"
 	"net/http"
 	"os"
-	"os/signal"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -69,8 +69,9 @@ func New(cfg *config.Config, builder *build.Builder, opts Options) *Server {
 	}
 }
 
-// Start starts the development server
-func (s *Server) Start() error {
+// Start runs the development server until ctx is cancelled. A cancelled ctx
+// shuts the server down and returns nil.
+func (s *Server) Start(ctx context.Context) error {
 	// Compile the ignore globs once; Config.Validate has already reported a
 	// malformed pattern, so this is belt and braces.
 	ignore, err := content.NewIgnoreMatcher(s.cfg.Build.Ignore)
@@ -131,14 +132,12 @@ func (s *Server) Start() error {
 		Handler: mux,
 	}
 
-	// Handle graceful shutdown
-	go func() {
-		sigChan := make(chan os.Signal, 1)
-		signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-		<-sigChan
+	// Stop serving when the caller cancels ctx, such as on Ctrl+C.
+	stopShutdown := context.AfterFunc(ctx, func() {
 		fmt.Println("\nShutting down...")
 		server.Close()
-	}()
+	})
+	defer stopShutdown()
 
 	fmt.Printf("\n  Server running at %s\n", displayURL(host, port))
 	if host != DefaultHost {
@@ -146,7 +145,12 @@ func (s *Server) Start() error {
 	}
 	fmt.Println("  Press Ctrl+C to stop")
 
-	return server.Serve(listener)
+	// Serve always returns ErrServerClosed after Close; a requested shutdown
+	// is a clean exit, not a failure.
+	if err := server.Serve(listener); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		return err
+	}
+	return nil
 }
 
 // handleStatic serves static files with live reload script injection
@@ -418,26 +422,6 @@ func mergeChangeType(previous, next build.ChangeType) build.ChangeType {
 		return previous
 	}
 	return build.ChangeModify
-}
-
-// rebuild rebuilds the site and notifies clients
-func (s *Server) rebuild() {
-	s.rebuildMu.Lock()
-	defer s.rebuildMu.Unlock()
-
-	fmt.Println("Rebuilding...")
-	start := time.Now()
-
-	stats, err := s.builder.Build()
-	if err != nil {
-		fmt.Printf("Build error: %v\n", err)
-		return
-	}
-
-	elapsed := time.Since(start)
-	fmt.Printf("Built %d pages in %s\n", stats.PageCount, elapsed.Round(time.Millisecond))
-
-	s.notifyClients()
 }
 
 func (s *Server) rebuildIncremental(changedPath string, changeType build.ChangeType) {
