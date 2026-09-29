@@ -30,6 +30,7 @@ func serveCmd() *cobra.Command {
 	cmd.Flags().StringVar(&serveHost, "host", server.DefaultHost,
 		"interface to bind (use 0.0.0.0 to expose the preview on your network)")
 	cmd.Flags().BoolVarP(&includeDrafts, "drafts", "d", false, "include draft pages")
+	cmd.Flags().BoolVar(&offline, "offline", false, "do not download fonts (also LEAFPRESS_OFFLINE=1)")
 
 	return cmd
 }
@@ -50,6 +51,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 	builder := build.New(cfg, build.Options{
 		IncludeDrafts: includeDrafts,
 		Verbose:       isVerbose(),
+		Offline:       isOffline(),
 	})
 
 	// Initial build

@@ -2,6 +2,8 @@ package cli
 
 import (
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -55,4 +57,20 @@ func getConfigPath() string {
 
 func isVerbose() bool {
 	return verbose
+}
+
+// offline is set by --offline on build and serve.
+var offline bool
+
+// isOffline reports whether font downloads are disabled, by flag or by a
+// LEAFPRESS_OFFLINE value other than "", "0", or "false".
+func isOffline() bool {
+	if offline {
+		return true
+	}
+	switch strings.ToLower(os.Getenv("LEAFPRESS_OFFLINE")) {
+	case "", "0", "false":
+		return false
+	}
+	return true
 }

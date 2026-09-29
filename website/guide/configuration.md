@@ -15,7 +15,9 @@ content are rejected; errors identify the configuration file.
 
 For CI publishing, run `leafpress build --strict`. Any build warning, including
 broken wiki-links and fonts without a local source, fails the command before
-replacing the last successful output. Warning details are printed without
+replacing the last successful output. Strict builds never download fonts, so
+commit `static/fonts/` after a normal build has downloaded your Google Fonts
+families. Warning details are printed without
 requiring `--verbose`. An initial failed strict build publishes no site.
 Ordinary `leafpress build` still permits warnings. Strict mode applies to full
 builds, not development-server incremental rebuilds.
@@ -100,11 +102,11 @@ default site.
 | Option | Default | Description |
 |--------|---------|-------------|
 | `preset` | `"classic"` | Bundled visual theme: `"classic"`, `"aurora"`, `"paper"`, or `"terminal"` |
-| `fontHeading` | `"Bricolage Grotesque"` | Heading font (bundled families are self-hosted) |
-| `fontBody` | `"Inter"` | Body font (bundled families are self-hosted) |
-| `fontMono` | `"JetBrains Mono"` | Code font (bundled families are self-hosted) |
-| `remoteFonts` | `false` | Deprecated: load unbundled families from Google Fonts |
-| `fonts` | `[]` | Custom local font declarations (family, file under `static/fonts/`, weight, style, display) — see [Theming](/guide/theming/) |
+| `fontHeading` | `"Bricolage Grotesque"` | Heading font: a bundled family, a declared custom font, or any Google Fonts family (downloaded once and self-hosted) |
+| `fontBody` | `"Inter"` | Body font, chosen the same way as `fontHeading` |
+| `fontMono` | `"JetBrains Mono"` | Code font, chosen the same way as `fontHeading` |
+| `remoteFonts` | `false` | Deprecated: link unbundled families from Google Fonts instead of downloading them |
+| `fonts` | `[]` | Custom local font declarations (family, file under `static/fonts/`, weight, style, display, unicodeRange) — see [Theming](/guide/theming/) |
 | `accent` | `"#50ac00"` | Accent color for links and highlights |
 | `background.light` | `"#ffffff"` | Light mode background (color or gradient) |
 | `background.dark` | `"#1a1a1a"` | Dark mode background (color or gradient) |

@@ -223,16 +223,29 @@ Font sources are a closed set; this is an explicit product decision:
    never a private copy. A build selects only the configured families and
    their license artifacts from the full registry.
 2. **Declared custom family** (`theme.fonts` entries referencing
-   `static/fonts/` files, with family, file, weight, style, display):
-   self-hosted via generated `@font-face`. Files are validated as asset
-   paths; the CLI additionally checks they exist.
-3. **Any other family name** produces a **warning plus the CSS fallback
-   stack** (Georgia/system-ui/monospace): the site stays self-contained and
-   the author is told why the font is not loading. The old behavior — a
-   remote `fonts.googleapis.com` link for the unbundled families — survives
-   only behind an explicit, deprecated opt-in (`theme.remoteFonts: true`)
-   for configurations that need time to migrate; it must not be extended
-   and will be removed.
+   `static/fonts/` files, with family, file, weight, style, display, and an
+   optional unicodeRange): self-hosted via generated `@font-face`. Files are
+   validated as asset paths; the CLI additionally checks they exist.
+3. **Downloaded Google Fonts family** (CLI only): any other family name is
+   looked up on Google Fonts and downloaded once into
+   `static/fonts/<slug>/` with its license. `static/fonts/fonts.lock.json`
+   records each file's weight, style, unicode range, and SHA-256; the CLI
+   turns lock entries into declared custom faces (tier 2) for each build, so
+   the stylesheet, preloads, and published files follow the same path.
+   Builds with a complete lock make no network requests. `--strict`,
+   `--offline`, and `LEAFPRESS_OFFLINE` disable downloading; a changed file
+   stops the build instead of being replaced. Downloads accept only woff2
+   files from `fonts.gstatic.com`, and only the latin and latin-ext subsets
+   the bundled catalog covers.
+4. **Any other family name**, including one that could not be downloaded
+   and every unbundled family in the renderer, produces a **warning plus the
+   CSS fallback stack** (Georgia/system-ui/monospace): the site stays
+   self-contained and the author is told why the font is not loading. The
+   renderer performs no downloads; hosts supply such families as declared
+   custom fonts. The old behavior — a remote `fonts.googleapis.com` link for
+   unbundled families — survives only behind an explicit, deprecated opt-in
+   (`theme.remoteFonts: true`), which also disables downloading; it must not
+   be extended and will be removed.
 
 There are no arbitrary remote URLs in font configuration under any mode.
 

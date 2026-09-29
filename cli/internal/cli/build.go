@@ -25,6 +25,7 @@ func buildCmd() *cobra.Command {
 
 	cmd.Flags().BoolVarP(&includeDrafts, "drafts", "d", false, "include draft pages")
 	cmd.Flags().Bool("strict", false, "fail on build warnings without replacing existing output")
+	cmd.Flags().BoolVar(&offline, "offline", false, "do not download fonts (also LEAFPRESS_OFFLINE=1)")
 	cmd.Flags().StringVar(&cpuProfile, "cpuprofile", "", "write CPU profile to file")
 	cmd.Flags().StringVar(&memProfile, "memprofile", "", "write memory profile to file")
 
@@ -62,6 +63,7 @@ func runBuild(cmd *cobra.Command, args []string) error {
 		IncludeDrafts: includeDrafts,
 		Verbose:       isVerbose(),
 		Strict:        strict,
+		Offline:       isOffline(),
 	})
 
 	// Run build

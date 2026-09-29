@@ -118,6 +118,14 @@ validation.
 `listColumns` accepts `1`, `2`, or `3` and controls list-page columns on
 desktop. List pages always collapse to one column at the mobile breakpoint.
 
+Each `fonts[]` entry takes `family`, `file`, and optional `weight`, `style`,
+`display`, and `unicodeRange`. `unicodeRange` is a CSS `unicode-range` list
+such as `"U+0000-00FF, U+0131"`, for families split into subset files. The
+renderer never downloads fonts: a family that is neither bundled nor declared
+falls back to the system stack with a warning. The CLI downloads such
+families from Google Fonts; a host that wants the same result declares the
+files under `fonts[]` and supplies them as assets.
+
 The shared base stylesheet owns the semantic type scale for page titles,
 article headings, section headings, body copy, and component text. Presets may
 change typefaces, weights, tracking, color, and composition, but should not

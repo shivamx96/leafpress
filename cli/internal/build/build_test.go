@@ -656,7 +656,7 @@ func TestBuildUnbundledFamiliesWarnAndStayLocal(t *testing.T) {
 	cfg.Theme.FontHeading = "Lobster"
 	cfg.Theme.FontBody = "Lobster"
 	cfg.Theme.FontMono = "Roboto Mono"
-	b := New(cfg, Options{})
+	b := New(cfg, Options{Offline: true})
 	stats, err := b.Build()
 	if err != nil {
 		t.Fatalf("Build: %v", err)

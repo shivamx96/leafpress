@@ -36,3 +36,21 @@ func TestInitScaffoldsFlaggedConfig(t *testing.T) {
 		t.Fatalf("re-init should refuse naming custom.json, got: %v", err)
 	}
 }
+
+func TestIsOfflineReadsFlagAndEnvironment(t *testing.T) {
+	previous := offline
+	t.Cleanup(func() { offline = previous })
+
+	offline = false
+	for value, want := range map[string]bool{"": false, "0": false, "false": false, "FALSE": false, "1": true, "true": true, "yes": true} {
+		t.Setenv("LEAFPRESS_OFFLINE", value)
+		if got := isOffline(); got != want {
+			t.Errorf("LEAFPRESS_OFFLINE=%q: isOffline() = %v, want %v", value, got, want)
+		}
+	}
+	t.Setenv("LEAFPRESS_OFFLINE", "")
+	offline = true
+	if !isOffline() {
+		t.Error("--offline should disable downloads")
+	}
+}
