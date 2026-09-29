@@ -213,3 +213,122 @@ func TestReadLockRejectsPathsOutsideTheFontsDirectory(t *testing.T) {
 		t.Fatal("a lock pointing outside static/fonts must be rejected")
 	}
 }
+
+// A static/fonts symlink to a directory outside the garden must not let a
+// download write fonts or the lock there.
+func TestResolveStaysInsideTheGarden(t *testing.T) {
+	root := t.TempDir()
+	outside := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "static"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, filepath.Join(root, "static", "fonts")); err != nil {
+		t.Skipf("symlinks unavailable: %v", err)
+	}
+	server := fontstest.New(t, fontstest.Family{Name: "Test Serif", Variable: true})
+	result, err := fonts.Resolve(root, []string{"Test Serif"}, fonts.Options{Download: true, Client: server.Client()})
+	if err == nil && len(result.Warnings) == 0 {
+		t.Fatal("a download through an escaping symlink must fail")
+	}
+	entries, err := os.ReadDir(outside)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 0 {
+		t.Errorf("files were written outside the garden: %v", entries)
+	}
+}
+
+// A missing file must not stop the check early: an edited file later in
+// the family would otherwise be overwritten by the new download.
+func TestResolveChecksEverySurvivingFile(t *testing.T) {
+	root := t.TempDir()
+	server := fontstest.New(t, fontstest.Family{Name: "Test Serif", Variable: true})
+	first := resolve(t, root, server, true, "Test Serif")
+	if err := os.Remove(filepath.Join(root, first.Faces[0].File)); err != nil {
+		t.Fatal(err)
+	}
+	edited := filepath.Join(root, first.Faces[1].File)
+	if err := os.WriteFile(edited, []byte("wOF2 edited"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	_, err := fonts.Resolve(root, []string{"Test Serif"}, fonts.Options{Download: true, Client: server.Client()})
+	if err == nil || !strings.Contains(err.Error(), "does not match") {
+		t.Fatalf("an edited file must stop the build even when another is missing, got %v", err)
+	}
+	if data, _ := os.ReadFile(edited); string(data) != "wOF2 edited" {
+		t.Error("the edited file was overwritten")
+	}
+}
+
+// Recovering an incomplete family must keep the surviving files when the
+// new download fails.
+func TestResolveKeepsFilesWhenRecoveryFails(t *testing.T) {
+	root := t.TempDir()
+	server := fontstest.New(t, fontstest.Family{Name: "Test Serif", Variable: true})
+	first := resolve(t, root, server, true, "Test Serif")
+	lockBefore, err := os.ReadFile(filepath.Join(root, fonts.LockFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(filepath.Join(root, first.Faces[0].File)); err != nil {
+		t.Fatal(err)
+	}
+	client := server.Client()
+	server.Close()
+
+	result, err := fonts.Resolve(root, []string{"Test Serif"}, fonts.Options{Download: true, Client: client})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(result.Warnings["Test Serif"], "could not download") {
+		t.Errorf("warning = %q", result.Warnings["Test Serif"])
+	}
+	for _, file := range []string{first.Faces[1].File, "static/fonts/test-serif/OFL.txt"} {
+		if _, err := os.Stat(filepath.Join(root, file)); err != nil {
+			t.Errorf("%s was removed by a failed recovery: %v", file, err)
+		}
+	}
+	if lockAfter, _ := os.ReadFile(filepath.Join(root, fonts.LockFile)); string(lockAfter) != string(lockBefore) {
+		t.Error("a failed recovery must not change the lock")
+	}
+	if entries, _ := os.ReadDir(filepath.Join(root, "static/fonts")); len(entries) != 2 {
+		t.Errorf("staging folders were left behind: %v", entries)
+	}
+}
+
+// Recovery replaces a family's folder only when it holds nothing else.
+func TestResolveRecoveryKeepsOtherFiles(t *testing.T) {
+	root := t.TempDir()
+	server := fontstest.New(t, fontstest.Family{Name: "Test Serif", Variable: true})
+	first := resolve(t, root, server, true, "Test Serif")
+	mine := filepath.Join(root, "static/fonts/test-serif/notes.txt")
+	if err := os.WriteFile(mine, []byte("mine"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(filepath.Join(root, first.Faces[0].File)); err != nil {
+		t.Fatal(err)
+	}
+	result := resolve(t, root, server, true, "Test Serif")
+	if !strings.Contains(result.Warnings["Test Serif"], "did not download") {
+		t.Errorf("warning = %q", result.Warnings["Test Serif"])
+	}
+	if data, err := os.ReadFile(mine); err != nil || string(data) != "mine" {
+		t.Error("recovery discarded a file leafpress did not download")
+	}
+}
+
+func TestReadLockRejectsNullFamilies(t *testing.T) {
+	root := t.TempDir()
+	lock := filepath.Join(root, fonts.LockFile)
+	if err := os.MkdirAll(filepath.Dir(lock), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(lock, []byte(`{"version":1,"families":{"Test Serif":null}}`), 0644); err != nil {
+		t.Fatal(err)
+	}
+	_, err := fonts.ReadLock(root)
+	if err == nil || !strings.Contains(err.Error(), `"Test Serif" has no entry`) {
+		t.Fatalf("a null family must be an invalid-lock error, got %v", err)
+	}
+}

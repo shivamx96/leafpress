@@ -99,9 +99,10 @@ var licenses = map[string]struct{ dir, file, name string }{
 	"ufl":    {"ufl", "UFL.txt", "Ubuntu Font Licence 1.0"},
 }
 
-// download fetches family into stageDir, naming files for their final home
-// under Dir/slug. It returns the lock entry and the number of bytes saved.
-func (c *Client) download(ctx context.Context, family, stageDir string) (*Family, int64, error) {
+// download fetches family into stageDir inside garden, naming files for
+// their final home under Dir/slug. It returns the lock entry and the number
+// of bytes saved.
+func (c *Client) download(ctx context.Context, family string, garden *os.Root, stageDir string) (*Family, int64, error) {
 	meta, err := c.metadata(ctx, family)
 	if err != nil {
 		return nil, 0, err
@@ -143,7 +144,7 @@ func (c *Client) download(ctx context.Context, family, stageDir string) (*Family
 		if !strings.Contains(face.weight, " ") {
 			name = fmt.Sprintf("%s-%s-%s-%s.woff2", slug, face.style, face.subset, face.weight)
 		}
-		if err := os.WriteFile(filepath.Join(stageDir, name), data, 0644); err != nil {
+		if err := garden.WriteFile(filepath.Join(filepath.FromSlash(stageDir), name), data, 0644); err != nil {
 			return nil, 0, err
 		}
 		sum := sha256.Sum256(data)
@@ -161,7 +162,7 @@ func (c *Client) download(ctx context.Context, family, stageDir string) (*Family
 	if err != nil {
 		return nil, 0, fmt.Errorf("fetch license: %w", err)
 	}
-	if err := os.WriteFile(filepath.Join(stageDir, license.file), licenseText, 0644); err != nil {
+	if err := garden.WriteFile(filepath.Join(filepath.FromSlash(stageDir), license.file), licenseText, 0644); err != nil {
 		return nil, 0, err
 	}
 	return entry, total + int64(len(licenseText)), nil

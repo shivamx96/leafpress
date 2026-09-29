@@ -9,6 +9,7 @@ package fonts
 
 import (
 	"bytes"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -54,9 +55,21 @@ type Face struct {
 	SHA256       string `json:"sha256"`
 }
 
-// ReadLock loads the garden's lock file. A missing file is an empty lock.
+// ReadLock loads the lock file of the garden at root. A missing file is an
+// empty lock.
 func ReadLock(root string) (*Lock, error) {
-	data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(LockFile)))
+	garden, err := os.OpenRoot(root)
+	if err != nil {
+		return nil, err
+	}
+	defer garden.Close()
+	return readLock(garden)
+}
+
+// readLock reads the lock through garden, which refuses paths that leave the
+// project, such as a static/fonts symlink to another directory.
+func readLock(garden *os.Root) (*Lock, error) {
+	data, err := garden.ReadFile(filepath.FromSlash(LockFile))
 	if errors.Is(err, os.ErrNotExist) {
 		return &Lock{Version: lockVersion, Families: map[string]*Family{}}, nil
 	}
@@ -74,6 +87,9 @@ func ReadLock(root string) (*Lock, error) {
 		lock.Families = map[string]*Family{}
 	}
 	for name, family := range lock.Families {
+		if family == nil {
+			return nil, fmt.Errorf("%s: family %q has no entry; delete it from the lock and build again to download it", LockFile, name)
+		}
 		if err := family.validatePaths(); err != nil {
 			return nil, fmt.Errorf("%s: family %q: %w", LockFile, name, err)
 		}
@@ -83,29 +99,28 @@ func ReadLock(root string) (*Lock, error) {
 
 // write saves the lock atomically so an interrupted build never leaves a
 // truncated file behind.
-func (l *Lock) write(root string) error {
+func (l *Lock) write(garden *os.Root) error {
 	data, err := json.MarshalIndent(l, "", "  ")
 	if err != nil {
 		return err
 	}
 	data = append(data, '\n')
-	target := filepath.Join(root, filepath.FromSlash(LockFile))
-	tmp, err := os.CreateTemp(filepath.Dir(target), ".fonts.lock-*.json")
-	if err != nil {
+	tmp := filepath.FromSlash(Dir + "/.fonts.lock-" + randomSuffix() + ".json")
+	if err := garden.WriteFile(tmp, data, 0644); err != nil {
 		return fmt.Errorf("write %s: %w", LockFile, err)
 	}
-	defer os.Remove(tmp.Name())
-	if _, err := tmp.Write(data); err != nil {
-		tmp.Close()
-		return fmt.Errorf("write %s: %w", LockFile, err)
-	}
-	if err := tmp.Close(); err != nil {
-		return fmt.Errorf("write %s: %w", LockFile, err)
-	}
-	if err := os.Rename(tmp.Name(), target); err != nil {
+	if err := garden.Rename(tmp, filepath.FromSlash(LockFile)); err != nil {
+		garden.Remove(tmp)
 		return fmt.Errorf("write %s: %w", LockFile, err)
 	}
 	return nil
+}
+
+// randomSuffix names temporary files and directories.
+func randomSuffix() string {
+	var b [8]byte
+	rand.Read(b[:])
+	return hex.EncodeToString(b[:])
 }
 
 // FontFaces converts the family into theme font declarations, so the build
@@ -149,12 +164,15 @@ func (f *Family) validatePaths() error {
 // check reports whether every file of the family is present and unchanged.
 // Missing files mean the family should be downloaded again. A file whose
 // contents changed is an error: leafpress will not silently replace a file
-// someone edited.
-func (f *Family) check(root string) (complete bool, err error) {
+// someone edited. Every surviving file is checked, so a missing file cannot
+// hide an edited one that a new download would overwrite.
+func (f *Family) check(garden *os.Root) (complete bool, err error) {
+	complete = true
 	for _, face := range f.Faces {
-		data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(face.File)))
+		data, err := garden.ReadFile(filepath.FromSlash(face.File))
 		if errors.Is(err, os.ErrNotExist) {
-			return false, nil
+			complete = false
+			continue
 		}
 		if err != nil {
 			return false, err
@@ -163,13 +181,13 @@ func (f *Family) check(root string) (complete bool, err error) {
 			return false, fmt.Errorf("%s does not match %s; delete %s/ and build again to download it afresh", face.File, LockFile, path.Dir(face.File))
 		}
 	}
-	if _, err := os.Stat(filepath.Join(root, filepath.FromSlash(f.LicenseFile))); err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return false, nil
+	if _, err := garden.Stat(filepath.FromSlash(f.LicenseFile)); err != nil {
+		if !errors.Is(err, os.ErrNotExist) {
+			return false, err
 		}
-		return false, err
+		complete = false
 	}
-	return true, nil
+	return complete, nil
 }
 
 func isUnder(dir, file string) bool {
