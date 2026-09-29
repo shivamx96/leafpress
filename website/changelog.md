@@ -4,6 +4,10 @@ date: 2025-01-06
 toc: false
 ---
 
+## Unreleased
+
+- Installing from source with `go install`, or using Core as a library, now requires Go 1.26 or newer; Go 1.25 no longer receives security fixes. Release binaries are built with Go 1.27.1. The Go dependency updates `golang.org/x/mod` v0.41.0, `golang.org/x/text` v0.42.0, and `golang.org/x/sys` v0.48.0 clear advisories GO-2026-6179, GO-2026-6180, and GO-2026-5024, none of which leafpress's code called.
+
 ## v1.0.0-beta.21
 *September 25, 2026*
 

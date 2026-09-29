@@ -31,7 +31,9 @@ a released or pseudo-versioned Core and contains no `replace` directive.
 ## Prerequisites
 
 - Go at the version in `.go-version`. Automatic toolchain upgrades are
-  disabled in CI, so match the pinned version locally.
+  disabled in CI, so match the pinned version locally. Code must also build
+  with the older minimum in the `go` line of `core/go.mod`, which CI tests
+  separately.
 - Node.js 24 and npm, only if you are running or changing the browser suite.
 - Docker, only if you are running the comparative benchmark.
 

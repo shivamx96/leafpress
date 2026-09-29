@@ -17,11 +17,11 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Go (for Hugo and leafpress)
-ENV GO_VERSION=1.25.5
+ENV GO_VERSION=1.27.1
 RUN arch="$(dpkg --print-architecture)" \
     && case "$arch" in \
-      arm64) archive="go${GO_VERSION}.linux-arm64.tar.gz"; checksum="b00b694903d126c588c378e72d3545549935d3982635ba3f7a964c9fa23fe3b9" ;; \
-      amd64) archive="go${GO_VERSION}.linux-amd64.tar.gz"; checksum="9e9b755d63b36acf30c12a9a3fc379243714c1c6d3dd72861da637f336ebb35b" ;; \
+      arm64) archive="go${GO_VERSION}.linux-arm64.tar.gz"; checksum="3450b45a3f9ee8568792736a5c5e70a1f2e9b36c35a8f74958c03e51d7d92bec" ;; \
+      amd64) archive="go${GO_VERSION}.linux-amd64.tar.gz"; checksum="63d339f0da5ab53635a56f2490a7984dfe12dfcff22ad749f63edaf590168445" ;; \
       *) echo "unsupported architecture: $arch" >&2; exit 1 ;; \
     esac \
     && curl -fsSL "https://go.dev/dl/${archive}" -o "/tmp/${archive}" \
