@@ -39,9 +39,9 @@ subpath such as a GitHub Pages project site:
 
 ## Compatibility and migration
 
-The legacy `deploy` object remains accepted in `leafpress.json` for
-configuration compatibility, but leafpress does not read it. It can be removed
-after migrating to provider-native tooling.
+Configurations that still contain the legacy `deploy` object fail to load with
+an error that says to delete it. Remove the block after migrating to
+provider-native tooling.
 
 Older leafpress versions stored provider tokens in
 `~/.config/leafpress/credentials.json` on macOS and Linux, or the equivalent

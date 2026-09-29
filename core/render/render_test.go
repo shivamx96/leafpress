@@ -171,6 +171,7 @@ func TestRun_RejectsUnknownAndMisplacedFields(t *testing.T) {
 		"unknown navigation field": `{"config":{"navigation":{"modee":"automatic"}},"render":{"slug":"x"}}`,
 		"unknown build field":      `{"config":{"build":{"prt":8080}},"render":{"slug":"x"}}`,
 		"unknown theme field":      `{"config":{"theme":{"acent":"#fff"}},"render":{"slug":"x"}}`,
+		"removed deploy block":     `{"config":{"deploy":{"provider":"netlify"}},"render":{"slug":"x"}}`,
 	}
 	for name, in := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -396,8 +397,7 @@ func TestSiteConfigAndStyleMatchLeafpressSemantics(t *testing.T) {
 	      "navStyle":"sticky","navActiveStyle":"underlined"
 	    },
 	    "features":{"graph":true,"search":true,"toc":false,"backlinks":true,"wikilinks":true,"rss":true,"sharing":true},
-	    "build":{"outputDir":"ignored-by-renderer","port":4444,"ignore":["private/**"]},
-	    "deploy":{"provider":"netlify","settings":{"site":"demo"}}
+	    "build":{"outputDir":"ignored-by-renderer","port":4444,"ignore":["private/**"]}
 	  },
 	  "render": {"slug":"hosted"},
 	  "content": {
