@@ -120,7 +120,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 		indexPath := filepath.Join(cwd, "index.md")
 		indexContent := `---
 title: "Welcome to My Garden"
-date: ` + fmt.Sprintf("%s", "2025-01-15") + `
+date: 2025-01-15
 growth: "seedling"
 ---
 

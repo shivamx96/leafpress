@@ -270,10 +270,12 @@ func (r *Renderer) processCalloutsProtected(content string, trusted *trustedChun
 			// Get callout info or use defaults
 			info, ok := calloutTypes[calloutType]
 			if !ok {
+				// calloutStartRegex matches \w+, which is ASCII-only in Go,
+				// so upper-casing the first byte is safe.
 				info = struct {
 					title string
 					icon  string
-				}{strings.Title(calloutType), "📌"}
+				}{strings.ToUpper(calloutType[:1]) + calloutType[1:], "📌"}
 			}
 
 			// Use custom title if provided
@@ -336,34 +338,6 @@ func (r *Renderer) processCalloutsProtected(content string, trusted *trustedChun
 	}
 
 	return strings.Join(result, "\n")
-}
-
-// processCallouts converts Obsidian-style callouts to HTML
-// Input: > [!note] Optional title
-//
-//	> Content here
-//
-// Output: <div class="lp-callout lp-callout-note">...</div>
-func (r *Renderer) processCallouts(content string) string {
-	// Extract code blocks to protect them
-	codeBlocks := extractCodeBlocks(content)
-	protectedContent := content
-
-	// Replace code blocks with placeholders
-	for i, block := range codeBlocks {
-		placeholder := fmt.Sprintf("___CODE_BLOCK_%d___", i)
-		protectedContent = strings.Replace(protectedContent, block, placeholder, 1)
-	}
-
-	processed := r.processCalloutsProtected(protectedContent, nil)
-
-	// Restore code blocks
-	for i, block := range codeBlocks {
-		placeholder := fmt.Sprintf("___CODE_BLOCK_%d___", i)
-		processed = strings.Replace(processed, placeholder, block, 1)
-	}
-
-	return processed
 }
 
 // isVideoFile checks if a filename has a video extension
@@ -472,30 +446,6 @@ func (r *Renderer) processObsidianImagesProtected(content string, trusted *trust
 	})
 }
 
-// processObsidianImages converts Obsidian image embeds to standard markdown
-func (r *Renderer) processObsidianImages(content string) string {
-	// Extract code blocks to protect them
-	codeBlocks := extractCodeBlocks(content)
-	protectedContent := content
-
-	// Replace code blocks with placeholders
-	for i, block := range codeBlocks {
-		placeholder := fmt.Sprintf("___CODE_BLOCK_%d___", i)
-		protectedContent = strings.Replace(protectedContent, block, placeholder, 1)
-	}
-
-	result := r.processObsidianImagesProtected(protectedContent, nil)
-
-	// Restore code blocks
-	for i, block := range codeBlocks {
-		placeholder := fmt.Sprintf("___CODE_BLOCK_%d___", i)
-		result = strings.Replace(result, placeholder, block, 1)
-	}
-
-	return result
-}
-
-// extractCodeBlocks extracts code blocks and inline code from markdown
 // findFencedBlocks returns the fenced code blocks in content, in order,
 // following CommonMark fence rules: an opening fence of three or more backticks
 // or tildes is closed by a line with at least as many of the same character.
@@ -561,18 +511,6 @@ func fenceClose(line string, c byte, n int) bool {
 		m++
 	}
 	return m >= n && strings.TrimRight(s[m:], " ") == ""
-}
-
-func extractCodeBlocks(content string) []string {
-	var blocks []string
-
-	// Extract fenced code blocks (```...```)
-	blocks = append(blocks, findFencedBlocks(content)...)
-
-	// Extract inline code (`...`)
-	blocks = append(blocks, inlineCodeRegex.FindAllString(content, -1)...)
-
-	return blocks
 }
 
 // processPostMarkdown combines all post-markdown HTML processing in one function

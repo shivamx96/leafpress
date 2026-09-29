@@ -48,6 +48,19 @@ jobs:
         working-directory: ./cli
         run: go vet ./...
 
+      # Pinned so a new staticcheck release cannot fail unrelated changes;
+      # raise the version deliberately.
+      - name: Install staticcheck
+        run: go install honnef.co/go/tools/cmd/staticcheck@v0.8.1
+
+      - name: Staticcheck (core)
+        working-directory: ./core
+        run: staticcheck ./...
+
+      - name: Staticcheck (cli)
+        working-directory: ./cli
+        run: staticcheck ./...
+
       - name: Unit tests with coverage (core)
         working-directory: ./core
         run: |

@@ -55,12 +55,13 @@ cd testdata/theme-garden && ../../cli/leafpress serve
 CI runs everything below. Run the parts relevant to your change before
 opening a pull request.
 
-### Go formatting, vet, and tests
+### Go formatting, vet, static analysis, and tests
 
 ```bash
 gofmt -l core cli            # must print nothing
-(cd core && go vet ./... && go test -race ./...)
-(cd cli  && go vet ./... && go test -race ./...)
+go install honnef.co/go/tools/cmd/staticcheck@v0.8.1   # version CI uses
+(cd core && go vet ./... && staticcheck ./... && go test -race ./...)
+(cd cli  && go vet ./... && staticcheck ./... && go test -race ./...)
 ```
 
 ### CLI as an external consumer
