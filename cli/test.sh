@@ -979,8 +979,8 @@ fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR"
 
-# Test 42: Remote fonts require the deprecated opt-in
-test_case "Remote fonts load from Google Fonts only with theme.remoteFonts"
+# Test 42: The removed remoteFonts option explains its replacement
+test_case "theme.remoteFonts is rejected with a migration hint"
 TESTDIR=$(mktemp -d)
 cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
@@ -991,16 +991,16 @@ cat > leafpress.json << 'EOF'
   },
   "theme": {
     "fontHeading": "Playfair Display",
-    "fontBody": "Roboto",
     "remoteFonts": true
   }
 }
 EOF
-"$LEAFPRESS" build > /dev/null 2>&1
-if grep -q 'fonts.googleapis.com.*Playfair' _site/index.html && grep -q 'fonts.googleapis.com.*Roboto' _site/index.html; then
+if OUTPUT=$("$LEAFPRESS" build 2>&1); then
+    fail "Build accepted the removed remoteFonts option"
+elif echo "$OUTPUT" | grep -q 'theme.remoteFonts" is no longer supported' && [ ! -d _site ]; then
     pass
 else
-    fail "Opted-in remote fonts not loaded"
+    fail "Missing remoteFonts migration hint: $OUTPUT"
 fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR"

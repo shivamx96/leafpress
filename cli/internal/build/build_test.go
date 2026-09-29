@@ -678,40 +678,6 @@ func TestBuildUnbundledFamiliesWarnAndStayLocal(t *testing.T) {
 	}
 }
 
-func TestBuildRemoteFontsOptIn(t *testing.T) {
-	dir := newTestProject(t)
-
-	cfg := config.Default()
-	cfg.Theme.FontBody = "Lobster"
-	cfg.Theme.RemoteFonts = true
-	b := New(cfg, Options{})
-	if _, err := b.Build(); err != nil {
-		t.Fatalf("Build: %v", err)
-	}
-	page, err := os.ReadFile(filepath.Join(dir, "_site", "note", "index.html"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !bytes.Contains(page, []byte("fonts.googleapis.com/css2?family=Lobster")) {
-		t.Error("deprecated remoteFonts opt-in should keep the Google Fonts link")
-	}
-	// Bundled heading/mono stay self-hosted even under the opt-in: never in
-	// the remote URL, still present as @font-face with files on disk.
-	if bytes.Contains(page, []byte("family=Bricolage+Grotesque")) || bytes.Contains(page, []byte("family=JetBrains+Mono")) {
-		t.Error("bundled families leaked into the remote font URL")
-	}
-	css, err := os.ReadFile(filepath.Join(dir, "_site", "style.css"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !bytes.Contains(css, []byte(`font-family: "Bricolage Grotesque"`)) || !bytes.Contains(css, []byte(`font-family: "JetBrains Mono"`)) {
-		t.Error("bundled families missing self-hosted @font-face under remoteFonts")
-	}
-	if _, err := os.Stat(filepath.Join(dir, "_site", "static", "leafpress", "fonts", "bricolage-grotesque-normal-latin.woff2")); err != nil {
-		t.Errorf("bundled font not materialized under remoteFonts: %v", err)
-	}
-}
-
 func TestBuildWithCustomLocalFont(t *testing.T) {
 	dir := newTestProject(t)
 	fontDir := filepath.Join(dir, "static", "fonts")

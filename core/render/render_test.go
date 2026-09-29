@@ -1554,24 +1554,14 @@ func TestUnbundledFontWarnsAndFallsBackLocally(t *testing.T) {
 	}
 }
 
-func TestRemoteFontsIsDeprecatedOptIn(t *testing.T) {
-	out := runJSON(t, `{
+func TestRemovedRemoteFontsIsRejected(t *testing.T) {
+	_, err := Run([]byte(`{
 	  "render": {"slug": "g"},
 	  "config": {"theme": {"fontBody": "Lobster", "remoteFonts": true}},
 	  "content": {"pages": [{"slug": "note", "title": "Note", "markdown": "hi"}]}
-	}`)
-	html := pageHTML(t, out, "note")
-
-	if !strings.Contains(html, "fonts.googleapis.com/css2?family=Lobster") {
-		t.Error("remoteFonts opt-in should keep the Google Fonts link")
-	}
-	if strings.Contains(html, "family=Crimson+Pro") || strings.Contains(html, "family=JetBrains+Mono") {
-		t.Error("bundled families must not appear in the remote URL")
-	}
-	for _, w := range out.Warnings {
-		if strings.Contains(w, `"Lobster"`) {
-			t.Errorf("explicit opt-in should not warn: %s", w)
-		}
+	}`))
+	if err == nil || !strings.Contains(err.Error(), `"theme.remoteFonts" is no longer supported`) {
+		t.Fatalf("remoteFonts should be rejected with a migration hint, got %v", err)
 	}
 }
 

@@ -703,25 +703,10 @@ func TestParityUnbundledFontFallsBackOnBothInterfaces(t *testing.T) {
 		"cli page": cliPage, "cli css": cliCSS, "renderer page": renderPage, "renderer css": renderCSS,
 	} {
 		if strings.Contains(doc, "fonts.googleapis.com") {
-			t.Errorf("%s references Google Fonts without the remoteFonts opt-in", name)
+			t.Errorf("%s references Google Fonts", name)
 		}
 	}
 	if strings.Contains(cliCSS, `font-family: "Lobster"`) || strings.Contains(renderCSS, `font-family: "Lobster"`) {
 		t.Error("unbundled family must not get @font-face rules")
-	}
-}
-
-func TestParityRemoteFontsOptInMatches(t *testing.T) {
-	cliPage, cliCSS, renderPage, renderCSS := fontParityCase(t, `{"fontBody": "Lobster", "remoteFonts": true}`)
-	if cliCSS != renderCSS {
-		t.Error("stylesheets differ under remoteFonts")
-	}
-	for name, page := range map[string]string{"cli": cliPage, "renderer": renderPage} {
-		if !strings.Contains(page, "fonts.googleapis.com/css2?family=Lobster") {
-			t.Errorf("%s page missing opted-in remote font link", name)
-		}
-		if strings.Contains(page, "family=Crimson+Pro") {
-			t.Errorf("%s page leaked a bundled family into the remote URL", name)
-		}
 	}
 }

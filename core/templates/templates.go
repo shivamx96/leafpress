@@ -40,9 +40,7 @@ func init() {
 		"lower":             strings.ToLower,
 		"safeHTML":          func(s string) string { return s },
 		"safeCSS":           func(s string) string { return s },
-		"fontURL":           fontURL,
 		"fontPreloads":      fontPreloads,
-		"remoteFontURL":     remoteFontURL,
 		"hasPrefix":         strings.HasPrefix,
 	}
 }
@@ -284,12 +282,6 @@ func growthDescription(growth string) string {
 	}
 }
 
-func fontURL(font string) string {
-	// Replace spaces with + for Google Fonts URL
-	fontParam := strings.ReplaceAll(font, " ", "+")
-	return fontParam + ":wght@400;500;600;700"
-}
-
 // FontCSS returns every self-hosted @font-face rule for the theme — bundled
 // built-in families plus custom static/fonts/ declarations. It is composed
 // into the generated stylesheet (site.Styles), not inlined per page, so
@@ -324,8 +316,8 @@ type fontPreload struct {
 // fontPreloads resolves one normal Latin/regular face for each selected theme
 // family, preserving role order (heading, body, mono). Families and files are
 // deduplicated so assigning the same font to multiple roles never creates
-// duplicate fetch hints. Remote-only families are deliberately skipped: their
-// provider stylesheet owns the final font URLs.
+// duplicate fetch hints. Families without a self-hosted source have nothing
+// to preload.
 func fontPreloads(theme config.Theme) []fontPreload {
 	families := []string{theme.FontHeading, theme.FontBody, theme.FontMono}
 	seenFamilies := map[string]bool{}
@@ -461,14 +453,14 @@ func customFontCSS(faces []config.FontFace) string {
 // this string so warnings stay greppable and support-friendly.
 func UnhostedFontWarning(family string) string {
 	return fmt.Sprintf(
-		"font family %q is not bundled or declared; falling back to system fonts (declare it under theme.fonts, or set theme.remoteFonts to temporarily keep Google Fonts)",
+		"font family %q is not bundled or declared under theme.fonts; falling back to system fonts",
 		family)
 }
 
 // UnhostedFamilies returns the configured families that have no self-hosted
 // source: neither in the bundled set nor declared as custom local fonts.
-// With the deprecated remoteFonts escape hatch off, these fall back to the
-// CSS system stacks and callers should warn the author.
+// These fall back to the CSS system stacks and callers should warn the
+// author; the CLI first tries to download them from Google Fonts.
 func UnhostedFamilies(theme config.Theme) []string {
 	var out []string
 	seen := map[string]bool{}
@@ -480,30 +472,6 @@ func UnhostedFamilies(theme config.Theme) []string {
 		out = append(out, font)
 	}
 	return out
-}
-
-// remoteFontURL returns the Google Fonts stylesheet URL for the configured
-// families outside the bundled set — but only when the deprecated
-// theme.remoteFonts escape hatch is enabled. The default is self-contained
-// output: unhosted families fall back to the CSS system stacks (with a
-// warning emitted at build/render time).
-func remoteFontURL(theme config.Theme) string {
-	if !theme.RemoteFonts {
-		return ""
-	}
-	families := []string{}
-	seen := map[string]bool{}
-	for _, font := range UnhostedFamilies(theme) {
-		param := fontURL(font)
-		if !seen[param] {
-			seen[param] = true
-			families = append(families, param)
-		}
-	}
-	if len(families) == 0 {
-		return ""
-	}
-	return "https://fonts.googleapis.com/css2?family=" + strings.Join(families, "&family=") + "&display=swap"
 }
 
 // ExtractTOC extracts headings from HTML content and adds IDs to them
@@ -689,10 +657,7 @@ const baseTemplate = `<!DOCTYPE html>
   </style>
   <link rel="stylesheet" href="{{.Site.BasePath}}/style.css">
   {{if .Site.ClientScriptPath}}<script src="{{.Site.BasePath}}/{{.Site.ClientScriptPath}}" defer></script>{{end}}
-  {{$remoteFontURL := remoteFontURL .Site.Theme}}{{if $remoteFontURL}}<link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="{{$remoteFontURL}}" rel="stylesheet">
-  {{end}}{{if .Site.HeadExtra}}{{.Site.HeadExtra | safeHTML}}{{end}}
+  {{if .Site.HeadExtra}}{{.Site.HeadExtra | safeHTML}}{{end}}
 </head>
 <body class="lp-body">
   {{if eq .Site.Theme.NavStyle "glassy"}}<div class="lp-nav-placeholder"></div>{{end}}
