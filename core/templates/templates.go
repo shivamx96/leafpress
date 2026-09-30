@@ -374,7 +374,7 @@ func customFontPreloadFace(faces []config.FontFace, family string) (config.FontF
 		if style == "" {
 			style = "normal"
 		}
-		if face.Family != family || style != "normal" {
+		if face.Family != family || style != "normal" || !coversBasicLatin(face.UnicodeRange) {
 			continue
 		}
 		if fallback.File == "" {
@@ -390,6 +390,28 @@ func customFontPreloadFace(faces []config.FontFace, family string) (config.FontF
 		}
 	}
 	return fallback, fallback.File != ""
+}
+
+// coversBasicLatin reports whether a face's unicode-range includes plain
+// ASCII text, so preloading picks the Latin subset of a split family rather
+// than an extension subset most pages never use.
+func coversBasicLatin(unicodeRange string) bool {
+	if unicodeRange == "" {
+		return true
+	}
+	for _, part := range strings.Split(unicodeRange, ",") {
+		part = strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(part), "U+"))
+		low, high, isRange := strings.Cut(part, "-")
+		if !isRange {
+			high = low
+		}
+		start, errLow := strconv.ParseUint(strings.ReplaceAll(low, "?", "0"), 16, 32)
+		end, errHigh := strconv.ParseUint(strings.ReplaceAll(high, "?", "F"), 16, 32)
+		if errLow == nil && errHigh == nil && start <= 'a' && end >= 'z' {
+			return true
+		}
+	}
+	return false
 }
 
 // customFontCSS renders @font-face rules for the theme's custom local font
@@ -418,14 +440,18 @@ func customFontCSS(faces []config.FontFace) string {
 			// if an unvalidated Theme reaches this point.
 			continue
 		}
+		unicodeRange := ""
+		if face.UnicodeRange != "" {
+			unicodeRange = "\n  unicode-range: " + face.UnicodeRange + ";"
+		}
 		fmt.Fprintf(&sb, `@font-face {
   font-family: "%s";
   font-style: %s;
   font-weight: %s;
   font-display: %s;
-  src: url("%s") format("%s");
+  src: url("%s") format("%s");%s
 }
-`, face.Family, style, weight, display, assets.EscapedURLPath(face.File), format)
+`, face.Family, style, weight, display, assets.EscapedURLPath(face.File), format, unicodeRange)
 	}
 	return sb.String()
 }

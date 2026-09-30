@@ -145,6 +145,11 @@ type FontFace struct {
 	Weight  string `json:"weight,omitempty"`  // "400" or a variable range "400 700"
 	Style   string `json:"style,omitempty"`   // "normal", "italic", or "oblique"
 	Display string `json:"display,omitempty"` // CSS font-display value
+	// UnicodeRange limits the face to a character subset, as a CSS
+	// unicode-range value such as "U+0000-00FF, U+0131". Empty covers every
+	// character the file contains. Subset files of one family share a
+	// family, weight, and style and differ only in this range.
+	UnicodeRange string `json:"unicodeRange,omitempty"`
 }
 
 // DeclaresFamily reports whether the theme declares family as a custom
@@ -265,6 +270,9 @@ var (
 	// the renderer boundary; family names are interpolated into CSS.
 	fontFamilyRegex = regexp.MustCompile(`^[A-Za-z0-9 _-]+$`)
 	fontWeightRegex = regexp.MustCompile(`^[0-9]{1,4}( [0-9]{1,4})?$`)
+	// unicodeRangeRegex matches a comma-separated CSS unicode-range list of
+	// code points (U+26), ranges (U+0-7F), and wildcards (U+4??).
+	unicodeRangeRegex = regexp.MustCompile(`^U\+[0-9A-Fa-f?]{1,6}(-[0-9A-Fa-f]{1,6})?(, ?U\+[0-9A-Fa-f?]{1,6}(-[0-9A-Fa-f]{1,6})?)*$`)
 )
 
 // fontFileExtensions are the allowed custom font formats.
@@ -324,6 +332,9 @@ func validateFontFace(f FontFace) error {
 	case "", "auto", "block", "swap", "fallback", "optional":
 	default:
 		return fmt.Errorf("display must be auto, block, swap, fallback, or optional, got %q", f.Display)
+	}
+	if f.UnicodeRange != "" && !unicodeRangeRegex.MatchString(f.UnicodeRange) {
+		return fmt.Errorf("unicodeRange %q must be a comma-separated list such as \"U+0000-00FF, U+0131\"", f.UnicodeRange)
 	}
 	return nil
 }

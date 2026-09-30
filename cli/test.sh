@@ -4,6 +4,10 @@
 
 set -e  # Exit on error
 
+# Keep the suite hermetic: never download fonts from Google Fonts. Font
+# downloads are covered by Go tests against a local fake.
+export LEAFPRESS_OFFLINE=1
+
 echo "🧪 leafpress Test Suite"
 echo "======================="
 echo ""

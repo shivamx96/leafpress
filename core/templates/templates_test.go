@@ -303,6 +303,29 @@ func TestFontPreloadsCustomFace(t *testing.T) {
 	}
 }
 
+// A family split into subset files, as downloaded from Google Fonts, must
+// preload the Latin face and emit each face's unicode-range.
+func TestSubsetFamilyPreloadsLatinAndEmitsRanges(t *testing.T) {
+	theme := testTheme("Split Serif", "Inter", "JetBrains Mono")
+	theme.Fonts = []config.FontFace{
+		{Family: "Split Serif", File: "static/fonts/split/ext.woff2", Weight: "400 900", UnicodeRange: "U+0100-02BA, U+1E00-1E9F"},
+		{Family: "Split Serif", File: "static/fonts/split/latin.woff2", Weight: "400 900", UnicodeRange: "U+0000-00FF, U+0131"},
+	}
+	preloads := fontPreloads(theme)
+	if len(preloads) == 0 || preloads[0].Path != "static/fonts/split/latin.woff2" {
+		t.Fatalf("heading preload should be the Latin subset, got %#v", preloads)
+	}
+	css := customFontCSS(theme.Fonts)
+	for _, want := range []string{"unicode-range: U+0100-02BA, U+1E00-1E9F;", "unicode-range: U+0000-00FF, U+0131;"} {
+		if !strings.Contains(css, want) {
+			t.Errorf("custom CSS missing %q:\n%s", want, css)
+		}
+	}
+	if strings.Count(customFontCSS([]config.FontFace{{Family: "A", File: "static/fonts/a.woff2"}}), "unicode-range") != 0 {
+		t.Error("faces without a range must not emit unicode-range")
+	}
+}
+
 func TestCustomFontCSS(t *testing.T) {
 	css := customFontCSS([]config.FontFace{
 		{Family: "My Serif", File: "static/fonts/my.woff2", Weight: "400 700", Style: "italic", Display: "optional"},

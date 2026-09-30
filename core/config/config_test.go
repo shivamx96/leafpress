@@ -701,6 +701,8 @@ func TestCustomFontFaceValidation(t *testing.T) {
 		{Family: "My Serif", File: "static/fonts/my-serif-italic.woff2", Weight: "400 700", Style: "italic", Display: "swap"},
 		{Family: "Mono_2", File: "static/fonts/sub/dir/mono.otf", Weight: "650"},
 		{Family: "Old", File: "static/fonts/old.TTF"},
+		{Family: "Split", File: "static/fonts/split/latin.woff2", UnicodeRange: "U+0000-00FF, U+0131, U+0152-0153"},
+		{Family: "Split", File: "static/fonts/split/wild.woff2", UnicodeRange: "U+4??,U+26"},
 	}
 	for _, f := range valid {
 		cfg := Default()
@@ -730,6 +732,9 @@ func TestCustomFontFaceValidation(t *testing.T) {
 		{"inverted range", FontFace{Family: "A", File: "static/fonts/a.woff2", Weight: "700 400"}},
 		{"bad style", FontFace{Family: "A", File: "static/fonts/a.woff2", Style: "cursive"}},
 		{"bad display", FontFace{Family: "A", File: "static/fonts/a.woff2", Display: "eager"}},
+		{"css injection in range", FontFace{Family: "A", File: "static/fonts/a.woff2", UnicodeRange: "U+0000-00FF; } body { color: red"}},
+		{"range without prefix", FontFace{Family: "A", File: "static/fonts/a.woff2", UnicodeRange: "0000-00FF"}},
+		{"trailing comma", FontFace{Family: "A", File: "static/fonts/a.woff2", UnicodeRange: "U+0000-00FF,"}},
 	}
 	for _, tt := range invalid {
 		cfg := Default()

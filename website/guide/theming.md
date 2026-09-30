@@ -95,20 +95,56 @@ other scripts (Cyrillic, Greek, Vietnamese, …) falls back to your readers'
 system fonts; use a custom local font if you need full coverage for another
 script.
 
-Any other family name produces a build warning and falls back to the CSS
-system stacks — leafpress no longer loads arbitrary fonts from Google.
+### Any Google Font
 
-### Migrating from Google Fonts
+Name any [Google Fonts](https://fonts.google.com) family and leafpress
+self-hosts it:
 
-If your existing config names a Google font (say `"Playfair Display"`), you
-have two options:
+```json
+{
+  "theme": {
+    "fontHeading": "Playfair Display"
+  }
+}
+```
 
-1. **Recommended**: download the font's woff2 file and declare it as a
-   custom local font (see below) — your site stays self-contained.
-2. **Temporary bridge**: set `"remoteFonts": true` in `theme` to keep the
-   old Google Fonts link for unbundled families. This option is deprecated
-   and will be removed; names are matched exactly, and bundled families are
-   always self-hosted regardless.
+The first `leafpress build` or `leafpress serve` that needs the family
+downloads it once:
+
+```
+Downloading "Playfair Display" from Google Fonts...
+  saved static/fonts/playfair-display/ (5 files, 123 KB, SIL Open Font License 1.1)
+  Commit static/fonts/ so later builds work offline.
+```
+
+- leafpress saves the family's Latin and Latin Extended files, every weight
+  and italic the themes use, and its license under `static/fonts/<family>/`.
+  `static/fonts/fonts.lock.json` records each file with a SHA-256 checksum.
+- Later builds read those files and never contact Google. Commit
+  `static/fonts/` with your garden so CI and other machines build offline
+  and produce identical output.
+- Your readers' browsers load the fonts from your site, not from Google.
+- Family names are case-sensitive, as on Google Fonts. A misspelled name
+  keeps the system fonts and suggests the closest match:
+  `font family "Playfiar Display" is not a Google Fonts family (did you mean
+  "Playfair Display"?)`.
+- During `leafpress serve`, changing a font in `leafpress.json` downloads it
+  and reloads the preview.
+- If the download fails, for example offline, the build warns, uses system
+  fonts, and tries again next time.
+- `leafpress build --strict` never downloads. A font that is not downloaded
+  yet is a warning, so strict CI builds fail rather than fetching or falling
+  back.
+- `--offline` on `build` and `serve`, or `LEAFPRESS_OFFLINE=1`, turns
+  downloads off.
+- If a downloaded file changes, the build stops rather than overwrite it.
+  Delete the family's folder and build again to download it afresh.
+
+### Migrating from `remoteFonts`
+
+`"remoteFonts": true` keeps the old behavior of linking unbundled families
+from Google Fonts at read time. It is deprecated and will be removed. Delete
+it and build once: the same families are downloaded and self-hosted instead.
 
 ### Custom local fonts
 
@@ -134,6 +170,10 @@ Ship your own font files under `static/fonts/` and declare them in `theme`:
 - `family` and `file` are required; `weight` (a number or a variable range),
   `style` (`normal`/`italic`/`oblique`), and `display` default to `400`,
   `normal`, and `swap`.
+- `unicodeRange` (optional) limits a file to a character subset, as a CSS
+  `unicode-range` list such as `"U+0000-00FF, U+0131"`. Use it to declare a
+  family split into several subset files; without it, each later file of the
+  same family, weight, and style replaces the earlier one.
 - Files must live under `static/fonts/` with a `.woff2`, `.woff`, `.ttf`, or
   `.otf` extension, and file names may only use letters, digits, `-`, `.`,
   `_`, and `~`. The build fails if a declared file is missing.

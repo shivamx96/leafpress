@@ -17,6 +17,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/shivamx96/leafpress/cli/internal/fonts"
 	"github.com/shivamx96/leafpress/core/assets"
 	"github.com/shivamx96/leafpress/core/config"
 	"github.com/shivamx96/leafpress/core/content"
@@ -29,6 +30,12 @@ type Options struct {
 	IncludeDrafts bool
 	Verbose       bool
 	Strict        bool // Refuse to publish a full build with warnings.
+
+	// Offline disables downloading fonts. Strict builds never download
+	// either, so CI cannot fetch or silently fall back.
+	Offline bool
+	// FontClient replaces the Google Fonts client, for tests.
+	FontClient *fonts.Client
 }
 
 // Stats contains build statistics
@@ -49,6 +56,12 @@ type Builder struct {
 	// promoteHook is used by tests to force a failure after the old output has
 	// been moved aside, exercising rollback of the final promotion.
 	promoteHook func() error
+
+	// declaredFonts are the theme.fonts entries of declaredFontsFor, before
+	// downloaded families are added. Kept apart so repeated builds and config
+	// reloads never add a downloaded family twice.
+	declaredFonts    []config.FontFace
+	declaredFontsFor *config.Config
 
 	// Cached state for incremental builds
 	pages          []*content.Page
@@ -97,6 +110,11 @@ func (b *Builder) Build() (result *Stats, resultErr error) {
 	if b.initErr != nil {
 		return nil, fmt.Errorf("resolve project directory: %w", b.initErr)
 	}
+	if b.declaredFontsFor != b.cfg {
+		b.declaredFonts = slices.Clone(b.cfg.Theme.Fonts)
+		b.declaredFontsFor = b.cfg
+	}
+	b.cfg.Theme.Fonts = slices.Clone(b.declaredFonts)
 	if err := b.cfg.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid config: %w", err)
 	}
@@ -127,11 +145,20 @@ func (b *Builder) Build() (result *Stats, resultErr error) {
 		}
 	}
 
-	// Self-contained output is the default: warn about families that have
-	// no self-hosted source instead of silently reaching for Google Fonts.
+	// Self-host every other family by downloading it from Google Fonts into
+	// the garden once. Families that stay unavailable fall back to system
+	// fonts with a warning explaining why.
 	if !b.cfg.Theme.RemoteFonts {
+		warnings, err := b.resolveDownloadedFonts()
+		if err != nil {
+			return nil, err
+		}
 		for _, family := range templates.UnhostedFamilies(b.cfg.Theme) {
-			fmt.Printf("  warning: %s\n", templates.UnhostedFontWarning(family))
+			warning, ok := warnings[family]
+			if !ok {
+				warning = templates.UnhostedFontWarning(family)
+			}
+			fmt.Printf("  warning: %s\n", warning)
 			stats.WarningCount++
 		}
 	}
@@ -1527,6 +1554,38 @@ func (b *Builder) generateTagPages(pages []*content.Page, siteData templates.Sit
 	return nil
 }
 
+// defaultFontClient is replaced in tests so no test can reach the network.
+var defaultFontClient = fonts.Google
+
+// resolveDownloadedFonts adds downloaded Google Fonts families to the theme
+// for this build, fetching any that are missing when downloads are allowed.
+// It returns a warning for each family that is still unavailable.
+func (b *Builder) resolveDownloadedFonts() (map[string]string, error) {
+	missing := templates.UnhostedFamilies(b.cfg.Theme)
+	if len(missing) == 0 {
+		return nil, nil
+	}
+	client := b.opts.FontClient
+	if client == nil {
+		client = defaultFontClient()
+	}
+	opts := fonts.Options{Download: true, Client: client, Log: os.Stdout}
+	switch {
+	case b.opts.Strict:
+		opts.Download = false
+		opts.NoDownloadReason = "--strict does not download fonts; run leafpress build once, then commit " + fonts.Dir + "/"
+	case b.opts.Offline:
+		opts.Download = false
+		opts.NoDownloadReason = "downloads are off (--offline or LEAFPRESS_OFFLINE), so system fonts are used"
+	}
+	result, err := fonts.Resolve(b.rootDir, missing, opts)
+	if err != nil {
+		return nil, err
+	}
+	b.cfg.Theme.Fonts = append(b.cfg.Theme.Fonts, result.Faces...)
+	return result.Warnings, nil
+}
+
 // copyStatic copies the static directory
 func (b *Builder) copyStatic() error {
 	srcDir := filepath.Join(b.rootDir, "static")
@@ -1847,6 +1906,10 @@ func copyDir(src, dst, root string) error {
 			if info.IsDir() {
 				return filepath.SkipDir
 			}
+			return nil
+		}
+		// The font lock is build input, not a site asset.
+		if rel, relErr := filepath.Rel(root, path); relErr == nil && filepath.ToSlash(rel) == fonts.LockFile {
 			return nil
 		}
 

@@ -671,7 +671,9 @@ func fontParityCase(t *testing.T, themeJSON string) (string, string, string, str
 	if err != nil {
 		t.Fatalf("config.Load: %v", err)
 	}
-	if _, err := New(cfg, Options{}).Build(); err != nil {
+	// The renderer never downloads fonts, so compare against an offline
+	// CLI build.
+	if _, err := New(cfg, Options{Offline: true}).Build(); err != nil {
 		t.Fatalf("CLI build: %v", err)
 	}
 	cliPage, err := os.ReadFile(filepath.Join(dir, "_site", "note", "index.html"))
