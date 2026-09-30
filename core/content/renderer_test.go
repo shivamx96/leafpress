@@ -486,6 +486,18 @@ func TestRender_EscapeModeCalloutStillLive(t *testing.T) {
 	}
 }
 
+func TestRender_UnknownCalloutTypeTitle(t *testing.T) {
+	r := NewRenderer(nil, false, "")
+	html, _ := r.Render("> [!Recipe]\n> body")
+
+	if !strings.Contains(html, `lp-callout-recipe`) {
+		t.Errorf("unknown callout type should keep its lowercase class, got:\n%s", html)
+	}
+	if !strings.Contains(html, "Recipe") {
+		t.Errorf("unknown callout type should be title-cased as its default title, got:\n%s", html)
+	}
+}
+
 func TestRender_EscapeModeCalloutTitleEscaped(t *testing.T) {
 	r := escapingRenderer(nil, false, "")
 	html, _ := r.Render("> [!note] <img src=x onerror=alert(1)>\n> body")

@@ -2,6 +2,9 @@ package cli
 
 import (
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/shivamx96/leafpress/cli/internal/build"
@@ -65,5 +68,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 		Host:    serveHost,
 	})
 
-	return srv.Start()
+	ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	return srv.Start(ctx)
 }

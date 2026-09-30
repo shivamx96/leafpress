@@ -6,6 +6,8 @@ toc: false
 
 ## Unreleased
 
+- Stopping `leafpress serve` with Ctrl+C exits cleanly instead of reporting `Error: http: Server closed` and a non-zero exit status.
+- Command failures such as a config error or a strict-build warning print only the error, not the command's full usage text. Mistyped flags and arguments still show usage.
 - Installing from source with `go install`, or using Core as a library, now requires Go 1.26 or newer; Go 1.25 no longer receives security fixes. Release binaries are built with Go 1.27.1. The Go dependency updates `golang.org/x/mod` v0.41.0, `golang.org/x/text` v0.42.0, and `golang.org/x/sys` v0.48.0 clear advisories GO-2026-6179, GO-2026-6180, and GO-2026-5024, none of which leafpress's code called.
 
 ## v1.0.0-beta.21
