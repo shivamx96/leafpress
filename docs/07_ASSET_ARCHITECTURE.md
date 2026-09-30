@@ -216,9 +216,9 @@ valid skip signal on its own.
 
 Font sources are a closed set; this is an explicit product decision:
 
-1. **Bundled built-in family** (the curated 17-family catalog, including the
-   Bricolage Grotesque, Inter, and JetBrains Mono defaults, shipped in the
-   registry as woff2): self-hosted via generated `@font-face` rules. The
+1. **Bundled built-in family** (the seven families the bundled themes use:
+   Bricolage Grotesque, Space Grotesk, Newsreader, Inter, Source Serif 4,
+   JetBrains Mono, and IBM Plex Mono, shipped in the registry as woff2): self-hosted via generated `@font-face` rules. The
    registry is the sole membership list; both interfaces must consult it,
    never a private copy. A build selects only the configured families and
    their license artifacts from the full registry.

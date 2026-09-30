@@ -29,26 +29,18 @@ type builtinFontFamily struct {
 	StaticWeights []string
 }
 
-// builtinFontCatalog is the self-hosted catalog available to themes. It is
+// builtinFontCatalog holds the families the bundled themes use, so a new
+// garden renders its theme with no network access. Any other Google Fonts
+// family is downloaded by the CLI on first use. The catalog is
 // deliberately Latin-focused — other scripts fall back to the system stack or
 // to declared custom fonts. Faces are sourced from Google Fonts under SIL OFL
 // 1.1; full license texts ship as registry assets.
 var builtinFontCatalog = []builtinFontFamily{
-	{Family: "Atkinson Hyperlegible Mono", Slug: "atkinson-hyperlegible-mono", WeightRange: "200 800", Italic: true},
-	{Family: "Atkinson Hyperlegible Next", Slug: "atkinson-hyperlegible-next", WeightRange: "200 800", Italic: true},
 	{Family: "Bricolage Grotesque", Slug: "bricolage-grotesque", WeightRange: "200 800"},
-	{Family: "Crimson Pro", Slug: "crimson-pro", WeightRange: "200 900", Italic: true},
-	{Family: "Fira Code", Slug: "fira-code", WeightRange: "300 700"},
-	{Family: "Fraunces", Slug: "fraunces", WeightRange: "100 900", Italic: true},
-	{Family: "Geist", Slug: "geist", WeightRange: "100 900", Italic: true},
-	{Family: "Geist Mono", Slug: "geist-mono", WeightRange: "100 900", Italic: true},
 	{Family: "IBM Plex Mono", Slug: "ibm-plex-mono", StaticWeights: []string{"400", "700"}, Italic: true},
-	{Family: "IBM Plex Sans", Slug: "ibm-plex-sans", WeightRange: "100 700", Italic: true},
 	{Family: "Inter", Slug: "inter", WeightRange: "400 700", Italic: true},
 	{Family: "JetBrains Mono", Slug: "jetbrains-mono", WeightRange: "400 700", Italic: true},
-	{Family: "Lora", Slug: "lora", WeightRange: "400 700", Italic: true},
 	{Family: "Newsreader", Slug: "newsreader", WeightRange: "200 800", Italic: true},
-	{Family: "Source Code Pro", Slug: "source-code-pro", WeightRange: "200 900", Italic: true},
 	{Family: "Source Serif 4", Slug: "source-serif-4", WeightRange: "200 900", Italic: true},
 	{Family: "Space Grotesk", Slug: "space-grotesk", WeightRange: "300 700"},
 }

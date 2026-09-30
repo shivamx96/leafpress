@@ -62,23 +62,23 @@ Set options in `leafpress.json`:
 ## Fonts
 
 leafpress sites are **self-hosted by default**: no request ever leaves your
-site for a font. The curated catalog contains 17 families and serves only the
-families selected by your theme as `@font-face` rules in the generated
-stylesheet:
+site for a font. leafpress bundles the seven families its themes use, so a
+new garden renders offline, and serves only the families your theme selects
+as `@font-face` rules in the generated stylesheet:
 
-- Headings and display: **Bricolage Grotesque**, **Crimson Pro**,
-  **Fraunces**, **Geist**, **Space Grotesk**, **Lora**, **Newsreader**
-- Long-form text: **Inter**, **Atkinson Hyperlegible Next**,
-  **IBM Plex Sans**, **Geist**, **Lora**, **Source Serif 4**, **Newsreader**
-- Code: **JetBrains Mono**, **Geist Mono**, **IBM Plex Mono**,
-  **Fira Code**, **Source Code Pro**, **Atkinson Hyperlegible Mono**
+- Headings: **Bricolage Grotesque**, **Space Grotesk**, **Newsreader**
+- Long-form text: **Inter**, **Source Serif 4**
+- Code: **JetBrains Mono**, **IBM Plex Mono**
+
+Any other [Google Fonts](https://fonts.google.com) family works too: leafpress
+downloads it once and self-hosts it (see [Any Google Font](#any-google-font)).
 
 leafpress also preloads one normal face for each selected family in theme role
 order (`fontHeading`, `fontBody`, then `fontMono`). Reused families and files
 are deduplicated; italic and extended-Latin faces remain demand-loaded.
 
-These groups are recommendations, not validation restrictions; any bundled
-family can be assigned to any theme role:
+These groups are recommendations, not validation restrictions; any family
+can be assigned to any theme role:
 
 ```json
 {

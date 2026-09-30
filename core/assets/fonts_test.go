@@ -8,21 +8,11 @@ import (
 func TestBuiltinFontFamilies(t *testing.T) {
 	families := BuiltinFontFamilies()
 	want := []string{
-		"Atkinson Hyperlegible Mono",
-		"Atkinson Hyperlegible Next",
 		"Bricolage Grotesque",
-		"Crimson Pro",
-		"Fira Code",
-		"Fraunces",
-		"Geist",
-		"Geist Mono",
 		"IBM Plex Mono",
-		"IBM Plex Sans",
 		"Inter",
 		"JetBrains Mono",
-		"Lora",
 		"Newsreader",
-		"Source Code Pro",
 		"Source Serif 4",
 		"Space Grotesk",
 	}

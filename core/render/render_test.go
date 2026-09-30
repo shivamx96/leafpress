@@ -309,7 +309,7 @@ func TestThemeReflectedInOutput(t *testing.T) {
 	  "config": {
 	    "theme": {
 	      "accent": "#ff0000",
-	      "fontHeading": "Lora",
+	      "fontHeading": "Newsreader",
 	      "background": {"light": "#fafafa", "dark": "#101010"}
 	    }
 	  },
@@ -319,7 +319,7 @@ func TestThemeReflectedInOutput(t *testing.T) {
 	html := pageHTML(t, out, "p")
 	for _, want := range []string{
 		"--lp-accent: #ff0000",
-		`--lp-font-heading: "Lora", Georgia, serif`,
+		`--lp-font-heading: "Newsreader", Georgia, serif`,
 		"--lp-bg: #fafafa",
 		"--lp-bg: #101010",
 	} {
@@ -392,7 +392,7 @@ func TestSiteConfigAndStyleMatchLeafpressSemantics(t *testing.T) {
 	    },
 	    "navigation":{"mode":"explicit","items":[{"label":"Start Here","path":"/alpha/"}]},
 	    "theme":{
-	      "fontHeading":"Fraunces","fontBody":"Atkinson Hyperlegible",
+	      "fontHeading":"Space Grotesk","fontBody":"Atkinson Hyperlegible",
 	      "fontMono":"IBM Plex Mono","accent":"#123456",
 	      "background":{"light":"#fafafa","dark":"#101010"},
 	      "navStyle":"sticky","navActiveStyle":"underlined"
@@ -417,7 +417,7 @@ func TestSiteConfigAndStyleMatchLeafpressSemantics(t *testing.T) {
 		`href="/notes/alpha/">Start Here</a>`,
 		`href="https://example.com/notes/alpha/"`,
 		`content="https://example.com/notes/og-default.png"`,
-		`--lp-font-heading: "Fraunces"`,
+		`--lp-font-heading: "Space Grotesk"`,
 		`--lp-accent: #123456`,
 		`--lp-bg: #fafafa`,
 		`lp-nav-active-underlined`,
