@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/shivamx96/leafpress/core/config"
 	"github.com/spf13/cobra"
@@ -52,8 +54,9 @@ func runInit(cmd *cobra.Command, args []string) error {
  * See: https://leafpress.in/guide/theming/
  *
  * Available variables:
- * --lp-font, --lp-font-mono, --lp-accent, --lp-bg, --lp-text,
- * --lp-text-muted, --lp-border, --lp-code-bg, --lp-max-width
+ * --lp-font-heading, --lp-font-body, --lp-font-mono, --lp-accent,
+ * --lp-bg, --lp-text, --lp-text-muted, --lp-border, --lp-code-bg,
+ * --lp-max-width
  */
 `
 		if err := os.WriteFile(stylePath, []byte(styleContent), 0644); err != nil {
@@ -81,12 +84,15 @@ func runInit(cmd *cobra.Command, args []string) error {
 	gitignorePath := filepath.Join(cwd, ".gitignore")
 	gitignoreEntries := "\n# leafpress\n_site/\n"
 
-	if _, err := os.Stat(gitignorePath); os.IsNotExist(err) {
+	existing, err := os.ReadFile(gitignorePath)
+	if os.IsNotExist(err) {
 		if err := os.WriteFile(gitignorePath, []byte(gitignoreEntries[1:]), 0644); err != nil {
 			return fmt.Errorf("failed to write .gitignore: %w", err)
 		}
 		fmt.Println("Created .gitignore")
-	} else {
+	} else if err != nil {
+		return fmt.Errorf("failed to read .gitignore: %w", err)
+	} else if !ignoresSiteOutput(string(existing)) {
 		f, err := os.OpenFile(gitignorePath, os.O_APPEND|os.O_WRONLY, 0644)
 		if err != nil {
 			return fmt.Errorf("failed to open .gitignore: %w", err)
@@ -120,7 +126,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 		indexPath := filepath.Join(cwd, "index.md")
 		indexContent := `---
 title: "Welcome to My Garden"
-date: 2025-01-15
+date: ` + time.Now().Format("2006-01-02") + `
 growth: "seedling"
 ---
 
@@ -143,4 +149,16 @@ This is your digital garden. Start writing!
 
 	fmt.Println("\nleafpress initialized! Run 'leafpress serve' to start the dev server.")
 	return nil
+}
+
+// ignoresSiteOutput reports whether a .gitignore already lists the default
+// output directory, so re-running init does not append a duplicate entry.
+func ignoresSiteOutput(gitignore string) bool {
+	for _, line := range strings.Split(gitignore, "\n") {
+		switch strings.TrimSpace(line) {
+		case "_site", "_site/", "/_site", "/_site/":
+			return true
+		}
+	}
+	return false
 }

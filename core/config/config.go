@@ -429,6 +429,7 @@ func Default() *Config {
 		Build: Build{
 			OutputDir: "_site",
 			Port:      3000,
+			Ignore:    []string{},
 		},
 	}
 }
@@ -520,12 +521,13 @@ func rejectRemovedKeys(data []byte) error {
 	return nil
 }
 
-// Write saves the config to a file
+// Write saves the config to a file as indented JSON ending in a newline.
 func Write(path string, cfg *Config) error {
 	data, err := json.MarshalIndent(cfg, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal config: %w", err)
 	}
+	data = append(data, '\n')
 
 	if err := os.WriteFile(path, data, 0644); err != nil {
 		return fmt.Errorf("failed to write config: %w", err)
