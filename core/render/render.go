@@ -426,12 +426,10 @@ func Render(in *Input) (*Output, error) {
 		Path: clientScriptPath, Content: clientScript, ContentType: "text/javascript; charset=utf-8", Encoding: "utf8",
 	})
 
-	// Self-contained output is the default: families with no self-hosted
-	// source fall back to the CSS system stacks, and the author is told.
-	if !cfg.Theme.RemoteFonts {
-		for _, family := range templates.UnhostedFamilies(cfg.Theme) {
-			warnings = append(warnings, templates.UnhostedFontWarning(family))
-		}
+	// Output is always self-contained: families with no self-hosted source
+	// fall back to the CSS system stacks, and the author is told.
+	for _, family := range templates.UnhostedFamilies(cfg.Theme) {
+		warnings = append(warnings, templates.UnhostedFontWarning(family))
 	}
 
 	manifest, assetWarnings, err := buildAssetManifest(in, cfg, pages)

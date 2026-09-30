@@ -87,8 +87,6 @@ HTML-label path only, leaving `$$...$$` as literal text.
 
 ## Deprecations
 
-- [ ] `theme.remoteFonts`: still an escape hatch; do not extend. Track
-      removal once migrations are done.
 - [ ] Scan config docs and changelog for other deprecated flags before a
       major cut.
 

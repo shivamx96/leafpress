@@ -105,7 +105,6 @@ default site.
 | `fontHeading` | `"Bricolage Grotesque"` | Heading font: a bundled family, a declared custom font, or any Google Fonts family (downloaded once and self-hosted) |
 | `fontBody` | `"Inter"` | Body font, chosen the same way as `fontHeading` |
 | `fontMono` | `"JetBrains Mono"` | Code font, chosen the same way as `fontHeading` |
-| `remoteFonts` | `false` | Deprecated: link unbundled families from Google Fonts instead of downloading them |
 | `fonts` | `[]` | Custom local font declarations (family, file under `static/fonts/`, weight, style, display, unicodeRange) — see [Theming](/guide/theming/) |
 | `accent` | `"#50ac00"` | Accent color for links and highlights |
 | `background.light` | `"#ffffff"` | Light mode background (color or gradient) |

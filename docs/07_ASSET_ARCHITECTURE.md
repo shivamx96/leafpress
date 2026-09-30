@@ -242,10 +242,8 @@ Font sources are a closed set; this is an explicit product decision:
    CSS fallback stack** (Georgia/system-ui/monospace): the site stays
    self-contained and the author is told why the font is not loading. The
    renderer performs no downloads; hosts supply such families as declared
-   custom fonts. The old behavior — a remote `fonts.googleapis.com` link for
-   unbundled families — survives only behind an explicit, deprecated opt-in
-   (`theme.remoteFonts: true`), which also disables downloading; it must not
-   be extended and will be removed.
+   custom fonts. Generated pages never link `fonts.googleapis.com`; the
+   former `theme.remoteFonts` opt-in is rejected with a migration hint.
 
 There are no arbitrary remote URLs in font configuration under any mode.
 

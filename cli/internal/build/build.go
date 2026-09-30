@@ -148,24 +148,21 @@ func (b *Builder) Build() (result *Stats, resultErr error) {
 	// Self-host every other family by downloading it from Google Fonts into
 	// the garden once. Families that stay unavailable fall back to system
 	// fonts with a warning explaining why.
-	if !b.cfg.Theme.RemoteFonts {
-		warnings, err := b.resolveDownloadedFonts()
-		if err != nil {
-			return nil, err
+	fontWarnings, err := b.resolveDownloadedFonts()
+	if err != nil {
+		return nil, err
+	}
+	for _, family := range templates.UnhostedFamilies(b.cfg.Theme) {
+		warning, ok := fontWarnings[family]
+		if !ok {
+			warning = templates.UnhostedFontWarning(family)
 		}
-		for _, family := range templates.UnhostedFamilies(b.cfg.Theme) {
-			warning, ok := warnings[family]
-			if !ok {
-				warning = templates.UnhostedFontWarning(family)
-			}
-			fmt.Printf("  warning: %s\n", warning)
-			stats.WarningCount++
-		}
+		fmt.Printf("  warning: %s\n", warning)
+		stats.WarningCount++
 	}
 
 	// Initialize templates
 	t0 = time.Now()
-	var err error
 	b.templates, err = templates.New()
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize templates: %w", err)

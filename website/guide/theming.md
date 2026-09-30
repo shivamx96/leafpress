@@ -142,9 +142,10 @@ Downloading "Playfair Display" from Google Fonts...
 
 ### Migrating from `remoteFonts`
 
-`"remoteFonts": true` keeps the old behavior of linking unbundled families
-from Google Fonts at read time. It is deprecated and will be removed. Delete
-it and build once: the same families are downloaded and self-hosted instead.
+The `remoteFonts` option, which linked unbundled families from Google Fonts
+at read time, has been removed, and a config that still sets it fails to
+load with an error saying so. Delete it and build once: the same families
+are downloaded and self-hosted instead.
 
 ### Custom local fonts
 
@@ -178,8 +179,8 @@ Ship your own font files under `static/fonts/` and declare them in `theme`:
   `.otf` extension, and file names may only use letters, digits, `-`, `.`,
   `_`, and `~`. The build fails if a declared file is missing.
 - Family names are matched **exactly** (case-sensitive) against
-  `fontHeading`/`fontBody`/`fontMono`. Declared families are self-hosted:
-  they never load remotely, even under `remoteFonts`.
+  `fontHeading`/`fontBody`/`fontMono`. Declared families are used as
+  declared and never downloaded.
 
 ## Colors
 

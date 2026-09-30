@@ -100,13 +100,7 @@ type Theme struct {
 	FontBody    string `json:"fontBody"`
 	FontMono    string `json:"fontMono"`
 	// Fonts declares custom local font files under static/fonts/.
-	Fonts []FontFace `json:"fonts,omitempty"`
-	// RemoteFonts is a deprecated compatibility escape hatch: when true,
-	// families outside the bundled set load from Google Fonts as before.
-	// The default is self-contained output — unknown families produce a
-	// warning and fall back to the CSS system stacks. This flag will be
-	// removed.
-	RemoteFonts    bool       `json:"remoteFonts,omitempty"`
+	Fonts          []FontFace `json:"fonts,omitempty"`
 	Accent         string     `json:"accent"`
 	Background     Background `json:"-"`              // Custom unmarshaling
 	NavStyle       string     `json:"navStyle"`       // "base", "sticky", or "glassy"
@@ -514,22 +508,38 @@ func Parse(data []byte) (*Config, error) {
 // removedKeys lists top-level keys that earlier versions accepted, with the
 // action that replaces each. Naming the fix is more useful than the generic
 // unknown-field error strict decoding would report.
-var removedKeys = []struct{ key, message string }{
-	{"deploy", `"deploy" is no longer supported: delete the "deploy" block and publish _site/ with your hosting provider's CLI or CI (leafpress deploy was removed in v1.0.0-beta.20)`},
+var removedKeys = []struct {
+	path    []string
+	message string
+}{
+	{[]string{"deploy"}, `"deploy" is no longer supported: delete the "deploy" block and publish _site/ with your hosting provider's CLI or CI (leafpress deploy was removed in v1.0.0-beta.20)`},
+	{[]string{"theme", "remoteFonts"}, `"theme.remoteFonts" is no longer supported: delete it. leafpress build now downloads Google Fonts families once and self-hosts them`},
 }
 
 func rejectRemovedKeys(data []byte) error {
-	var root map[string]json.RawMessage
-	if err := json.Unmarshal(data, &root); err != nil {
-		// Malformed input is reported by the strict decode.
-		return nil
-	}
 	for _, removed := range removedKeys {
-		if _, ok := root[removed.key]; ok {
+		if hasJSONPath(data, removed.path) {
 			return fmt.Errorf("failed to parse config: %s", removed.message)
 		}
 	}
 	return nil
+}
+
+// hasJSONPath reports whether data has an object key at path. Malformed
+// input returns false; the strict decode reports it.
+func hasJSONPath(data []byte, path []string) bool {
+	for _, key := range path {
+		var object map[string]json.RawMessage
+		if err := json.Unmarshal(data, &object); err != nil {
+			return false
+		}
+		value, ok := object[key]
+		if !ok {
+			return false
+		}
+		data = value
+	}
+	return true
 }
 
 // Write saves the config to a file as indented JSON ending in a newline.

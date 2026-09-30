@@ -359,6 +359,19 @@ func TestParse_RejectsRemovedDeployWithMigrationHint(t *testing.T) {
 	}
 }
 
+func TestParse_RejectsRemovedRemoteFontsWithMigrationHint(t *testing.T) {
+	for _, value := range []string{"true", "false"} {
+		_, err := Parse([]byte(`{"theme": {"remoteFonts": ` + value + `}}`))
+		if err == nil || !strings.Contains(err.Error(), "downloads Google Fonts families") {
+			t.Errorf("remoteFonts=%s should explain the replacement, got %v", value, err)
+		}
+	}
+	// A family literally named like the key elsewhere is not affected.
+	if _, err := Parse([]byte(`{"site": {"title": "remoteFonts"}}`)); err != nil {
+		t.Errorf("unrelated values must still parse: %v", err)
+	}
+}
+
 // --- Validation ---
 
 func TestValidate_ValidConfig(t *testing.T) {
