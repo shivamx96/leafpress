@@ -329,12 +329,31 @@ func TestParse_RejectsUnknownFields(t *testing.T) {
 		"navigation": `{"navigation": {"modee": "automatic"}}`,
 		"build":      `{"build": {"prt": 8080}}`,
 		"theme":      `{"theme": {"acent": "#ffffff"}}`,
-		"deploy":     `{"deploy": {"provder": "github-pages"}}`,
 	}
 	for name, in := range cases {
 		t.Run(name, func(t *testing.T) {
 			if _, err := Parse([]byte(in)); err == nil {
 				t.Errorf("unknown %s field should be rejected", name)
+			}
+		})
+	}
+}
+
+// The removed deploy block gets an actionable error rather than a bare
+// unknown-field message, including the empty block older `leafpress init`
+// versions wrote into every config.
+func TestParse_RejectsRemovedDeployWithMigrationHint(t *testing.T) {
+	for name, in := range map[string]string{
+		"init default": `{"deploy": {"provider": "", "settings": null}}`,
+		"configured":   `{"deploy": {"provider": "netlify", "settings": {"site": "demo"}}}`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			_, err := Parse([]byte(in))
+			if err == nil {
+				t.Fatal("deploy should be rejected")
+			}
+			if !strings.Contains(err.Error(), `delete the "deploy" block`) {
+				t.Errorf("error should explain the fix, got: %v", err)
 			}
 		})
 	}

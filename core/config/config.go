@@ -29,13 +29,12 @@ type Background struct {
 // docs/05_RENDERER_CONTRACT.md). Every field is optional and has a default, so
 // an empty object renders the default site.
 type Config struct {
-	ContractVersion int          `json:"contractVersion"`
-	Site            Site         `json:"site"`
-	Theme           Theme        `json:"theme"`
-	Features        Features     `json:"features"`
-	Navigation      Navigation   `json:"navigation"`
-	Build           Build        `json:"build"`
-	Deploy          DeployConfig `json:"deploy"`
+	ContractVersion int        `json:"contractVersion"`
+	Site            Site       `json:"site"`
+	Theme           Theme      `json:"theme"`
+	Features        Features   `json:"features"`
+	Navigation      Navigation `json:"navigation"`
+	Build           Build      `json:"build"`
 }
 
 // ContractVersionLatest is the current configuration schema version.
@@ -86,12 +85,6 @@ type Build struct {
 	OutputDir string   `json:"outputDir"`
 	Port      int      `json:"port"`
 	Ignore    []string `json:"ignore"`
-}
-
-// DeployConfig holds deployment settings
-type DeployConfig struct {
-	Provider string            `json:"provider"` // e.g., "github-pages", "netlify", "vercel"
-	Settings map[string]string `json:"settings"` // Provider-specific settings
 }
 
 // NavItem represents a navigation link
@@ -465,6 +458,10 @@ func Parse(data []byte) (*Config, error) {
 	themeDefaults := defaultTheme(requestedThemePreset(data))
 	cfg.Theme = themeDefaults
 
+	if err := rejectRemovedKeys(data); err != nil {
+		return nil, err
+	}
+
 	// Reject unknown/misplaced keys (typos, wrong nesting) rather than
 	// silently ignoring them. This applies to every nested section; Theme has
 	// a custom UnmarshalJSON that enforces the same strictness itself.
@@ -500,6 +497,27 @@ func Parse(data []byte) (*Config, error) {
 	}
 
 	return cfg, nil
+}
+
+// removedKeys lists top-level keys that earlier versions accepted, with the
+// action that replaces each. Naming the fix is more useful than the generic
+// unknown-field error strict decoding would report.
+var removedKeys = []struct{ key, message string }{
+	{"deploy", `"deploy" is no longer supported: delete the "deploy" block and publish _site/ with your hosting provider's CLI or CI (leafpress deploy was removed in v1.0.0-beta.20)`},
+}
+
+func rejectRemovedKeys(data []byte) error {
+	var root map[string]json.RawMessage
+	if err := json.Unmarshal(data, &root); err != nil {
+		// Malformed input is reported by the strict decode.
+		return nil
+	}
+	for _, removed := range removedKeys {
+		if _, ok := root[removed.key]; ok {
+			return fmt.Errorf("failed to parse config: %s", removed.message)
+		}
+	}
+	return nil
 }
 
 // Write saves the config to a file
