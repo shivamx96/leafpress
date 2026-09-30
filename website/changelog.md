@@ -4,10 +4,12 @@ date: 2025-01-06
 toc: false
 ---
 
-## Unreleased
+## v1.0.0-beta.22
+*September 30, 2026*
 
 - **Any Google Fonts family works by name, self-hosted.** Set `fontHeading`, `fontBody`, or `fontMono` to a family such as `"Playfair Display"`, and the first `leafpress build` or `serve` downloads it into `static/fonts/` with its license, recorded with checksums in `static/fonts/fonts.lock.json`. Later builds are offline and reproducible, and readers never load fonts from Google. Misspelled names suggest the closest family. `--strict` builds never download, and `--offline` or `LEAFPRESS_OFFLINE=1` turns downloads off. See [Theming](/guide/theming/).
 - `theme.fonts` entries accept an optional `unicodeRange`, so a family split into subset files can be declared.
+- The Terminal theme now honors heading and body font overrides in titles, navigation, page text, search results, and link previews.
 - **Breaking: `theme.remoteFonts` is removed.** Pages no longer link Google Fonts at read time. A config that still sets `remoteFonts` fails to load with an error saying to delete it; the next build downloads the same families and self-hosts them. The Go field `config.Theme.RemoteFonts` is removed.
 - **leafpress bundles only the seven fonts its themes use** (Bricolage Grotesque, Space Grotesk, Newsreader, Inter, Source Serif 4, JetBrains Mono, and IBM Plex Mono), about 1.2 MB less per binary. Atkinson Hyperlegible Mono and Next, Crimson Pro, Fira Code, Fraunces, Geist, Geist Mono, IBM Plex Sans, Lora, and Source Code Pro still work by name: the first CLI build downloads them from Google Fonts and self-hosts them.
 - **Breaking for renderer hosts:** `leafpress-render` no longer bundles those ten families. It warns and falls back to system fonts for them, and `assetManifest` and `emitAssets` no longer include their files. Declare them under `theme.fonts` and supply the files as assets to keep them.
