@@ -10,6 +10,7 @@ import (
 
 	"github.com/shivamx96/leafpress/core/assets"
 	"github.com/shivamx96/leafpress/core/templates"
+	"github.com/shivamx96/leafpress/core/themes"
 )
 
 // runJSON is a test helper that runs the bridge over a JSON string.
@@ -329,7 +330,7 @@ func TestThemeReflectedInOutput(t *testing.T) {
 	if !strings.Contains(out.Index, "--lp-accent: #ff0000") {
 		t.Error("index HTML missing theme accent")
 	}
-	if !strings.HasPrefix(out.CSS, templates.DefaultCSS) {
+	if !strings.HasPrefix(out.CSS, templates.CSSForPreset(themes.DefaultPreset)) {
 		t.Error("css output should start with the leafpress default stylesheet")
 	}
 	if !strings.Contains(out.CSS, "@font-face") {

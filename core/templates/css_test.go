@@ -3,26 +3,39 @@ package templates
 import (
 	"strings"
 	"testing"
+
+	"github.com/shivamx96/leafpress/core/themes"
 )
 
+// classicCSS returns the classic theme layer and the full default stylesheet
+// CSSForPreset should compose from it.
+func classicCSS(t *testing.T) (classic, full string) {
+	t.Helper()
+	definition, ok := themes.Lookup(themes.Classic)
+	if !ok {
+		t.Fatal("classic theme is not registered")
+	}
+	return definition.CSS, themes.BaseCSS + "\n" + definition.CSS
+}
+
 func TestDefaultCSSComposesBaseAndClassicTheme(t *testing.T) {
-	want := BaseCSS + "\n" + ClassicCSS
-	if DefaultCSS != want {
-		t.Fatal("DefaultCSS does not compose the embedded base and classic theme in order")
+	classic, want := classicCSS(t)
+	if got := CSSForPreset(themes.DefaultPreset); got != want {
+		t.Fatal("default preset does not compose the embedded base and classic theme in order")
 	}
 	for name, css := range map[string]string{
-		"base":    BaseCSS,
-		"classic": ClassicCSS,
+		"base":    themes.BaseCSS,
+		"classic": classic,
 	} {
 		if strings.TrimSpace(css) == "" {
 			t.Errorf("embedded %s stylesheet is empty", name)
 		}
 	}
-	if !strings.Contains(BaseCSS, "box-sizing: border-box") {
+	if !strings.Contains(themes.BaseCSS, "box-sizing: border-box") {
 		t.Error("base stylesheet is missing the shared box model")
 	}
 	for _, selector := range []string{".lp-body", ".lp-nav", ".lp-content", ".lp-search-overlay", ".lp-callout"} {
-		if !strings.Contains(ClassicCSS, selector) {
+		if !strings.Contains(classic, selector) {
 			t.Errorf("classic theme is missing representative selector %q", selector)
 		}
 	}
@@ -38,7 +51,7 @@ func TestBaseCSSOwnsSemanticTypeScale(t *testing.T) {
 		"font-size: var(--lp-font-2xl)",
 		"font-size: var(--lp-font-xl)",
 	} {
-		if !strings.Contains(BaseCSS, want) {
+		if !strings.Contains(themes.BaseCSS, want) {
 			t.Errorf("base stylesheet is missing semantic typography rule %q", want)
 		}
 	}
@@ -53,27 +66,29 @@ func TestBaseCSSOwnsResponsiveListColumns(t *testing.T) {
 		"repeat(3, minmax(0, 1fr))",
 		"@media (max-width: 768px)",
 	} {
-		if !strings.Contains(BaseCSS, want) {
+		if !strings.Contains(themes.BaseCSS, want) {
 			t.Errorf("base stylesheet is missing responsive list rule %q", want)
 		}
 	}
 }
 
 func TestCSSForPresetSelectsClassicAndDefaultsDefensively(t *testing.T) {
-	if got := CSSForPreset("classic"); got != DefaultCSS {
-		t.Error("classic preset does not reproduce DefaultCSS")
+	_, defaultCSS := classicCSS(t)
+	if got := CSSForPreset("classic"); got != defaultCSS {
+		t.Error("classic preset does not reproduce the default stylesheet")
 	}
-	if got := CSSForPreset(""); got != DefaultCSS {
+	if got := CSSForPreset(""); got != defaultCSS {
 		t.Error("empty preset does not select the default stylesheet")
 	}
-	if got := CSSForPreset("unknown"); got != DefaultCSS {
+	if got := CSSForPreset("unknown"); got != defaultCSS {
 		t.Error("unknown preset does not fall back defensively")
 	}
 }
 
 func TestCSSForPresetSelectsAuroraVisualLayer(t *testing.T) {
+	_, defaultCSS := classicCSS(t)
 	got := CSSForPreset("aurora")
-	if got == DefaultCSS {
+	if got == defaultCSS {
 		t.Fatal("aurora unexpectedly reproduced the default stylesheet")
 	}
 	for _, want := range []string{
@@ -93,8 +108,9 @@ func TestCSSForPresetSelectsAuroraVisualLayer(t *testing.T) {
 }
 
 func TestCSSForPresetSelectsPaperVisualLayer(t *testing.T) {
+	_, defaultCSS := classicCSS(t)
 	got := CSSForPreset("paper")
-	if got == DefaultCSS {
+	if got == defaultCSS {
 		t.Fatal("paper unexpectedly reproduced the default stylesheet")
 	}
 	for _, want := range []string{
@@ -114,8 +130,9 @@ func TestCSSForPresetSelectsPaperVisualLayer(t *testing.T) {
 }
 
 func TestCSSForPresetSelectsTerminalVisualLayer(t *testing.T) {
+	_, defaultCSS := classicCSS(t)
 	got := CSSForPreset("terminal")
-	if got == DefaultCSS {
+	if got == defaultCSS {
 		t.Fatal("terminal unexpectedly reproduced the default stylesheet")
 	}
 	for _, want := range []string{
