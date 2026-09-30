@@ -6,7 +6,6 @@ toc: false
 
 ## Unreleased
 
-- Fixed the website Docker build after the Go 1.26 minimum was raised; the builder and deployment examples now use Go 1.27.1, and generated site files are excluded from the Docker build context.
 - **Any Google Fonts family works by name, self-hosted.** Set `fontHeading`, `fontBody`, or `fontMono` to a family such as `"Playfair Display"`, and the first `leafpress build` or `serve` downloads it into `static/fonts/` with its license, recorded with checksums in `static/fonts/fonts.lock.json`. Later builds are offline and reproducible, and readers never load fonts from Google. Misspelled names suggest the closest family. `--strict` builds never download, and `--offline` or `LEAFPRESS_OFFLINE=1` turns downloads off. See [Theming](/guide/theming/).
 - `theme.fonts` entries accept an optional `unicodeRange`, so a family split into subset files can be declared.
 - **Breaking: `theme.remoteFonts` is removed.** Pages no longer link Google Fonts at read time. A config that still sets `remoteFonts` fails to load with an error saying to delete it; the next build downloads the same families and self-hosts them. The Go field `config.Theme.RemoteFonts` is removed.
