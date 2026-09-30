@@ -151,18 +151,20 @@ func fetch(garden *os.Root, client *Client, family string, previous *Family) (*F
 	return entry, size, nil
 }
 
-// placeFiles moves the downloaded files from stage into target. It first
-// parks each file in target under a hidden name, refusing to continue if a
-// final name is taken by a file leafpress did not download, then renames the
-// parked files into place. Files of the previous download that the new one
-// no longer needs are removed; nothing else in target is touched. Until the
-// final renames begin, a failure leaves the previous files intact.
+// placeFiles moves the downloaded files from stage into target without
+// touching anything leafpress did not download. Each file is first copied
+// into target under a random hidden name that is created exclusively, so no
+// existing file is overwritten. Then, immediately before each parked file
+// replaces an existing one, that file is re-read and must still match the
+// hash the previous download recorded; a file that was edited, even during
+// the download, stops the placement and is kept. Files of the previous
+// download that the new one no longer needs are removed under the same
+// rule. Until the final renames begin, a failure leaves every existing file
+// intact.
 func placeFiles(garden *os.Root, stage, target string, fresh, previous *Family) error {
-	owned := map[string]bool{}
+	recorded := map[string]string{}
 	if previous != nil {
-		for _, file := range previous.files() {
-			owned[filepath.FromSlash(file)] = true
-		}
+		recorded = previous.hashes()
 	}
 	if err := garden.MkdirAll(target, 0755); err != nil {
 		return err
@@ -175,36 +177,86 @@ func placeFiles(garden *os.Root, stage, target string, fresh, previous *Family) 
 		}
 	}
 	for _, file := range fresh.files() {
-		final := filepath.FromSlash(file)
-		if _, err := garden.Lstat(final); err == nil && !owned[final] {
-			cleanup()
-			return fmt.Errorf("%s was added while the family was downloading and was not downloaded by leafpress; move it and build again", file)
-		} else if err != nil && !errors.Is(err, os.ErrNotExist) {
+		tmp := filepath.Join(target, "."+filepath.Base(file)+".new-"+randomSuffix())
+		if err := copyExclusive(garden, filepath.Join(stage, filepath.Base(file)), tmp); err != nil {
 			cleanup()
 			return err
 		}
-		tmp := filepath.Join(target, "."+filepath.Base(final)+".new")
-		if err := garden.Rename(filepath.Join(stage, filepath.Base(final)), tmp); err != nil {
-			cleanup()
-			return err
-		}
-		parked[final] = tmp
+		parked[file] = tmp
 	}
-	for final, tmp := range parked {
-		if err := garden.Rename(tmp, final); err != nil {
+
+	// Check every destination before the first rename so a conflict on one
+	// file does not leave the family half replaced, then check each again
+	// immediately before it is replaced.
+	for file := range parked {
+		if err := replaceable(garden, file, recorded[file]); err != nil {
 			cleanup()
 			return err
 		}
 	}
-	for file := range owned {
+	for file, tmp := range parked {
+		if err := replaceable(garden, file, recorded[file]); err != nil {
+			cleanup()
+			return err
+		}
+		if err := garden.Rename(tmp, filepath.FromSlash(file)); err != nil {
+			cleanup()
+			return err
+		}
+	}
+	for file, sha := range recorded {
 		if _, replaced := parked[file]; replaced {
 			continue
 		}
-		if err := garden.Remove(file); err != nil && !errors.Is(err, os.ErrNotExist) {
+		// A stale file from the previous download is removed only if it is
+		// still the file that download wrote.
+		matches, exists, err := unchanged(garden, file, sha)
+		if err != nil {
 			return err
+		}
+		if exists && matches {
+			if err := garden.Remove(filepath.FromSlash(file)); err != nil && !errors.Is(err, os.ErrNotExist) {
+				return err
+			}
 		}
 	}
 	return nil
+}
+
+// replaceable reports whether the file at path may be overwritten: it must
+// not exist, or it must be unchanged since the previous download recorded
+// sha. Anything else stays.
+func replaceable(garden *os.Root, path, sha string) error {
+	matches, exists, err := unchanged(garden, path, sha)
+	if err != nil {
+		return err
+	}
+	if !exists || matches {
+		return nil
+	}
+	if sha == "" {
+		return fmt.Errorf("%s was added while the family was downloading and was not downloaded by leafpress; move it and build again", path)
+	}
+	return fmt.Errorf("%s changed while the family was downloading; leafpress kept it. Delete %s/ and build again to download the family afresh", path, filepath.ToSlash(filepath.Dir(path)))
+}
+
+// copyExclusive copies src to a new file at dst, failing if dst exists.
+func copyExclusive(garden *os.Root, src, dst string) error {
+	in, err := garden.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+	out, err := garden.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0644)
+	if err != nil {
+		return err
+	}
+	if _, err := io.Copy(out, in); err != nil {
+		out.Close()
+		garden.Remove(dst)
+		return err
+	}
+	return out.Close()
 }
 
 func formatSize(bytes int64) string {

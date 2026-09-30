@@ -165,6 +165,8 @@ func (c *Client) download(ctx context.Context, family string, garden *os.Root, s
 	if err := garden.WriteFile(filepath.Join(filepath.FromSlash(stageDir), license.file), licenseText, 0644); err != nil {
 		return nil, 0, err
 	}
+	licenseSum := sha256.Sum256(licenseText)
+	entry.LicenseSHA256 = hex.EncodeToString(licenseSum[:])
 	return entry, total + int64(len(licenseText)), nil
 }
 

@@ -39,10 +39,11 @@ type Lock struct {
 
 // Family is one downloaded font family.
 type Family struct {
-	Source      string `json:"source"`
-	License     string `json:"license"`
-	LicenseFile string `json:"licenseFile"`
-	Faces       []Face `json:"faces"`
+	Source        string `json:"source"`
+	License       string `json:"license"`
+	LicenseFile   string `json:"licenseFile"`
+	LicenseSHA256 string `json:"licenseSha256"`
+	Faces         []Face `json:"faces"`
 }
 
 // Face is one downloaded font file: a style and weight range for one
@@ -149,6 +150,31 @@ func (f *Family) files() []string {
 	return append(files, f.LicenseFile)
 }
 
+// hashes maps every owned path to the SHA-256 recorded for it.
+func (f *Family) hashes() map[string]string {
+	hashes := make(map[string]string, len(f.Faces)+1)
+	for _, face := range f.Faces {
+		hashes[face.File] = face.SHA256
+	}
+	hashes[f.LicenseFile] = f.LicenseSHA256
+	return hashes
+}
+
+// unchanged reports whether the file at path still has the recorded hash.
+// A missing file is reported separately so callers can tell "gone" from
+// "edited". An empty recorded hash never matches.
+func unchanged(garden *os.Root, path, sha string) (matches, exists bool, err error) {
+	data, err := garden.ReadFile(filepath.FromSlash(path))
+	if errors.Is(err, os.ErrNotExist) {
+		return false, false, nil
+	}
+	if err != nil {
+		return false, true, err
+	}
+	sum := sha256.Sum256(data)
+	return sha != "" && hex.EncodeToString(sum[:]) == sha, true, nil
+}
+
 // validatePaths keeps a hand-edited lock from pointing leafpress at files
 // outside the fonts directory.
 func (f *Family) validatePaths() error {
@@ -168,24 +194,18 @@ func (f *Family) validatePaths() error {
 // hide an edited one that a new download would overwrite.
 func (f *Family) check(garden *os.Root) (complete bool, err error) {
 	complete = true
-	for _, face := range f.Faces {
-		data, err := garden.ReadFile(filepath.FromSlash(face.File))
-		if errors.Is(err, os.ErrNotExist) {
-			complete = false
-			continue
-		}
+	for _, file := range f.files() {
+		matches, exists, err := unchanged(garden, file, f.hashes()[file])
 		if err != nil {
 			return false, err
 		}
-		if sum := sha256.Sum256(data); hex.EncodeToString(sum[:]) != face.SHA256 {
-			return false, fmt.Errorf("%s does not match %s; delete %s/ and build again to download it afresh", face.File, LockFile, path.Dir(face.File))
+		if !exists {
+			complete = false
+			continue
 		}
-	}
-	if _, err := garden.Stat(filepath.FromSlash(f.LicenseFile)); err != nil {
-		if !errors.Is(err, os.ErrNotExist) {
-			return false, err
+		if !matches {
+			return false, fmt.Errorf("%s does not match %s; delete %s/ and build again to download it afresh", file, LockFile, path.Dir(file))
 		}
-		complete = false
 	}
 	return complete, nil
 }

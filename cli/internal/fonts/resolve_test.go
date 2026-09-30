@@ -399,3 +399,76 @@ func TestReadLockRejectsNullFamilies(t *testing.T) {
 		t.Fatalf("a null family must be an invalid-lock error, got %v", err)
 	}
 }
+
+// A surviving file edited while a recovery download is running must not be
+// overwritten by the replacement.
+func TestResolveKeepsFilesEditedDuringRecovery(t *testing.T) {
+	root := t.TempDir()
+	server := fontstest.New(t, fontstest.Family{Name: "Test Serif", Variable: true})
+	first := resolve(t, root, server, true, "Test Serif")
+	if err := os.Remove(filepath.Join(root, first.Faces[0].File)); err != nil {
+		t.Fatal(err)
+	}
+	edited := filepath.Join(root, first.Faces[1].File)
+	server.BeforeCSS = func(string) {
+		if err := os.WriteFile(edited, []byte("wOF2 edited during download"), 0644); err != nil {
+			t.Error(err)
+		}
+	}
+	result, err := fonts.Resolve(root, []string{"Test Serif"}, fonts.Options{Download: true, Client: server.Client()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if w := result.Warnings["Test Serif"]; !strings.Contains(w, "changed while the family was downloading") {
+		t.Errorf("warning = %q", w)
+	}
+	if data, _ := os.ReadFile(edited); string(data) != "wOF2 edited during download" {
+		t.Error("the edited file was overwritten")
+	}
+	entries, _ := os.ReadDir(filepath.Join(root, "static/fonts/test-serif"))
+	for _, entry := range entries {
+		if strings.HasPrefix(entry.Name(), ".") {
+			t.Errorf("parked file left behind: %s", entry.Name())
+		}
+	}
+}
+
+// An edited license is treated like an edited font file.
+func TestResolveRefusesEditedLicense(t *testing.T) {
+	root := t.TempDir()
+	server := fontstest.New(t, fontstest.Family{Name: "Test Serif", Variable: true})
+	resolve(t, root, server, true, "Test Serif")
+	license := filepath.Join(root, "static/fonts/test-serif/OFL.txt")
+	if err := os.WriteFile(license, []byte("edited"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	_, err := fonts.Resolve(root, []string{"Test Serif"}, fonts.Options{Download: true, Client: server.Client()})
+	if err == nil || !strings.Contains(err.Error(), "OFL.txt does not match") {
+		t.Fatalf("an edited license must stop the build, got %v", err)
+	}
+}
+
+// Temporary names must never collide with, or overwrite, existing files.
+func TestResolveTemporaryFilesNeverOverwrite(t *testing.T) {
+	root := t.TempDir()
+	server := fontstest.New(t, fontstest.Family{Name: "Test Serif", Variable: true})
+	first := resolve(t, root, server, true, "Test Serif")
+	if err := os.Remove(filepath.Join(root, first.Faces[0].File)); err != nil {
+		t.Fatal(err)
+	}
+	mine := filepath.Join(root, "static/fonts/test-serif/.OFL.txt.new")
+	if err := os.WriteFile(mine, []byte("mine"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	result := resolve(t, root, server, true, "Test Serif")
+	if len(result.Faces) != 2 || len(result.Warnings) != 0 {
+		t.Fatalf("recovery should succeed: %+v", result)
+	}
+	if data, err := os.ReadFile(mine); err != nil || string(data) != "mine" {
+		t.Error("a file with a temporary-looking name was overwritten or removed")
+	}
+	entries, _ := os.ReadDir(filepath.Join(root, "static/fonts/test-serif"))
+	if len(entries) != 4 {
+		t.Errorf("unexpected folder contents: %v", entries)
+	}
+}
