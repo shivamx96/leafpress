@@ -23,8 +23,8 @@ github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2
 github.com/inconshreveable/mousetrap v1.1.0/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/russross/blackfriday/v2 v2.1.0/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
-github.com/shivamx96/leafpress/core v1.0.0-beta.21.0.20260929100241-a14a88396eb4 h1:RBouVlXLI/qKbhyb2Jm9pv5IMjJt5qe7FS9t61kEZyU=
-github.com/shivamx96/leafpress/core v1.0.0-beta.21.0.20260929100241-a14a88396eb4/go.mod h1:A7Zf97+NYUI+1WPh/QOVsrZKBj4F3hjpRcylYHJjLeM=
+github.com/shivamx96/leafpress/core v1.0.0-beta.21.0.20260930044713-a31d8b12d576 h1:8ce830rd0FKsL6tghSh9U8IgHmpvOlBhSaxY5qeZExg=
+github.com/shivamx96/leafpress/core v1.0.0-beta.21.0.20260930044713-a31d8b12d576/go.mod h1:A7Zf97+NYUI+1WPh/QOVsrZKBj4F3hjpRcylYHJjLeM=
 github.com/spf13/cobra v1.10.2 h1:DMTTonx5m65Ic0GOoRY2c16WCbHxOOw6xxezuLaBpcU=
 github.com/spf13/cobra v1.10.2/go.mod h1:7C1pvHqHw5A4vrJfjNwvOdzYu0Gml16OCs2GRiTUUS4=
 github.com/spf13/pflag v1.0.9 h1:9exaQaMOCwffKiiiYk6/BndUBv+iRViNW+4lEMi0PvY=
