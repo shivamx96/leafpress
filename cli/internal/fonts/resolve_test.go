@@ -310,11 +310,78 @@ func TestResolveRecoveryKeepsOtherFiles(t *testing.T) {
 		t.Fatal(err)
 	}
 	result := resolve(t, root, server, true, "Test Serif")
-	if !strings.Contains(result.Warnings["Test Serif"], "did not download") {
-		t.Errorf("warning = %q", result.Warnings["Test Serif"])
+	if len(result.Faces) != 2 || len(result.Warnings) != 0 {
+		t.Fatalf("recovery should succeed around other files: %+v", result)
 	}
 	if data, err := os.ReadFile(mine); err != nil || string(data) != "mine" {
 		t.Error("recovery discarded a file leafpress did not download")
+	}
+}
+
+// Files added to the family's folder while the download is in flight must
+// survive, for a first download and for a recovery.
+func TestResolvePreservesFilesAddedDuringDownload(t *testing.T) {
+	for name, recovering := range map[string]bool{"first download": false, "recovery": true} {
+		t.Run(name, func(t *testing.T) {
+			root := t.TempDir()
+			server := fontstest.New(t, fontstest.Family{Name: "Test Serif", Variable: true})
+			if recovering {
+				first := resolve(t, root, server, true, "Test Serif")
+				if err := os.Remove(filepath.Join(root, first.Faces[0].File)); err != nil {
+					t.Fatal(err)
+				}
+			}
+			added := filepath.Join(root, "static/fonts/test-serif/notes.txt")
+			server.BeforeCSS = func(string) {
+				if err := os.MkdirAll(filepath.Dir(added), 0755); err != nil {
+					t.Error(err)
+				}
+				if err := os.WriteFile(added, []byte("mine"), 0644); err != nil {
+					t.Error(err)
+				}
+			}
+			result := resolve(t, root, server, true, "Test Serif")
+			if data, err := os.ReadFile(added); err != nil || string(data) != "mine" {
+				t.Fatalf("a file added during the download was lost: %v", err)
+			}
+			if len(result.Faces) != 2 || len(result.Warnings) != 0 {
+				t.Errorf("download should still succeed: %+v", result)
+			}
+			for _, face := range result.Faces {
+				if _, err := os.Stat(filepath.Join(root, face.File)); err != nil {
+					t.Error(err)
+				}
+			}
+			entries, _ := os.ReadDir(filepath.Join(root, "static/fonts/test-serif"))
+			for _, entry := range entries {
+				if strings.HasPrefix(entry.Name(), ".") {
+					t.Errorf("parked file left behind: %s", entry.Name())
+				}
+			}
+		})
+	}
+}
+
+// A file that takes a downloaded file's name while the download runs is
+// never overwritten; the download fails and the file stays.
+func TestResolveRefusesToOverwriteFileTakingADownloadedName(t *testing.T) {
+	root := t.TempDir()
+	server := fontstest.New(t, fontstest.Family{Name: "Test Serif", Variable: true})
+	taken := filepath.Join(root, "static/fonts/test-serif/test-serif-normal-latin.woff2")
+	server.BeforeCSS = func(string) {
+		os.MkdirAll(filepath.Dir(taken), 0755)
+		os.WriteFile(taken, []byte("mine"), 0644)
+	}
+	result := resolve(t, root, server, true, "Test Serif")
+	if !strings.Contains(result.Warnings["Test Serif"], "was added while the family was downloading") {
+		t.Errorf("warning = %q", result.Warnings["Test Serif"])
+	}
+	if data, _ := os.ReadFile(taken); string(data) != "mine" {
+		t.Error("the file was overwritten")
+	}
+	entries, _ := os.ReadDir(filepath.Join(root, "static/fonts/test-serif"))
+	if len(entries) != 1 {
+		t.Errorf("failed placement left files behind: %v", entries)
 	}
 }
 

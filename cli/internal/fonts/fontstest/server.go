@@ -24,12 +24,14 @@ type Family struct {
 }
 
 // Server is a running fake. CSS lets a test replace the stylesheet body,
-// and Requests counts every request received.
+// BeforeCSS runs while a download is in progress, and Requests counts every
+// request received.
 type Server struct {
 	*httptest.Server
-	Families map[string]Family
-	CSS      func(family string) string
-	Requests atomic.Int64
+	Families  map[string]Family
+	CSS       func(family string) string
+	BeforeCSS func(family string)
+	Requests  atomic.Int64
 }
 
 // LatinRange and LatinExtRange are the unicode ranges the fake serves.
@@ -87,6 +89,9 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request) {
 		if _, ok := s.Families[name]; !ok {
 			http.Error(w, "unknown family", http.StatusBadRequest)
 			return
+		}
+		if s.BeforeCSS != nil {
+			s.BeforeCSS(name)
 		}
 		if s.CSS != nil {
 			fmt.Fprint(w, s.CSS(name))
