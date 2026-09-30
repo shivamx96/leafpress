@@ -725,7 +725,7 @@ const baseTemplate = `<!DOCTYPE html>
       </div>
       <div class="lp-nav-links">
         {{range .Site.Nav}}
-        <a class="lp-nav-link{{if hasPrefix $.CurrentPath .Path}} lp-nav-link--active lp-nav-active-{{$.Site.Theme.NavActiveStyle}}{{end}}" href="{{$.Site.BasePath}}{{.Path}}">{{.Label}}</a>
+        {{if .External}}<a class="lp-nav-link lp-nav-link--external" href="{{.Path}}" target="_blank" rel="noopener">{{.Label}}</a>{{else}}<a class="lp-nav-link{{if hasPrefix $.CurrentPath .Path}} lp-nav-link--active lp-nav-active-{{$.Site.Theme.NavActiveStyle}}{{end}}" href="{{$.Site.BasePath}}{{.Path}}">{{.Label}}</a>{{end}}
         {{end}}
       </div>
     </div>

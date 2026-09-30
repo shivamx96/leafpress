@@ -24,6 +24,10 @@
       {
         "label": "Changelog",
         "path": "/changelog/"
+      },
+      {
+        "label": "GitHub",
+        "path": "https://github.com/shivamx96/leafpress"
       }
     ]
   },

@@ -532,6 +532,48 @@ func TestValidate_NavItems(t *testing.T) {
 	if err := cfg.Validate(); err == nil {
 		t.Error("path without leading / should fail")
 	}
+
+	for _, external := range []string{
+		"https://github.com/shivamx96/leafpress",
+		"http://example.com",
+		"HTTPS://Example.com/path?q=1&r=2",
+	} {
+		cfg.Navigation.Items = []NavItem{{Label: "Code", Path: external}}
+		if err := cfg.Validate(); err != nil {
+			t.Errorf("external nav %q should pass, got: %v", external, err)
+		}
+	}
+
+	for _, invalid := range []string{
+		"https://",
+		"http:///no-host",
+		"ftp://example.com",
+		"mailto:me@example.com",
+		"javascript:alert(1)",
+		"example.com",
+	} {
+		cfg.Navigation.Items = []NavItem{{Label: "Bad", Path: invalid}}
+		if err := cfg.Validate(); err == nil {
+			t.Errorf("nav path %q should fail", invalid)
+		}
+	}
+}
+
+func TestNavItemExternal(t *testing.T) {
+	cases := map[string]bool{
+		"/":                                false,
+		"/docs/":                           false,
+		"https://example.com":              true,
+		"http://example.com/a?b=1&amp;c=2": true, // HTML-escaped by EscapeNavItems
+		"//example.com":                    false,
+		"javascript:alert(1)":              false,
+		"https:///missing-host":            false,
+	}
+	for path, want := range cases {
+		if got := (NavItem{Label: "x", Path: path}).External(); got != want {
+			t.Errorf("NavItem{Path: %q}.External() = %v, want %v", path, got, want)
+		}
+	}
 }
 
 func TestValidateBaseURL(t *testing.T) {

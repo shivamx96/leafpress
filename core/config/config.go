@@ -87,10 +87,30 @@ type Build struct {
 	Ignore    []string `json:"ignore"`
 }
 
-// NavItem represents a navigation link
+// NavItem represents a navigation link. Path is either a site-relative path
+// starting with "/" or an absolute http(s) URL that leaves the garden.
 type NavItem struct {
 	Label string `json:"label"`
 	Path  string `json:"path"`
+}
+
+// External reports whether the item links outside the garden. External items
+// are rendered verbatim: they are not prefixed with the site base path and
+// never count as the active page. The check is by scheme so it works on both
+// raw and HTML-escaped paths.
+func (n NavItem) External() bool {
+	return isExternalNavPath(n.Path)
+}
+
+// isExternalNavPath accepts only absolute http(s) URLs with a host, so
+// javascript:, data:, and scheme-relative paths cannot become nav links.
+func isExternalNavPath(p string) bool {
+	lower := strings.ToLower(p)
+	if !strings.HasPrefix(lower, "http://") && !strings.HasPrefix(lower, "https://") {
+		return false
+	}
+	u, err := url.Parse(p)
+	return err == nil && u.Host != ""
 }
 
 // Theme represents theme configuration
@@ -658,8 +678,8 @@ func (c *Config) Validate() error {
 		if nav.Path == "" {
 			return fmt.Errorf("navigation item %d (%s) has empty path", i, nav.Label)
 		}
-		if !strings.HasPrefix(nav.Path, "/") {
-			return fmt.Errorf("navigation path must start with /, got %s for %s", nav.Path, nav.Label)
+		if !strings.HasPrefix(nav.Path, "/") && !isExternalNavPath(nav.Path) {
+			return fmt.Errorf("navigation path must start with / or be an http(s) URL, got %s for %s", nav.Path, nav.Label)
 		}
 	}
 
