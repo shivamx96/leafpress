@@ -96,17 +96,27 @@ type NavItem struct {
 
 // External reports whether the item links outside the garden. External items
 // are rendered verbatim: they are not prefixed with the site base path and
-// never count as the active page. The check is by scheme so it works on both
-// raw and HTML-escaped paths.
+// never count as the active page.
+//
+// Only the scheme is inspected. Templates see paths after EscapeNavItems has
+// HTML-escaped them, and entities such as &#39; in URL userinfo would make a
+// full parse fail. Validate already required a host for every http(s) path,
+// so the prefix alone is a reliable classifier here.
 func (n NavItem) External() bool {
-	return isExternalNavPath(n.Path)
+	return hasHTTPScheme(n.Path)
 }
 
-// isExternalNavPath accepts only absolute http(s) URLs with a host, so
-// javascript:, data:, and scheme-relative paths cannot become nav links.
-func isExternalNavPath(p string) bool {
+// hasHTTPScheme reports whether p starts with http:// or https://, ignoring
+// case, so javascript:, data:, mailto: and scheme-relative paths never match.
+func hasHTTPScheme(p string) bool {
 	lower := strings.ToLower(p)
-	if !strings.HasPrefix(lower, "http://") && !strings.HasPrefix(lower, "https://") {
+	return strings.HasPrefix(lower, "http://") || strings.HasPrefix(lower, "https://")
+}
+
+// isExternalNavPath accepts only absolute http(s) URLs with a host. It runs
+// on the raw config value during validation, before any HTML escaping.
+func isExternalNavPath(p string) bool {
+	if !hasHTTPScheme(p) {
 		return false
 	}
 	u, err := url.Parse(p)

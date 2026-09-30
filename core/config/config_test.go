@@ -560,14 +560,19 @@ func TestValidate_NavItems(t *testing.T) {
 }
 
 func TestNavItemExternal(t *testing.T) {
+	// External classifies by scheme only. Templates see paths after
+	// EscapeNavItems, so entities must not affect the answer, and Validate has
+	// already rejected http(s) paths without a host.
 	cases := map[string]bool{
 		"/":                                false,
 		"/docs/":                           false,
 		"https://example.com":              true,
+		"HTTPS://EXAMPLE.COM":              true,
 		"http://example.com/a?b=1&amp;c=2": true, // HTML-escaped by EscapeNavItems
-		"//example.com":                    false,
-		"javascript:alert(1)":              false,
-		"https:///missing-host":            false,
+		"https://reader:it&#39;s@example.com/docs": true, // escaped userinfo must not break classification
+		"//example.com":         false,
+		"javascript:alert(1)":   false,
+		"mailto:me@example.com": false,
 	}
 	for path, want := range cases {
 		if got := (NavItem{Label: "x", Path: path}).External(); got != want {
