@@ -70,7 +70,7 @@ integration without giving leafpress access to a hosting account.
 
 **Dark Mode** — Built-in toggle with system preference detection.
 
-**Navigation** — Multiple styles (base, sticky, glassmorphic). Box or underlined active link indicators.
+**Navigation** — Multiple styles (base, sticky, glassmorphic). Box or underlined active link indicators. Explicit items can link to pages in the garden or to external URLs.
 
 **Custom CSS** — Drop in a `style.css` to override anything.
 

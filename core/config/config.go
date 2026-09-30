@@ -87,10 +87,40 @@ type Build struct {
 	Ignore    []string `json:"ignore"`
 }
 
-// NavItem represents a navigation link
+// NavItem represents a navigation link. Path is either a site-relative path
+// starting with "/" or an absolute http(s) URL that leaves the garden.
 type NavItem struct {
 	Label string `json:"label"`
 	Path  string `json:"path"`
+}
+
+// External reports whether the item links outside the garden. External items
+// are rendered verbatim: they are not prefixed with the site base path and
+// never count as the active page.
+//
+// Only the scheme is inspected. Templates see paths after EscapeNavItems has
+// HTML-escaped them, and entities such as &#39; in URL userinfo would make a
+// full parse fail. Validate already required a host for every http(s) path,
+// so the prefix alone is a reliable classifier here.
+func (n NavItem) External() bool {
+	return hasHTTPScheme(n.Path)
+}
+
+// hasHTTPScheme reports whether p starts with http:// or https://, ignoring
+// case, so javascript:, data:, mailto: and scheme-relative paths never match.
+func hasHTTPScheme(p string) bool {
+	lower := strings.ToLower(p)
+	return strings.HasPrefix(lower, "http://") || strings.HasPrefix(lower, "https://")
+}
+
+// isExternalNavPath accepts only absolute http(s) URLs with a host. It runs
+// on the raw config value during validation, before any HTML escaping.
+func isExternalNavPath(p string) bool {
+	if !hasHTTPScheme(p) {
+		return false
+	}
+	u, err := url.Parse(p)
+	return err == nil && u.Host != ""
 }
 
 // Theme represents theme configuration
@@ -658,8 +688,8 @@ func (c *Config) Validate() error {
 		if nav.Path == "" {
 			return fmt.Errorf("navigation item %d (%s) has empty path", i, nav.Label)
 		}
-		if !strings.HasPrefix(nav.Path, "/") {
-			return fmt.Errorf("navigation path must start with /, got %s for %s", nav.Path, nav.Label)
+		if !strings.HasPrefix(nav.Path, "/") && !isExternalNavPath(nav.Path) {
+			return fmt.Errorf("navigation path must start with / or be an http(s) URL, got %s for %s", nav.Path, nav.Label)
 		}
 	}
 

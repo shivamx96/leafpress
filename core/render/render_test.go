@@ -1234,6 +1234,58 @@ func TestNavigationContainsRootNotesAndSectionsOnly(t *testing.T) {
 	}
 }
 
+func TestExplicitNavigationRendersExternalLinks(t *testing.T) {
+	out := runJSON(t, `{
+	  "config": {
+	    "site": {"title":"Garden","baseURL":"https://example.com/notes"},
+	    "navigation":{"mode":"explicit","items":[
+	      {"label":"Docs","path":"/docs/"},
+	      {"label":"GitHub","path":"https://github.com/shivamx96/leafpress?tab=readme&x=1"}
+	    ]}
+	  },
+	  "render": {"slug":"docs"},
+	  "content": {"pages":[{"slug":"docs","title":"Docs","markdown":"Body.","createdAt":"2026-01-01T00:00:00Z"}]}
+	}`)
+
+	html := pageHTML(t, out, "docs")
+	for _, want := range []string{
+		`class="lp-nav-link lp-nav-link--active lp-nav-active-base" href="/notes/docs/">Docs</a>`,
+		`class="lp-nav-link lp-nav-link--external" href="https://github.com/shivamx96/leafpress?tab=readme&amp;x=1" target="_blank" rel="noopener">GitHub</a>`,
+	} {
+		if !strings.Contains(html, want) {
+			t.Errorf("navigation missing %s", want)
+		}
+	}
+	if strings.Contains(html, `href="/notes/https://`) {
+		t.Error("external nav link must not be prefixed with the site base path")
+	}
+}
+
+// Nav paths are HTML-escaped before templates classify them. A URL whose
+// userinfo contains a character that escaping turns into an entity must still
+// render as an external link rather than being glued onto the base path.
+func TestExternalNavLinkSurvivesHTMLEscaping(t *testing.T) {
+	out := runJSON(t, `{
+	  "config": {
+	    "site": {"title":"Garden","baseURL":"https://example.com/notes"},
+	    "navigation":{"mode":"explicit","items":[
+	      {"label":"Reader","path":"https://reader:it's@example.com/docs"}
+	    ]}
+	  },
+	  "render": {"slug":"home"},
+	  "content": {"pages":[{"slug":"home","title":"Home","markdown":"Body.","createdAt":"2026-01-01T00:00:00Z"}]}
+	}`)
+
+	html := pageHTML(t, out, "home")
+	want := `class="lp-nav-link lp-nav-link--external" href="https://reader:it&#39;s@example.com/docs" target="_blank" rel="noopener">Reader</a>`
+	if !strings.Contains(html, want) {
+		t.Errorf("navigation missing %s", want)
+	}
+	if strings.Contains(html, `href="/noteshttps://`) || strings.Contains(html, `href="/notes/https://`) {
+		t.Error("escaped external nav link must not be prefixed with the site base path")
+	}
+}
+
 func TestHostedTagsNavigationIsOptInAndRequiresTags(t *testing.T) {
 	input := &Input{
 		Render: RenderOpts{Slug: "garden"},

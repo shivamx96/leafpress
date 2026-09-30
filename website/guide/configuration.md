@@ -166,13 +166,19 @@ not repeated as a nav link.
     "items": [
       { "label": "Home", "path": "/" },
       { "label": "Docs", "path": "/docs/" },
-      { "label": "Tags", "path": "/tags/" }
+      { "label": "Tags", "path": "/tags/" },
+      { "label": "GitHub", "path": "https://github.com/shivamx96/leafpress" }
     ]
   }
 }
 ```
 
-Nav paths must start with `/`.
+Each `path` is either a site-relative path starting with `/` or an absolute
+`http://` or `https://` URL. Site-relative paths are prefixed with the
+`site.baseURL` path and highlight as the active link when the reader is on that
+page. External URLs link out of the garden: they are rendered verbatim, open in
+a new tab with `rel="noopener"`, and carry the `lp-nav-link--external` class
+for styling. Other schemes such as `mailto:` are rejected.
 
 ### `build`
 

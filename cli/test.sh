@@ -4293,6 +4293,50 @@ fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR"
 
+# Test 179: External nav links render verbatim in a new tab
+test_case "External nav links render verbatim"
+TESTDIR=$(mktemp -d)
+cd "$TESTDIR"
+"$LEAFPRESS" init > /dev/null 2>&1
+cat > leafpress.json << 'EOF'
+{
+  "site": {
+    "title": "Test",
+    "baseURL": "https://example.com/garden"
+  },
+  "navigation": {
+    "mode": "explicit",
+    "items": [
+      {
+        "label": "Notes",
+        "path": "/notes/"
+      },
+      {
+        "label": "GitHub",
+        "path": "https://github.com/shivamx96/leafpress"
+      }
+    ]
+  }
+}
+EOF
+mkdir -p notes
+cat > notes/index.md << 'EOF'
+---
+title: Notes
+---
+Content
+EOF
+"$LEAFPRESS" build > /dev/null 2>&1
+if grep -q 'class="lp-nav-link lp-nav-link--external" href="https://github.com/shivamx96/leafpress" target="_blank" rel="noopener">GitHub</a>' _site/notes/index.html \
+   && grep -q 'href="/garden/notes/">Notes</a>' _site/notes/index.html \
+   && ! grep -q 'href="/garden/https://' _site/notes/index.html; then
+    pass
+else
+    fail "External nav link was not rendered verbatim"
+fi
+cd "$ORIGDIR"
+rm -rf "$TESTDIR"
+
 # Cleanup
 rm -rf "$TESTDIR"
 
