@@ -19,6 +19,14 @@ filesystem paths into the published CLI module.
 
 ## Cutting a release
 
+The release commit must rename the `## Unreleased` section of
+`website/changelog.md` to `## vX.Y.Z` with the release date beneath it. The
+release workflow publishes that section as the GitHub release notes, with
+site-relative links made absolute and a compare link against the previous
+product tag appended; `.github/scripts/release-notes.sh vX.Y.Z` prints the
+same text locally. A release commit without a matching section fails before
+any archive is built.
+
 From a clean release commit, using `v1.0.0-beta.9` as an example:
 
 ```bash
