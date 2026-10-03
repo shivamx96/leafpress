@@ -26,13 +26,13 @@ otherwise.
 
 ## Supported versions
 
-leafpress is in public beta. Only the latest release receives security fixes.
+leafpress is in pre-release. Only the latest release receives security fixes.
 Users should upgrade with `leafpress update` or reinstall from
 <https://leafpress.in/install.sh>.
 
 | Version | Supported |
 |---------|-----------|
-| Latest `v1.0.0-beta.N` | Yes |
+| Latest `v1.0.0-rc.N` | Yes |
 | Older releases | No |
 
 Once `v1.0.0` ships this table will be updated with a support window.

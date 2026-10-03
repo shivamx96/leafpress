@@ -4,7 +4,8 @@ date: 2025-01-06
 toc: false
 ---
 
-## Unreleased
+## v1.0.0-rc.1
+*October 3, 2026*
 
 - **Navigation items can link outside the garden.** In explicit navigation mode, a `path` may be an absolute `http://` or `https://` URL as well as a site-relative path. External items are rendered verbatim, open in a new tab with `rel="noopener"`, never show as the active link, and carry the `lp-nav-link--external` class. Other schemes are still rejected. See [Configuration](/guide/configuration/#navigation).
 
