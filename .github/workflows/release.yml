@@ -55,6 +55,22 @@ jobs:
           go install github.com/shivamx96/leafpress/cli/cmd/leafpress@latest
           test "$("${GOBIN}/leafpress" version)" = "leafpress ${VERSION}"
 
+      # Release notes are the version's section of the website changelog, so
+      # the GitHub release says what the documentation says. A release commit
+      # without a changelog entry fails here, before any archive is built.
+      - name: Extract release notes
+        env:
+          VERSION: ${{ github.ref_name }}
+        run: |
+          .github/scripts/release-notes.sh "${VERSION}" > release-notes.md
+          cat release-notes.md
+
+      - name: Upload release notes
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-notes
+          path: release-notes.md
+
   build:
     needs: [validate, verify-modules]
     runs-on: ubuntu-latest
@@ -159,11 +175,18 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Download all artifacts
+      - name: Download archives
         uses: actions/download-artifact@v8
         with:
+          pattern: leafpress-*
           path: artifacts
           merge-multiple: true
+
+      - name: Download release notes
+        uses: actions/download-artifact@v8
+        with:
+          name: release-notes
+          path: notes
 
       # One flat checksums file over every archive so consumers can pin a
       # version and verify the download.
@@ -180,6 +203,6 @@ jobs:
             artifacts/**/*.tar.gz
             artifacts/**/*.zip
             artifacts/checksums.txt
-          generate_release_notes: true
+          body_path: notes/release-notes.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
