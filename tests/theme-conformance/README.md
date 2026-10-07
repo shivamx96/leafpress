@@ -4,6 +4,32 @@ This suite builds the representative garden in `testdata/theme-garden` with
 the repository's local Core and CLI, then checks every supported theme against
 the same browser-level contract.
 
+The checked-in garden keeps its Terminal preview settings. The CLI fixture test
+discovers presets through `themes.Names()` and builds each in a separate temporary
+copy, replacing only `theme.preset` before loading the config. Every preset runs
+the same component and artifact assertions, including its registered stylesheet.
+Generated `_site` output from manual previews is excluded from these copies.
+
+For a local preview of another theme, build the CLI and copy the config outside
+the fixture:
+
+```sh
+go build -o cli/leafpress ./cli/cmd/leafpress
+cd testdata/theme-garden
+cp leafpress.json /tmp/leafpress-preview.json
+```
+
+Edit `theme.preset` in that copy. Remove `navStyle` and `navActiveStyle` to try the
+preset's navigation defaults, and optionally set `listColumns` to `1`. Then run
+from the garden directory:
+
+```sh
+../../cli/leafpress serve --config /tmp/leafpress-preview.json
+```
+
+Keep the checked-in config unchanged when reviewing a theme. The browser matrix
+sets its own preset, navigation, and column settings independently.
+
 The primary matrix covers:
 
 - `classic`, `aurora`, `paper`, `quiet`, and `terminal`
