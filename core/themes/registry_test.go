@@ -10,8 +10,8 @@ func TestRegistryContainsBundledThemesAndClassicDefault(t *testing.T) {
 	if DefaultPreset != Classic {
 		t.Fatalf("default preset = %q, want %q", DefaultPreset, Classic)
 	}
-	if got := Names(); !reflect.DeepEqual(got, []string{Aurora, Classic, Paper, Terminal}) {
-		t.Fatalf("theme names = %v, want [%s %s %s %s]", got, Aurora, Classic, Paper, Terminal)
+	if got := Names(); !reflect.DeepEqual(got, []string{Aurora, Classic, Paper, Quiet, Terminal}) {
+		t.Fatalf("theme names = %v, want [%s %s %s %s %s]", got, Aurora, Classic, Paper, Quiet, Terminal)
 	}
 	definition, ok := Lookup(Classic)
 	if !ok {
