@@ -6,6 +6,18 @@
   padding: 0;
 }
 
+/* Keep menus above reading surfaces, including themes with backdrop filters.
+ * Sticky navigation keeps its template positioning; floating pills override
+ * this normal-flow position in the component styles. Overlays sit above both.
+ */
+.lp-nav {
+  z-index: 100;
+}
+
+.lp-nav:where(:not([data-nav-style="sticky"])) {
+  position: relative;
+}
+
 /*
  * Semantic typography is a product invariant. Presets may change font family,
  * weight, tracking, color, and composition, but they should not change the

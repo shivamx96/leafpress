@@ -36,6 +36,33 @@ for (const theme of themes) {
   });
 
   for (const navStyle of ["base", "sticky", "glassy"]) {
+    test(`${theme} ${navStyle} mobile menu stays above page content`, async ({ page }) => {
+      for (const width of [320, 390]) {
+        await page.setViewportSize({ width, height: 844 });
+        await page.goto(`/${theme}-${navStyle}-box/notes/components/`);
+        await page.evaluate(() => document.fonts.ready);
+        const nav = page.locator(".lp-nav");
+
+        const toggle = page.getByRole("button", { name: "Site menu", exact: true });
+        await toggle.click();
+        const tools = page.locator(".lp-nav-tools");
+        // Visibility alone passes when another stacking context covers the menu.
+        await expect.poll(() => tools.evaluate((menu) => {
+          const rect = menu.getBoundingClientRect();
+          const article = document.querySelector(".lp-article").getBoundingClientRect();
+          const x = Math.max(rect.left, article.left) + 12;
+          const y = Math.max(rect.top, article.top) + 12;
+          return x < Math.min(rect.right, article.right) &&
+            y < Math.min(rect.bottom, article.bottom) &&
+            menu.contains(document.elementFromPoint(x, y));
+        })).toBe(true);
+        if (navStyle === "sticky") await expect(nav).toHaveCSS("position", "sticky");
+        await tools.locator(".lp-theme-toggle").click();
+        await expect(tools).toBeHidden();
+        await expect(toggle).toBeFocused();
+      }
+    });
+
     test(`${theme} ${navStyle} mobile navigation stays compact and headings remain clear`, async ({ page }) => {
       await page.setViewportSize({ width: 320, height: 844 });
       const url = `/${theme}-${navStyle}-box/notes/components/`;
