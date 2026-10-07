@@ -17,7 +17,7 @@ Select a bundled visual theme with `theme.preset`:
 }
 ```
 
-leafpress ships four presets:
+leafpress ships five presets:
 
 - `classic` is the default and preserves leafpress's original, focused reading
   experience.
@@ -29,6 +29,11 @@ leafpress ships four presets:
   ruled reading sheets, sharp geometry, marginalia-like callouts, tabular
   indexes, and document-style search and graph panels. It includes coordinated
   light and dark appearances.
+- `quiet` is a minimal personal-garden theme with Inter typography, a narrow
+  centered reading column, plain lists with titles on the left and muted dates
+  on the right, understated links, and compact section spacing with comfortable
+  line height. Light and dark appearances keep callouts, backlinks, search, and
+  graph controls subdued. Use `"listColumns": 1` for a simple writing index.
 - `terminal` is a compact, command-line-inspired workspace with prompt-marked
   headings, path-like navigation, file-list indexes, structured log callouts,
   session-style code blocks, and diagnostic search and graph panels. Its light

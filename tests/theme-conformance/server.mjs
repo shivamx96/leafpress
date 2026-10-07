@@ -22,7 +22,7 @@ const workRoot = mkdtempSync(join(tmpdir(), "leafpress-theme-conformance-"));
 const publicRoot = join(workRoot, "public");
 const binaryPath = join(workRoot, "leafpress");
 
-const themes = ["classic", "aurora", "paper", "terminal"];
+const themes = ["classic", "aurora", "paper", "quiet", "terminal"];
 const navStyles = ["base", "sticky", "glassy"];
 const activeStyles = ["base", "underlined", "box"];
 
@@ -65,6 +65,8 @@ function buildFixtures() {
         config.theme = {
           ...config.theme,
           preset: theme,
+          // Keep conformance coverage independent of the manual preview settings.
+          listColumns: 2,
           navStyle,
           navActiveStyle: activeStyle
         };

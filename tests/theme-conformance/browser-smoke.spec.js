@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 // Keep this suite small enough to run on secondary browser engines on every PR.
-for (const theme of ["classic", "aurora", "paper", "terminal"]) {
+for (const theme of ["classic", "aurora", "paper", "quiet", "terminal"]) {
   test(`${theme} supports essential reader flows`, async ({ page }) => {
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));

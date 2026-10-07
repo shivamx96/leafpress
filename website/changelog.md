@@ -4,6 +4,10 @@ date: 2025-01-06
 toc: false
 ---
 
+## Unreleased
+
+- Added the `quiet` theme: Inter typography, a narrow reading column, compact spacing, and plain lists with muted dates. Includes light and dark appearances.
+
 ## v1.0.0-rc.1
 *October 3, 2026*
 

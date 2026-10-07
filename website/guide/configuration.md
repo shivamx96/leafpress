@@ -101,7 +101,7 @@ default site.
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `preset` | `"classic"` | Bundled visual theme: `"classic"`, `"aurora"`, `"paper"`, or `"terminal"` |
+| `preset` | `"classic"` | Bundled visual theme: `"classic"`, `"aurora"`, `"paper"`, `"quiet"`, or `"terminal"` |
 | `fontHeading` | `"Bricolage Grotesque"` | Heading font: a bundled family, a declared custom font, or any Google Fonts family (downloaded once and self-hosted) |
 | `fontBody` | `"Inter"` | Body font, chosen the same way as `fontHeading` |
 | `fontMono` | `"JetBrains Mono"` | Code font, chosen the same way as `fontHeading` |

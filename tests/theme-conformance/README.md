@@ -6,17 +6,17 @@ the same browser-level contract.
 
 The primary matrix covers:
 
-- `classic`, `aurora`, `paper`, and `terminal`
+- `classic`, `aurora`, `paper`, `quiet`, and `terminal`
 - `base`, `sticky`, and `glassy` navigation
 - `base`, `underlined`, and `box` active navigation treatments
 - desktop and mobile viewports
 - light and dark color schemes
 
-Those dimensions produce 144 conformance states. Four additional smoke tests
+Those dimensions produce 180 conformance states. Five additional smoke tests
 exercise the fixture's article, index, tags, table, code, quote, footnotes,
 callouts, backlinks, table of contents, theme toggle, search, and graph in every
 theme. Footnote references, endnotes, and return links are also checked in all
-144 matrix states.
+180 matrix states.
 
 Run the suite from the repository root:
 
@@ -32,7 +32,7 @@ its HTML report to `playwright-report/`.
 
 ## Mobile navigation regression checks
 
-`navigation.spec.js` adds 16 regression tests for long branding, overflow links,
+`navigation.spec.js` adds 25 regression tests for long branding, overflow links,
 heading fragments, changing header dimensions, viewport changes, and the mobile
 Site menu disclosure, including section links in the compact floating state. Run them against WebKit with:
 
@@ -46,7 +46,7 @@ navigation. Browser-engine checks do not replace a real-device Safari review.
 
 ## Secondary browser smoke checks
 
-CI runs `browser-smoke.spec.js` on Firefox and WebKit (four tests per engine),
+CI runs `browser-smoke.spec.js` on Firefox and WebKit (five tests per engine),
 while Chromium retains the complete conformance matrix. To reproduce locally:
 
 ```sh
