@@ -9,20 +9,58 @@ import (
 	"testing"
 
 	"github.com/shivamx96/leafpress/core/config"
+	"github.com/shivamx96/leafpress/core/themes"
 )
 
 // TestThemeGardenFixtureBuildsThemeSurfaces keeps the checked-in visual
 // fixture honest. Theme authors use the garden for manual review; this test
 // proves it still renders the component states and generated artifacts it
-// promises to cover.
+// promises to cover for every registered theme. Subtests stay sequential because
+// each build uses the process working directory.
 func TestThemeGardenFixtureBuildsThemeSurfaces(t *testing.T) {
 	_, thisFile, _, ok := runtime.Caller(0)
 	if !ok {
 		t.Fatal("resolve theme fixture test path")
 	}
 	fixtureDir := filepath.Join(filepath.Dir(thisFile), "..", "..", "..", "testdata", "theme-garden")
+	for _, preset := range themes.Names() {
+		t.Run(preset, func(t *testing.T) {
+			testThemeGardenPreset(t, fixtureDir, preset)
+		})
+	}
+}
+
+func testThemeGardenPreset(t *testing.T, fixtureDir, preset string) {
+	t.Helper()
 	projectDir := filepath.Join(t.TempDir(), "theme-garden")
 	copyThemeGardenFixture(t, fixtureDir, projectDir)
+
+	// Change only the preset in this isolated copy, before resolving defaults.
+	configPath := filepath.Join(projectDir, "leafpress.json")
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		t.Fatal(err)
+	}
+	var theme map[string]any
+	if err := json.Unmarshal(raw["theme"], &theme); err != nil {
+		t.Fatal(err)
+	}
+	theme["preset"] = preset
+	raw["theme"], err = json.Marshal(theme)
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err = json.Marshal(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(configPath, data, 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	t.Chdir(projectDir)
 	cfg, err := config.Load("leafpress.json")
@@ -64,7 +102,7 @@ func TestThemeGardenFixtureBuildsThemeSurfaces(t *testing.T) {
 
 	components := readThemeFixtureFile(t, siteDir, "notes/components/index.html")
 	assertThemeFixtureContains(t, "component gallery", components,
-		`data-lp-theme="quiet"`,
+		`data-lp-theme="`+preset+`"`,
 		`class="lp-toc"`,
 		`class="lp-tag"`,
 		`<table>`,
@@ -77,11 +115,13 @@ func TestThemeGardenFixtureBuildsThemeSurfaces(t *testing.T) {
 	)
 
 	styles := readThemeFixtureFile(t, siteDir, "style.css")
-	assertThemeFixtureContains(t, "theme stylesheet", styles,
-		"leafpress Base Styles",
-		"leafpress Classic Theme",
-		"leafpress Quiet Theme",
-	)
+	definition, ok := themes.Lookup(preset)
+	if !ok {
+		t.Fatalf("theme %q is not registered", preset)
+	}
+	if !strings.Contains(styles, definition.CSS) {
+		t.Errorf("theme stylesheet does not contain the registered %s visual layer", preset)
+	}
 
 	callouts := readThemeFixtureFile(t, siteDir, "notes/callouts/index.html")
 	for _, kind := range []string{
@@ -120,8 +160,8 @@ func TestThemeGardenFixtureBuildsThemeSurfaces(t *testing.T) {
 	}
 
 	css := readThemeFixtureFile(t, siteDir, "style.css")
-	assertThemeFixtureContains(t, "default stylesheet", css,
-		"/* leafpress Base Styles */", "/* leafpress Classic Theme */", "/* Self-hosted fonts */")
+	assertThemeFixtureContains(t, "shared stylesheet", css,
+		"/* leafpress Base Styles */", "/* Self-hosted fonts */")
 	if strings.Contains(css, "/* User Styles */") {
 		t.Error("theme garden must exercise pristine theme output without user style.css")
 	}
@@ -137,6 +177,10 @@ func copyThemeGardenFixture(t *testing.T, src, dst string) {
 		t.Fatalf("create copied theme fixture directory %s: %v", dst, err)
 	}
 	for _, entry := range entries {
+		// A manual preview may have generated output in the source garden.
+		if entry.Name() == "_site" {
+			continue
+		}
 		srcPath := filepath.Join(src, entry.Name())
 		dstPath := filepath.Join(dst, entry.Name())
 		if entry.IsDir() {
