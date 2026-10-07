@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-const themes = ["classic", "aurora", "paper", "terminal"];
+const themes = ["classic", "aurora", "paper", "quiet", "terminal"];
 const navStyles = ["base", "sticky", "glassy"];
 const activeStyles = ["base", "underlined", "box"];
 const colorSchemes = ["light", "dark"];

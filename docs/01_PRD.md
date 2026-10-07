@@ -121,7 +121,7 @@ full build deletes.
 | `build.outputDir` | `"_site"` | Build output directory |
 | `build.port` | `3000` | Dev server port |
 | `navigation.mode` | `"automatic"` | `"automatic"` (derive nav) or `"explicit"` (`navigation.items`) |
-| `theme.preset` | `"classic"` | Bundled visual theme (`"classic"`, `"aurora"`, `"paper"`, or `"terminal"`) |
+| `theme.preset` | `"classic"` | Bundled visual theme (`"classic"`, `"aurora"`, `"paper"`, `"quiet"`, or `"terminal"`) |
 | `theme.fontBody` | `"Inter"` | Primary font family |
 | `theme.accent` | `"#50ac00"` | Accent color for links |
 | `theme.listColumns` | `2` | List-page columns on desktop (`1`, `2`, or `3`); mobile is always one column |

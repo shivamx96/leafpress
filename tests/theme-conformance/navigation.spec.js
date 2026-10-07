@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-const themes = ["classic", "aurora", "paper", "terminal"];
+const themes = ["classic", "aurora", "paper", "quiet", "terminal"];
 test.use({ hasTouch: true });
 
 async function expectHeadingClear(page) {

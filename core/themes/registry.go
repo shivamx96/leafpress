@@ -15,6 +15,8 @@ const (
 	Classic = "classic"
 	// Paper is leafpress's editorial, print-inspired appearance.
 	Paper = "paper"
+	// Quiet is a minimal, typography-led appearance for personal gardens.
+	Quiet = "quiet"
 	// Terminal is leafpress's compact, command-line-inspired appearance.
 	Terminal = "terminal"
 	// DefaultPreset is selected when theme.preset is omitted.
@@ -64,6 +66,11 @@ var auroraCSS string
 //go:embed styles/paper.css
 var paperCSS string
 
+// Quiet retains shared component behavior while simplifying the visual layer.
+//
+//go:embed styles/quiet.css
+var quietCSS string
+
 // Terminal keeps the original component coverage as a compatibility foundation,
 // then replaces the visual composition with a compact command-line language.
 //
@@ -108,6 +115,20 @@ var registry = map[string]Definition{
 			BackgroundLight: "#faf8f3",
 			BackgroundDark:  "#191714",
 			NavStyle:        "sticky",
+			NavActiveStyle:  "underlined",
+		},
+	},
+	Quiet: {
+		Name: Quiet,
+		CSS:  classicCSS + "\n" + quietCSS,
+		Defaults: Defaults{
+			FontHeading:     "Inter",
+			FontBody:        "Inter",
+			FontMono:        "JetBrains Mono",
+			Accent:          "#737373",
+			BackgroundLight: "#fdfdfc",
+			BackgroundDark:  "#161616",
+			NavStyle:        "base",
 			NavActiveStyle:  "underlined",
 		},
 	},

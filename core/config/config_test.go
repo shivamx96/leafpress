@@ -261,6 +261,26 @@ func TestParse_PaperPresetDefaultsAndOverrides(t *testing.T) {
 	}
 }
 
+func TestParse_QuietPresetDefaultsAndOverrides(t *testing.T) {
+	cfg, err := Parse([]byte(`{"theme":{"preset":"quiet"}}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Theme.FontHeading != "Inter" || cfg.Theme.FontBody != "Inter" ||
+		cfg.Theme.NavStyle != "base" || cfg.Theme.NavActiveStyle != "underlined" ||
+		cfg.Theme.Background.Light != "#fdfdfc" || cfg.Theme.Background.Dark != "#161616" {
+		t.Fatalf("quiet defaults were not applied: %+v", cfg.Theme)
+	}
+	cfg, err = Parse([]byte(`{"theme":{"preset":"quiet","fontHeading":"Newsreader","accent":"#123456","navStyle":"sticky","background":{"light":"#ffffff"}}}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Theme.FontHeading != "Newsreader" || cfg.Theme.Accent != "#123456" ||
+		cfg.Theme.NavStyle != "sticky" || cfg.Theme.Background.Light != "#ffffff" {
+		t.Fatalf("quiet overrides were not retained: %+v", cfg.Theme)
+	}
+}
+
 func TestParse_TerminalPresetDefaultsAndOverrides(t *testing.T) {
 	cfg, err := Parse([]byte(`{"theme":{"preset":"terminal","accent":"#123456"}}`))
 	if err != nil {
@@ -314,7 +334,7 @@ func TestParse_RejectsUnknownThemePreset(t *testing.T) {
 	if err == nil {
 		t.Fatal("unknown theme preset should be rejected")
 	}
-	if !strings.Contains(err.Error(), `theme.preset must be one of "aurora", "classic", "paper", "terminal", got "nebula"`) {
+	if !strings.Contains(err.Error(), `theme.preset must be one of "aurora", "classic", "paper", "quiet", "terminal", got "nebula"`) {
 		t.Fatalf("unexpected preset error: %v", err)
 	}
 }
