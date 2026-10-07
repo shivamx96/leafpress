@@ -153,7 +153,18 @@ for (const theme of themes) {
 
             const nav = page.locator(".lp-nav");
             if (navStyle === "base") {
-              await expect(nav).toHaveCSS("position", "static");
+              // Relative positioning establishes menu layering without pinning
+              // base navigation to the viewport. Both values stay in normal flow.
+              await expect(nav).toHaveCSS("position", /^(static|relative)$/);
+              const initialTop = await nav.evaluate((element) => element.getBoundingClientRect().top);
+              await page.evaluate(() => window.scrollTo(0, 200));
+              const scrolled = await nav.evaluate((element) => ({
+                top: element.getBoundingClientRect().top,
+                scrollY: window.scrollY
+              }));
+              expect(scrolled.scrollY).toBeGreaterThan(0);
+              expect(scrolled.top + scrolled.scrollY).toBeCloseTo(initialTop, 0);
+              await page.evaluate(() => window.scrollTo(0, 0));
             } else if (navStyle === "sticky") {
               await expect(nav).toHaveCSS("position", "sticky");
             } else {
