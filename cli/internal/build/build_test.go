@@ -966,3 +966,47 @@ func TestBuildGeneratesPagesForInlineTags(t *testing.T) {
 		t.Fatalf("inline-code tag page should not exist: %v", err)
 	}
 }
+
+func TestBuildCustomFavicon(t *testing.T) {
+	dir := newTestProject(t)
+	if err := os.MkdirAll(filepath.Join(dir, "static", "uploads"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	data := []byte("custom raster bytes copied unchanged")
+	if err := os.WriteFile(filepath.Join(dir, "static", "uploads", "icon.png"), data, 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "favicon.ico"), []byte("old override"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	cfg := config.Default()
+	b := New(cfg, Options{})
+	if _, err := b.Build(); err != nil {
+		t.Fatal(err)
+	}
+	cfg.Site.Favicon = "/static/uploads/icon.png"
+	cfg.Site.BaseURL = "https://example.com/garden"
+	if _, err := New(cfg, Options{}).Build(); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(filepath.Join(dir, "_site", "static", "uploads", "icon.png"))
+	if err != nil || !bytes.Equal(got, data) {
+		t.Fatalf("copied image = %q, %v", got, err)
+	}
+	for _, name := range []string{"favicon.ico", "favicon.svg", "favicon-96x96.png"} {
+		if _, err := os.Stat(filepath.Join(dir, "_site", name)); !os.IsNotExist(err) {
+			t.Errorf("unexpected root favicon %s: %v", name, err)
+		}
+	}
+	html, err := os.ReadFile(filepath.Join(dir, "_site", "note", "index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(html), `<link rel="apple-touch-icon" href="/garden/static/uploads/icon.png">`) {
+		t.Error("custom favicon not threaded into CLI head")
+	}
+	cfg.Site.Favicon = "/outside.png"
+	if _, err := New(cfg, Options{}).Build(); err == nil || !strings.Contains(err.Error(), "site.favicon must point under /static/") {
+		t.Fatalf("outside static error = %v", err)
+	}
+}

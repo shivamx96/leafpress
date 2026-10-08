@@ -136,7 +136,7 @@ func BuiltinFontPreloadFace(family string) (BuiltinFontFace, bool) {
 // bundled set. Content-optional built-ins such as Mermaid are omitted — use
 // RequiredBuiltinsFor when diagram presence is known. This is the single
 // selection list — CLI materialization and the renderer's asset manifest must
-// both use it (via RequiredBuiltinsFor), never private copies.
+// both use it (via RequiredBuiltinsForSite), never private copies.
 func RequiredBuiltins(families ...string) []Builtin {
 	return RequiredBuiltinsFor(false, families...)
 }
@@ -145,6 +145,12 @@ func RequiredBuiltins(families ...string) []Builtin {
 // Pass includeMermaid when any page's rendered HTML contains a Mermaid diagram
 // so the script (and its MIT license text) land in the site manifest.
 func RequiredBuiltinsFor(includeMermaid bool, families ...string) []Builtin {
+	return RequiredBuiltinsForSite(includeMermaid, false, families...)
+}
+
+// RequiredBuiltinsForSite selects fonts and optional Mermaid assets, omitting
+// the root favicon set when the site uses a custom favicon.
+func RequiredBuiltinsForSite(includeMermaid, customFavicon bool, families ...string) []Builtin {
 	want := map[string]bool{}
 	for _, family := range families {
 		want[family] = true
@@ -168,6 +174,9 @@ func RequiredBuiltinsFor(includeMermaid bool, families ...string) []Builtin {
 
 	var out []Builtin
 	for _, b := range builtins {
+		if customFavicon && b.Asset.OutputPath != "" {
+			continue
+		}
 		path := b.Asset.LogicalPath
 		if isContentOptional(path) && !includeMermaid {
 			continue

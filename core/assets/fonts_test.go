@@ -204,3 +204,24 @@ func TestBuiltinFontLicenses(t *testing.T) {
 		t.Error("unknown family reported a license")
 	}
 }
+
+func TestCustomFaviconPreservesOtherBuiltinSelection(t *testing.T) {
+	for _, mermaid := range []bool{false, true} {
+		original := RequiredBuiltinsFor(mermaid, "Inter")
+		custom := RequiredBuiltinsForSite(mermaid, true, "Inter")
+		want := map[string]bool{}
+		for _, b := range original {
+			if b.Asset.OutputPath == "" {
+				want[b.Asset.LogicalPath] = true
+			}
+		}
+		if len(custom) != len(want) {
+			t.Fatalf("custom selection has %d assets, want %d", len(custom), len(want))
+		}
+		for _, b := range custom {
+			if !want[b.Asset.LogicalPath] {
+				t.Errorf("unexpected asset %s", b.Asset.LogicalPath)
+			}
+		}
+	}
+}

@@ -125,6 +125,7 @@ type SiteData struct {
 	BaseURL           string
 	BasePath          string // Path portion of BaseURL (e.g., "/repo-name" for GitHub Pages)
 	Image             string // Default OG image path
+	Favicon           string // Custom site-relative raster icon
 	TOC               bool
 	Graph             bool
 	Search            bool
@@ -586,9 +587,10 @@ const baseTemplate = `<!DOCTYPE html>
   </script>
   <title>{{block "title" .}}{{.Site.Title}}{{end}}</title>
   {{block "seo" .}}{{end}}
-  <link rel="icon" type="image/svg+xml" href="{{.Site.BasePath}}/favicon.svg">
+  {{if .Site.Favicon}}<link rel="icon" href="{{.Site.BasePath}}{{.Site.Favicon}}">
+  <link rel="apple-touch-icon" href="{{.Site.BasePath}}{{.Site.Favicon}}">{{else}}<link rel="icon" type="image/svg+xml" href="{{.Site.BasePath}}/favicon.svg">
   <link rel="icon" type="image/png" sizes="96x96" href="{{.Site.BasePath}}/favicon-96x96.png">
-  <link rel="icon" type="image/x-icon" href="{{.Site.BasePath}}/favicon.ico">
+  <link rel="icon" type="image/x-icon" href="{{.Site.BasePath}}/favicon.ico">{{end}}
   {{if .Site.RSS}}<link rel="alternate" type="application/rss+xml" title="{{.Site.Title}}" href="{{.Site.BasePath}}/feed.xml">{{end}}
   {{block "feeds" .}}{{end}}
   {{range fontPreloads .Site.Theme}}<link rel="preload" href="{{$.Site.BasePath}}/{{.Path}}" as="font" type="{{.ContentType}}" crossorigin>
@@ -2038,8 +2040,10 @@ const pageTemplate = `
   <meta property="og:site_name" content="{{.Site.Title}}">
   {{if .Site.BaseURL}}<meta property="og:url" content="{{.Site.BaseURL}}{{.Page.Permalink}}">{{end}}
   {{if .Page.Image}}<meta property="og:image" content="{{if .Site.BaseURL}}{{.Site.BaseURL}}{{end}}{{.Page.Image}}">
-  {{else if .Site.Image}}<meta property="og:image" content="{{if .Site.BaseURL}}{{.Site.BaseURL}}{{end}}{{.Site.Image}}">{{end}}
-  <meta name="twitter:card" content="summary">
+  <meta name="twitter:image" content="{{if .Site.BaseURL}}{{.Site.BaseURL}}{{end}}{{.Page.Image}}">
+  {{else if .Site.Image}}<meta property="og:image" content="{{if .Site.BaseURL}}{{.Site.BaseURL}}{{end}}{{.Site.Image}}">
+  <meta name="twitter:image" content="{{if .Site.BaseURL}}{{.Site.BaseURL}}{{end}}{{.Site.Image}}">{{end}}
+  <meta name="twitter:card" content="{{if or .Page.Image .Site.Image}}summary_large_image{{else}}summary{{end}}">
   <meta name="twitter:title" content="{{.Page.Title}}">
   <meta name="twitter:description" content="{{.Page.SEODescription}}">
 {{end}}
@@ -2138,8 +2142,9 @@ const indexTemplate = `
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="{{.Site.Title}}">
   {{if .Site.BaseURL}}<meta property="og:url" content="{{.Site.BaseURL}}{{.CurrentPath}}">{{end}}
-  {{if .Site.Image}}<meta property="og:image" content="{{if .Site.BaseURL}}{{.Site.BaseURL}}{{end}}{{.Site.Image}}">{{end}}
-  <meta name="twitter:card" content="summary">
+  {{if .Site.Image}}<meta property="og:image" content="{{if .Site.BaseURL}}{{.Site.BaseURL}}{{end}}{{.Site.Image}}">
+  <meta name="twitter:image" content="{{if .Site.BaseURL}}{{.Site.BaseURL}}{{end}}{{.Site.Image}}">{{end}}
+  <meta name="twitter:card" content="{{if .Site.Image}}summary_large_image{{else}}summary{{end}}">
   <meta name="twitter:title" content="{{.Title}}">
   <meta name="twitter:description" content="{{if and .Site.Description (eq .CurrentPath "/")}}{{.Site.Description}}{{else}}{{.Title}} - {{.Site.Title}}{{end}}">
 {{end}}
@@ -2185,8 +2190,10 @@ const tagIndexTemplate = `
   <meta property="og:description" content="Browse all tags - {{.Site.Title}}">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="{{.Site.Title}}">
-  {{if .Site.BaseURL}}<meta property="og:url" content="{{.Site.BaseURL}}/tags/">{{end}}
-  <meta name="twitter:card" content="summary">
+  {{if .Site.BaseURL}}<meta property="og:url" content="{{.Site.BaseURL}}/tags/">{{end}}{{if .Site.Image}}
+  <meta property="og:image" content="{{if .Site.BaseURL}}{{.Site.BaseURL}}{{end}}{{.Site.Image}}">
+  <meta name="twitter:image" content="{{if .Site.BaseURL}}{{.Site.BaseURL}}{{end}}{{.Site.Image}}">{{end}}
+  <meta name="twitter:card" content="{{if .Site.Image}}summary_large_image{{else}}summary{{end}}">
   <meta name="twitter:title" content="Tags">
   <meta name="twitter:description" content="Browse all tags - {{.Site.Title}}">
 {{end}}
@@ -2216,8 +2223,10 @@ const tagPageTemplate = `
   <meta property="og:description" content="Pages tagged with #{{.Tag}} - {{.Site.Title}}">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="{{.Site.Title}}">
-  {{if .Site.BaseURL}}<meta property="og:url" content="{{.Site.BaseURL}}/tags/{{.Tag}}/">{{end}}
-  <meta name="twitter:card" content="summary">
+  {{if .Site.BaseURL}}<meta property="og:url" content="{{.Site.BaseURL}}/tags/{{.Tag}}/">{{end}}{{if .Site.Image}}
+  <meta property="og:image" content="{{if .Site.BaseURL}}{{.Site.BaseURL}}{{end}}{{.Site.Image}}">
+  <meta name="twitter:image" content="{{if .Site.BaseURL}}{{.Site.BaseURL}}{{end}}{{.Site.Image}}">{{end}}
+  <meta name="twitter:card" content="{{if .Site.Image}}summary_large_image{{else}}summary{{end}}">
   <meta name="twitter:title" content="#{{.Tag}}">
   <meta name="twitter:description" content="Pages tagged with #{{.Tag}} - {{.Site.Title}}">
 {{end}}

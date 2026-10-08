@@ -480,16 +480,15 @@ func callerAssets(in *Input) (assets.Manifest, error) {
 // buildAssetManifest produces the combined referenced manifest: required
 // built-ins with caller entries merged over them (a caller entry replaces a
 // built-in on effective-output-path collision — the favicon-override rule),
-// plus warnings for custom font files the configuration references but the
-// caller never declared. Mermaid is included only when content uses diagrams.
+// plus warnings for custom fonts and site images whose files are undeclared. Mermaid is included only when content uses diagrams.
 func buildAssetManifest(in *Input, cfg *config.Config, pages []*content.Page) (assets.Manifest, []string, error) {
 	caller, err := callerAssets(in)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	required := assets.RequiredBuiltinsFor(
-		content.UsesMermaid(pages),
+	required := assets.RequiredBuiltinsForSite(
+		content.UsesMermaid(pages), cfg.Site.Favicon != "",
 		cfg.Theme.FontHeading, cfg.Theme.FontBody, cfg.Theme.FontMono,
 	)
 	builtinAssets := make([]assets.Asset, 0, len(required))
@@ -516,6 +515,19 @@ func buildAssetManifest(in *Input, cfg *config.Config, pages []*content.Page) (a
 			warnings = append(warnings, fmt.Sprintf(
 				"custom font %q references %s, which is not declared in the caller asset manifest; the site will 404 it unless the host serves it another way",
 				face.Family, face.File))
+		}
+	}
+	served := map[string]bool{}
+	for _, a := range merged {
+		served["/"+a.EffectiveOutputPath()] = true
+	}
+	for _, field := range []struct{ name, path string }{
+		{"site.favicon", cfg.Site.Favicon}, {"site.image", cfg.Site.Image},
+	} {
+		if strings.HasPrefix(field.path, "/static/") && !served[field.path] {
+			warnings = append(warnings, fmt.Sprintf(
+				"%s references %s, which is not declared in the merged asset manifest; the site will 404 it unless the host serves it another way",
+				field.name, field.path))
 		}
 	}
 	return merged, warnings, nil
@@ -670,6 +682,7 @@ func resolveConfig(in *Input) (*config.Config, templates.SiteData, error) {
 		BaseURL:           cfg.Site.BaseURL,
 		BasePath:          basePath,
 		Image:             cfg.Site.Image,
+		Favicon:           cfg.Site.Favicon,
 		TOC:               cfg.Features.TOC,
 		Graph:             cfg.Features.Graph,
 		Search:            cfg.Features.Search,

@@ -389,3 +389,23 @@ Key classes you might want to customize:
 - `.lp-callout` — Callout boxes
 - `.lp-graph` — Graph container
 - `.lp-search` — Search component
+
+## Custom favicon
+
+Use a single PNG, JPEG, or WebP as your site's browser and Apple touch icon:
+
+```json
+{
+  "site": {
+    "favicon": "/static/images/icon.png",
+    "image": "/static/images/social.jpg"
+  }
+}
+```
+
+Place these files in `static/images/`. The favicon replaces the three built-in
+root icons; leafpress copies the raster unchanged, without creating ICO or SVG
+variants. Omit `favicon` to keep the default icon set. `image` controls the
+social-preview fallback, including section and tag pages. See
+[Configuration](/guide/configuration/#favicons-and-social-images) for path rules
+and page-image precedence.

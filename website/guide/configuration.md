@@ -43,6 +43,7 @@ default site.
     "baseURL": "https://example.com",
     "description": "A collection of thoughts and ideas",
     "image": "/static/images/og-image.png",
+    "favicon": "/static/images/icon.png",
     "headExtra": "<script defer data-domain=\"example.com\" src=\"https://plausible.io/js/script.js\"></script>"
   },
 
@@ -94,7 +95,8 @@ default site.
 | `author` | `""` | Author name for RSS feed and footer copyright |
 | `baseURL` | `""` | Canonical **absolute** URL (e.g. `https://example.com` or `https://example.com/notes`). Used for canonical links, and required for `sitemap.xml` and the RSS feed (see below). The internal link path is derived from its path component. |
 | `description` | `""` | Site description for SEO |
-| `image` | `""` | Default OG image for social sharing |
+| `image` | `""` | Default Open Graph and Twitter image for social sharing |
+| `favicon` | `""` | Single raster icon under `/static/`; empty uses built-in favicons |
 | `headExtra` | `""` | Custom HTML injected into `<head>` (see [Custom Head Content](#custom-head-content)) |
 
 ### `theme`
@@ -315,3 +317,23 @@ title: "Short Note"
 toc: false
 ---
 ```
+
+## Favicons and social images
+
+Set `site.favicon` to `/static/images/icon.png` (or a JPEG/WebP) to use one
+image for both the browser icon and Apple touch icon. Put the file at
+`static/images/icon.png`; leafpress copies its original bytes. It skips the
+built-in `favicon.svg`, `favicon-96x96.png`, and `favicon.ico` in this mode,
+including any project-root overrides. No conversion is performed. Leave
+`favicon` empty to retain the built-in set and root-file override behavior.
+CLI builds require custom favicons under `/static/`.
+
+`site.image` supplies the social image for home, section and tag pages, and
+is the fallback for notes without a frontmatter `image`. Notes with their own
+image take precedence. Images produce matching Open Graph and Twitter image
+tags and a `summary_large_image` card; pages without an image use `summary`.
+
+Both site fields require a site-relative path starting with `/`, without a
+scheme or host, `..` segments, query strings or fragments. The site's base
+path is added automatically. For hosted rendering, declare uploaded images in
+the caller asset manifest; a missing `/static/` reference produces a warning.

@@ -34,7 +34,8 @@ the historical `config.Default()` values.
     "description": "Notes grown in public",
     "author": "Garden Author",
     "baseURL": "https://example.com/notes",
-    "image": "/og-image.png",
+    "image": "/static/uploads/social.jpg",
+    "favicon": "/static/uploads/icon.png",
     "headExtra": ""
   },
   "theme": {
@@ -73,7 +74,7 @@ the historical `config.Default()` values.
 | Section | Field | Default |
 | --- | --- | --- |
 | `site` | `title` | `"My Garden"` |
-| | `description`, `author`, `baseURL`, `image`, `headExtra` | `""` |
+| | `description`, `author`, `baseURL`, `image`, `favicon`, `headExtra` | `""` |
 | `theme` | `preset` | `"classic"` |
 | | `fontHeading` / `fontBody` / `fontMono` | `"Bricolage Grotesque"` / `"Inter"` / `"JetBrains Mono"` |
 | | `accent` | `"#50ac00"` |
@@ -105,6 +106,20 @@ Site identity and SEO. `baseURL` is the site's canonical **absolute** URL
 derived from its path component — there is no separate path-prefix field, and
 no second URL-shaped key with different meaning. `headExtra` is a trusted
 owner escape hatch injected verbatim into `<head>` (see Trust boundary).
+
+`image` is the default social-preview image. `favicon` is a single raster icon
+(PNG, JPEG, or WebP); empty selects the built-in favicon set. Both paths must
+start with `/`, have no scheme or host, no `..` segment, and no query or
+fragment. Paths are relative to the site, so the configured base path is added
+to favicon links and the canonical base URL to social-image URLs. No image is
+fetched or converted; there is no ICO or SVG derivation.
+
+A custom favicon produces one `icon` and one `apple-touch-icon` link to the
+same file, replacing all three built-in links. Pages use their page image when
+set, otherwise `site.image`; home, section-home, tag-index and tag pages use
+`site.image`. Whenever an Open Graph image is emitted, a matching
+`twitter:image` and `summary_large_image` card are emitted. Without an image,
+the card remains `summary`.
 
 ### `theme`
 
@@ -206,7 +221,7 @@ The full object read from stdin:
     shared base, selected bundled theme, and self-hosted fonts using the same
     CLI composition. Trusted owner configuration.
   - `assets` (default `[]`) — declares the user assets the caller will serve
-    alongside the site (custom fonts under `static/fonts/` today). Each entry
+    alongside the site (custom fonts and uploaded favicon/social images under `static/`). Each entry
     carries `logicalPath`, `contentType`, `sha256`, `size`, and an optional
     site-relative `outputPath`, validated with the shared manifest rules.
     Entries in the reserved `static/leafpress/` namespace are rejected. An
@@ -342,6 +357,19 @@ metadata only: logical path, content type, lowercase-hex SHA-256, size, and the
 site-relative output path when it differs from the logical path. Hosts
 materialize each entry through their own storage and serve it at its output
 path inside the garden's route.
+
+When `site.favicon` is set, the root favicon built-ins are omitted from the
+required set, the merged manifest, and `emitAssets` bytes (caller-declared
+entries are still retained). Declare the uploaded file normally with a
+`static/uploads/...` logical path and no `outputPath`. For example,
+`site.favicon: "/static/uploads/icon.png"` references the asset with
+`logicalPath: "static/uploads/icon.png"`. The host serves the original bytes.
+The same applies to `site.image`. A configured favicon or site image under
+`/static/` whose served path is absent from the merged manifest produces a
+warning, not an error. Paths outside `/static/` are accepted by the renderer
+without manifest warnings; the host is responsible for serving them. The CLI
+requires custom favicons under `/static/`, which its normal static copy step
+materializes.
 
 **Synchronization is hash-driven, per entry.** The manifest lists only what the
 current configuration references, so no single identifier can stand in for "I
