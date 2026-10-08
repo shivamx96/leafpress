@@ -44,6 +44,8 @@ Everything you need to build a digital garden, nothing you don't.
 
 **Image Width** — Control image size with Obsidian syntax: `![[photo.png|500]]` sets the width to 500px.
 
+**Full-Size Images** — Every content image opens its full-size file in a new tab when clicked. Images you link yourself are left as written.
+
 ## Publishing
 
 **Portable Publishing** — `leafpress build` writes plain static files to `_site/`.

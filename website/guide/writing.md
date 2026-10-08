@@ -178,6 +178,11 @@ Obsidian-style embeds also work:
 
 The pipe value is treated as width if numeric, alt text otherwise. Images in `static/images/` are copied to the output.
 
+Content images are shown at most 600px wide, and every image links to its own
+file so readers can open it full size in a new tab. Images you wrap in a link
+yourself, such as a badge pointing at a project page, keep your link. Video and
+audio embeds are not affected.
+
 ### Video & Audio
 
 Embed local media with Obsidian syntax:
