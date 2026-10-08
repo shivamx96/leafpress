@@ -113,6 +113,30 @@ func TestBuildSharesOneContentAddressedClientScript(t *testing.T) {
 
 // newTestProject creates a minimal project in a temp dir and chdirs into it
 // (Builder resolves the project root from the working directory).
+func TestBuildRejectsPageNamedAfterSectionFeed(t *testing.T) {
+	dir := newTestProject(t)
+	if err := os.MkdirAll(filepath.Join(dir, "posts"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	for name, body := range map[string]string{
+		"posts/hello.md":    "# Hello\n",
+		"posts/feed.xml.md": "# Clash\n",
+	} {
+		if err := os.WriteFile(filepath.Join(dir, filepath.FromSlash(name)), []byte(body), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	cfg := config.Default()
+	cfg.Site.BaseURL = "https://example.com"
+	_, err := New(cfg, Options{}).Build()
+	if err == nil || !strings.Contains(err.Error(), `page "posts/feed.xml.md" publishes at /posts/feed.xml/, which is where leafpress writes the generated file posts/feed.xml`) {
+		t.Fatalf("expected reserved artifact route error, got %v", err)
+	}
+	if strings.Contains(err.Error(), "is a directory") {
+		t.Fatalf("collision should be caught before writing output: %v", err)
+	}
+}
+
 func newTestProject(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
