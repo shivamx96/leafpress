@@ -258,6 +258,7 @@ func (b *Builder) Build() (result *Stats, resultErr error) {
 		BaseURL:     b.cfg.Site.BaseURL,
 		BasePath:    basePath,
 		Image:       b.cfg.Site.Image,
+		Favicon:     b.cfg.Site.Favicon,
 		TOC:         b.cfg.Features.TOC,
 		Graph:       b.cfg.Features.Graph,
 		Search:      b.cfg.Features.Search,
@@ -1606,6 +1607,12 @@ func (b *Builder) copyStatic() error {
 // (assets.RootBuiltins), so adding a root built-in cannot silently split
 // CLI materialization from the renderer's manifest.
 func (b *Builder) copyFavicons() error {
+	if b.cfg.Site.Favicon != "" {
+		if !strings.HasPrefix(b.cfg.Site.Favicon, "/static/") {
+			return fmt.Errorf("site.favicon must point under /static/ for CLI builds; place the image in static/ so it is copied to the output")
+		}
+		return nil
+	}
 	for _, builtin := range assets.RootBuiltins() {
 		name := builtin.Asset.EffectiveOutputPath()
 		userPath := filepath.Join(b.rootDir, name)
@@ -1638,9 +1645,9 @@ func (b *Builder) copyFavicons() error {
 // manifest and template URLs (_site/static/leafpress/...). Root favicons are
 // copyFavicons' job.
 func (b *Builder) materializeRequiredBuiltins(pages []*content.Page) error {
-	// Shared selection list with the renderer (assets.RequiredBuiltinsFor).
-	for _, builtin := range assets.RequiredBuiltinsFor(
-		content.UsesMermaid(pages),
+	// Shared selection list with the renderer (assets.RequiredBuiltinsForSite).
+	for _, builtin := range assets.RequiredBuiltinsForSite(
+		content.UsesMermaid(pages), b.cfg.Site.Favicon != "",
 		b.cfg.Theme.FontHeading, b.cfg.Theme.FontBody, b.cfg.Theme.FontMono,
 	) {
 		if builtin.Asset.OutputPath != "" {
