@@ -55,6 +55,73 @@ func TestValidateOutputRoutes(t *testing.T) {
 			pages: []*Page{{SourcePath: "one.md", Slug: "one", Tags: []string{"../outside"}}},
 			want:  `invalid tag "../outside"`,
 		},
+		{
+			name:  "page named after the global feed",
+			pages: []*Page{{SourcePath: "feed.xml.md", Slug: "feed.xml"}},
+			want:  `page "feed.xml.md" publishes at /feed.xml/, which is where leafpress writes the generated file feed.xml; rename the file`,
+		},
+		{
+			name:  "page named after another root artifact",
+			pages: []*Page{{SourcePath: "Sitemap.XML.md", Slug: "Sitemap.XML"}},
+			want:  `generated file sitemap.xml`,
+		},
+		{
+			name: "page named after a section feed",
+			pages: []*Page{
+				{SourcePath: "posts/hello.md", Slug: "posts/hello"},
+				{SourcePath: "posts/feed.xml.md", Slug: "posts/feed.xml"},
+			},
+			want: `page "posts/feed.xml.md" publishes at /posts/feed.xml/, which is where leafpress writes the generated file posts/feed.xml`,
+		},
+		{
+			name: "page named after an explicit section's feed",
+			pages: []*Page{
+				{SourcePath: "posts/_index.md", Slug: "posts", IsIndex: true},
+				{SourcePath: "posts/feed.xml.md", Slug: "posts/feed.xml"},
+			},
+			want: `generated file posts/feed.xml`,
+		},
+		{
+			name: "content below a section feed",
+			pages: []*Page{
+				{SourcePath: "posts/hello.md", Slug: "posts/hello"},
+				{SourcePath: "posts/feed.xml/deep.md", Slug: "posts/feed.xml/deep"},
+			},
+			want: `generated file posts/feed.xml`,
+		},
+		{
+			name: "page named after a tag feed",
+			pages: []*Page{
+				{SourcePath: "one.md", Slug: "one", Tags: []string{"Go"}},
+				{SourcePath: "tags/go/feed.xml.md", Slug: "tags/go/feed.xml"},
+			},
+			want: `output route "/tags/go/"`, // the tag route itself is reserved first
+		},
+		{
+			name: "page named after a page's index.html",
+			pages: []*Page{
+				{SourcePath: "notes.md", Slug: "notes"},
+				{SourcePath: "notes/index.html.md", Slug: "notes/index.html"},
+			},
+			want: `output route "/notes/"`, // notes/ is already a section-vs-page clash
+		},
+		{
+			name: "page below a section's index.html",
+			pages: []*Page{
+				{SourcePath: "notes/_index.md", Slug: "notes", IsIndex: true},
+				{SourcePath: "notes/index.html.md", Slug: "notes/index.html"},
+			},
+			want: `page "notes/index.html.md" publishes at /notes/index.html/, which is where leafpress writes the generated file notes/index.html`,
+		},
+		{
+			name: "dotted slugs that do not name artifacts stay valid",
+			pages: []*Page{
+				{SourcePath: "release/_index.md", Slug: "release", IsIndex: true},
+				{SourcePath: "release/v1.2.md", Slug: "release/v1.2", Tags: []string{"go"}},
+				{SourcePath: "notes/feed.md", Slug: "notes/feed"},
+				{SourcePath: "notes/feed.xml.old.md", Slug: "notes/feed.xml.old"},
+			},
+		},
 	}
 
 	for _, tt := range tests {

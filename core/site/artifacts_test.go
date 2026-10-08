@@ -64,7 +64,7 @@ func TestArtifactShapesAndOrdering(t *testing.T) {
 	)
 	for _, want := range []string{
 		"<title>A &amp; B</title>",
-		"<description>O&apos;Reilly's digital garden</description>",
+		"<description>O&apos;Reilly&apos;s digital garden</description>",
 		"<title>Alpha &amp; One</title>",
 		"https://example.com/garden/feed.xml",
 	} {
@@ -137,6 +137,88 @@ func TestRSSOrderingAndTruncationAreDeterministicAndUTF8Safe(t *testing.T) {
 	}
 	if strings.Contains(feed, "�") || !strings.Contains(feed, strings.Repeat("界", 300)+"...") {
 		t.Fatal("RSS description was not truncated at a rune boundary")
+	}
+}
+
+func TestFeedsEmitSectionAndTagFeeds(t *testing.T) {
+	now := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	older := now.Add(-48 * time.Hour)
+	pages := []*content.Page{
+		{Slug: "about", Title: "About", Permalink: "/about/", Date: now, Tags: []string{"Meta"}},
+		{Slug: "posts", Title: "Posts & Essays", Permalink: "/posts/", IsIndex: true},
+		{Slug: "posts/hello", Title: "Hello", Permalink: "/posts/hello/", Date: now, Tags: []string{"meta", "go"}},
+		{Slug: "posts/2026/deep", Title: "Deep", Permalink: "/posts/2026/deep/", Date: older},
+		{Slug: "recipes/soup", Title: "Soup", Permalink: "/recipes/soup/", Date: older},
+	}
+	feeds := Feeds(pages, templates.SiteData{Title: "Garden"}, "https://example.com/g/", now)
+
+	var paths []string
+	byPath := make(map[string]string)
+	for _, feed := range feeds {
+		paths = append(paths, feed.Path)
+		byPath[feed.Path] = feed.Content
+	}
+	wantPaths := []string{
+		"feed.xml",
+		"posts/feed.xml", "posts/2026/feed.xml", "recipes/feed.xml",
+		"tags/go/feed.xml", "tags/meta/feed.xml",
+	}
+	if strings.Join(paths, "|") != strings.Join(wantPaths, "|") {
+		t.Fatalf("feed paths = %v, want %v", paths, wantPaths)
+	}
+
+	for path, document := range byPath {
+		var root struct{ XMLName xml.Name }
+		if err := xml.Unmarshal([]byte(document), &root); err != nil {
+			t.Errorf("%s is invalid XML: %v\n%s", path, err, document)
+		}
+	}
+
+	posts := byPath["posts/feed.xml"]
+	for _, want := range []string{
+		"<title>Posts &amp; Essays | Garden</title>",
+		"<link>https://example.com/g/posts/</link>",
+		`<atom:link href="https://example.com/g/posts/feed.xml" rel="self"`,
+		"<description>Posts &amp; Essays - Garden</description>",
+		"<title>Hello</title>",
+		"<title>Deep</title>",
+	} {
+		if !strings.Contains(posts, want) {
+			t.Errorf("posts feed missing %q: %s", want, posts)
+		}
+	}
+	for _, absent := range []string{"<title>About</title>", "<title>Soup</title>", "<title>Posts &amp; Essays</title>\n"} {
+		if strings.Contains(posts, absent) {
+			t.Errorf("posts feed should not contain %q: %s", absent, posts)
+		}
+	}
+	if strings.Index(posts, "<title>Hello</title>") > strings.Index(posts, "<title>Deep</title>") {
+		t.Error("section feed should list newest pages first")
+	}
+
+	recipes := byPath["recipes/feed.xml"]
+	if !strings.Contains(recipes, "<title>Recipes | Garden</title>") || !strings.Contains(recipes, "<title>Soup</title>") {
+		t.Errorf("auto-titled section feed is wrong: %s", recipes)
+	}
+
+	meta := byPath["tags/meta/feed.xml"]
+	for _, want := range []string{
+		"<title>#meta | Garden</title>",
+		"<link>https://example.com/g/tags/meta/</link>",
+		`<atom:link href="https://example.com/g/tags/meta/feed.xml" rel="self"`,
+		"<description>Pages tagged with #meta - Garden</description>",
+		"<title>About</title>",
+		"<title>Hello</title>",
+	} {
+		if !strings.Contains(meta, want) {
+			t.Errorf("tag feed missing %q: %s", want, meta)
+		}
+	}
+	if strings.Contains(meta, "<title>Deep</title>") {
+		t.Errorf("tag feed should only list tagged pages: %s", meta)
+	}
+	if strings.Contains(byPath["feed.xml"], "<title>Posts &amp; Essays</title>") {
+		t.Error("global feed should still exclude index pages")
 	}
 }
 

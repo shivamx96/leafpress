@@ -54,7 +54,7 @@ integration without giving leafpress access to a hosting account.
 
 **SEO Ready** — Automatic robots.txt, Open Graph tags, Twitter cards, plus sitemap.xml when `site.baseURL` is set.
 
-**RSS Feed** — Auto-generated feed.xml with nav icon. Toggle with `features.rss` in config (requires `site.baseURL`).
+**RSS Feeds** — Auto-generated `feed.xml` with nav icon, plus a feed beside every section home (`posts/feed.xml`) and every tag page (`tags/idea/feed.xml`) so readers can follow just one folder or topic. Toggle with `features.rss` in config (requires `site.baseURL`).
 
 **Page Sharing** — Opt into compact native-share and copy-link buttons beside each note's metadata. Browsers without native sharing still offer copy-link.
 

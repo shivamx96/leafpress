@@ -134,7 +134,7 @@ Gradients work too:
 | `search` | `true` | Enable the full-text search UI (⌘K). The page index used by search and link previews is always generated |
 | `wikilinks` | `true` | Enable wiki-link processing |
 | `backlinks` | `true` | Show backlinks section on pages |
-| `rss` | `true` | Generate RSS feed and show feed icon in nav (requires `site.baseURL`) |
+| `rss` | `true` | Generate RSS feeds and show the feed icon in nav (requires `site.baseURL`). Writes the global `feed.xml` plus one feed per section and per tag; see [RSS feeds](#rss-feeds). |
 | `sharing` | `false` | Show inline native-share (when supported) and copy-link buttons on pages |
 
 ### `navigation`
@@ -228,12 +228,33 @@ Earlier versions accepted a `deploy` object. It is now rejected: delete the
 block from `leafpress.json` and publish `_site/` with your hosting provider's
 tooling. See the deployment guides for examples.
 
+## RSS feeds
+
+With `features.rss` enabled, leafpress writes three kinds of feed:
+
+| Feed | Path | Contents |
+|------|------|----------|
+| Global | `/feed.xml` | Every page in the garden |
+| Section | `/posts/feed.xml` | Every page under that folder, nested folders included |
+| Tag | `/tags/idea/feed.xml` | Every page carrying that tag |
+
+Each feed lists the 20 most recent pages, newest first, using the `modified`
+date when present and `date` otherwise. Section feeds take their title from
+the section's `_index.md`, or from the folder name when there is none. Tag
+feeds use the lowercase tag name that the tag page already uses.
+
+The nav icon and the `<link rel="alternate">` in every page's `<head>` point
+at the global feed. Section homes and tag pages additionally advertise their
+own feed, so a reader app pointed at `https://example.com/posts/` discovers
+`https://example.com/posts/feed.xml` on its own.
+
 ## A note on `baseURL`, sitemap & RSS
 
-`sitemap.xml`, the RSS feed (`feed.xml`), and the `Sitemap:` line in
-`robots.txt` all need an absolute origin. If `site.baseURL` is empty, leafpress
-**skips** those artifacts (and prints a warning) rather than emitting invalid
-relative URLs. Set `site.baseURL` to your production URL to enable them.
+`sitemap.xml`, the RSS feeds (`feed.xml` and the per-section and per-tag
+feeds), and the `Sitemap:` line in `robots.txt` all need an absolute origin.
+If `site.baseURL` is empty, leafpress **skips** those artifacts (and prints a
+warning) rather than emitting invalid relative URLs. Set `site.baseURL` to
+your production URL to enable them.
 
 ## Custom Head Content
 

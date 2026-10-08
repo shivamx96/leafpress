@@ -59,6 +59,8 @@ The link is gone.
 	assertFileNotContains(t, filepath.Join(dir, "_site", "tags", "shared", "index.html"), ">Old Title<")
 	assertFileContains(t, filepath.Join(dir, "_site", "feed.xml"), "<title>New Title</title>")
 	assertFileNotContains(t, filepath.Join(dir, "_site", "feed.xml"), "<title>Old Title</title>")
+	assertFileContains(t, filepath.Join(dir, "_site", "tags", "shared", "feed.xml"), "<title>New Title</title>")
+	assertFileNotContains(t, filepath.Join(dir, "_site", "tags", "shared", "feed.xml"), "<title>Old Title</title>")
 	assertFileContains(t, filepath.Join(dir, "_site", "sitemap.xml"), "<lastmod>2026-02-03</lastmod>")
 	if _, err := os.Stat(filepath.Join(dir, "_site", filepath.FromSlash(assets.BuiltinMermaidJS))); err != nil {
 		t.Fatalf("incremental rebuild did not materialize Mermaid: %v", err)
