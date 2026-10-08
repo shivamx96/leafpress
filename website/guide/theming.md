@@ -17,28 +17,45 @@ Select a bundled visual theme with `theme.preset`:
 }
 ```
 
-leafpress ships five presets:
+leafpress ships five presets. Each one has coordinated light and dark
+appearances, previewed below on the same sample garden. This documentation
+site uses the `aurora` preset, so the pages you are reading are a live example
+of it.
 
 - `classic` is the default and preserves leafpress's original, focused reading
   experience.
+
+  ![The classic preset in light and dark mode](/static/images/theme-classic.webp)
+
 - `aurora` is an expressive composition with a gradient canvas, floating glass
   navigation, layered reading surfaces, card-based indexes and backlinks, and
   elevated search and graph panels. It includes coordinated light and dark
   appearances.
+
+  ![The aurora preset in light and dark mode](/static/images/theme-aurora.webp)
+
 - `paper` is an editorial, print-inspired composition with serif typography,
   ruled reading sheets, sharp geometry, marginalia-like callouts, tabular
   indexes, and document-style search and graph panels. It includes coordinated
   light and dark appearances.
+
+  ![The paper preset in light and dark mode](/static/images/theme-paper.webp)
+
 - `quiet` is a minimal personal-garden theme with Inter typography, a narrow
   centered reading column, plain lists with titles on the left and muted dates
   on the right, understated links, and compact section spacing with comfortable
   line height. Light and dark appearances keep callouts, backlinks, search, and
   graph controls subdued. Use `"listColumns": 1` for a simple writing index.
+
+  ![The quiet preset in light and dark mode](/static/images/theme-quiet.webp)
+
 - `terminal` is a compact, command-line-inspired workspace with prompt-marked
   headings, path-like navigation, file-list indexes, structured log callouts,
   session-style code blocks, and diagnostic search and graph panels. Its light
   appearance resembles printed terminal output; its dark appearance uses a
   restrained phosphor palette.
+
+  ![The terminal preset in light and dark mode](/static/images/theme-terminal.webp)
 
 Presets are complete component themes rather than color-only variations.
 They share leafpress's semantic type scale, so switching presets preserves
