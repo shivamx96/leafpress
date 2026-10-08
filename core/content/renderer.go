@@ -210,6 +210,10 @@ var (
 	calloutStartRegex = regexp.MustCompile(`(?m)^>\s*\[!(\w+)\](?:\s+(.*))?$`)
 	// Image regex for lazy loading (captures attributes, handles self-closing)
 	imgTagFullRegex = regexp.MustCompile(`<img\s+([^>]*?)\s*/?\s*>`)
+	// Source attribute of an image tag, for image links
+	imgSrcAttrRegex = regexp.MustCompile(`\ssrc="([^"]*)"`)
+	// An opening anchor tag immediately before an image, for image links
+	openAnchorRegex = regexp.MustCompile(`<a(?:\s[^>]*)?>\s*$`)
 	// Blockquote citation regex: matches <p>- Author</p> or <p>— Author</p> at end of blockquote
 	blockquoteCiteRegex = regexp.MustCompile(`(?s)(<blockquote>\s*(?:<p>.*?</p>\s*)*)<p>\s*[-–—]\s*(.+?)\s*</p>\s*(</blockquote>)`)
 	// Blockquote citation from list: matches single-item <ul><li>Author</li></ul> at end of blockquote
@@ -525,9 +529,51 @@ func (r *Renderer) processPostMarkdown(html string) string {
 	result = r.processExternalLinks(result)
 	// Add lazy loading to images
 	result = processLazyImages(result)
+	// Wrap images in links to their source
+	result = processImageLinks(result)
 	// Convert blockquote citations
 	result = processBlockquoteCitations(result)
 	return result
+}
+
+// processImageLinks wraps each image that is not already inside a link in
+// <a class="lp-image-link" href="SRC" target="_blank" rel="noopener">, so
+// readers can open the full-size file in a new tab. Images the author linked
+// by hand and images without a usable src are left as written. The anchor is
+// emitted after external-link processing so an image hosted elsewhere never
+// gets the external-link affordance.
+func processImageLinks(html string) string {
+	matches := imgTagFullRegex.FindAllStringSubmatchIndex(html, -1)
+	if len(matches) == 0 {
+		return html
+	}
+
+	var b strings.Builder
+	b.Grow(len(html) + 96*len(matches))
+	last := 0
+	for _, m := range matches {
+		start, end := m[0], m[1]
+		tag := html[start:end]
+		b.WriteString(html[last:start])
+		last = end
+
+		src := ""
+		if sm := imgSrcAttrRegex.FindStringSubmatch(tag); sm != nil {
+			src = strings.TrimSpace(sm[1])
+		}
+		if src == "" || openAnchorRegex.MatchString(html[:start]) {
+			b.WriteString(tag)
+			continue
+		}
+
+		b.WriteString(`<a class="lp-image-link" href="`)
+		b.WriteString(src)
+		b.WriteString(`" target="_blank" rel="noopener">`)
+		b.WriteString(tag)
+		b.WriteString(`</a>`)
+	}
+	b.WriteString(html[last:])
+	return b.String()
 }
 
 // processMermaidBlocks converts mermaid code blocks into divs for client-side rendering

@@ -18,9 +18,9 @@ Select a bundled visual theme with `theme.preset`:
 ```
 
 leafpress ships five presets. Each one has coordinated light and dark
-appearances, previewed below on the same sample garden. This documentation
-site uses the `aurora` preset, so the pages you are reading are a live example
-of it.
+appearances, previewed below on the same sample garden; click a preview to
+open it full size. This documentation site uses the `aurora` preset, so the
+pages you are reading are a live example of it.
 
 - `classic` is the default and preserves leafpress's original, focused reading
   experience.

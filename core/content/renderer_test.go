@@ -124,6 +124,78 @@ func TestRender_ImageEmbedWithWidth(t *testing.T) {
 	}
 }
 
+// --- Image links ---
+
+func TestRender_ImageLinksWrapMarkdownImage(t *testing.T) {
+	r := NewRenderer(nil, false, "")
+	html, _ := r.Render("![A photo](/static/images/photo.png)")
+	want := `<a class="lp-image-link" href="/static/images/photo.png" target="_blank" rel="noopener"><img src="/static/images/photo.png" alt="A photo" loading="lazy" decoding="async"></a>`
+	if !strings.Contains(html, want) {
+		t.Errorf("image link not emitted\nwant substring: %s\ngot: %s", want, html)
+	}
+}
+
+func TestRender_ImageLinksWrapObsidianEmbeds(t *testing.T) {
+	r := NewRenderer(nil, false, "/garden")
+	html, _ := r.Render("![[photo.png]]\n\n![[photo.png|500]]")
+	if got := strings.Count(html, `<a class="lp-image-link" href="/garden/static/images/photo.png" target="_blank" rel="noopener"><img`); got != 2 {
+		t.Errorf("want 2 image links with the base path, got %d in %s", got, html)
+	}
+	if !strings.Contains(html, `width="500"`) {
+		t.Error("width attribute should survive image linking")
+	}
+}
+
+func TestRender_ImageLinksKeepAuthorLinks(t *testing.T) {
+	r := NewRenderer(nil, false, "")
+	html, _ := r.Render("[![Badge](/static/images/badge.svg)](https://example.com/project)")
+	if strings.Contains(html, "lp-image-link") {
+		t.Errorf("an image the author already linked must not be wrapped again, got %s", html)
+	}
+	if !strings.Contains(html, `href="https://example.com/project"`) {
+		t.Errorf("author link should be preserved, got %s", html)
+	}
+}
+
+func TestRender_ImageLinksSkipMediaAndSourcelessImages(t *testing.T) {
+	r := NewRenderer(nil, false, "")
+	html, _ := r.Render("![[demo.mp4]]\n\n<img alt=\"decorative\">")
+	if strings.Contains(html, "lp-image-link") {
+		t.Errorf("video embeds and images without src must not be linked, got %s", html)
+	}
+}
+
+func TestRender_ImageLinksRemoteImageHasNoExternalAffordance(t *testing.T) {
+	r := NewRenderer(nil, false, "")
+	html, _ := r.Render("![Remote](https://cdn.example.com/pic.jpg)")
+	if !strings.Contains(html, `<a class="lp-image-link" href="https://cdn.example.com/pic.jpg" target="_blank" rel="noopener"><img`) {
+		t.Errorf("remote image should be linked to its URL, got %s", html)
+	}
+	if strings.Contains(html, "lp-external") || strings.Contains(html, "↗") {
+		t.Errorf("image link must not get the external-link arrow, got %s", html)
+	}
+}
+
+func TestRender_ImageLinksInEscapeMode(t *testing.T) {
+	r := NewRenderer(nil, false, "")
+	r.SetEscapeRawHTML(true)
+	html, _ := r.Render("![[photo.png]]\n\n<img src=\"/evil.png\">")
+	if got := strings.Count(html, "lp-image-link"); got != 1 {
+		t.Errorf("only the renderer-generated image should be linked, got %d in %s", got, html)
+	}
+	if !strings.Contains(html, "&lt;img") {
+		t.Errorf("author-typed raw image should stay escaped, got %s", html)
+	}
+}
+
+func TestRenderPages_ImageLinks(t *testing.T) {
+	page := &Page{Title: "Pics", Slug: "pics", RawContent: "![One](/static/images/one.png)"}
+	RenderPages([]*Page{page}, false, nil, "")
+	if !strings.Contains(page.HTMLContent, `class="lp-image-link"`) {
+		t.Errorf("RenderPages should link images, got %s", page.HTMLContent)
+	}
+}
+
 func TestRender_VideoEmbed(t *testing.T) {
 	r := NewRenderer(nil, false, "")
 	html, _ := r.Render("![[demo.mp4]]")
