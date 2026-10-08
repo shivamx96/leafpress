@@ -1,0 +1,54 @@
+{
+  "config": {
+    "site": {
+      "baseURL": "https://example.com/garden",
+      "favicon": "/static/uploads/icon.png",
+      "image": "/static/uploads/social.jpg"
+    }
+  },
+  "render": {
+    "slug": "garden"
+  },
+  "content": {
+    "pages": [
+      {
+        "slug": "notes",
+        "isIndex": true,
+        "title": "Notes"
+      },
+      {
+        "slug": "notes/plain",
+        "title": "Plain",
+        "tags": [
+          "shared"
+        ]
+      },
+      {
+        "slug": "notes/photo",
+        "title": "Photo",
+        "image": "/static/uploads/page.webp"
+      },
+      {
+        "slug": "generated/child",
+        "title": "Child"
+      }
+    ],
+    "assets": [
+      {
+        "logicalPath": "static/uploads/icon.png",
+        "contentType": "image/png",
+        "sha256": "452a6264ad5b14bd220ff9842d11c67f54d440eb27f3c3e90515ec090b907b09",
+        "size": 8
+      },
+      {
+        "logicalPath": "static/uploads/social.jpg",
+        "contentType": "image/jpeg",
+        "sha256": "bdd35f6f95b88d2148093e5f067c7acae91752bf19279517c8911df2d46b65ec",
+        "size": 10
+      }
+    ]
+  },
+  "options": {
+    "emitAssets": true
+  }
+}

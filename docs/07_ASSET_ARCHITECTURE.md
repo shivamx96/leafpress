@@ -149,7 +149,7 @@ A pure renderer cannot discover user-uploaded files, so the flow is explicit
 in the JSON contract:
 
 **Input.** The caller may supply `assets`: a manifest of user assets it will
-serve (custom font files, and in the future other referenced static files).
+serve (custom font files and uploaded favicon/social images).
 Entries are validated with the shared rules. Logical paths in the reserved
 `static/leafpress/` namespace are always invalid — built-in content has one
 source of truth, the registry. An explicit `outputPath` on a caller entry is
@@ -162,7 +162,7 @@ Duplicate logical or output paths among caller entries are an input error.
 
 **Combination.** The output manifest is:
 
-1. the **referenced built-ins** — favicons (linked from every page head),
+1. the **referenced built-ins** — favicons (linked from every page head unless `site.favicon` is set),
    the bundled font faces **and OFL license texts** of configured families
    (license entries follow the same materialization and `emitAssets` rules
    as the faces), and **content-optional** built-ins only when used (Mermaid
@@ -280,6 +280,24 @@ built-in **replaces the built-in's manifest entry**, everywhere:
 
 Manifests always describe what is actually served; a consumer must never see
 a built-in hash for a file the user overrode.
+
+A site may instead set `site.favicon` to a single raster file, such as
+`/static/uploads/icon.png`. Every head links that file as both `icon` and
+`apple-touch-icon`; no ICO or SVG files are derived. The root favicon trio is
+then omitted from required built-ins and their emitted bytes. Caller manifest
+entries are retained, including any explicitly declared legacy root overrides.
+The CLI skips root overrides and built-in favicon copying in this mode and
+requires the configured path under `/static/`, where normal copying serves it.
+
+`site.image` supplies the social-preview fallback on pages and the image on
+home, section-home, and tag pages. Both site image fields require a path
+starting with `/`, without a scheme, host, parent traversal, query or fragment.
+Hosts declare uploaded images as ordinary `static/...` assets without an
+`outputPath`. If either reference is under `/static/` but its served path is
+missing from the merged manifest, the renderer warns, just as it does for an
+undeclared custom font. It never fetches images or emits caller-owned bytes.
+Image metadata includes both `og:image` and `twitter:image` and selects a
+`summary_large_image` Twitter card; image-free pages retain `summary`.
 
 ### 8. Security rules (summary)
 

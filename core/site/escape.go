@@ -25,6 +25,7 @@ func SafeSiteData(site templates.SiteData) templates.SiteData {
 	site.Author = html.EscapeString(site.Author)
 	site.BaseURL = html.EscapeString(site.BaseURL)
 	site.Image = html.EscapeString(site.Image)
+	site.Favicon = html.EscapeString(site.Favicon)
 	if site.FooterAttribution != nil {
 		attribution := *site.FooterAttribution
 		attribution.Name = html.EscapeString(attribution.Name)
@@ -42,6 +43,7 @@ func RawSiteData(site templates.SiteData, baseURL string) templates.SiteData {
 	site.Description = html.UnescapeString(site.Description)
 	site.Author = html.UnescapeString(site.Author)
 	site.Image = html.UnescapeString(site.Image)
+	site.Favicon = html.UnescapeString(site.Favicon)
 	site.BaseURL = baseURL
 	return site
 }

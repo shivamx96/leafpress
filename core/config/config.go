@@ -47,6 +47,7 @@ type Site struct {
 	Description string `json:"description"` // Site-wide meta description
 	Author      string `json:"author"`
 	BaseURL     string `json:"baseURL"`
+	Favicon     string `json:"favicon"`   // Site-relative raster icon; empty uses built-ins
 	Image       string `json:"image"`     // Default OG image path (e.g., "/og-image.png")
 	HeadExtra   string `json:"headExtra"` // Custom HTML to inject in <head>
 }
@@ -598,6 +599,14 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("site.baseURL: %w", err)
 	}
 
+	for _, field := range []struct{ name, value string }{
+		{"site.favicon", c.Site.Favicon}, {"site.image", c.Site.Image},
+	} {
+		if err := validateSiteImagePath(field.value); err != nil {
+			return fmt.Errorf("%s: %w", field.name, err)
+		}
+	}
+
 	// Validate port range
 	if c.Build.Port < 1 || c.Build.Port > 65535 {
 		return fmt.Errorf("port must be between 1 and 65535, got %d", c.Build.Port)
@@ -757,6 +766,27 @@ func validateBaseURL(raw string) error {
 	}
 	if strings.HasPrefix(parsed.EscapedPath(), "//") {
 		return fmt.Errorf("path must not begin with //")
+	}
+	return nil
+}
+
+// validateSiteImagePath accepts local URL paths, never remote references.
+func validateSiteImagePath(value string) error {
+	if value == "" {
+		return nil
+	}
+	u, err := url.Parse(value)
+	if err != nil || !strings.HasPrefix(value, "/") || strings.HasPrefix(value, "//") ||
+		u.Scheme != "" || u.Host != "" || strings.ContainsAny(value, "?#\\") {
+		return fmt.Errorf("must be a site-relative path starting with /, with no scheme, host, backslash, query or fragment")
+	}
+	for _, segment := range strings.Split(u.Path, "/") {
+		if segment == ".." {
+			return fmt.Errorf("must not contain a .. path segment")
+		}
+	}
+	if strings.ContainsAny(u.Path, "\\\r\n\t") || strings.HasPrefix(u.Path, "//") {
+		return fmt.Errorf("must be a site-relative path without backslashes or control characters")
 	}
 	return nil
 }

@@ -1,0 +1,39 @@
+{
+  "config": {
+    "site": {
+      "baseURL": "https://example.com/garden"
+    }
+  },
+  "render": {
+    "slug": "garden"
+  },
+  "content": {
+    "pages": [
+      {
+        "slug": "notes",
+        "isIndex": true,
+        "title": "Notes"
+      },
+      {
+        "slug": "notes/plain",
+        "title": "Plain",
+        "tags": [
+          "shared"
+        ]
+      },
+      {
+        "slug": "notes/photo",
+        "title": "Photo",
+        "image": "/static/uploads/page.webp"
+      },
+      {
+        "slug": "generated/child",
+        "title": "Child"
+      }
+    ],
+    "assets": []
+  },
+  "options": {
+    "emitAssets": true
+  }
+}
