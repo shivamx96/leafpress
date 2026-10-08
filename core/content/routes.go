@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path"
 	"regexp"
+	"sort"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -50,6 +51,8 @@ func ValidateSlug(slug string) error {
 // metadata.
 func ValidateOutputRoutes(pages []*Page) error {
 	claims := make(map[string]string)
+	sections := make(map[string]bool)
+	tags := make(map[string]bool)
 	claim := func(route, owner string) error {
 		route = strings.Trim(route, "/")
 		if err := ValidateSlug(route); err != nil {
@@ -109,6 +112,7 @@ func ValidateOutputRoutes(pages []*Page) error {
 		}
 		if page.IsIndex {
 			indexBySection[page.Slug] = true
+			sections[strings.ToLower(page.Slug)] = true
 		}
 	}
 
@@ -125,6 +129,7 @@ func ValidateOutputRoutes(pages []*Page) error {
 		if err := claim(section, fmt.Sprintf("generated section %q", section)); err != nil {
 			return err
 		}
+		sections[strings.ToLower(section)] = true
 	}
 
 	seenTags := make(map[string]bool)
@@ -147,9 +152,73 @@ func ValidateOutputRoutes(pages []*Page) error {
 			if err := claim(path.Join("tags", tag), fmt.Sprintf("generated tag %q", tag)); err != nil {
 				return err
 			}
+			tags[tag] = true
 		}
 	}
 
+	return rejectReservedFileRoutes(claims, sections, tags)
+}
+
+// rootArtifacts are the files leafpress writes at the site root beside
+// index.html. A page whose route names one of them (feed.xml.md publishing at
+// /feed.xml/) would turn that file into a directory.
+var rootArtifacts = []string{
+	"index.html", "feed.xml", "sitemap.xml", "robots.txt", "404.html",
+	"graph.json", "search-index.json", "style.css",
+}
+
+// rejectReservedFileRoutes fails when a claimed route is, or sits beneath,
+// a file leafpress generates: every route's own index.html, the root
+// artifacts, each section's feed.xml, and each tag's feed.xml. Routes are
+// directories on disk, so such a claim cannot coexist with the file. The
+// check is unconditional: it does not matter whether a feature that writes
+// the file is enabled, a page named feed.xml is never what the author meant.
+func rejectReservedFileRoutes(claims map[string]string, sections, tags map[string]bool) error {
+	reserved := make(map[string]string)
+	for _, name := range rootArtifacts {
+		reserved[name] = name
+	}
+	for route := range claims {
+		if route != "" {
+			reserved[route+"/index.html"] = route + "/index.html"
+		}
+	}
+	for section := range sections {
+		if section != "" {
+			reserved[section+"/feed.xml"] = section + "/feed.xml"
+		}
+	}
+	for tag := range tags {
+		reserved["tags/"+tag+"/feed.xml"] = "tags/" + tag + "/feed.xml"
+	}
+
+	// Deterministic order so the same input always reports the same route.
+	keys := make([]string, 0, len(claims))
+	for key := range claims {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		if key == "" {
+			continue
+		}
+		// Walk every prefix of the route: a page at /feed.xml/deep/ is
+		// just as impossible as one at /feed.xml/.
+		segments := strings.Split(key, "/")
+		for i := 1; i <= len(segments); i++ {
+			prefix := strings.Join(segments[:i], "/")
+			file, ok := reserved[prefix]
+			if !ok {
+				continue
+			}
+			owner := claims[key]
+			err := fmt.Errorf("%s publishes at %s, which is where leafpress writes the generated file %s", owner, displayRoute(key), file)
+			if strings.HasPrefix(owner, "page \"") && strings.HasSuffix(owner, ".md\"") {
+				return fmt.Errorf("%w; rename the file or set a different slug in the page's frontmatter", err)
+			}
+			return err
+		}
+	}
 	return nil
 }
 

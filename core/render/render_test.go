@@ -1456,6 +1456,23 @@ func TestPageReadingTimeRejectsNonPositiveOverride(t *testing.T) {
 	}
 }
 
+func TestRenderRejectsRoutesNamedAfterGeneratedFiles(t *testing.T) {
+	_, err := Render(&Input{
+		Render: RenderOpts{Slug: "g"},
+		Content: Content{Pages: []InputPage{
+			{Slug: "posts/hello", Title: "Hello"},
+			{Slug: "posts/feed.xml", Title: "Clash"},
+		}},
+	})
+	if err == nil || !strings.Contains(err.Error(), "generated file posts/feed.xml") {
+		t.Fatalf("expected reserved artifact route error, got %v", err)
+	}
+	var inputErr *InputError
+	if !errors.As(err, &inputErr) {
+		t.Fatalf("reserved artifact route should be an InputError, got %T", err)
+	}
+}
+
 func TestRenderRejectsConflictingOutputRoutes(t *testing.T) {
 	_, err := Render(&Input{
 		Render: RenderOpts{Slug: "g"},
