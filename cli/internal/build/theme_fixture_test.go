@@ -91,6 +91,8 @@ func testThemeGardenPreset(t *testing.T, fixtureDir, preset string) {
 		"graph.json",
 		"search-index.json",
 		"feed.xml",
+		"journal/feed.xml",
+		"tags/design/feed.xml",
 		"style.css",
 		"static/images/theme-swatch.svg",
 		"static/leafpress/mermaid/mermaid.min.js",

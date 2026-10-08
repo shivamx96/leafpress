@@ -1142,6 +1142,7 @@ func (b *Builder) rebuildSectionListing(sectionSlug string) error {
 	if len(b.pagesBySection[sectionSlug]) == 0 {
 		outPath := filepath.Join(b.outputDir, sectionSlug, "index.html")
 		_ = os.Remove(outPath)
+		_ = os.Remove(filepath.Join(filepath.Dir(outPath), "feed.xml"))
 		_ = os.Remove(filepath.Dir(outPath))
 		return nil
 	}
@@ -1737,13 +1738,21 @@ func (b *Builder) generate404(siteData templates.SiteData) error {
 	return os.WriteFile(outPath, []byte(html), 0644)
 }
 
-// generateRSS writes the feed.xml file. RSS does its own XML encoding, so it
-// receives the un-escaped spelling of every title and description.
+// generateRSS writes the global feed.xml plus one feed beside each section
+// home and each tag page. RSS does its own XML encoding, so it receives the
+// un-escaped spelling of every title and description.
 func (b *Builder) generateRSS(pages []*content.Page, siteData templates.SiteData) error {
-	outPath := filepath.Join(b.outputDir, "feed.xml")
 	rawSite := sitegen.RawSiteData(siteData, b.cfg.Site.BaseURL)
-	feed := sitegen.RSS(sitegen.RawPages(pages), rawSite, b.cfg.Site.BaseURL, time.Time{})
-	return os.WriteFile(outPath, []byte(feed), 0644)
+	for _, feed := range sitegen.Feeds(sitegen.RawPages(pages), rawSite, b.cfg.Site.BaseURL, time.Time{}) {
+		outPath := filepath.Join(b.outputDir, filepath.FromSlash(feed.Path))
+		if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
+			return err
+		}
+		if err := os.WriteFile(outPath, []byte(feed.Content), 0644); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // generateJSONFiles creates graph.json and/or search-index.json in a single pass.

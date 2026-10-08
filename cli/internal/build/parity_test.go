@@ -338,10 +338,12 @@ func TestParityCSSAndTextArtifacts(t *testing.T) {
 	}
 
 	linkRegex := regexp.MustCompile(`<link>(.*?)</link>`)
-	cliLinks := extractSet(linkRegex, readSite("feed.xml"))
-	renderLinks := extractSet(linkRegex, artifactContent("feed.xml"))
-	if strings.Join(cliLinks, "|") != strings.Join(renderLinks, "|") {
-		t.Errorf("feed links differ:\ncli: %v\nrenderer: %v", cliLinks, renderLinks)
+	for _, path := range []string{"feed.xml", "essays/feed.xml", "tags/gardens/feed.xml"} {
+		cliLinks := extractSet(linkRegex, readSite(path))
+		renderLinks := extractSet(linkRegex, artifactContent(path))
+		if strings.Join(cliLinks, "|") != strings.Join(renderLinks, "|") {
+			t.Errorf("%s links differ:\ncli: %v\nrenderer: %v", path, cliLinks, renderLinks)
+		}
 	}
 
 	// graph.json and search-index.json: compare URL sets.
