@@ -539,6 +539,16 @@ func TestConfigDefaultsAndFeatureDisables(t *testing.T) {
 	}
 }
 
+func TestImagesLinkToTheirSource(t *testing.T) {
+	out := runJSON(t, `{"render":{"slug":"g"},"config":{"site":{"baseURL":"https://example.com/g"}},"content":{"pages":[
+	  {"slug":"pic","title":"Pic","markdown":"![A photo](/static/images/photo.png)"}
+	]}}`)
+	html := pageHTML(t, out, "pic")
+	if !strings.Contains(html, `<a class="lp-image-link" href="/static/images/photo.png" target="_blank" rel="noopener"><img`) {
+		t.Errorf("content images should link to their source, got %s", html)
+	}
+}
+
 func TestConfigRejectsInvalidValues(t *testing.T) {
 	_, err := Run([]byte(`{
 	  "render":{"slug":"g"},

@@ -81,6 +81,7 @@ the historical `config.Default()` values.
 | | `listColumns` | `2` |
 | | `background` | light/dark theme defaults |
 | `features` | `graph` `search` `toc` `backlinks` `wikilinks` `rss` | `true` |
+| | `sharing` | `false` |
 | `navigation` | `mode` | `"automatic"` |
 | | `includeTags` | `false` |
 | | `items` | `[]` |

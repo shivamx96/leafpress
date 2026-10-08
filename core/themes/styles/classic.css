@@ -801,6 +801,26 @@ html.lp-no-js .lp-nav .lp-nav-tools {
   border-radius: var(--lp-radius-sm);
 }
 
+/* Content images link to their full-size file. The anchor is a transparent
+   frame around the image, so none of a theme's text-link styling applies. */
+.lp-content a.lp-image-link,
+.lp-content a.lp-image-link:hover {
+  display: inline-block;
+  max-width: 100%;
+  padding: 0;
+  line-height: 0;
+  background: none;
+  border: 0;
+  border-radius: var(--lp-radius-sm);
+  text-decoration: none;
+  box-shadow: none;
+}
+
+.lp-content a.lp-image-link:focus-visible {
+  outline: 2px solid var(--lp-accent);
+  outline-offset: 2px;
+}
+
 /* Mermaid diagrams */
 .mermaid {
   margin: 1rem 0;
