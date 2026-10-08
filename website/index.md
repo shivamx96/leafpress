@@ -37,7 +37,7 @@ Most static site generators make you choose: simple but limited, or powerful but
 - **YouTube auto-embeds** from pasted URLs
 - **Video & audio embeds** via Obsidian syntax (`![[video.mp4]]`)
 - **Image width control** with `![[image.png|500]]`
-- **RSS feed** with nav icon (toggle in config)
+- **RSS feeds** for the whole garden, each section, and each tag (toggle in config)
 - **Optional page sharing** with native device sharing and copy-link actions
 - **SEO ready** with Open Graph and meta tags, plus `sitemap.xml` when `baseURL` is set
 - **Callouts** for notes, warnings, tips (`> [!note]`)

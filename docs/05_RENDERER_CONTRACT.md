@@ -313,7 +313,8 @@ Generated site files, each using the exact CLI filename:
 - `graph.json` when the graph feature is enabled
 - `search-index.json` always (full-text search and hover link previews share
   it; the `search` feature only toggles the search UI)
-- `feed.xml` when RSS is enabled
+- `feed.xml` when RSS is enabled, plus `<section>/feed.xml` for every
+  section and `tags/<tag>/feed.xml` for every tag
 - `robots.txt`
 - `sitemap.xml`
 - `404.html`

@@ -6,6 +6,7 @@ toc: false
 
 ## Unreleased
 
+- **Every section and tag now has its own RSS feed.** Alongside the global `feed.xml`, leafpress writes `posts/feed.xml` beside each section home (covering nested folders too) and `tags/idea/feed.xml` beside each tag page, so readers can follow just your posts or just one topic. Section homes and tag pages advertise their own feed for reader autodiscovery. Controlled by the existing `features.rss` toggle. See [Configuration](/guide/configuration/#rss-feeds).
 - **Images open full size in a new tab.** Every content image is now wrapped in a link to its own file, with the `lp-image-link` class and no text-link styling. Images you link by hand are left as written. See [Writing](/guide/writing/#images).
 - Added the `quiet` theme: Inter typography, a narrow reading column, compact spacing, and plain lists with muted dates. Includes light and dark appearances.
 

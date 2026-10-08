@@ -154,10 +154,126 @@ func Sitemap(pages []*content.Page, baseURL string) string {
 	return sb.String()
 }
 
-// RSS returns feed.xml. now is used only when no page supplies a date; pass a
-// zero value for normal wall-clock behavior or a fixed time in tests.
+// Feed is one generated RSS document. Path is the site-relative output path
+// ("feed.xml", "posts/feed.xml", "tags/idea/feed.xml").
+type Feed struct {
+	Path    string
+	Content string
+}
+
+// Feeds returns every RSS document for the garden: the global feed.xml, one
+// feed beside each section home, and one beside each tag page. The order is
+// deterministic (global, then sections alphabetically, then tags
+// alphabetically). A section feed covers every page beneath its directory,
+// nested sections included, so subscribing to /posts/feed.xml follows the
+// whole folder. A tag feed covers the pages listed on that tag's page. Every
+// feed shares the global feed's item rules: newest first, at most 20 items,
+// index pages excluded. now is passed through to RSS.
+func Feeds(pages []*content.Page, siteData templates.SiteData, baseURL string, now time.Time) []Feed {
+	baseURL = strings.TrimSuffix(baseURL, "/")
+	feeds := []Feed{{Path: "feed.xml", Content: RSS(pages, siteData, baseURL, now)}}
+
+	children, indexBySection := GroupSections(pages)
+	sections := make(map[string]bool, len(children)+len(indexBySection))
+	for dir := range children {
+		if dir != "" {
+			sections[dir] = true
+		}
+	}
+	for dir := range indexBySection {
+		if dir != "" {
+			sections[dir] = true
+		}
+	}
+	sectionDirs := make([]string, 0, len(sections))
+	for dir := range sections {
+		sectionDirs = append(sectionDirs, dir)
+	}
+	sort.Strings(sectionDirs)
+	for _, dir := range sectionDirs {
+		members := make([]*content.Page, 0)
+		for _, page := range pages {
+			if !page.IsIndex && strings.HasPrefix(page.Slug, dir+"/") {
+				members = append(members, page)
+			}
+		}
+		title := sectionTitle(dir, children[dir])
+		if index := indexBySection[dir]; index != nil && index.Title != "" {
+			title = index.Title
+		}
+		feeds = append(feeds, Feed{
+			Path: dir + "/feed.xml",
+			Content: renderFeed(feedChannel{
+				path:        dir + "/feed.xml",
+				link:        baseURL + "/" + dir + "/",
+				title:       title + " | " + siteData.Title,
+				description: title + " - " + siteData.Title,
+			}, members, baseURL, now),
+		})
+	}
+
+	pagesByTag := make(map[string][]*content.Page)
+	for _, page := range pages {
+		seen := make(map[string]bool)
+		for _, tag := range page.Tags {
+			key := strings.ToLower(tag)
+			if seen[key] {
+				continue
+			}
+			seen[key] = true
+			pagesByTag[key] = append(pagesByTag[key], page)
+		}
+	}
+	tags := make([]string, 0, len(pagesByTag))
+	for tag := range pagesByTag {
+		tags = append(tags, tag)
+	}
+	sort.Strings(tags)
+	for _, tag := range tags {
+		feeds = append(feeds, Feed{
+			Path: "tags/" + tag + "/feed.xml",
+			Content: renderFeed(feedChannel{
+				path:        "tags/" + tag + "/feed.xml",
+				link:        baseURL + "/tags/" + tag + "/",
+				title:       "#" + tag + " | " + siteData.Title,
+				description: "Pages tagged with #" + tag + " - " + siteData.Title,
+			}, pagesByTag[tag], baseURL, now),
+		})
+	}
+	return feeds
+}
+
+// RSS returns the global feed.xml. now is used only when no page supplies a
+// date; pass a zero value for normal wall-clock behavior or a fixed time in
+// tests.
 func RSS(pages []*content.Page, siteData templates.SiteData, baseURL string, now time.Time) string {
 	baseURL = strings.TrimSuffix(baseURL, "/")
+	description := siteData.Title
+	if siteData.Author != "" {
+		description = siteData.Author + "'s digital garden"
+	}
+	return renderFeed(feedChannel{
+		path:        "feed.xml",
+		link:        baseURL,
+		title:       siteData.Title,
+		description: description,
+	}, pages, baseURL, now)
+}
+
+// feedChannel describes one RSS channel. path is the feed's site-relative
+// output path and link is the absolute URL of the listing it mirrors; both
+// are omitted from the document when baseURL is empty.
+type feedChannel struct {
+	path        string
+	link        string
+	title       string
+	description string
+}
+
+// renderFeed writes an RSS 2.0 document for pages: index pages are dropped,
+// the rest are ordered newest first (modified date over created date, slug as
+// a tiebreaker) and capped at 20 items.
+func renderFeed(channel feedChannel, pages []*content.Page, baseURL string, now time.Time) string {
 	feedPages := make([]*content.Page, 0, len(pages))
 	for _, page := range pages {
 		if !page.IsIndex {
@@ -188,22 +304,15 @@ func RSS(pages []*content.Page, siteData templates.SiteData, baseURL string, now
 	sb.WriteString("\n")
 	sb.WriteString(`<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">`)
 	sb.WriteString("\n  <channel>\n")
-	sb.WriteString(fmt.Sprintf("    <title>%s</title>\n", escapeXML(siteData.Title)))
+	sb.WriteString(fmt.Sprintf("    <title>%s</title>\n", escapeXML(channel.title)))
 	if baseURL != "" {
-		sb.WriteString(fmt.Sprintf("    <link>%s</link>\n", escapeXML(baseURL)))
+		sb.WriteString(fmt.Sprintf("    <link>%s</link>\n", escapeXML(channel.link)))
 		sb.WriteString(fmt.Sprintf(
-			"    <atom:link href=\"%s/feed.xml\" rel=\"self\" type=\"application/rss+xml\"/>\n",
-			escapeXML(baseURL),
+			"    <atom:link href=\"%s/%s\" rel=\"self\" type=\"application/rss+xml\"/>\n",
+			escapeXML(baseURL), escapeXML(channel.path),
 		))
 	}
-	if siteData.Author != "" {
-		sb.WriteString(fmt.Sprintf(
-			"    <description>%s's digital garden</description>\n",
-			escapeXML(siteData.Author),
-		))
-	} else {
-		sb.WriteString(fmt.Sprintf("    <description>%s</description>\n", escapeXML(siteData.Title)))
-	}
+	sb.WriteString(fmt.Sprintf("    <description>%s</description>\n", escapeXML(channel.description)))
 	sb.WriteString(fmt.Sprintf("    <lastBuildDate>%s</lastBuildDate>\n", lastBuild))
 	sb.WriteString("    <generator>leafpress</generator>\n")
 	for _, page := range feedPages {

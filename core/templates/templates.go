@@ -590,6 +590,7 @@ const baseTemplate = `<!DOCTYPE html>
   <link rel="icon" type="image/png" sizes="96x96" href="{{.Site.BasePath}}/favicon-96x96.png">
   <link rel="icon" type="image/x-icon" href="{{.Site.BasePath}}/favicon.ico">
   {{if .Site.RSS}}<link rel="alternate" type="application/rss+xml" title="{{.Site.Title}}" href="{{.Site.BasePath}}/feed.xml">{{end}}
+  {{block "feeds" .}}{{end}}
   {{range fontPreloads .Site.Theme}}<link rel="preload" href="{{$.Site.BasePath}}/{{.Path}}" as="font" type="{{.ContentType}}" crossorigin>
   {{end}}
   <style>
@@ -2128,6 +2129,7 @@ const pageTemplate = `
 const indexTemplate = `
 {{define "title"}}{{.Title}} | {{.Site.Title}}{{end}}
 {{define "currentSlug"}}{{end}}
+{{define "feeds"}}{{if and .Site.RSS (ne .CurrentPath "/")}}<link rel="alternate" type="application/rss+xml" title="{{.Title}} | {{.Site.Title}}" href="{{.Site.BasePath}}{{.CurrentPath}}feed.xml">{{end}}{{end}}
 {{define "seo"}}
   <meta name="description" content="{{if and .Site.Description (eq .CurrentPath "/")}}{{.Site.Description}}{{else}}{{.Title}} - {{.Site.Title}}{{end}}">
   {{if .Site.BaseURL}}<link rel="canonical" href="{{.Site.BaseURL}}{{.CurrentPath}}">{{end}}
@@ -2206,6 +2208,7 @@ const tagIndexTemplate = `
 const tagPageTemplate = `
 {{define "title"}}#{{.Tag}} | {{.Site.Title}}{{end}}
 {{define "currentSlug"}}tags/{{.Tag}}{{end}}
+{{define "feeds"}}{{if .Site.RSS}}<link rel="alternate" type="application/rss+xml" title="#{{.Tag}} | {{.Site.Title}}" href="{{.Site.BasePath}}/tags/{{.Tag}}/feed.xml">{{end}}{{end}}
 {{define "seo"}}
   <meta name="description" content="Pages tagged with #{{.Tag}} - {{.Site.Title}}">
   {{if .Site.BaseURL}}<link rel="canonical" href="{{.Site.BaseURL}}/tags/{{.Tag}}/">{{end}}

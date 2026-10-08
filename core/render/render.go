@@ -772,12 +772,16 @@ func renderArtifacts(
 	artifacts = append(artifacts, OutputArtifact{
 		Path: "404.html", Content: notFound, ContentType: "text/html; charset=utf-8",
 	})
+	// The global feed.xml plus one feed per section and per tag, served
+	// beside the listing each mirrors.
 	if cfg.Features.RSS && hasOrigin {
-		artifacts = append(artifacts, OutputArtifact{
-			Path:        "feed.xml",
-			Content:     sitegen.RSS(artifactPages, rawSite, cfg.Site.BaseURL, time.Time{}),
-			ContentType: "application/rss+xml",
-		})
+		for _, feed := range sitegen.Feeds(artifactPages, rawSite, cfg.Site.BaseURL, time.Time{}) {
+			artifacts = append(artifacts, OutputArtifact{
+				Path:        feed.Path,
+				Content:     feed.Content,
+				ContentType: "application/rss+xml",
+			})
+		}
 	}
 	// Every generated artifact is text; asset artifacts (base64) are
 	// appended by the caller.

@@ -472,6 +472,78 @@ func TestSiteConfigAndStyleMatchLeafpressSemantics(t *testing.T) {
 	}
 }
 
+func TestSectionAndTagFeedsAreEmittedAndDiscoverable(t *testing.T) {
+	out := runJSON(t, `{
+	  "render": {"slug": "g"},
+	  "config": {"site": {"title": "Garden", "baseURL": "https://example.com/notes"}},
+	  "content": {"pages": [
+	    {"slug": "about", "title": "About", "markdown": "about", "tags": ["Meta"]},
+	    {"slug": "posts", "title": "Posts", "isIndex": true, "markdown": "intro"},
+	    {"slug": "posts/hello", "title": "Hello", "markdown": "hello", "tags": ["meta"]},
+	    {"slug": "recipes/soup", "title": "Soup", "markdown": "soup"}
+	  ]}
+	}`)
+
+	posts := artifact(t, out, "posts/feed.xml")
+	if posts.ContentType != "application/rss+xml" ||
+		!strings.Contains(posts.Content, "<title>Posts | Garden</title>") ||
+		!strings.Contains(posts.Content, `href="https://example.com/notes/posts/feed.xml" rel="self"`) ||
+		!strings.Contains(posts.Content, "<title>Hello</title>") ||
+		strings.Contains(posts.Content, "<title>Soup</title>") {
+		t.Errorf("section feed is wrong: %s", posts.Content)
+	}
+	recipes := artifact(t, out, "recipes/feed.xml")
+	if !strings.Contains(recipes.Content, "<title>Recipes | Garden</title>") {
+		t.Errorf("auto-indexed section feed is wrong: %s", recipes.Content)
+	}
+	meta := artifact(t, out, "tags/meta/feed.xml")
+	if !strings.Contains(meta.Content, "<title>#meta | Garden</title>") ||
+		!strings.Contains(meta.Content, "<title>About</title>") ||
+		!strings.Contains(meta.Content, "<title>Hello</title>") ||
+		strings.Contains(meta.Content, "<title>Soup</title>") {
+		t.Errorf("tag feed is wrong: %s", meta.Content)
+	}
+	for _, item := range out.Artifacts {
+		if item.Path == "tags/Meta/feed.xml" {
+			t.Error("tag feeds must be grouped case-insensitively")
+		}
+	}
+
+	// Section homes and tag pages advertise their own feed for reader
+	// autodiscovery, alongside the global one; the garden home only the global.
+	var postsHTML, recipesHTML string
+	for _, section := range out.Sections {
+		switch section.Slug {
+		case "posts":
+			postsHTML = section.HTML
+		case "recipes":
+			recipesHTML = section.HTML
+		}
+	}
+	if postsHTML == "" {
+		postsHTML = pageHTML(t, out, "posts")
+	}
+	global := `<link rel="alternate" type="application/rss+xml" title="Garden" href="/notes/feed.xml">`
+	for name, doc := range map[string]struct{ html, own string }{
+		"section home": {postsHTML, `<link rel="alternate" type="application/rss+xml" title="Posts | Garden" href="/notes/posts/feed.xml">`},
+		"auto section": {recipesHTML, `<link rel="alternate" type="application/rss+xml" title="Recipes | Garden" href="/notes/recipes/feed.xml">`},
+		"tag page":     {out.Tags.Pages[0].HTML, `<link rel="alternate" type="application/rss+xml" title="#meta | Garden" href="/notes/tags/meta/feed.xml">`},
+	} {
+		if !strings.Contains(doc.html, doc.own) {
+			t.Errorf("%s missing its own feed link %q", name, doc.own)
+		}
+		if !strings.Contains(doc.html, global) {
+			t.Errorf("%s missing the global feed link", name)
+		}
+	}
+	if strings.Count(out.Index, `rel="alternate" type="application/rss+xml"`) != 1 {
+		t.Errorf("garden home should advertise only the global feed:\n%s", out.Index)
+	}
+	if strings.Contains(pageHTML(t, out, "about"), `href="/notes/about/feed.xml"`) {
+		t.Error("ordinary pages should not advertise a per-page feed")
+	}
+}
+
 func TestConfigDefaultsAndFeatureDisables(t *testing.T) {
 	// Empty config uses exactly the CLI defaults, including enabled
 	// graph/search/TOC/backlinks/wikilinks/RSS and automatic navigation.
@@ -523,7 +595,7 @@ func TestConfigDefaultsAndFeatureDisables(t *testing.T) {
 		}
 	}
 	for _, item := range disabled.Artifacts {
-		if item.Path == "graph.json" || item.Path == "feed.xml" {
+		if item.Path == "graph.json" || strings.HasSuffix(item.Path, "feed.xml") {
 			t.Errorf("disabled artifact still emitted: %s", item.Path)
 		}
 	}

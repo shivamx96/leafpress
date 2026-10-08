@@ -95,6 +95,12 @@ func TitleCase(s string) string {
 // pages carry no source path, so the slug's last segment is the fallback. The
 // result is HTML-escaped like page titles, because folder names reach markup.
 func SectionTitle(section string, members []*content.Page) string {
+	return html.EscapeString(sectionTitle(section, members))
+}
+
+// sectionTitle is SectionTitle before HTML escaping, for artifacts such as
+// RSS that apply their own encoding.
+func sectionTitle(section string, members []*content.Page) string {
 	name := path.Base(section)
 	for _, member := range members {
 		if folder, ok := content.FolderName(section, member); ok {
@@ -102,7 +108,7 @@ func SectionTitle(section string, members []*content.Page) string {
 			break
 		}
 	}
-	return html.EscapeString(TitleCase(name))
+	return TitleCase(name)
 }
 
 // HasOrigin reports whether baseURL supplies an absolute origin. Artifacts that
