@@ -4,16 +4,17 @@ date: 2025-01-06
 toc: false
 ---
 
-## Unreleased
+## v1.0.0-rc.2
+*October 8, 2026*
 
-- **Custom favicons from one image.** Set `site.favicon` to a PNG, JPEG, or WebP under `/static/` to use it for the browser and Apple touch icon. The built-in favicon trio is omitted from output and the renderer's required asset manifest; image bytes are never fetched or converted. See [Theming](/guide/theming/#custom-favicon).
-- **Complete social-preview metadata.** Images now produce matching Open Graph and Twitter image tags with `summary_large_image`; tag listings and tag pages inherit `site.image`, as home and section pages do. Image-free pages keep `summary`.
-- `site.image` and `site.favicon` reject remote URLs, traversal, queries and fragments. Hosted rendering warns when either references an undeclared `/static/` asset; callers remain responsible for serving their uploaded images.
-
-- A note whose URL would land on a file leafpress generates, such as `feed.xml.md`, `posts/feed.xml.md`, or `notes/index.html.md`, now fails the build up front with a message naming the file and the clash, instead of an "is a directory" error partway through writing the site. Dots in slugs are otherwise unchanged. Applies to the CLI and the embedded renderer alike.
-- **Every section and tag now has its own RSS feed.** Alongside the global `feed.xml`, leafpress writes `posts/feed.xml` beside each section home (covering nested folders too) and `tags/idea/feed.xml` beside each tag page, so readers can follow just your posts or just one topic. Section homes and tag pages advertise their own feed for reader autodiscovery. Controlled by the existing `features.rss` toggle. See [Configuration](/guide/configuration/#rss-feeds).
-- **Images open full size in a new tab.** Every content image is now wrapped in a link to its own file, with the `lp-image-link` class and no text-link styling. Images you link by hand are left as written. See [Writing](/guide/writing/#images).
-- Added the `quiet` theme: Inter typography, a narrow reading column, compact spacing, and plain lists with muted dates. Includes light and dark appearances.
+- Added the minimal `quiet` theme with light and dark appearances.
+- Set `site.favicon` to use one raster image as your browser and Apple touch icon. [Details](/guide/theming/#custom-favicon).
+- Added RSS feeds for each section and tag.
+- Content images now open full size in a new tab.
+- Fixed social-preview images and Twitter cards, including on tag pages.
+- Fixed mobile menus appearing behind page content.
+- Builds now report clear errors when page URLs collide with generated files.
+- `site.image` now rejects absolute URLs, parent traversal, queries, and fragments; use a site-relative path instead. Hosted rendering also warns about undeclared favicon and site-image assets. [Details](/guide/configuration/#favicons-and-social-images).
 
 ## v1.0.0-rc.1
 *October 3, 2026*
