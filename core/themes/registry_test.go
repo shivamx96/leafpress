@@ -142,6 +142,7 @@ func TestEveryThemeDeclaresDiagramVariables(t *testing.T) {
 		"--lp-diagram-tertiary:",
 		"--lp-diagram-line:",
 		"--lp-diagram-text:",
+		"--lp-diagram-radius:",
 	}
 	for _, name := range Names() {
 		definition, ok := Lookup(name)

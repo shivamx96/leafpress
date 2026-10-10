@@ -6,7 +6,7 @@ toc: false
 
 ## Unreleased
 
-- Mermaid diagrams now match the active theme. Each bundled theme supplies its own diagram fonts and colors through `--lp-diagram-*` CSS properties, dark mode renders diagrams again instead of inverting them, and custom CSS can override the palette. [Details](/guide/theming/#diagram-colors).
+- Mermaid diagrams now match the active theme. Each bundled theme supplies its own diagram fonts and colors through `--lp-diagram-*` CSS properties, dark mode renders diagrams again instead of inverting them, node corners follow the theme's radius, and custom CSS can override the palette. [Details](/guide/theming/#diagram-colors).
 
 ## v1.0.0-rc.2
 *October 8, 2026*

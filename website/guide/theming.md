@@ -390,6 +390,7 @@ Mermaid diagrams are styled from the active theme instead of Mermaid's stock pal
   --lp-diagram-tertiary: #f3f3f3;                /* subgraphs and sections */
   --lp-diagram-line: var(--lp-text-muted);       /* arrows and edges */
   --lp-diagram-text: var(--lp-text);             /* all diagram text */
+  --lp-diagram-radius: var(--lp-radius-md);      /* node, subgraph, actor, and note corners */
 }
 ```
 

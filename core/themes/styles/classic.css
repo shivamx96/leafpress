@@ -833,11 +833,26 @@ html.lp-no-js .lp-nav .lp-nav-tools {
   --lp-diagram-tertiary: color-mix(in srgb, var(--lp-text) 3%, var(--lp-code-bg));
   --lp-diagram-line: var(--lp-text-muted);
   --lp-diagram-text: var(--lp-text);
+  --lp-diagram-radius: var(--lp-radius-md);
 }
 
 .mermaid {
   margin: 1rem 0;
   overflow-x: auto;
+}
+
+/* Corner radius follows the theme. rx/ry are presentation attributes, so a
+   stylesheet value wins over the square corners mermaid writes on nodes,
+   subgraphs, actors, notes, and activations. State diagrams also set rx
+   from an id-scoped stylesheet inside the SVG, which only !important can
+   outrank. */
+.mermaid .node rect.label-container,
+.mermaid .cluster rect,
+.mermaid rect.actor,
+.mermaid rect.note,
+.mermaid rect[class^="activation"] {
+  rx: var(--lp-diagram-radius) !important;
+  ry: var(--lp-diagram-radius) !important;
 }
 
 .mermaid svg {
