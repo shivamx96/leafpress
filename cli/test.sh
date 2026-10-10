@@ -4063,16 +4063,16 @@ fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR"
 
-# Test 169: Mermaid dark mode uses CSS filter
-test_case "Mermaid dark mode uses CSS invert filter"
+# Test 169: Mermaid diagrams are styled from theme variables, not inverted
+test_case "Mermaid diagrams take colors from theme variables"
 TESTDIR=$(mktemp -d)
 cd "$TESTDIR"
 "$LEAFPRESS" init > /dev/null 2>&1
 "$LEAFPRESS" build > /dev/null 2>&1
-if grep -q 'dark.*mermaid' _site/style.css 2>/dev/null || grep -q 'dark.*mermaid' _site/index.html; then
+if grep -q -- '--lp-diagram-primary' _site/style.css 2>/dev/null && ! grep -q 'invert(1)' _site/style.css 2>/dev/null; then
     pass
 else
-    fail "Mermaid should have dark mode CSS filter"
+    fail "Mermaid should be styled from --lp-diagram-* variables without an invert filter"
 fi
 cd "$ORIGDIR"
 rm -rf "$TESTDIR"
