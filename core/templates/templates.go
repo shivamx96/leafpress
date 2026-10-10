@@ -850,6 +850,8 @@ const baseTemplate = `<!DOCTYPE html>
       document.documentElement.setAttribute('data-theme', theme);
       updateThemeToggle(theme);
       updateGraphTheme(theme);
+      // Diagrams and other theme-aware widgets re-render on this event.
+      document.dispatchEvent(new CustomEvent('lp:themechange', { detail: { theme: theme } }));
     }
 
     function storeThemePreference(preference) {
@@ -1988,41 +1990,121 @@ const baseTemplate = `<!DOCTYPE html>
     });
 
   {{end}}
-  {{define "clientScriptMermaid"}}if (document.querySelector('.mermaid')) {
-      var s = document.createElement('script');
-      s.src = LP_BASE_PATH + '/static/leafpress/mermaid/mermaid.min.js';
-      s.onload = function() {
-        // securityLevel and htmlLabels are the hardening. Without 'secure',
-        // a diagram could undo both from its own source with an init
-        // directive -- %%{init: {'flowchart': {'htmlLabels': true}}}%% --
-        // because mermaid only refuses to apply directive keys listed here.
-        // The list is enforced at top-level key granularity, so the whole
-        // flowchart/sequence subtree has to be locked to pin the label flags
-        // inside them. Diagram-level overrides of those sections are the
-        // deliberate cost.
-        //
-        // Locking htmlLabels off also disables math: mermaid renders KaTeX
-        // through the HTML-label path only, so $$...$$ stays literal text
-        // rather than reaching the bundled KaTeX parser.
-        mermaid.initialize({
-          startOnLoad: false,
-          securityLevel: 'strict',
-          theme: 'default',
-          htmlLabels: false,
-          flowchart: { htmlLabels: false, useHtmlLabels: false },
-          sequence: { useHtmlLabels: false },
-          legacyMathML: false,
-          forceLegacyMathML: false,
-          secure: [
-            'secure', 'securityLevel', 'startOnLoad', 'maxTextSize',
-            'suppressErrorRendering', 'maxEdges', 'htmlLabels',
-            'flowchart', 'sequence', 'legacyMathML', 'forceLegacyMathML'
-          ]
-        });
-        mermaid.run();
-      };
-      document.body.appendChild(s);
+  {{define "clientScriptMermaid"}}(function() {
+    var diagrams = document.querySelectorAll('.mermaid');
+    if (!diagrams.length) return;
+
+    // Diagram colors come from the --lp-diagram-* custom properties that
+    // every theme preset declares, so diagrams follow the preset and the
+    // reader's light/dark choice instead of mermaid's stock palette. The
+    // properties are resolved through a probe element because
+    // getComputedStyle leaves color-mix() inside a custom property
+    // unevaluated, and the result is normalized to rgb()/rgba() because
+    // mermaid's color parser does not read the color(srgb ...) form browsers
+    // use for mixed colors.
+    function normalizeColor(value) {
+      if (/^rgba?\(/.test(value)) return value;
+      var m = /^color\(srgb\s+([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)(?:\s*\/\s*([\d.]+%?))?\)$/.exec(value);
+      if (!m) return '';
+      var channel = function(v) { return Math.max(0, Math.min(255, Math.round(parseFloat(v) * 255))); };
+      var alpha = m[4] === undefined ? 1
+        : m[4].slice(-1) === '%' ? parseFloat(m[4]) / 100 : parseFloat(m[4]);
+      return 'rgba(' + channel(m[1]) + ', ' + channel(m[2]) + ', ' + channel(m[3]) + ', ' + alpha + ')';
     }
+
+    function probe(property, name) {
+      var el = document.createElement('span');
+      el.style[property] = 'var(' + name + ')';
+      diagrams[0].appendChild(el);
+      var value = getComputedStyle(el)[property];
+      diagrams[0].removeChild(el);
+      return value;
+    }
+
+    function themeVariables() {
+      var vars = {
+        darkMode: document.documentElement.getAttribute('data-theme') === 'dark',
+        fontFamily: probe('fontFamily', '--lp-diagram-font'),
+        fontSize: '15px'
+      };
+      var colors = {
+        background: '--lp-diagram-surface',
+        edgeLabelBackground: '--lp-diagram-surface',
+        primaryColor: '--lp-diagram-primary',
+        primaryBorderColor: '--lp-diagram-primary-border',
+        primaryTextColor: '--lp-diagram-text',
+        secondaryColor: '--lp-diagram-secondary',
+        secondaryTextColor: '--lp-diagram-text',
+        tertiaryColor: '--lp-diagram-tertiary',
+        tertiaryTextColor: '--lp-diagram-text',
+        noteBkgColor: '--lp-diagram-secondary',
+        noteBorderColor: '--lp-diagram-primary-border',
+        noteTextColor: '--lp-diagram-text',
+        lineColor: '--lp-diagram-line',
+        textColor: '--lp-diagram-text',
+        titleColor: '--lp-diagram-text'
+      };
+      Object.keys(colors).forEach(function(key) {
+        var color = normalizeColor(probe('color', colors[key]));
+        if (color) vars[key] = color;
+      });
+      return vars;
+    }
+
+    // mermaid replaces each diagram's source with an SVG, so the source is
+    // kept here to render again when the reader switches theme.
+    var sources = [];
+    for (var i = 0; i < diagrams.length; i++) sources.push(diagrams[i].innerHTML);
+
+    function render() {
+      if (!window.mermaid) return;
+      for (var i = 0; i < diagrams.length; i++) {
+        if (diagrams[i].hasAttribute('data-processed')) {
+          diagrams[i].removeAttribute('data-processed');
+          diagrams[i].innerHTML = sources[i];
+        }
+      }
+      // securityLevel and htmlLabels are the hardening. Without 'secure',
+      // a diagram could undo both from its own source with an init
+      // directive -- %%{init: {'flowchart': {'htmlLabels': true}}}%% --
+      // because mermaid only refuses to apply directive keys listed here.
+      // The list is enforced at top-level key granularity, so the whole
+      // flowchart/sequence subtree has to be locked to pin the label flags
+      // inside them. Diagram-level overrides of those sections are the
+      // deliberate cost.
+      //
+      // Locking htmlLabels off also disables math: mermaid renders KaTeX
+      // through the HTML-label path only, so $$...$$ stays literal text
+      // rather than reaching the bundled KaTeX parser.
+      //
+      // theme and themeVariables stay unlocked on purpose: they are
+      // cosmetic, and an author may still pick another look per diagram.
+      mermaid.initialize({
+        startOnLoad: false,
+        securityLevel: 'strict',
+        theme: 'base',
+        themeVariables: themeVariables(),
+        htmlLabels: false,
+        flowchart: { htmlLabels: false, useHtmlLabels: false },
+        sequence: { useHtmlLabels: false },
+        legacyMathML: false,
+        forceLegacyMathML: false,
+        secure: [
+          'secure', 'securityLevel', 'startOnLoad', 'maxTextSize',
+          'suppressErrorRendering', 'maxEdges', 'htmlLabels',
+          'flowchart', 'sequence', 'legacyMathML', 'forceLegacyMathML'
+        ]
+      });
+      mermaid.run({ nodes: diagrams });
+    }
+
+    document.addEventListener('lp:themechange', render);
+
+    var s = document.createElement('script');
+    s.src = LP_BASE_PATH + '/static/leafpress/mermaid/mermaid.min.js';
+    s.onload = render;
+    document.body.appendChild(s);
+  })();
   {{end}}
 </body>
 </html>

@@ -4,6 +4,11 @@ date: 2025-01-06
 toc: false
 ---
 
+## Unreleased
+
+- Release binaries and CI now use Go 1.27.2, which clears the standard-library advisories GO-2026-6604 through GO-2026-6617 reported against Go 1.27.1. The minimum Go for `go install` and Core consumers stays at 1.26.
+- Mermaid diagrams now match the active theme. Each bundled theme supplies its own diagram fonts and colors through `--lp-diagram-*` CSS properties, dark mode renders diagrams again instead of inverting them, node corners follow the theme's radius, and custom CSS can override the palette. [Details](/guide/theming/#diagram-colors).
+
 ## v1.0.0-rc.2
 *October 8, 2026*
 

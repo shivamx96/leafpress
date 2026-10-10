@@ -376,6 +376,26 @@ All border radii use a consistent scale:
 }
 ```
 
+### Diagram Colors
+
+Mermaid diagrams are styled from the active theme instead of Mermaid's stock palette. Each bundled theme sets these properties, and your custom CSS can override them. Every color property must resolve to a plain color; gradients are not usable here.
+
+```css
+:root {
+  --lp-diagram-font: var(--lp-font-body);        /* labels */
+  --lp-diagram-surface: var(--lp-code-bg);       /* edge labels, chart backgrounds */
+  --lp-diagram-primary: #e8f4dc;                 /* node, actor, and task fills */
+  --lp-diagram-primary-border: #7cbf3a;          /* node and note borders */
+  --lp-diagram-secondary: #ededed;               /* notes, activations, pie slices */
+  --lp-diagram-tertiary: #f3f3f3;                /* subgraphs and sections */
+  --lp-diagram-line: var(--lp-text-muted);       /* arrows and edges */
+  --lp-diagram-text: var(--lp-text);             /* all diagram text */
+  --lp-diagram-radius: var(--lp-radius-md);      /* node, subgraph, actor, and note corners */
+}
+```
+
+Dark mode picks up the same properties from your `[data-theme="dark"]` block, and diagrams render again when a reader switches theme. A diagram can still choose another look for itself with a `%%{init: {'theme': 'forest'}}%%` directive.
+
 ### CSS Classes
 
 Key classes you might want to customize:
