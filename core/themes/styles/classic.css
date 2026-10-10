@@ -821,7 +821,20 @@ html.lp-no-js .lp-nav .lp-nav-tools {
   outline-offset: 2px;
 }
 
-/* Mermaid diagrams */
+/* Mermaid diagrams. The client script reads these properties and passes
+   them to mermaid as theme variables, so a preset restyles diagrams by
+   overriding them. Each must resolve to a color; gradients do not work. */
+:root {
+  --lp-diagram-font: var(--lp-font-body);
+  --lp-diagram-surface: var(--lp-code-bg);
+  --lp-diagram-primary: color-mix(in srgb, var(--lp-accent) 14%, var(--lp-code-bg));
+  --lp-diagram-primary-border: color-mix(in srgb, var(--lp-accent) 60%, var(--lp-border));
+  --lp-diagram-secondary: color-mix(in srgb, var(--lp-text) 7%, var(--lp-code-bg));
+  --lp-diagram-tertiary: color-mix(in srgb, var(--lp-text) 3%, var(--lp-code-bg));
+  --lp-diagram-line: var(--lp-text-muted);
+  --lp-diagram-text: var(--lp-text);
+}
+
 .mermaid {
   margin: 1rem 0;
   overflow-x: auto;
@@ -830,10 +843,6 @@ html.lp-no-js .lp-nav .lp-nav-tools {
 .mermaid svg {
   max-width: 100%;
   height: auto;
-}
-
-[data-theme="dark"] .mermaid svg {
-  filter: invert(1) hue-rotate(180deg);
 }
 
 .lp-video-local {

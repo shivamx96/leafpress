@@ -127,3 +127,37 @@ func TestTerminalThemeRespectsSemanticFontRoles(t *testing.T) {
 		})
 	}
 }
+
+// The client script styles Mermaid diagrams from these properties, so every
+// preset must declare the full set, every preset other than classic must
+// override at least the primary fill, and none may fall back to inverting
+// the rendered SVG for dark mode.
+func TestEveryThemeDeclaresDiagramVariables(t *testing.T) {
+	variables := []string{
+		"--lp-diagram-font:",
+		"--lp-diagram-surface:",
+		"--lp-diagram-primary:",
+		"--lp-diagram-primary-border:",
+		"--lp-diagram-secondary:",
+		"--lp-diagram-tertiary:",
+		"--lp-diagram-line:",
+		"--lp-diagram-text:",
+	}
+	for _, name := range Names() {
+		definition, ok := Lookup(name)
+		if !ok {
+			t.Fatalf("%s theme is not registered", name)
+		}
+		for _, variable := range variables {
+			if !strings.Contains(definition.CSS, variable) {
+				t.Errorf("%s theme does not declare %s", name, variable)
+			}
+		}
+		if name != Classic && strings.Count(definition.CSS, "--lp-diagram-primary:") < 2 {
+			t.Errorf("%s theme does not override the diagram palette", name)
+		}
+		if strings.Contains(definition.CSS, "invert(1)") {
+			t.Errorf("%s theme still inverts diagrams for dark mode", name)
+		}
+	}
+}
