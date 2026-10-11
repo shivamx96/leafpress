@@ -334,3 +334,12 @@
     padding-inline: 1rem;
   }
 }
+
+/* Diagrams stay neutral: fills from the code surface, no accent tint. */
+:root {
+  --lp-diagram-primary: var(--lp-code-bg);
+  --lp-diagram-primary-border: var(--lp-text-muted);
+  --lp-diagram-secondary: color-mix(in srgb, var(--lp-text) 10%, var(--lp-code-bg));
+  --lp-diagram-tertiary: color-mix(in srgb, var(--lp-code-bg) 55%, transparent);
+  --lp-diagram-line: var(--lp-text-muted);
+}

@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Go (for Hugo and leafpress)
-ENV GO_VERSION=1.27.1
+ENV GO_VERSION=1.27.2
 RUN arch="$(dpkg --print-architecture)" \
     && case "$arch" in \
       arm64) archive="go${GO_VERSION}.linux-arm64.tar.gz"; checksum="3450b45a3f9ee8568792736a5c5e70a1f2e9b36c35a8f74958c03e51d7d92bec" ;; \

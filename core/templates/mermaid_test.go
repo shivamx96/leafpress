@@ -79,3 +79,33 @@ func TestMermaidLoadsVendoredScriptOnly(t *testing.T) {
 		}
 	}
 }
+
+// Diagrams take their look from the active preset's --lp-diagram-* custom
+// properties instead of mermaid's stock palette, and follow the reader's
+// theme toggle by rendering again rather than inverting the SVG.
+func TestMermaidThemedFromPresetVariables(t *testing.T) {
+	script := mermaidClientScript(t)
+
+	for _, want := range []string{
+		"theme: 'base'",
+		"themeVariables: themeVariables()",
+		"'--lp-diagram-font'",
+		"'--lp-diagram-surface'",
+		"'--lp-diagram-primary'",
+		"'--lp-diagram-primary-border'",
+		"'--lp-diagram-secondary'",
+		"'--lp-diagram-tertiary'",
+		"'--lp-diagram-line'",
+		"'--lp-diagram-text'",
+		"document.addEventListener('lp:themechange', render)",
+		"document.dispatchEvent(new CustomEvent('lp:themechange'",
+		"mermaid.run({ nodes: diagrams })",
+	} {
+		if !strings.Contains(script, want) {
+			t.Errorf("client script is missing %q", want)
+		}
+	}
+	if strings.Contains(script, "theme: 'default'") {
+		t.Error("mermaid init still uses the stock default theme")
+	}
+}

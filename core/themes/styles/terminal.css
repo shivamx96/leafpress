@@ -1065,3 +1065,21 @@ html {
   scrollbar-color: var(--lp-terminal-rule-strong) var(--lp-code-bg);
   scrollbar-width: thin;
 }
+
+/* Diagrams render as a panel: raised fills, signal-colored borders. */
+:root {
+  --lp-diagram-surface: var(--lp-terminal-panel);
+  --lp-diagram-primary: var(--lp-terminal-panel-raised);
+  --lp-diagram-primary-border: var(--lp-terminal-signal);
+  --lp-diagram-secondary: color-mix(in srgb, var(--lp-terminal-cyan) 14%, var(--lp-terminal-panel));
+  --lp-diagram-tertiary: var(--lp-terminal-panel);
+  --lp-diagram-line: var(--lp-terminal-rule-strong);
+  --lp-diagram-text: var(--lp-terminal-ink);
+}
+
+.mermaid {
+  padding: 0.75rem;
+  border: 1px solid var(--lp-terminal-rule);
+  border-radius: var(--lp-radius-md);
+  background: var(--lp-terminal-panel);
+}

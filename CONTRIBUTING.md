@@ -59,7 +59,7 @@ opening a pull request.
 
 ```bash
 gofmt -l core cli            # must print nothing
-go install honnef.co/go/tools/cmd/staticcheck@v0.8.1   # version CI uses
+go install honnef.co/go/tools/cmd/staticcheck@v0.7.0-0.dev.0.20261009230814-452d5bb86b45   # version CI uses
 (cd core && go vet ./... && staticcheck ./... && go test -race ./...)
 (cd cli  && go vet ./... && staticcheck ./... && go test -race ./...)
 ```

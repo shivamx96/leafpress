@@ -466,6 +466,16 @@ html {
   padding: 0.75rem;
 }
 
+/* Diagrams pick up the accent-to-sky wash of the page gradients. */
+:root {
+  --lp-diagram-surface: var(--lp-aurora-surface-strong);
+  --lp-diagram-primary: color-mix(in srgb, var(--lp-accent) 16%, var(--lp-aurora-surface-strong));
+  --lp-diagram-primary-border: color-mix(in srgb, var(--lp-accent) 70%, var(--lp-border));
+  --lp-diagram-secondary: color-mix(in srgb, #0ea5e9 14%, var(--lp-aurora-surface-strong));
+  --lp-diagram-tertiary: var(--lp-aurora-surface-soft);
+  --lp-diagram-line: color-mix(in srgb, var(--lp-text) 60%, transparent);
+}
+
 /* Callouts use semantic rails and icon tiles instead of generic soft cards. */
 .lp-callout {
   position: relative;

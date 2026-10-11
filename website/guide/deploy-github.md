@@ -65,7 +65,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v7
         with:
-          go-version: "1.27.1"
+          go-version: "1.27.2"
 
       - name: Install leafpress
         run: go install github.com/shivamx96/leafpress/cli/cmd/leafpress@latest

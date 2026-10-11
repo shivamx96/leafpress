@@ -836,3 +836,14 @@ html {
     padding: 0.65rem 0.75rem;
   }
 }
+
+/* Diagrams are ink and wash on the sheet, with a faint accent tint. */
+:root {
+  --lp-diagram-surface: var(--lp-paper-sheet);
+  --lp-diagram-primary: color-mix(in srgb, var(--lp-accent) 8%, var(--lp-paper-wash));
+  --lp-diagram-primary-border: var(--lp-paper-rule-strong);
+  --lp-diagram-secondary: var(--lp-paper-wash-strong);
+  --lp-diagram-tertiary: var(--lp-paper-sheet);
+  --lp-diagram-line: var(--lp-paper-rule-strong);
+  --lp-diagram-text: var(--lp-paper-ink);
+}
