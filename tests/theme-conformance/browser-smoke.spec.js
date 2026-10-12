@@ -1,5 +1,48 @@
 import { expect, test } from "@playwright/test";
 
+for (const system of ["light", "dark"]) {
+  test(`theme toggle follows and overrides a ${system} system preference`, async ({ page }) => {
+    const opposite = system === "light" ? "dark" : "light";
+    const root = page.locator("html");
+    const toggle = page.locator(".lp-theme-toggle");
+    const storedTheme = () => page.evaluate(() => localStorage.getItem("theme"));
+    await page.emulateMedia({ colorScheme: system });
+    await page.goto("/classic-base-base/notes/components/");
+    await expect(root).toHaveAttribute("data-theme-preference", "system");
+    await expect(root).toHaveAttribute("data-theme", system);
+    await expect(toggle).toHaveAccessibleName(`Switch to ${opposite} theme`);
+
+    await toggle.click();
+    await expect(root).toHaveAttribute("data-theme", opposite);
+    expect(await storedTheme()).toBe(opposite);
+    await page.reload();
+    await expect(root).toHaveAttribute("data-theme", opposite);
+
+    // OS changes, including matching the override, must not discard it.
+    await page.emulateMedia({ colorScheme: opposite });
+    await expect(root).toHaveAttribute("data-theme-preference", opposite);
+    await page.emulateMedia({ colorScheme: system });
+    await expect(root).toHaveAttribute("data-theme", opposite);
+    expect(await storedTheme()).toBe(opposite);
+
+    await toggle.click();
+    await expect(root).toHaveAttribute("data-theme", system);
+    await expect(root).toHaveAttribute("data-theme-preference", "system");
+    expect(await storedTheme()).toBeNull();
+    await page.reload();
+    await page.emulateMedia({ colorScheme: opposite });
+    await expect(root).toHaveAttribute("data-theme", opposite);
+
+    // A saved override matching the OS still switches appearance on click.
+    await page.evaluate((theme) => localStorage.setItem("theme", theme), opposite);
+    await page.reload();
+    await toggle.click();
+    await expect(root).toHaveAttribute("data-theme", system);
+    await expect(root).toHaveAttribute("data-theme-preference", system);
+    expect(await storedTheme()).toBe(system);
+  });
+}
+
 // Keep this suite small enough to run on secondary browser engines on every PR.
 for (const theme of ["classic", "aurora", "paper", "quiet", "terminal"]) {
   test(`${theme} supports essential reader flows`, async ({ page }) => {

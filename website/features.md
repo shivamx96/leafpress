@@ -70,7 +70,7 @@ integration without giving leafpress access to a hosting account.
 
 **Colors** — Set your accent color. Light and dark backgrounds with gradient support.
 
-**Dark Mode** — Built-in toggle with system preference detection.
+**Dark Mode** — Follows your system preference by default. The toggle switches between light and dark; switching back to your system's current appearance restores automatic switching.
 
 **Navigation** — Multiple styles (base, sticky, glassmorphic). Box or underlined active link indicators. Explicit items can link to pages in the garden or to external URLs.
 
