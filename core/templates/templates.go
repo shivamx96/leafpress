@@ -799,26 +799,19 @@ const baseTemplate = `<!DOCTYPE html>
     }
 
     function getNextThemePreference() {
-      if (themePreference === 'system') {
-        return getEffectiveTheme(themePreference) === 'dark' ? 'light' : 'dark';
-      }
-      if (themePreference !== getSystemTheme()) {
-        return getSystemTheme();
-      }
-      return 'system';
+      var target = getEffectiveTheme(themePreference) === 'dark' ? 'light' : 'dark';
+      // Returning to the OS appearance resumes following it. Only a click
+      // clears an override; OS changes must preserve an explicit preference.
+      return target === getSystemTheme() ? 'system' : target;
     }
 
-    function updateThemeToggle(theme) {
+    function updateThemeToggle() {
       var themeToggle = document.querySelector('.lp-theme-toggle');
       if (!themeToggle) return;
 
       var nextPreference = getNextThemePreference();
 
-      var currentLabel = themePreference === 'system'
-        ? 'system (' + theme + ')'
-        : themePreference;
-      var nextLabel = nextPreference === 'system' ? 'system setting' : nextPreference + ' theme';
-      var label = 'Theme: ' + currentLabel + '. Use ' + nextLabel;
+      var label = 'Switch to ' + getEffectiveTheme(nextPreference) + ' theme';
       themeToggle.setAttribute('aria-label', label);
       themeToggle.setAttribute('title', label);
     }
@@ -848,7 +841,7 @@ const baseTemplate = `<!DOCTYPE html>
       var theme = getEffectiveTheme(preference);
       document.documentElement.setAttribute('data-theme-preference', preference);
       document.documentElement.setAttribute('data-theme', theme);
-      updateThemeToggle(theme);
+      updateThemeToggle();
       updateGraphTheme(theme);
       // Diagrams and other theme-aware widgets re-render on this event.
       document.dispatchEvent(new CustomEvent('lp:themechange', { detail: { theme: theme } }));
@@ -870,7 +863,7 @@ const baseTemplate = `<!DOCTYPE html>
       if (themePreference === 'system') {
         applyThemePreference('system');
       } else {
-        updateThemeToggle(getEffectiveTheme(themePreference));
+        updateThemeToggle();
       }
     }
 
@@ -894,7 +887,7 @@ const baseTemplate = `<!DOCTYPE html>
       // Theme toggle
       var themeToggle = document.querySelector('.lp-theme-toggle');
       if (themeToggle) {
-        updateThemeToggle(getEffectiveTheme(themePreference));
+        updateThemeToggle();
         themeToggle.addEventListener('click', function() {
           var nextPreference = getNextThemePreference();
           storeThemePreference(nextPreference);

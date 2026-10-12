@@ -5,6 +5,14 @@ date: 2025-12-21
 
 Customize your site's appearance with fonts, colors, and custom CSS.
 
+## Light and Dark Mode
+
+The site follows the reader's system appearance by default. Each click of the
+theme toggle switches between light and dark. Selecting the system's current
+appearance clears the saved override and resumes following the system.
+Otherwise, the selection is saved across visits and stays in effect even when
+the system appearance changes.
+
 ## Bundled Themes
 
 Select a bundled visual theme with `theme.preset`:
