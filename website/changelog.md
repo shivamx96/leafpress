@@ -4,6 +4,14 @@ date: 2025-01-06
 toc: false
 ---
 
+## v1.0.0
+*October 26, 2026*
+
+- **First stable release of leafpress.** Turn Markdown into a static digital garden with wiki-links, backlinks, search, a graph view, RSS feeds, and five bundled themes with light and dark appearances.
+- Includes the standalone CLI, the Core Go library, and the `leafpress-render` bridge for hosted integrations. See the [installation guide](/guide/installation/) to get started.
+- Promotes v1.0.0-rc.3 without application code changes. Existing RC.3 sites require no configuration or content migration.
+- Release binaries and CI now use Go 1.27.3 to fix certificate-validation advisory GO-2026-6809. The minimum Go for source installs and Core consumers remains 1.26.
+
 ## v1.0.0-rc.3
 *October 12, 2026*
 
