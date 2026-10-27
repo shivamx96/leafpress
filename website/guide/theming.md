@@ -291,8 +291,11 @@ both existing navigation and the Everything section picker:
 }
 ```
 
-Site identity remains at the top and links home. The dock holds navigation and
-reader tools, with menus opening upward. Its surface and corners follow the
+The dock begins with a persistent Home link: the site name on desktop (long
+names truncate visually) and a Home icon on mobile. Its accessible label retains
+the full site name. There is no separate top masthead in bottom mode, so the
+page title leads the content. Header navigation is unchanged. The dock holds
+section navigation and reader tools, with menus opening upward. Its surface and corners follow the
 selected preset: rounded Classic/Aurora, restrained Quiet, and squared
 Paper/Terminal. Light and dark modes use the preset's existing colors.
 

@@ -12,6 +12,23 @@ for (const theme of themes) {
         await page.evaluate(() => document.fonts.ready);
         const nav = page.locator('.lp-nav');
         await expect(nav).toHaveCSS('position', 'fixed');
+        const home = nav.locator('.lp-dock-home');
+        await expect(home).toHaveAttribute('href', `/${theme}-everything-bottom/`);
+        await expect(home).toHaveAccessibleName('The Theme Garden — Home');
+        await expect(page.locator('.lp-site-header')).toHaveCount(0);
+        if (width <= 768) {
+          await expect(home.locator('svg')).toBeVisible();
+          await expect(home.locator('.lp-dock-home-name')).toBeHidden();
+        } else {
+          await expect(home.locator('.lp-dock-home-name')).toBeVisible();
+          await home.locator('.lp-dock-home-name').evaluate(el => { el.textContent = 'A very long garden name '.repeat(10); });
+          await expect.poll(() => home.evaluate(el => el.getBoundingClientRect().width)).toBeLessThanOrEqual(160);
+        }
+        await expect.poll(() => home.evaluate(el => {
+          const r = el.getBoundingClientRect(), picker = document.querySelector('.lp-section-picker summary').getBoundingClientRect();
+          const actions = document.querySelector('.lp-nav-actions').getBoundingClientRect();
+          return r.width >= 44 && r.height >= 44 && r.right <= picker.left && picker.right <= actions.left && actions.right <= innerWidth;
+        })).toBe(true);
         await expect.poll(() => nav.evaluate(el => {
           const r = el.getBoundingClientRect();
           return r.left >= 0 && r.right <= innerWidth && r.bottom <= innerHeight && r.top > innerHeight / 2 && r.height <= 80;
@@ -41,6 +58,9 @@ for (const theme of themes) {
         await page.keyboard.press('Escape');
         await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
         await expect.poll(() => page.locator('.lp-footer').evaluate(el => el.getBoundingClientRect().bottom <= document.querySelector('.lp-nav').getBoundingClientRect().top)).toBe(true);
+        await home.click();
+        await expect(page).toHaveURL(new RegExp(`/${theme}-everything-bottom/$`));
+        await expect(page.locator('.lp-dock-home')).toHaveAttribute('aria-current', 'page');
       }
       expect(errors).toEqual([]);
     });
@@ -51,8 +71,10 @@ for (const theme of themes) {
       const page = await context.newPage();
       for (const fixture of [`${theme}-bottom-box`,`${theme}-everything-bottom`]) {
         await page.goto(`/${fixture}/notes/components/`);
-        await expect(page.locator('.lp-site-title')).toBeVisible();
+        await expect(page.locator('.lp-dock-home')).toBeVisible();
+        await expect(page.locator('.lp-site-header')).toHaveCount(0);
         await expect(page.getByRole('link',{name:'RSS feed',exact:true})).toBeVisible();
+        await expect(page.locator('.lp-nav-actions button:visible')).toHaveCount(0);
         if (fixture.includes('everything')) {
           await page.locator('.lp-section-picker summary').click();
           await page.locator('.lp-section-menu').getByRole('link',{name:'Everything',exact:true}).click();
@@ -60,6 +82,9 @@ for (const theme of themes) {
         } else {
           await expect(page.locator('.lp-nav-links a').first()).toBeVisible();
         }
+        await page.locator('.lp-dock-home').click();
+        await expect(page).toHaveURL(new RegExp(`/${fixture}/$`));
+        await expect(page.locator('.lp-dock-home')).toHaveAttribute('aria-current', 'page');
       }
     } finally { await context.close(); }
   });
