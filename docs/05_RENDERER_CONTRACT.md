@@ -224,7 +224,7 @@ closes it. The current destination is highlighted in the menu and shortcuts.
 
 ### Bottom navigation
 
-Set `theme.navStyle` to `"bottom"` for a persistent bottom dock. It works with
+Set `theme.navStyle` to `"bottom"` for a scroll-aware bottom dock. It works with
 both existing navigation and the Everything section picker:
 
 ```json
@@ -234,7 +234,7 @@ both existing navigation and the Everything section picker:
 }
 ```
 
-The dock begins with an always-visible Home icon on desktop and mobile,
+The dock begins with a fixed Home icon on desktop and mobile,
 including without JavaScript. Its accessible label and tooltip retain the full
 site name. A divider separates Home from the adjacent section links, matching
 the utility divider on the right. On pointer-driven desktops the dock hugs its visible contents and uses 12px
@@ -244,6 +244,12 @@ page title leads the content. Header navigation is unchanged. The dock holds
 section navigation and reader tools, with menus opening upward. Its surface and corners follow the
 selected preset: rounded Classic/Aurora, restrained Quiet, and squared
 Paper/Terminal. Light and dark modes use the preset's existing colors.
+
+The dock hides after 120px of downward scrolling and returns after 120px upward.
+Changing direction resets this distance. It stays visible at the top and bottom
+of the page, while menus are open, or while a dock control has keyboard focus.
+Tab reveals it before moving focus. The slide respects reduced-motion settings;
+without JavaScript the dock remains visible.
 
 The dock respects the device's bottom safe area and reserves space beneath the
 footer. Its measured height updates on resize/font loading, keeping the last

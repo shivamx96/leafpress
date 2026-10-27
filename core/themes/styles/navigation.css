@@ -321,3 +321,15 @@ html.lp-no-js .lp-nav[data-nav-style="bottom"] .lp-nav-tool-label { display: non
 @media (min-width: 769px) and (pointer: fine) {
   html.lp-no-js .lp-nav[data-nav-style="bottom"][data-everything] { width: max-content; }
 }
+
+/* Move only the fixed dock; its reserved footer clearance stays unchanged. */
+.lp-body .lp-nav[data-nav-style="bottom"] {
+  transition: transform 180ms ease;
+}
+.lp-body .lp-nav[data-nav-style="bottom"].lp-nav--scroll-hidden {
+  transform: translate(-50%, calc(100% + 2rem + env(safe-area-inset-bottom, 0px)));
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp-body .lp-nav[data-nav-style="bottom"] { transition: none; }
+}

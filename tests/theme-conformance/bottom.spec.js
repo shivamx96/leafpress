@@ -149,3 +149,44 @@ for (const theme of themes) {
     } finally { await context.close(); }
   });
 }
+
+for (const width of [390, 1440]) {
+  test(`bottom dock uses directional travel at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/classic-everything-bottom/notes/components/');
+    const nav = page.locator('.lp-nav');
+    const scroll = async y => {
+      await page.evaluate(y => window.scrollTo({ top: y, behavior: 'instant' }), y);
+      await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(y);
+      await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    };
+    const shown = () => expect(nav).not.toHaveClass(/lp-nav--scroll-hidden/);
+    const hidden = () => expect(nav).toHaveClass(/lp-nav--scroll-hidden/);
+    await scroll(119); await shown();
+    await scroll(120); await hidden();
+    await expect(nav).toHaveAttribute('inert', '');
+    await expect.poll(() => nav.evaluate(el => el.getBoundingClientRect().top >= innerHeight)).toBe(true);
+    await scroll(400); await hidden();
+    await scroll(281); await hidden();
+    await scroll(280); await shown();
+    await scroll(350); await shown();
+    await scroll(320); await shown();
+    await scroll(439); await shown();
+    await scroll(440); await hidden();
+    await page.keyboard.press('Tab'); await shown();
+    await page.locator('.lp-dock-home').focus();
+    await scroll(600); await shown();
+    await page.locator('.lp-section-picker summary').click();
+    await expect(page.locator('.lp-section-picker')).toHaveAttribute('open', '');
+    await scroll(800); await shown();
+    await page.keyboard.press('Escape');
+    await page.evaluate(() => document.activeElement.blur());
+    await scroll(1000); await hidden();
+    await scroll(0); await shown();
+    await scroll(200); await hidden();
+    await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }));
+    await shown();
+    await expect(nav).toHaveCSS('transition-duration', '0s');
+  });
+}

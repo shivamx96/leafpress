@@ -1131,6 +1131,53 @@ const baseTemplate = `<!DOCTYPE html>
       window.addEventListener('resize', scheduleNavMeasurement);
       window.addEventListener('scroll', updateNavScroll, { passive: true });
 
+      if (nav.getAttribute('data-nav-style') === 'bottom') {
+        var dockPreviousY = Math.max(0, window.scrollY);
+        var dockDirection = 0;
+        var dockTravel = 0;
+        function revealDock() {
+          nav.classList.remove('lp-nav--scroll-hidden');
+          nav.removeAttribute('inert');
+          nav.removeAttribute('aria-hidden');
+          dockDirection = 0;
+          dockTravel = 0;
+        }
+        function updateDockScroll() {
+          var maxY = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+          var y = Math.min(maxY, Math.max(0, window.scrollY));
+          var delta = y - dockPreviousY;
+          dockPreviousY = y;
+          if ((initialHash && !readerInteracted) || y <= 4 || y >= maxY - 4 || nav.contains(document.activeElement) ||
+              nav.querySelector('details[open], .lp-nav-tools--open') ||
+              document.querySelector('.lp-search-overlay--open, .lp-graph-overlay--open')) {
+            revealDock();
+            return;
+          }
+          if (!delta) return;
+          var direction = delta > 0 ? 1 : -1;
+          dockTravel = direction === dockDirection ? dockTravel + Math.abs(delta) : Math.abs(delta);
+          dockDirection = direction;
+          if (dockTravel < 120) return;
+          if (direction < 0) {
+            revealDock();
+          } else {
+            nav.classList.add('lp-nav--scroll-hidden');
+            nav.setAttribute('inert', '');
+            nav.setAttribute('aria-hidden', 'true');
+          }
+        }
+        window.addEventListener('scroll', updateDockScroll, { passive: true });
+        window.addEventListener('resize', function() {
+          dockPreviousY = Math.max(0, window.scrollY);
+          revealDock();
+        });
+        // Restore navigation before the browser resolves keyboard focus.
+        document.addEventListener('keydown', function(event) {
+          if (event.key === 'Tab') revealDock();
+        }, true);
+        nav.addEventListener('focusin', revealDock);
+      }
+
       // A direct fragment URL may be positioned before fonts and nav settle.
       // Stop correcting it as soon as the reader interacts with the page.
       var initialHash = window.location.hash;
