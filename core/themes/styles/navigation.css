@@ -155,23 +155,15 @@ html:has(.lp-body--bottom-nav) {
   min-width: 44px;
   min-height: 44px;
   width: 44px;
-  max-width: 10rem;
   padding: 0;
   color: var(--lp-text);
   font-family: var(--lp-font-heading);
   font-size: var(--lp-font-sm);
   font-weight: 600;
   text-decoration: none;
-  border-radius: var(--lp-radius-sm);
+  border-right: 1px solid var(--lp-border);
 }
-/* Start with a usable icon; enhancement reveals only a fully fitting name. */
-.lp-dock-home-name { display: none; overflow: hidden; white-space: nowrap; }
 .lp-dock-home-icon { display: block; flex: 0 0 auto; }
-@media (min-width: 769px) {
-  .lp-dock-home--named { width: auto; padding: 0 0.5rem; }
-  .lp-dock-home--named .lp-dock-home-name { display: block; }
-  .lp-dock-home--named .lp-dock-home-icon { display: none; }
-}
 .lp-dock-home:hover, .lp-dock-home[aria-current="page"] { color: var(--lp-accent); }
 .lp-dock-home:focus-visible { outline: 2px solid var(--lp-accent); outline-offset: 2px; }
 .lp-body .lp-nav[data-nav-style="bottom"] {
@@ -194,10 +186,13 @@ html:has(.lp-body--bottom-nav) {
 }
 .lp-nav[data-nav-style="bottom"] .lp-nav-container {
   padding: 0 0.75rem;
+  justify-content: flex-start;
   flex-direction: row;
   gap: 0.75rem;
   min-width: 0;
 }
+/* The middle group takes spare width; never distribute it after Home. */
+.lp-nav[data-nav-style="bottom"] .lp-nav-container > .lp-nav-links { flex: 1 1 0; }
 .lp-nav[data-nav-style="bottom"] .lp-nav-brand { width: auto; order: 2; flex: 0 0 auto; }
 .lp-nav[data-nav-style="bottom"] .lp-nav-actions { position: relative; }
 .lp-nav[data-nav-style="bottom"] .lp-nav-links {

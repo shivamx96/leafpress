@@ -682,7 +682,6 @@ const baseTemplate = `<!DOCTYPE html>
       {{if eq .Site.Theme.NavStyle "bottom"}}
       <a class="lp-dock-home" href="{{.Site.BasePath}}/" aria-label="{{if .Site.Title}}{{.Site.Title}} — {{end}}Home" title="{{if .Site.Title}}{{.Site.Title}} — {{end}}Home"{{if eq .CurrentPath "/"}} aria-current="page"{{end}}>
         <svg class="lp-dock-home-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z"/></svg>
-        <span class="lp-dock-home-name">{{if .Site.Title}}{{.Site.Title}}{{else}}Home{{end}}</span>
       </a>
       {{end}}
       <div class="lp-nav-brand">
@@ -1056,21 +1055,8 @@ const baseTemplate = `<!DOCTYPE html>
       var navPlaceholder = document.querySelector('.lp-nav-placeholder');
       var navThreshold = 0;
       var navFrame = 0;
-      function measureDockHome() {
-        var home = nav.querySelector('.lp-dock-home');
-        if (!home) return;
-        home.classList.toggle('lp-dock-home--named', !mobileNav.matches);
-        if (!mobileNav.matches) {
-          var name = home.querySelector('.lp-dock-home-name');
-          // Measure the actual font and allocated width, including long names.
-          // Never leave a clipped label: the full identity remains in aria-label.
-          if (name.scrollWidth > name.clientWidth) home.classList.remove('lp-dock-home--named');
-        }
-        fitNavigation();
-      }
       function measureNav() {
         if (nav.getAttribute('data-nav-style') === 'bottom') {
-          measureDockHome();
           document.documentElement.style.setProperty('--lp-bottom-nav-height', Math.ceil(nav.getBoundingClientRect().height) + 'px');
           document.documentElement.style.setProperty('--lp-nav-offset', '16px');
           return;
