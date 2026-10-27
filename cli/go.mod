@@ -7,7 +7,7 @@ require (
 	github.com/gorilla/websocket v1.5.3
 	github.com/shivamx96/leafpress/core v1.1.1
 	github.com/spf13/cobra v1.10.2
-	golang.org/x/mod v0.41.0
+	golang.org/x/mod v0.42.0
 )
 
 require (
