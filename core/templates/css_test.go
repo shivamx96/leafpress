@@ -15,7 +15,7 @@ func classicCSS(t *testing.T) (classic, full string) {
 	if !ok {
 		t.Fatal("classic theme is not registered")
 	}
-	return definition.CSS, themes.BaseCSS + "\n" + definition.CSS
+	return definition.CSS, themes.BaseCSS + "\n" + definition.CSS + "\n" + themes.NavigationCSS
 }
 
 func TestDefaultCSSComposesBaseAndClassicTheme(t *testing.T) {

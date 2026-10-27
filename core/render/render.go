@@ -256,6 +256,7 @@ func Render(in *Input) (*Output, error) {
 	if err != nil {
 		return nil, err
 	}
+	site.Everything = cfg.Navigation.Everything
 	title := site.Title
 	basePath := site.BasePath
 
@@ -265,6 +266,10 @@ func Render(in *Input) (*Output, error) {
 	}
 	if err := content.ValidateOutputRoutes(pages); err != nil {
 		return nil, inputErrorf("invalid page routes: %v", err)
+	}
+
+	if err := sitegen.ValidateEverythingRoutes(pages, cfg.Navigation); err != nil {
+		return nil, inputErrorf("%v", err)
 	}
 
 	// Resolve wikilinks over exactly these pages; unresolved links degrade
@@ -390,6 +395,14 @@ func Render(in *Input) (*Output, error) {
 			return nil, fmt.Errorf("failed to render section %q: %w", dir, err)
 		}
 		sections = append(sections, OutputSection{Slug: dir, HTML: buf.String()})
+	}
+
+	if cfg.Navigation.Everything {
+		markup, err := sitegen.EverythingIndex(tmpl, site, pages, cfg.Navigation)
+		if err != nil {
+			return nil, err
+		}
+		sections = append(sections, OutputSection{Slug: "everything", HTML: markup})
 	}
 
 	// The garden home: a root index page replaces the generated index and

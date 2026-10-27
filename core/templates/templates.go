@@ -44,6 +44,13 @@ func init() {
 		"safeCSS":           func(s string) string { return s },
 		"fontPreloads":      fontPreloads,
 		"hasPrefix":         strings.HasPrefix,
+		"navActive": func(current, path string) bool {
+			path = strings.TrimRight(path, "/")
+			if path == "" {
+				return current == "/"
+			}
+			return current == path || strings.HasPrefix(current, path+"/")
+		},
 	}
 }
 
@@ -122,6 +129,7 @@ type SiteData struct {
 	Title               string
 	Description         string // Site-wide meta description
 	Author              string
+	Everything          bool
 	Nav                 []config.NavItem
 	Theme               config.Theme
 	BaseURL             string
@@ -669,7 +677,7 @@ const baseTemplate = `<!DOCTYPE html>
 </head>
 <body class="lp-body">
   {{if eq .Site.Theme.NavStyle "glassy"}}<div class="lp-nav-placeholder"></div>{{end}}
-  <nav class="lp-nav" aria-label="Main navigation" data-nav-style="{{.Site.Theme.NavStyle}}">
+  <nav class="lp-nav" aria-label="Main navigation" data-nav-style="{{.Site.Theme.NavStyle}}"{{if .Site.Everything}} data-everything="true"{{end}}>
     <div class="lp-nav-container">
       <div class="lp-nav-brand">
         <a class="lp-nav-title" title="{{.Site.Title}}" href="{{.Site.BasePath}}/">{{.Site.Title}}</a>
@@ -731,11 +739,30 @@ const baseTemplate = `<!DOCTYPE html>
           </div>
         </div>
       </div>
+      {{if .Site.Everything}}
+      <div class="lp-section-nav">
+        <details class="lp-section-picker">
+          <summary>Everything <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
+          <div class="lp-section-menu">
+            <a class="lp-nav-link{{if eq .CurrentPath "/everything/"}} lp-nav-link--active{{end}}" href="{{.Site.BasePath}}/everything/"{{if eq .CurrentPath "/everything/"}} aria-current="page"{{end}}>Everything</a>
+        {{range .Site.Nav}}
+        {{if .External}}<a class="lp-nav-link lp-nav-link--external" href="{{.Path}}" target="_blank" rel="noopener">{{.Label}}</a>{{else}}<a class="lp-nav-link{{if navActive $.CurrentPath .Path}} lp-nav-link--active lp-nav-active-{{$.Site.Theme.NavActiveStyle}}{{end}}" href="{{$.Site.BasePath}}{{.Path}}"{{if and $.Site.Everything (navActive $.CurrentPath .Path)}} aria-current="page"{{end}}>{{.Label}}</a>{{end}}
+        {{end}}
+          </div>
+        </details>
       <div class="lp-nav-links">
         {{range .Site.Nav}}
-        {{if .External}}<a class="lp-nav-link lp-nav-link--external" href="{{.Path}}" target="_blank" rel="noopener">{{.Label}}</a>{{else}}<a class="lp-nav-link{{if hasPrefix $.CurrentPath .Path}} lp-nav-link--active lp-nav-active-{{$.Site.Theme.NavActiveStyle}}{{end}}" href="{{$.Site.BasePath}}{{.Path}}">{{.Label}}</a>{{end}}
+        {{if .External}}<a class="lp-nav-link lp-nav-link--external" href="{{.Path}}" target="_blank" rel="noopener">{{.Label}}</a>{{else}}<a class="lp-nav-link{{if navActive $.CurrentPath .Path}} lp-nav-link--active lp-nav-active-{{$.Site.Theme.NavActiveStyle}}{{end}}" href="{{$.Site.BasePath}}{{.Path}}"{{if and $.Site.Everything (navActive $.CurrentPath .Path)}} aria-current="page"{{end}}>{{.Label}}</a>{{end}}
         {{end}}
       </div>
+      </div>
+      {{else}}
+      <div class="lp-nav-links">
+        {{range .Site.Nav}}
+        {{if .External}}<a class="lp-nav-link lp-nav-link--external" href="{{.Path}}" target="_blank" rel="noopener">{{.Label}}</a>{{else}}<a class="lp-nav-link{{if navActive $.CurrentPath .Path}} lp-nav-link--active lp-nav-active-{{$.Site.Theme.NavActiveStyle}}{{end}}" href="{{$.Site.BasePath}}{{.Path}}"{{if and $.Site.Everything (navActive $.CurrentPath .Path)}} aria-current="page"{{end}}>{{.Label}}</a>{{end}}
+        {{end}}
+      </div>
+      {{end}}
     </div>
   </nav>
   <main class="lp-main">
@@ -912,7 +939,7 @@ const baseTemplate = `<!DOCTYPE html>
       }
       navMenuToggle.addEventListener('click', function() {
         var open = navMenuToggle.getAttribute('aria-expanded') !== 'true';
-        if (open) {
+        if (open && !nav.hasAttribute('data-everything')) {
           var menuLinks = navTools.querySelector('.lp-nav-menu-links');
           menuLinks.replaceChildren();
           nav.querySelectorAll('.lp-nav-links a').forEach(function(link) {
@@ -950,7 +977,7 @@ const baseTemplate = `<!DOCTYPE html>
         });
       });
       navTools.addEventListener('click', function(event) {
-        if (mobileNav.matches && event.target.closest('a, button')) {
+        if (getComputedStyle(navTools).display !== 'contents' && event.target.closest('a, button')) {
           closeNavTools(!event.target.closest('.lp-graph-toggle'));
         }
       });
@@ -958,6 +985,66 @@ const baseTemplate = `<!DOCTYPE html>
         var focusHidden = mobileNav.matches && navTools.contains(document.activeElement);
         closeNavTools(focusHidden);
       });
+
+      // All destinations are present in the native disclosure even without JS.
+      // Measure actual labels rather than guessing a link count at build time.
+      var sectionPicker = nav.querySelector('.lp-section-picker');
+      var sectionNav = nav.querySelector('.lp-section-nav');
+      var shortcuts = sectionNav ? sectionNav.querySelector('.lp-nav-links') : null;
+      function fitNavigation() {
+        if (!sectionNav) return;
+        var links = Array.from(shortcuts.children);
+        links.forEach(function(link) { link.hidden = false; });
+        var gap = parseFloat(getComputedStyle(shortcuts).columnGap) || 0;
+        var available = sectionNav.clientWidth - sectionPicker.getBoundingClientRect().width - 12;
+        var used = 0;
+        var full = false;
+        links.forEach(function(link) {
+          var width = link.getBoundingClientRect().width;
+          used += width + (used ? gap : 0);
+          full = full || used > available;
+          if (full && link.contains(document.activeElement)) sectionPicker.querySelector('summary').focus();
+          link.hidden = full;
+        });
+      }
+      if (sectionPicker) {
+        sectionPicker.addEventListener('toggle', function() {
+          if (sectionPicker.open) closeNavTools(false);
+        });
+        navMenuToggle.addEventListener('click', function() { sectionPicker.open = false; });
+        document.addEventListener('click', function(event) {
+          if (!sectionPicker.contains(event.target)) sectionPicker.open = false;
+        });
+        sectionPicker.addEventListener('keydown', function(event) {
+          if (event.key === 'Escape') {
+            sectionPicker.open = false;
+            sectionPicker.querySelector('summary').focus();
+          }
+        });
+        sectionPicker.addEventListener('focusout', function() {
+          requestAnimationFrame(function() {
+            if (!sectionPicker.contains(document.activeElement)) sectionPicker.open = false;
+          });
+        });
+        // Grid owns placement; keep DOM/tab order aligned with the visual row.
+        var actions = nav.querySelector('.lp-nav-actions');
+        var container = nav.querySelector('.lp-nav-container');
+        container.appendChild(actions);
+        var search = actions.querySelector('.lp-search-toggle');
+        if (search) navTools.insertBefore(search, navTools.querySelector('.lp-theme-toggle'));
+        // Search stays visible when other tools move into their small-screen disclosure.
+        function placeSearch() {
+          if (!search) return;
+          if (window.matchMedia('(max-width: 420px)').matches) actions.insertBefore(search, navMenuToggle);
+          else navTools.insertBefore(search, navTools.querySelector('.lp-theme-toggle'));
+        }
+        placeSearch();
+        window.addEventListener('resize', placeSearch);
+        fitNavigation();
+        if (window.ResizeObserver) new ResizeObserver(fitNavigation).observe(sectionNav);
+        window.addEventListener('resize', fitNavigation);
+        if (document.fonts) document.fonts.ready.then(fitNavigation);
+      }
 
       // Keep normal-flow spacing separate from the floating bar's dimensions.
       var navPlaceholder = document.querySelector('.lp-nav-placeholder');

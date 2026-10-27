@@ -72,9 +72,11 @@ type Features struct {
 // defaults to "automatic"; the presence of any other field never changes the
 // mode.
 type Navigation struct {
-	Mode        string    `json:"mode"`        // "automatic" | "explicit"
-	IncludeTags bool      `json:"includeTags"` // automatic mode: append a Tags item
-	Items       []NavItem `json:"items"`       // explicit mode: verbatim nav
+	Everything        bool      `json:"everything"`                  // opt-in unified index and responsive section picker
+	EverythingExclude []string  `json:"everythingExclude,omitempty"` // site-relative page or section paths omitted from the index
+	Mode              string    `json:"mode"`                        // "automatic" | "explicit"
+	IncludeTags       bool      `json:"includeTags"`                 // automatic mode: append a Tags item
+	Items             []NavItem `json:"items"`                       // explicit mode: verbatim nav
 }
 
 // Navigation modes.
@@ -700,6 +702,12 @@ func (c *Config) Validate() error {
 	case NavAutomatic, NavExplicit:
 	default:
 		return fmt.Errorf("navigation.mode must be %q or %q, got %q", NavAutomatic, NavExplicit, c.Navigation.Mode)
+	}
+
+	for _, excluded := range c.Navigation.EverythingExclude {
+		if !strings.HasPrefix(excluded, "/") || strings.HasPrefix(excluded, "//") || strings.ContainsAny(excluded, "?#\\") {
+			return fmt.Errorf("navigation.everythingExclude must contain site-relative paths, got %q", excluded)
+		}
 	}
 
 	// Validate nav paths are well-formed

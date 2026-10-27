@@ -192,6 +192,42 @@ page. External URLs link out of the garden: they are rendered verbatim, open in
 a new tab with `rel="noopener"`, and carry the `lp-nav-link--external` class
 for styling. Other schemes such as `mailto:` are rejected.
 
+
+#### Everything and responsive sections
+
+Set `navigation.everything` to `true` (default `false`) to add an **Everything ▾**
+section picker. Its first link opens `/everything/`; all configured navigation
+items remain available below it. Shortcut links appear beside the picker when
+there is room. The browser measures actual widths and refits after resizing or
+font loading; link counts are not fixed at build time. Enabled feed, graph,
+search, and theme controls sit on the right behind a separator. At small phone
+widths, search stays visible and the remaining tools use the Site menu.
+
+```json
+{
+  "navigation": {
+    "mode": "automatic",
+    "everything": true,
+    "everythingExclude": ["/about/", "/now/"]
+  }
+}
+```
+
+The Everything index lists published non-index pages across all sections,
+newest `date` first (undated entries last, ties ordered by slug). Home and section
+indexes are omitted. The CLI's `--drafts` preview includes drafts as elsewhere;
+hosted callers supply the published page set. `everythingExclude` defaults to
+an empty list and accepts site-relative page or section paths, matching exact
+paths and their descendants. Exclusions only remove entries from this index;
+they do not make content private or remove it from search, feeds, or navigation.
+Use exclusions for utility pages such as About; Leafpress does not infer them
+from titles. `/everything/` and its subtree are reserved while enabled, and
+conflicting content causes an error. Existing home pages remain unchanged.
+
+The picker uses a native disclosure with ordinary links, including without
+JavaScript. Escape closes it and restores focus; clicking or tabbing outside
+closes it. The current destination is highlighted in the menu and shortcuts.
+
 ### `build`
 
 | Option | Default | Description |

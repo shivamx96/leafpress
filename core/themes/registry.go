@@ -49,6 +49,11 @@ type Definition struct {
 //go:embed styles/base.css
 var BaseCSS string
 
+// NavigationCSS contains opt-in responsive navigation shared by all presets.
+//
+//go:embed styles/navigation.css
+var NavigationCSS string
+
 //go:embed styles/classic.css
 var classicCSS string
 

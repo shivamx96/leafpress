@@ -927,3 +927,16 @@ func TestThemeFontNamesValidatedCentrally(t *testing.T) {
 		t.Errorf("empty font (pre-default) should validate: %v", err)
 	}
 }
+
+func TestEverythingConfiguration(t *testing.T) {
+	cfg, err := Parse([]byte(`{"navigation":{"everything":true,"everythingExclude":["/about/","/notes/private/"]}}`))
+	if err != nil || !cfg.Navigation.Everything || len(cfg.Navigation.EverythingExclude) != 2 {
+		t.Fatalf("config=%+v err=%v", cfg, err)
+	}
+	for _, path := range []string{"about", "//example.com/", "/about?x", "/about#x", "/a\\b"} {
+		raw, _ := json.Marshal(map[string]any{"navigation": map[string]any{"everythingExclude": []string{path}}})
+		if _, err := Parse(raw); err == nil {
+			t.Errorf("accepted exclusion %q", path)
+		}
+	}
+}
