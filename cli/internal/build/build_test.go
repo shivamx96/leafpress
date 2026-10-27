@@ -1010,3 +1010,38 @@ func TestBuildCustomFavicon(t *testing.T) {
 		t.Fatalf("outside static error = %v", err)
 	}
 }
+
+func TestBuildCustomFooterFromConfig(t *testing.T) {
+	dir := newTestProject(t)
+	if err := os.WriteFile(filepath.Join(dir, "_index.md"), []byte("# Home\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(dir, "leafpress.json")
+	if err := os.WriteFile(path, []byte(`{"site":{"footer":"  My <garden> & \"notes\"  ","author":"Author"}}`), 0644); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := config.Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := New(cfg, Options{}).Build(); err != nil {
+		t.Fatal(err)
+	}
+	for _, rel := range []string{"index.html", "note/index.html", "404.html"} {
+		data, err := os.ReadFile(filepath.Join(dir, "_site", rel))
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, want := range []string{
+			`<span class="lp-footer-text">My &lt;garden&gt; &amp; &#34;notes&#34;</span>`,
+			`Grown with <a href="https://leafpress.in" target="_blank" rel="noopener noreferrer">leafpress</a>`,
+		} {
+			if !strings.Contains(string(data), want) {
+				t.Errorf("%s missing %q", rel, want)
+			}
+		}
+		if strings.Contains(string(data), "&copy; Author.") {
+			t.Errorf("%s did not override author", rel)
+		}
+	}
+}
