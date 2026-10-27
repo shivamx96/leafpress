@@ -7,8 +7,11 @@ toc: false
 ## v1.1.0
 *October 27, 2026*
 
-- **Custom footer text for everyone.** Set `site.footer` to a plain-text line in place of the author copyright. [Details](/guide/configuration/#footer).
-- Hosts can hide the generator credit with `render.generatorCredit: false` and use the site title as a copyright fallback with `render.copyrightFallback: "title"`. These optional renderer controls keep contract version 2 and preserve existing defaults.
+- **Footer controls:** Custom footer text and host-controlled generator credit. [Docs](/guide/configuration/#footer).
+- **Everything navigation:** An all-pages index with responsive section shortcuts. [Docs](/guide/configuration/#everything-and-responsive-sections).
+- **Bottom dock:** Theme-aware navigation that hides while scrolling down and returns on scrolling up. [Docs](/guide/theming/#bottom-navigation).
+- **Theme controls:** Compact menus show the current Auto, Dark, or Light mode. [Docs](/guide/theming/#light-and-dark-mode).
+- **Active-link fixes:** Correct dock underlines and a clearer active state in Quiet. [Docs](/guide/theming/#bottom-navigation).
 
 ## v1.0.0
 *October 26, 2026*
