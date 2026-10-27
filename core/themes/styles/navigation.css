@@ -144,7 +144,7 @@ html.lp-no-js .lp-nav[data-everything] .lp-nav-links { display: none; }
 html:has(.lp-body--bottom-nav) {
   scroll-padding-bottom: calc(var(--lp-bottom-nav-height, 64px) + 2rem + env(safe-area-inset-bottom, 0px));
 }
-/* Both icon groups have 44px targets directly beside a 1px divider. */
+/* Icon groups share target dimensions and divider spacing. */
 .lp-dock-home-group {
   display: flex;
   grid-column: 1;
@@ -159,9 +159,9 @@ html:has(.lp-body--bottom-nav) {
   grid-column: 1;
   grid-row: 1;
   flex: 0 0 auto;
-  min-width: 44px;
-  min-height: 44px;
-  width: 44px;
+  min-width: var(--lp-dock-target, 44px);
+  min-height: var(--lp-dock-target, 44px);
+  width: var(--lp-dock-target, 44px);
   padding: 0;
   color: var(--lp-text);
   font-family: var(--lp-font-heading);
@@ -261,11 +261,11 @@ html:has(.lp-body--bottom-nav) {
  * These overrides also beat the mobile tool-menu widths and display rules. */
 html.lp-no-js .lp-nav[data-nav-style="bottom"] .lp-nav-actions button { display: none; }
 html.lp-no-js .lp-nav[data-nav-style="bottom"] .lp-nav-tools .lp-rss-link {
-  flex: 0 0 44px;
-  width: 44px;
-  min-width: 44px;
-  height: 44px;
-  padding: 0.5rem;
+  flex: 0 0 var(--lp-dock-target, 44px);
+  width: var(--lp-dock-target, 44px);
+  min-width: var(--lp-dock-target, 44px);
+  height: var(--lp-dock-target, 44px);
+  padding: 0;
   justify-content: center;
 }
 html.lp-no-js .lp-nav[data-nav-style="bottom"] .lp-nav-tool-label { display: none; }
@@ -273,14 +273,51 @@ html.lp-no-js .lp-nav[data-nav-style="bottom"] .lp-nav-tool-label { display: non
 /* Size inline tools without changing disclosure visibility or full-width menu rows. */
 .lp-nav[data-nav-style="bottom"] .lp-nav-actions > button,
 .lp-nav[data-nav-style="bottom"] .lp-nav-tools:not(.lp-nav-tools--open) > :is(button, a) {
-  flex: 0 0 44px;
-  width: 44px;
-  min-width: 44px;
-  height: 44px;
-  min-height: 44px;
+  flex: 0 0 var(--lp-dock-target, 44px);
+  width: var(--lp-dock-target, 44px);
+  min-width: var(--lp-dock-target, 44px);
+  height: var(--lp-dock-target, 44px);
+  min-height: var(--lp-dock-target, 44px);
   padding: 0;
   margin: 0;
   align-items: center;
   justify-content: center;
 }
 .lp-nav[data-nav-style="bottom"] .lp-nav-brand::before { content: none; }
+
+/* A 12px visible rhythm on pointer-driven desktops. Touch layouts retain
+ * their larger targets. Six pixels within each 32px icon cell make adjacent
+ * 20px icons 12px apart; group and outer padding use the same rhythm. */
+@media (min-width: 769px) and (pointer: fine) {
+  .lp-body .lp-nav[data-nav-style="bottom"] {
+    --lp-dock-target: 32px;
+    width: max-content;
+    max-width: min(760px, var(--lp-max-width), calc(100% - 2rem));
+    padding: 6px;
+  }
+  .lp-body .lp-nav[data-nav-style="bottom"][data-everything] {
+    width: min(760px, calc(100% - 2rem));
+  }
+  .lp-nav[data-nav-style="bottom"] .lp-nav-container { padding: 0; gap: 12px; }
+  .lp-nav[data-nav-style="bottom"] .lp-dock-home-group { padding-right: 6px; }
+  .lp-nav[data-nav-style="bottom"] .lp-nav-actions { padding-left: 6px; gap: 0; }
+  .lp-nav[data-nav-style="bottom"] .lp-nav-links { gap: 12px; }
+  .lp-nav[data-nav-style="bottom"] .lp-nav-container > .lp-nav-links { flex: 0 1 auto; }
+  .lp-nav[data-nav-style="bottom"] .lp-nav-links > a.lp-nav-link {
+    display: flex;
+    align-items: center;
+    min-height: 32px;
+    padding: 0;
+    margin: 0;
+  }
+  .lp-nav[data-nav-style="bottom"] .lp-section-picker summary { min-height: 32px; }
+  .lp-nav[data-nav-style="bottom"] .lp-nav-actions > button svg,
+  .lp-nav[data-nav-style="bottom"] .lp-nav-tools:not(.lp-nav-tools--open) > :is(button, a) svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+@media (min-width: 769px) and (pointer: fine) {
+  html.lp-no-js .lp-nav[data-nav-style="bottom"][data-everything] { width: max-content; }
+}

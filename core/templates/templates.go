@@ -1000,6 +1000,12 @@ const baseTemplate = `<!DOCTYPE html>
       var shortcuts = sectionNav ? sectionNav.querySelector('.lp-nav-links') : null;
       function fitNavigation() {
         if (!sectionNav) return;
+        var bottomDock = nav.getAttribute('data-nav-style') === 'bottom';
+        var compactDock = bottomDock && window.matchMedia('(min-width: 769px) and (pointer: fine)').matches;
+        // Fit against the maximum available width before shrinking to the
+        // visible contents. This prevents previously hidden links from
+        // remaining hidden simply because the dock became narrower.
+        if (bottomDock) nav.style.removeProperty('width');
         var links = Array.from(shortcuts.children);
         links.forEach(function(link) { link.hidden = false; });
         var gap = parseFloat(getComputedStyle(shortcuts).columnGap) || 0;
@@ -1013,6 +1019,22 @@ const baseTemplate = `<!DOCTYPE html>
           if (full && link.contains(document.activeElement)) sectionPicker.querySelector('summary').focus();
           link.hidden = full;
         });
+        if (compactDock) {
+          var shown = links.filter(function(link) { return !link.hidden; });
+          var sectionWidth = sectionPicker.getBoundingClientRect().width;
+          if (shown.length) {
+            sectionWidth += 12 + shown.reduce(function(total, link) { return total + link.getBoundingClientRect().width; }, 0) + gap * (shown.length - 1);
+          }
+          var containerStyle = getComputedStyle(nav.querySelector('.lp-nav-container'));
+          var navStyle = getComputedStyle(nav);
+          var width = nav.querySelector('.lp-dock-home-group').getBoundingClientRect().width
+            + sectionWidth + nav.querySelector('.lp-nav-actions').getBoundingClientRect().width
+            + 2 * (parseFloat(containerStyle.columnGap) || 0)
+            + parseFloat(containerStyle.paddingLeft) + parseFloat(containerStyle.paddingRight)
+            + parseFloat(navStyle.paddingLeft) + parseFloat(navStyle.paddingRight)
+            + parseFloat(navStyle.borderLeftWidth) + parseFloat(navStyle.borderRightWidth);
+          nav.style.width = Math.ceil(Math.min(width, nav.getBoundingClientRect().width)) + 'px';
+        }
       }
       if (sectionPicker) {
         sectionPicker.addEventListener('toggle', function() {

@@ -14,9 +14,22 @@ async function expectSymmetricIcons(page) {
     const last = controls[controls.length - 1].getBoundingClientRect();
     const dock = nav.getBoundingClientRect();
     const center = r => (r.left + r.right) / 2;
-    return [home, ...controls].every(el => {
+    const compact = matchMedia('(min-width: 769px) and (pointer: fine)').matches;
+    const target = compact ? 32 : 44;
+    const glyphs = [home, ...controls].map(el => [...el.querySelectorAll('svg')].find(svg => getComputedStyle(svg).display !== 'none').getBoundingClientRect());
+    const links = [...nav.querySelectorAll('.lp-nav-links > a')].filter(el => !el.hidden);
+    const sectionEnd = links.length ? links[links.length - 1] : nav.querySelector('.lp-section-picker summary');
+    const compactGaps = !compact || (
+      (!sectionEnd || Math.abs(actions.left - sectionEnd.getBoundingClientRect().right - 12) < 1.1) &&
+      Math.abs(glyphs[0].left - dock.left - 1 - 12) < 1 &&
+      Math.abs(group.right - 1 - glyphs[0].right - 12) < 1 &&
+      Math.abs(glyphs[1].left - actions.left - 1 - 12) < 1 &&
+      Math.abs(dock.right - 1 - glyphs[glyphs.length - 1].right - 12) < 1 &&
+      glyphs.slice(2).every((r, i) => Math.abs(r.left - glyphs[i + 1].right - 12) < 1)
+    );
+    return compactGaps && [home, ...controls].every(el => {
       const r = el.getBoundingClientRect();
-      return Math.abs(r.width - 44) < 0.1 && Math.abs(r.height - 44) < 0.1;
+      return Math.abs(r.width - target) < 0.1 && Math.abs(r.height - target) < 0.1;
     }) && Math.abs((center(rect) - dock.left) - (dock.right - center(last))) < 1
        && Math.abs((group.right - 0.5 - center(rect)) - (center(first) - actions.left - 0.5)) < 1;
   })).toBe(true);
@@ -43,7 +56,7 @@ for (const theme of themes) {
         await expect.poll(() => home.evaluate(el => {
           const r = el.getBoundingClientRect(), picker = document.querySelector('.lp-section-picker summary').getBoundingClientRect();
           const actions = document.querySelector('.lp-nav-actions').getBoundingClientRect();
-          return r.width >= 44 && r.height >= 44 && r.right <= picker.left && picker.right <= actions.left && actions.right <= innerWidth;
+          return r.width >= 32 && r.height >= 32 && r.right <= picker.left && picker.right <= actions.left && actions.right <= innerWidth;
         })).toBe(true);
         await expect.poll(() => nav.evaluate(el => {
           const r = el.getBoundingClientRect();
