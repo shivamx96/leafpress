@@ -1802,7 +1802,9 @@ const baseTemplate = `<!DOCTYPE html>
           // Focus input - immediate focus for mobile touch events
           input.focus();
           // Backup focus after transition completes
-          setTimeout(function() { input.focus(); }, 200);
+          setTimeout(function() {
+            if (overlay.classList.contains('lp-search-overlay--open')) input.focus();
+          }, 200);
 
           if (!searchIndex) {
             fetch(LP_BASE_PATH + '/search-index.json')
