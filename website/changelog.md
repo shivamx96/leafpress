@@ -4,7 +4,7 @@ date: 2025-01-06
 toc: false
 ---
 
-## v1.1.0
+## v1.1.1
 *October 27, 2026*
 
 - **Footer controls:** Custom footer text and host-controlled generator credit. [Docs](/guide/configuration/#footer).
