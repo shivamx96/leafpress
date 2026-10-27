@@ -68,3 +68,17 @@ func TestEverythingBuildAndIncremental(t *testing.T) {
 		t.Fatal("accepted full-build collision")
 	}
 }
+
+func TestBottomNavigationBuild(t *testing.T) {
+	dir := newTestProject(t)
+	cfg := config.Default()
+	cfg.Theme.NavStyle = "bottom"
+	cfg.Navigation.Everything = true
+	b := New(cfg, Options{})
+	if _, err := b.Build(); err != nil {
+		t.Fatal(err)
+	}
+	output := filepath.Join(dir, "_site", "everything", "index.html")
+	assertFileContains(t, output, `data-nav-style="bottom"`)
+	assertFileContains(t, output, `class="lp-site-title"`)
+}
