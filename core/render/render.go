@@ -57,6 +57,10 @@ type RenderOpts struct {
 	// FooterAttribution is renderer-only white-label branding, deliberately
 	// structured instead of accepting raw HTML or script content.
 	FooterAttribution *FooterAttribution `json:"footerAttribution,omitempty"`
+	// GeneratorCredit controls whether the generator line is displayed; nil means true.
+	GeneratorCredit *bool `json:"generatorCredit,omitempty"`
+	// CopyrightFallback optionally uses the site title when footer and author are unset.
+	CopyrightFallback string `json:"copyrightFallback,omitempty"`
 }
 
 // Content is the renderable input a CLI build would read from disk.
@@ -238,6 +242,12 @@ func Render(in *Input) (*Output, error) {
 		return nil, inputErrorf("render.slug is invalid: %q", in.Render.Slug)
 	}
 
+	if in.Render.GeneratorCredit != nil && !*in.Render.GeneratorCredit && in.Render.FooterAttribution != nil {
+		return nil, inputErrorf("render.generatorCredit: false conflicts with render.footerAttribution")
+	}
+	if in.Render.CopyrightFallback != "" && in.Render.CopyrightFallback != "title" {
+		return nil, inputErrorf("render.copyrightFallback: must be empty or title")
+	}
 	if err := validateFooterAttribution(in.Render.FooterAttribution); err != nil {
 		return nil, err
 	}
@@ -675,21 +685,24 @@ func resolveConfig(in *Input) (*config.Config, templates.SiteData, error) {
 		}
 	}
 	rawSite := templates.SiteData{
-		Title:             cfg.Site.Title,
-		Description:       cfg.Site.Description,
-		Author:            cfg.Site.Author,
-		Theme:             cfg.Theme,
-		BaseURL:           cfg.Site.BaseURL,
-		BasePath:          basePath,
-		Image:             cfg.Site.Image,
-		Favicon:           cfg.Site.Favicon,
-		TOC:               cfg.Features.TOC,
-		Graph:             cfg.Features.Graph,
-		Search:            cfg.Features.Search,
-		RSS:               cfg.Features.RSS,
-		Sharing:           cfg.Features.Sharing,
-		HeadExtra:         cfg.Site.HeadExtra,
-		FooterAttribution: footerAttribution,
+		Title:               cfg.Site.Title,
+		Description:         cfg.Site.Description,
+		Author:              cfg.Site.Author,
+		Footer:              cfg.Site.Footer,
+		HideGeneratorCredit: in.Render.GeneratorCredit != nil && !*in.Render.GeneratorCredit,
+		CopyrightFallback:   in.Render.CopyrightFallback,
+		Theme:               cfg.Theme,
+		BaseURL:             cfg.Site.BaseURL,
+		BasePath:            basePath,
+		Image:               cfg.Site.Image,
+		Favicon:             cfg.Site.Favicon,
+		TOC:                 cfg.Features.TOC,
+		Graph:               cfg.Features.Graph,
+		Search:              cfg.Features.Search,
+		RSS:                 cfg.Features.RSS,
+		Sharing:             cfg.Features.Sharing,
+		HeadExtra:           cfg.Site.HeadExtra,
+		FooterAttribution:   footerAttribution,
 	}
 	return cfg, sitegen.SafeSiteData(rawSite), nil
 }

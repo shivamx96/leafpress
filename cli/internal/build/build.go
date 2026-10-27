@@ -254,6 +254,7 @@ func (b *Builder) Build() (result *Stats, resultErr error) {
 		Title:       b.cfg.Site.Title,
 		Description: b.cfg.Site.Description,
 		Author:      b.cfg.Site.Author,
+		Footer:      b.cfg.Site.Footer,
 		Theme:       b.cfg.Theme,
 		BaseURL:     b.cfg.Site.BaseURL,
 		BasePath:    basePath,

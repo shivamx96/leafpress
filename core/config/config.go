@@ -11,6 +11,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/shivamx96/leafpress/core/assets"
 	"github.com/shivamx96/leafpress/core/content"
@@ -46,6 +48,7 @@ type Site struct {
 	Title       string `json:"title"`
 	Description string `json:"description"` // Site-wide meta description
 	Author      string `json:"author"`
+	Footer      string `json:"footer"` // Plain-text copyright line override
 	BaseURL     string `json:"baseURL"`
 	Favicon     string `json:"favicon"`   // Site-relative raster icon; empty uses built-ins
 	Image       string `json:"image"`     // Default OG image path (e.g., "/og-image.png")
@@ -590,6 +593,16 @@ func Write(path string, cfg *Config) error {
 
 // Validate checks if the configuration values are valid
 func (c *Config) Validate() error {
+	c.Site.Footer = strings.TrimSpace(c.Site.Footer)
+	if utf8.RuneCountInString(c.Site.Footer) > 200 {
+		return fmt.Errorf("site.footer: must be at most 200 characters")
+	}
+	for _, r := range c.Site.Footer {
+		if unicode.IsControl(r) || r == '\u2028' || r == '\u2029' {
+			return fmt.Errorf("site.footer: newlines and control characters are not allowed")
+		}
+	}
+
 	// Validate contract version (0 means unset → latest).
 	if c.ContractVersion != 0 && c.ContractVersion != ContractVersionLatest {
 		return fmt.Errorf("unsupported contractVersion %d (this build supports %d)", c.ContractVersion, ContractVersionLatest)

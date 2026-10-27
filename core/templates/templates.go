@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"html"
+	htmltemplate "html/template"
 	"io"
 	"path"
 	"regexp"
@@ -35,6 +36,7 @@ var (
 
 func init() {
 	templateFuncs = template.FuncMap{
+		"footerText":        htmltemplate.HTMLEscapeString,
 		"growthEmoji":       growthEmoji,
 		"growthDescription": growthDescription,
 		"lower":             strings.ToLower,
@@ -117,23 +119,26 @@ type FooterAttribution struct {
 
 // SiteData contains site-wide information
 type SiteData struct {
-	Title             string
-	Description       string // Site-wide meta description
-	Author            string
-	Nav               []config.NavItem
-	Theme             config.Theme
-	BaseURL           string
-	BasePath          string // Path portion of BaseURL (e.g., "/repo-name" for GitHub Pages)
-	Image             string // Default OG image path
-	Favicon           string // Custom site-relative raster icon
-	TOC               bool
-	Graph             bool
-	Search            bool
-	RSS               bool
-	Sharing           bool
-	HeadExtra         string // Custom HTML to inject in <head>
-	FooterAttribution *FooterAttribution
-	ClientScriptPath  string // Content-hashed shared client bundle, relative to the site root
+	Title               string
+	Description         string // Site-wide meta description
+	Author              string
+	Nav                 []config.NavItem
+	Theme               config.Theme
+	BaseURL             string
+	BasePath            string // Path portion of BaseURL (e.g., "/repo-name" for GitHub Pages)
+	Image               string // Default OG image path
+	Favicon             string // Custom site-relative raster icon
+	TOC                 bool
+	Graph               bool
+	Search              bool
+	RSS                 bool
+	Sharing             bool
+	HeadExtra           string // Custom HTML to inject in <head>
+	FooterAttribution   *FooterAttribution
+	Footer              string // Raw plain text, escaped at template output
+	HideGeneratorCredit bool
+	CopyrightFallback   string
+	ClientScriptPath    string // Content-hashed shared client bundle, relative to the site root
 }
 
 // ClientScriptAsset renders the site-wide client code once and returns its
@@ -737,9 +742,9 @@ const baseTemplate = `<!DOCTYPE html>
     {{block "content" .}}{{end}}
   </main>
   <footer class="lp-footer">
-    {{if .Site.Author}}<span class="lp-footer-text">&copy; {{.Site.Author}}. All rights reserved.</span>{{end}}
-    {{if .Site.FooterAttribution}}<span class="lp-footer-text">Grown with {{if .Site.FooterAttribution.URL}}<a href="{{.Site.FooterAttribution.URL}}" target="_blank" rel="noopener noreferrer">{{.Site.FooterAttribution.Name}}</a>{{else}}{{.Site.FooterAttribution.Name}}{{end}}</span>
-    {{else}}<span class="lp-footer-text">Grown with <a href="https://leafpress.in" target="_blank" rel="noopener noreferrer">leafpress</a></span>{{end}}
+    {{if .Site.Footer}}<span class="lp-footer-text">{{.Site.Footer | footerText}}</span>{{else if .Site.Author}}<span class="lp-footer-text">&copy; {{.Site.Author}}. All rights reserved.</span>{{else if and (eq .Site.CopyrightFallback "title") .Site.Title}}<span class="lp-footer-text">&copy; {{.Site.Title}}. All rights reserved.</span>{{end}}
+    {{if not .Site.HideGeneratorCredit}}{{if .Site.FooterAttribution}}<span class="lp-footer-text">Grown with {{if .Site.FooterAttribution.URL}}<a href="{{.Site.FooterAttribution.URL}}" target="_blank" rel="noopener noreferrer">{{.Site.FooterAttribution.Name}}</a>{{else}}{{.Site.FooterAttribution.Name}}{{end}}</span>
+    {{else}}<span class="lp-footer-text">Grown with <a href="https://leafpress.in" target="_blank" rel="noopener noreferrer">leafpress</a></span>{{end}}{{end}}
   </footer>
 
   {{if .Site.Graph}}<!-- Graph Overlay -->

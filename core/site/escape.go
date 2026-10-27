@@ -17,7 +17,8 @@ import (
 
 // SafeSiteData escapes the site fields that reach markup. HeadExtra
 // deliberately stays raw: it is the documented escape hatch for trusted
-// operator HTML. Nav is escaped separately by EscapeNavItems, because it is
+// operator HTML. Footer stays plain text and is escaped by html/template's
+// escaping function at template output. Nav is escaped separately by EscapeNavItems, because it is
 // assembled after this call from config items and page titles.
 func SafeSiteData(site templates.SiteData) templates.SiteData {
 	site.Title = html.EscapeString(site.Title)
