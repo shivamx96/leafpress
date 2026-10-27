@@ -1,0 +1,192 @@
+import { expect, test } from '@playwright/test';
+const themes = ['classic', 'aurora', 'paper', 'quiet', 'terminal'];
+async function expectSymmetricIcons(page) {
+  await expect.poll(() => page.locator('.lp-nav').evaluate(nav => {
+    const home = nav.querySelector('.lp-dock-home');
+    const group = nav.querySelector('.lp-dock-home-group').getBoundingClientRect();
+    const actions = nav.querySelector('.lp-nav-actions').getBoundingClientRect();
+    const controls = [...nav.querySelectorAll('.lp-nav-actions button, .lp-nav-actions .lp-rss-link')]
+      .filter(el => el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden')
+      .sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left);
+    const rect = home.getBoundingClientRect();
+    if (!controls.length) return false;
+    const first = controls[0].getBoundingClientRect();
+    const last = controls[controls.length - 1].getBoundingClientRect();
+    const dock = nav.getBoundingClientRect();
+    const center = r => (r.left + r.right) / 2;
+    const compact = matchMedia('(min-width: 769px) and (pointer: fine)').matches;
+    const target = compact ? 32 : 44;
+    const glyphs = [home, ...controls].map(el => [...el.querySelectorAll('svg')].find(svg => getComputedStyle(svg).display !== 'none').getBoundingClientRect());
+    const links = [...nav.querySelectorAll('.lp-nav-links > a')].filter(el => !el.hidden);
+    const sectionEnd = links.length ? links[links.length - 1] : nav.querySelector('.lp-section-picker summary');
+    const compactGaps = !compact || (
+      (!sectionEnd || Math.abs(actions.left - sectionEnd.getBoundingClientRect().right - 12) < 1.1) &&
+      Math.abs(glyphs[0].left - dock.left - 1 - 12) < 1 &&
+      Math.abs(group.right - 1 - glyphs[0].right - 12) < 1 &&
+      Math.abs(glyphs[1].left - actions.left - 1 - 12) < 1 &&
+      Math.abs(dock.right - 1 - glyphs[glyphs.length - 1].right - 12) < 1 &&
+      glyphs.slice(2).every((r, i) => Math.abs(r.left - glyphs[i + 1].right - 12) < 1)
+    );
+    return compactGaps && [home, ...controls].every(el => {
+      const r = el.getBoundingClientRect();
+      return Math.abs(r.width - target) < 0.1 && Math.abs(r.height - target) < 0.1;
+    }) && Math.abs((center(rect) - dock.left) - (dock.right - center(last))) < 1
+       && Math.abs((group.right - 0.5 - center(rect)) - (center(first) - actions.left - 0.5)) < 1;
+  })).toBe(true);
+}
+for (const theme of themes) {
+  for (const colorScheme of ['light', 'dark']) {
+    test(`${theme} bottom dock in ${colorScheme} preserves reading and opens upward`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme });
+      const errors = [];
+      page.on('pageerror', e => errors.push(e.message));
+      for (const width of [1440, 600, 390, 320]) {
+        await page.setViewportSize({ width, height: 844 });
+        await page.goto(`/${theme}-everything-bottom/notes/components/#lists-and-tasks`);
+        await page.evaluate(() => document.fonts.ready);
+        const nav = page.locator('.lp-nav');
+        await expect(nav).toHaveCSS('position', 'fixed');
+        const home = nav.locator('.lp-dock-home');
+        await expect(home).toHaveAttribute('href', `/${theme}-everything-bottom/`);
+        await expect(home).toHaveAccessibleName('The Theme Garden — Home');
+        await expect(page.locator('.lp-site-header')).toHaveCount(0);
+        await expect(home.locator('svg')).toBeVisible();
+        if (width === 1440) {
+          await page.setViewportSize({width:600, height:844});
+          await expectSymmetricIcons(page);
+          await page.setViewportSize({width, height:844});
+        }
+        await expectSymmetricIcons(page);
+        await expect(home.locator('.lp-dock-home-name')).toHaveCount(0);
+        await expect.poll(() => home.evaluate(el => {
+          const r = el.getBoundingClientRect(), picker = document.querySelector('.lp-section-picker summary').getBoundingClientRect();
+          const actions = document.querySelector('.lp-nav-actions').getBoundingClientRect();
+          return r.width >= 32 && r.height >= 32 && r.right <= picker.left && picker.right <= actions.left && actions.right <= innerWidth;
+        })).toBe(true);
+        await expect.poll(() => nav.evaluate(el => {
+          const r = el.getBoundingClientRect();
+          return r.left >= 0 && r.right <= innerWidth && r.bottom <= innerHeight && r.top > innerHeight / 2 && r.height <= 80;
+        })).toBe(true);
+        await expect.poll(() => page.locator('#lists-and-tasks').evaluate(el => el.getBoundingClientRect().top)).toBeGreaterThanOrEqual(0);
+        const summary = page.locator('.lp-section-picker summary');
+        await summary.click();
+        const menu = page.locator('.lp-section-menu');
+        await expect(menu).toBeVisible();
+        await expect.poll(() => menu.evaluate(el => {
+          const r=el.getBoundingClientRect(), nav=document.querySelector('.lp-nav').getBoundingClientRect();
+          return r.bottom <= nav.top && r.top >= 0 && r.left >= 0 && r.right <= innerWidth;
+        })).toBe(true);
+        await expect(menu.locator('a[href$="/notes/"]')).toHaveAttribute('aria-current','page');
+        await page.keyboard.press('Escape');
+        await expect(summary).toBeFocused();
+        if (width <= 420) {
+          await page.getByRole('button',{name:'Site menu',exact:true}).click();
+          await expect(page.locator('.lp-nav-tools')).toBeVisible();
+          await expect.poll(() => page.locator('.lp-nav-tools').evaluate(el => el.getBoundingClientRect().bottom <= document.querySelector('.lp-nav').getBoundingClientRect().top)).toBe(true);
+        }
+        await page.getByRole('button',{name:'Open knowledge graph',exact:true}).click();
+        await expect(page.locator('.lp-graph-overlay')).toBeVisible();
+        await page.keyboard.press('Escape');
+        await page.getByRole('button',{name:'Search',exact:true}).click();
+        await expect(page.locator('.lp-search-input')).toBeFocused();
+        await page.keyboard.press('Escape');
+        await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+        await expect.poll(() => page.locator('.lp-footer').evaluate(el => el.getBoundingClientRect().bottom <= document.querySelector('.lp-nav').getBoundingClientRect().top)).toBe(true);
+        await home.click();
+        await expect(page).toHaveURL(new RegExp(`/${theme}-everything-bottom/$`));
+        await expect(page.locator('.lp-dock-home')).toHaveAttribute('aria-current', 'page');
+      }
+      expect(errors).toEqual([]);
+    });
+  }
+  test(`${theme} legacy dock keeps Home next to section links`, async ({page}) => {
+    for (const width of [1440, 600, 320]) {
+      await page.setViewportSize({width, height:844});
+      await page.goto(`/${theme}-bottom-box/notes/components/`);
+      await page.evaluate(() => document.fonts.ready);
+      const home = page.locator('.lp-dock-home');
+      await expect(home.locator('svg')).toBeVisible();
+        await expectSymmetricIcons(page);
+      await expect(page.locator('.lp-dock-home-group')).toHaveCSS('border-right-width', '1px');
+      await expect.poll(() => home.evaluate(el => {
+        const home = el.parentElement.getBoundingClientRect();
+        const links = document.querySelector('.lp-nav-container > .lp-nav-links').getBoundingClientRect();
+        return links.left - home.right;
+      })).toBeLessThanOrEqual(12);
+      await expect.poll(() => home.evaluate(el => {
+        const home = el.parentElement.getBoundingClientRect();
+        const links = document.querySelector('.lp-nav-container > .lp-nav-links').getBoundingClientRect();
+        return links.left - home.right;
+      })).toBeGreaterThanOrEqual(0);
+      await expect(page.locator('.lp-nav-actions')).toHaveCSS('border-left-width', '1px');
+    }
+  });
+  test(`${theme} bottom supports legacy links and no-JS section picker`, async ({browser, baseURL}) => {
+    const context = await browser.newContext({ baseURL, javaScriptEnabled:false, viewport:{width:320,height:844} });
+    try {
+      const page = await context.newPage();
+      for (const fixture of [`${theme}-bottom-box`,`${theme}-everything-bottom`]) {
+        await page.goto(`/${fixture}/notes/components/`);
+        await expect(page.locator('.lp-dock-home')).toBeVisible();
+        await page.setViewportSize({width:1440, height:844});
+        await expect(page.locator('.lp-dock-home-icon')).toBeVisible();
+        await expect(page.locator('.lp-dock-home-name')).toHaveCount(0);
+        await page.setViewportSize({width:320, height:844});
+        await expect(page.locator('.lp-site-header')).toHaveCount(0);
+        await expect(page.getByRole('link',{name:'RSS feed',exact:true})).toBeVisible();
+        await expect(page.locator('.lp-nav-actions button:visible')).toHaveCount(0);
+        if (fixture.includes('everything')) {
+          await page.locator('.lp-section-picker summary').click();
+          await page.locator('.lp-section-menu').getByRole('link',{name:'Everything',exact:true}).click();
+          await expect(page.locator('.lp-section-title')).toHaveText('Everything');
+        } else {
+          await expect(page.locator('.lp-nav-links a').first()).toBeVisible();
+        }
+        await page.locator('.lp-dock-home').click();
+        await expect(page).toHaveURL(new RegExp(`/${fixture}/$`));
+        await expect(page.locator('.lp-dock-home')).toHaveAttribute('aria-current', 'page');
+      }
+    } finally { await context.close(); }
+  });
+}
+
+for (const width of [390, 1440]) {
+  test(`bottom dock uses directional travel at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/classic-everything-bottom/notes/components/');
+    const nav = page.locator('.lp-nav');
+    const scroll = async y => {
+      await page.evaluate(y => window.scrollTo({ top: y, behavior: 'instant' }), y);
+      await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(y);
+      await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    };
+    const shown = () => expect(nav).not.toHaveClass(/lp-nav--scroll-hidden/);
+    const hidden = () => expect(nav).toHaveClass(/lp-nav--scroll-hidden/);
+    await scroll(119); await shown();
+    await scroll(120); await hidden();
+    await expect(nav).toHaveAttribute('inert', '');
+    await expect.poll(() => nav.evaluate(el => el.getBoundingClientRect().top >= innerHeight)).toBe(true);
+    await scroll(400); await hidden();
+    await scroll(281); await hidden();
+    await scroll(280); await shown();
+    await scroll(350); await shown();
+    await scroll(320); await shown();
+    await scroll(439); await shown();
+    await scroll(440); await hidden();
+    await page.keyboard.press('Tab'); await shown();
+    await page.locator('.lp-dock-home').focus();
+    await scroll(600); await shown();
+    await page.locator('.lp-section-picker summary').click();
+    await expect(page.locator('.lp-section-picker')).toHaveAttribute('open', '');
+    await scroll(800); await shown();
+    await page.keyboard.press('Escape');
+    await page.evaluate(() => document.activeElement.blur());
+    await scroll(1000); await hidden();
+    await scroll(0); await shown();
+    await scroll(200); await hidden();
+    await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }));
+    await shown();
+    await expect(nav).toHaveCSS('transition-duration', '0s');
+  });
+}

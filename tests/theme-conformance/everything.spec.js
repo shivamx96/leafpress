@@ -7,6 +7,7 @@ for (const theme of themes) {
     await page.setViewportSize({width: 1440, height: 900});
     await page.goto(`/${theme}-everything/notes/components/`);
     await page.evaluate(() => document.fonts.ready);
+    await expect.poll(() => page.locator('.lp-nav-container').evaluate(el => getComputedStyle(el).gridTemplateRows.split(' ').length)).toBe(2);
     const picker = page.locator('.lp-section-picker');
     const summary = picker.locator('summary');
     const shortcuts = page.locator('.lp-section-nav > .lp-nav-links');

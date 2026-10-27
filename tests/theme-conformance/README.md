@@ -88,3 +88,7 @@ LEAFPRESS_CONFORMANCE_BROWSER=webkit npm run test:themes -- browser-smoke.spec.j
 all destinations and utility controls, search focus, Escape dismissal, and
 no-JavaScript access to the generated index. These fixtures use separate
 `<preset>-everything` paths so legacy navigation remains covered independently.
+
+`bottom.spec.js` adds light/dark dock checks across all presets and desktop,
+tablet, and phone widths: upward menus, search/graph overlays, anchor placement,
+footer clearance, legacy navigation, and no-JavaScript access.

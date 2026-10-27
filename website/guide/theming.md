@@ -267,6 +267,7 @@ Solid colors or gradients:
 - `"base"` — Standard navigation bar (default)
 - `"sticky"` — Fixed bar at top
 - `"glassy"` — Glassmorphic blur effect (appears as floating pill on scroll)
+- `"bottom"` — Scroll-aware bottom dock with upward-opening menus
 
 On mobile, the site title stays on one line and section links scroll horizontally.
 Search remains beside the title; the **Site menu** contains theme switching,
@@ -277,6 +278,41 @@ While scrolling on mobile, glassy navigation becomes a single-row floating bar;
 section links move into the Site menu until you return to the top.
 The floating bar sizes to its contents, with a width cap and extra side clearance,
 so it remains visually separate from the article.
+
+### Bottom navigation
+
+Set `theme.navStyle` to `"bottom"` for a scroll-aware bottom dock. It works with
+both existing navigation and the Everything section picker:
+
+```json
+{
+  "theme": { "navStyle": "bottom" },
+  "navigation": { "everything": true }
+}
+```
+
+The dock begins with a fixed Home icon on desktop and mobile,
+including without JavaScript. Its accessible label and tooltip retain the full
+site name. A divider separates Home from the adjacent section links, matching
+the utility divider on the right. On pointer-driven desktops the dock hugs its visible contents and uses 12px
+visible gaps between icons, dividers, and outer edges, with compact 32px icon
+targets. Mobile and touch layouts retain 44px targets. There is no separate top masthead in bottom mode, so the
+page title leads the content. Header navigation is unchanged. The dock holds
+section navigation and reader tools, with menus opening upward. Its surface and corners follow the
+selected preset: rounded Classic/Aurora, restrained Quiet, and squared
+Paper/Terminal. Light and dark modes use the preset's existing colors.
+
+The dock hides after 120px of downward scrolling and returns after 120px upward.
+Changing direction resets this distance. It stays visible at the top and bottom
+of the page, while menus are open, or while a dock control has keyboard focus.
+Tab reveals it before moving focus. The slide respects reduced-motion settings;
+without JavaScript the dock remains visible.
+
+The dock respects the device's bottom safe area and reserves space beneath the
+footer. Its measured height updates on resize/font loading, keeping the last
+content reachable without treating the dock as a top header for anchor links.
+Without JavaScript, ordinary links and the native Everything picker still work.
+When Everything is disabled, long legacy section lists scroll horizontally.
 
 ### Active Link Style
 

@@ -576,7 +576,7 @@ const baseTemplate = `<!DOCTYPE html>
 <html lang="en" class="lp-no-js" data-lp-theme="{{.Site.Theme.ResolvedPreset}}">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0{{if eq .Site.Theme.NavStyle "bottom"}}, viewport-fit=cover{{end}}">
   <meta name="color-scheme" content="light dark">
   <script>
     // Resolve the theme before styles load to avoid flashing the wrong scheme.
@@ -675,12 +675,19 @@ const baseTemplate = `<!DOCTYPE html>
   {{if .Site.ClientScriptPath}}<script src="{{.Site.BasePath}}/{{.Site.ClientScriptPath}}" defer></script>{{end}}
   {{if .Site.HeadExtra}}{{.Site.HeadExtra | safeHTML}}{{end}}
 </head>
-<body class="lp-body">
+<body class="lp-body{{if eq .Site.Theme.NavStyle "bottom"}} lp-body--bottom-nav{{end}}">
   {{if eq .Site.Theme.NavStyle "glassy"}}<div class="lp-nav-placeholder"></div>{{end}}
   <nav class="lp-nav" aria-label="Main navigation" data-nav-style="{{.Site.Theme.NavStyle}}"{{if .Site.Everything}} data-everything="true"{{end}}>
     <div class="lp-nav-container">
+      {{if eq .Site.Theme.NavStyle "bottom"}}
+      <div class="lp-dock-home-group">
+      <a class="lp-dock-home" href="{{.Site.BasePath}}/" aria-label="{{if .Site.Title}}{{.Site.Title}} — {{end}}Home" title="{{if .Site.Title}}{{.Site.Title}} — {{end}}Home"{{if eq .CurrentPath "/"}} aria-current="page"{{end}}>
+        <svg class="lp-dock-home-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z"/></svg>
+      </a>
+      </div>
+      {{end}}
       <div class="lp-nav-brand">
-        <a class="lp-nav-title" title="{{.Site.Title}}" href="{{.Site.BasePath}}/">{{.Site.Title}}</a>
+        {{if ne .Site.Theme.NavStyle "bottom"}}<a class="lp-nav-title" title="{{.Site.Title}}" href="{{.Site.BasePath}}/">{{.Site.Title}}</a>{{end}}
         <div class="lp-nav-actions">
           {{if .Site.Search}}<button class="lp-search-toggle" aria-label="Search" title="Search (⌘K)">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -991,8 +998,22 @@ const baseTemplate = `<!DOCTYPE html>
       var sectionPicker = nav.querySelector('.lp-section-picker');
       var sectionNav = nav.querySelector('.lp-section-nav');
       var shortcuts = sectionNav ? sectionNav.querySelector('.lp-nav-links') : null;
+      var navigationFitFrame = 0;
+      function scheduleNavigationFit() {
+        if (navigationFitFrame) return;
+        navigationFitFrame = requestAnimationFrame(function() {
+          navigationFitFrame = 0;
+          fitNavigation();
+        });
+      }
       function fitNavigation() {
         if (!sectionNav) return;
+        var bottomDock = nav.getAttribute('data-nav-style') === 'bottom';
+        var compactDock = bottomDock && window.matchMedia('(min-width: 769px) and (pointer: fine)').matches;
+        // Fit against the maximum available width before shrinking to the
+        // visible contents. This prevents previously hidden links from
+        // remaining hidden simply because the dock became narrower.
+        if (bottomDock) nav.style.removeProperty('width');
         var links = Array.from(shortcuts.children);
         links.forEach(function(link) { link.hidden = false; });
         var gap = parseFloat(getComputedStyle(shortcuts).columnGap) || 0;
@@ -1006,6 +1027,22 @@ const baseTemplate = `<!DOCTYPE html>
           if (full && link.contains(document.activeElement)) sectionPicker.querySelector('summary').focus();
           link.hidden = full;
         });
+        if (compactDock) {
+          var shown = links.filter(function(link) { return !link.hidden; });
+          var sectionWidth = sectionPicker.getBoundingClientRect().width;
+          if (shown.length) {
+            sectionWidth += 12 + shown.reduce(function(total, link) { return total + link.getBoundingClientRect().width; }, 0) + gap * (shown.length - 1);
+          }
+          var containerStyle = getComputedStyle(nav.querySelector('.lp-nav-container'));
+          var navStyle = getComputedStyle(nav);
+          var width = nav.querySelector('.lp-dock-home-group').getBoundingClientRect().width
+            + sectionWidth + nav.querySelector('.lp-nav-actions').getBoundingClientRect().width
+            + 2 * (parseFloat(containerStyle.columnGap) || 0)
+            + parseFloat(containerStyle.paddingLeft) + parseFloat(containerStyle.paddingRight)
+            + parseFloat(navStyle.paddingLeft) + parseFloat(navStyle.paddingRight)
+            + parseFloat(navStyle.borderLeftWidth) + parseFloat(navStyle.borderRightWidth);
+          nav.style.width = Math.ceil(Math.min(width, nav.getBoundingClientRect().width)) + 'px';
+        }
       }
       if (sectionPicker) {
         sectionPicker.addEventListener('toggle', function() {
@@ -1041,7 +1078,7 @@ const baseTemplate = `<!DOCTYPE html>
         placeSearch();
         window.addEventListener('resize', placeSearch);
         fitNavigation();
-        if (window.ResizeObserver) new ResizeObserver(fitNavigation).observe(sectionNav);
+        if (window.ResizeObserver) new ResizeObserver(scheduleNavigationFit).observe(sectionNav);
         window.addEventListener('resize', fitNavigation);
         if (document.fonts) document.fonts.ready.then(fitNavigation);
       }
@@ -1051,6 +1088,11 @@ const baseTemplate = `<!DOCTYPE html>
       var navThreshold = 0;
       var navFrame = 0;
       function measureNav() {
+        if (nav.getAttribute('data-nav-style') === 'bottom') {
+          document.documentElement.style.setProperty('--lp-bottom-nav-height', Math.ceil(nav.getBoundingClientRect().height) + 'px');
+          document.documentElement.style.setProperty('--lp-nav-offset', '16px');
+          return;
+        }
         var wasPill = nav.classList.contains('lp-nav--pill');
         nav.classList.remove('lp-nav--pill');
         var style = getComputedStyle(nav);
@@ -1088,6 +1130,53 @@ const baseTemplate = `<!DOCTYPE html>
       if (window.ResizeObserver) new ResizeObserver(scheduleNavMeasurement).observe(nav, { box: 'border-box' });
       window.addEventListener('resize', scheduleNavMeasurement);
       window.addEventListener('scroll', updateNavScroll, { passive: true });
+
+      if (nav.getAttribute('data-nav-style') === 'bottom') {
+        var dockPreviousY = Math.max(0, window.scrollY);
+        var dockDirection = 0;
+        var dockTravel = 0;
+        function revealDock() {
+          nav.classList.remove('lp-nav--scroll-hidden');
+          nav.removeAttribute('inert');
+          nav.removeAttribute('aria-hidden');
+          dockDirection = 0;
+          dockTravel = 0;
+        }
+        function updateDockScroll() {
+          var maxY = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+          var y = Math.min(maxY, Math.max(0, window.scrollY));
+          var delta = y - dockPreviousY;
+          dockPreviousY = y;
+          if ((initialHash && !readerInteracted) || y <= 4 || y >= maxY - 4 || nav.contains(document.activeElement) ||
+              nav.querySelector('details[open], .lp-nav-tools--open') ||
+              document.querySelector('.lp-search-overlay--open, .lp-graph-overlay--open')) {
+            revealDock();
+            return;
+          }
+          if (!delta) return;
+          var direction = delta > 0 ? 1 : -1;
+          dockTravel = direction === dockDirection ? dockTravel + Math.abs(delta) : Math.abs(delta);
+          dockDirection = direction;
+          if (dockTravel < 120) return;
+          if (direction < 0) {
+            revealDock();
+          } else {
+            nav.classList.add('lp-nav--scroll-hidden');
+            nav.setAttribute('inert', '');
+            nav.setAttribute('aria-hidden', 'true');
+          }
+        }
+        window.addEventListener('scroll', updateDockScroll, { passive: true });
+        window.addEventListener('resize', function() {
+          dockPreviousY = Math.max(0, window.scrollY);
+          revealDock();
+        });
+        // Restore navigation before the browser resolves keyboard focus.
+        document.addEventListener('keydown', function(event) {
+          if (event.key === 'Tab') revealDock();
+        }, true);
+        nav.addEventListener('focusin', revealDock);
+      }
 
       // A direct fragment URL may be positioned before fonts and nav settle.
       // Stop correcting it as soon as the reader interacts with the page.
@@ -1792,7 +1881,9 @@ const baseTemplate = `<!DOCTYPE html>
           // Focus input - immediate focus for mobile touch events
           input.focus();
           // Backup focus after transition completes
-          setTimeout(function() { input.focus(); }, 200);
+          setTimeout(function() {
+            if (overlay.classList.contains('lp-search-overlay--open')) input.focus();
+          }, 200);
 
           if (!searchIndex) {
             fetch(LP_BASE_PATH + '/search-index.json')

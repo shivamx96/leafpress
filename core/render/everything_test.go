@@ -32,3 +32,15 @@ func TestEverythingRenderer(t *testing.T) {
 		}
 	}
 }
+
+func TestBottomNavigationRendering(t *testing.T) {
+	for _, everything := range []string{"true", "false"} {
+		out := runJSON(t, `{"config":{"site":{"title":"Garden & friends","baseURL":"https://example.com/garden"},"theme":{"navStyle":"bottom"},"navigation":{"everything":`+everything+`}}}`)
+		if !strings.Contains(out.Index, `data-nav-style="bottom"`) || !strings.Contains(out.Index, `class="lp-dock-home" href="/garden/" aria-label="Garden &amp; friends — Home"`) {
+			t.Fatal("missing dock or Home identity")
+		}
+		if strings.Contains(out.Index, `class="lp-nav-title"`) || strings.Contains(out.Index, `class="lp-nav-placeholder"`) || strings.Contains(out.Index, `class="lp-site-header"`) {
+			t.Fatal("bottom dock retains top navigation spacing")
+		}
+	}
+}

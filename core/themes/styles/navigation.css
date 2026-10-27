@@ -6,6 +6,8 @@
   padding-block: 0.5rem;
 }
 .lp-nav[data-everything] .lp-nav-brand { display: contents; }
+/* A brand pseudo-element would otherwise create an extra implicit grid row. */
+.lp-nav[data-everything] .lp-nav-brand::before { content: none; }
 .lp-nav[data-everything] .lp-nav-title {
   grid-column: 1 / -1;
   grid-row: 1;
@@ -131,3 +133,203 @@ html.lp-no-js .lp-nav[data-everything] .lp-nav-links { display: none; }
 [data-lp-theme="paper"] .lp-nav[data-everything] { --lp-nav-surface: var(--lp-paper-sheet); }
 [data-lp-theme="aurora"] .lp-nav[data-everything] { --lp-nav-surface: var(--lp-aurora-surface-strong); }
 [data-lp-theme="terminal"] .lp-nav[data-everything] { --lp-nav-surface: var(--lp-terminal-panel-raised); }
+
+/* Bottom navigation is a presentation option for either navigation mode. */
+.lp-body--bottom-nav {
+  --lp-bottom-nav-space: calc(var(--lp-bottom-nav-height, 64px) + 2rem + env(safe-area-inset-bottom, 0px));
+  padding-bottom: var(--lp-bottom-nav-space);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+html:has(.lp-body--bottom-nav) {
+  scroll-padding-bottom: calc(var(--lp-bottom-nav-height, 64px) + 2rem + env(safe-area-inset-bottom, 0px));
+}
+/* Icon groups share target dimensions and divider spacing. */
+.lp-dock-home-group {
+  display: flex;
+  grid-column: 1;
+  grid-row: 1;
+  flex: 0 0 auto;
+  border-right: 1px solid var(--lp-border);
+}
+.lp-dock-home {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  grid-column: 1;
+  grid-row: 1;
+  flex: 0 0 auto;
+  min-width: var(--lp-dock-target, 44px);
+  min-height: var(--lp-dock-target, 44px);
+  width: var(--lp-dock-target, 44px);
+  padding: 0;
+  color: var(--lp-text);
+  font-family: var(--lp-font-heading);
+  font-size: var(--lp-font-sm);
+  font-weight: 600;
+  text-decoration: none;
+}
+.lp-dock-home-icon { display: block; flex: 0 0 auto; }
+.lp-dock-home:hover, .lp-dock-home[aria-current="page"] { color: var(--lp-accent); }
+.lp-dock-home:focus-visible { outline: 2px solid var(--lp-accent); outline-offset: 2px; }
+.lp-body .lp-nav[data-nav-style="bottom"] {
+  position: fixed;
+  top: auto;
+  bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(760px, calc(100% - 2 * max(1rem, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px))));
+  max-width: var(--lp-max-width);
+  min-height: 0;
+  margin: 0;
+  padding: 0.25rem;
+  border: 1px solid var(--lp-border);
+  border-radius: var(--lp-radius-full);
+  background: var(--lp-nav-surface);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 14%);
+  z-index: 1000;
+  animation: none;
+}
+.lp-nav[data-nav-style="bottom"] .lp-nav-container {
+  padding: 0 0.75rem;
+  justify-content: flex-start;
+  flex-direction: row;
+  gap: 0.75rem;
+  min-width: 0;
+}
+/* The middle group takes spare width; never distribute it after Home. */
+.lp-nav[data-nav-style="bottom"] .lp-nav-container > .lp-nav-links { flex: 1 1 0; }
+.lp-nav[data-nav-style="bottom"] .lp-nav-brand { width: auto; order: 2; flex: 0 0 auto; }
+.lp-nav[data-nav-style="bottom"] .lp-nav-actions { position: relative; }
+.lp-nav[data-nav-style="bottom"] .lp-nav-links {
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  overflow-x: auto;
+  min-width: 0;
+  width: auto;
+  margin: 0;
+}
+.lp-nav[data-nav-style="bottom"] .lp-nav-link { white-space: nowrap; }
+.lp-nav[data-nav-style="bottom"][data-everything] .lp-nav-container {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+.lp-nav[data-nav-style="bottom"][data-everything] .lp-section-nav { grid-column: 2; grid-row: 1; }
+.lp-nav[data-nav-style="bottom"][data-everything] .lp-nav-actions { grid-column: 3; grid-row: 1; }
+/* Anchor the menu to the dock so adding Home cannot push it off a phone screen. */
+.lp-nav[data-nav-style="bottom"] .lp-section-picker { position: static; }
+.lp-nav[data-nav-style="bottom"] .lp-section-menu { left: 0.75rem; }
+.lp-nav[data-nav-style="bottom"][data-everything] .lp-nav-links { overflow: visible; }
+.lp-nav[data-nav-style="bottom"] .lp-section-menu,
+.lp-nav[data-nav-style="bottom"] .lp-nav-tools {
+  top: auto;
+  bottom: calc(100% + 0.75rem);
+  max-height: min(26rem, calc(100dvh - var(--lp-bottom-nav-height, 64px) - 3rem - env(safe-area-inset-bottom, 0px)));
+}
+.lp-nav[data-nav-style="bottom"] .lp-section-menu .lp-nav-link { white-space: normal; }
+.lp-nav[data-nav-style="bottom"] .lp-nav-tools { width: min(16rem, calc(100vw - 3rem)); }
+[data-lp-theme="paper"] .lp-nav[data-nav-style="bottom"] {
+  --lp-nav-surface: var(--lp-paper-sheet);
+  border-radius: 2px;
+  box-shadow: 0 10px 30px var(--lp-paper-shadow);
+}
+[data-lp-theme="quiet"] .lp-nav[data-nav-style="bottom"] {
+  border-radius: var(--lp-radius-lg);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 6%);
+}
+[data-lp-theme="terminal"] .lp-nav[data-nav-style="bottom"] {
+  --lp-nav-surface: var(--lp-terminal-panel-raised);
+  border-radius: 2px;
+  box-shadow: 3px 3px 0 var(--lp-terminal-rule);
+}
+[data-lp-theme="aurora"] .lp-nav[data-nav-style="bottom"] {
+  --lp-nav-surface: var(--lp-aurora-surface-strong);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: var(--lp-aurora-shadow-soft);
+}
+@media (max-width: 768px) {
+  .lp-nav[data-nav-style="bottom"] .lp-nav-container { padding-inline: 0.375rem; gap: 0.375rem; }
+}
+.lp-nav[data-nav-style="bottom"] .lp-nav-actions {
+  padding-left: 0;
+  gap: 0.125rem;
+  border-left: 1px solid var(--lp-border);
+}
+.lp-nav[data-nav-style="bottom"] .lp-nav-actions > .lp-search-toggle { order: 3; }
+.lp-nav[data-nav-style="bottom"] .lp-nav-actions > .lp-nav-menu-toggle { order: 5; }
+/* Without enhancement, keep only the functional feed link beside navigation.
+ * These overrides also beat the mobile tool-menu widths and display rules. */
+html.lp-no-js .lp-nav[data-nav-style="bottom"] .lp-nav-actions button { display: none; }
+html.lp-no-js .lp-nav[data-nav-style="bottom"] .lp-nav-tools .lp-rss-link {
+  flex: 0 0 var(--lp-dock-target, 44px);
+  width: var(--lp-dock-target, 44px);
+  min-width: var(--lp-dock-target, 44px);
+  height: var(--lp-dock-target, 44px);
+  padding: 0;
+  justify-content: center;
+}
+html.lp-no-js .lp-nav[data-nav-style="bottom"] .lp-nav-tool-label { display: none; }
+
+/* Size inline tools without changing disclosure visibility or full-width menu rows. */
+.lp-nav[data-nav-style="bottom"] .lp-nav-actions > button,
+.lp-nav[data-nav-style="bottom"] .lp-nav-tools:not(.lp-nav-tools--open) > :is(button, a) {
+  flex: 0 0 var(--lp-dock-target, 44px);
+  width: var(--lp-dock-target, 44px);
+  min-width: var(--lp-dock-target, 44px);
+  height: var(--lp-dock-target, 44px);
+  min-height: var(--lp-dock-target, 44px);
+  padding: 0;
+  margin: 0;
+  align-items: center;
+  justify-content: center;
+}
+.lp-nav[data-nav-style="bottom"] .lp-nav-brand::before { content: none; }
+
+/* A 12px visible rhythm on pointer-driven desktops. Touch layouts retain
+ * their larger targets. Six pixels within each 32px icon cell make adjacent
+ * 20px icons 12px apart; group and outer padding use the same rhythm. */
+@media (min-width: 769px) and (pointer: fine) {
+  .lp-body .lp-nav[data-nav-style="bottom"] {
+    --lp-dock-target: 32px;
+    width: max-content;
+    max-width: min(760px, var(--lp-max-width), calc(100% - 2rem));
+    padding: 6px;
+  }
+  .lp-body .lp-nav[data-nav-style="bottom"][data-everything] {
+    width: min(760px, calc(100% - 2rem));
+  }
+  .lp-nav[data-nav-style="bottom"] .lp-nav-container { padding: 0; gap: 12px; }
+  .lp-nav[data-nav-style="bottom"] .lp-dock-home-group { padding-right: 6px; }
+  .lp-nav[data-nav-style="bottom"] .lp-nav-actions { padding-left: 6px; gap: 0; }
+  .lp-nav[data-nav-style="bottom"] .lp-nav-links { gap: 12px; }
+  .lp-nav[data-nav-style="bottom"] .lp-nav-container > .lp-nav-links { flex: 0 1 auto; }
+  .lp-nav[data-nav-style="bottom"] .lp-nav-links > a.lp-nav-link {
+    display: flex;
+    align-items: center;
+    min-height: 32px;
+    padding: 0;
+    margin: 0;
+  }
+  .lp-nav[data-nav-style="bottom"] .lp-section-picker summary { min-height: 32px; }
+  .lp-nav[data-nav-style="bottom"] .lp-nav-actions > button svg,
+  .lp-nav[data-nav-style="bottom"] .lp-nav-tools:not(.lp-nav-tools--open) > :is(button, a) svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+@media (min-width: 769px) and (pointer: fine) {
+  html.lp-no-js .lp-nav[data-nav-style="bottom"][data-everything] { width: max-content; }
+}
+
+/* Move only the fixed dock; its reserved footer clearance stays unchanged. */
+.lp-body .lp-nav[data-nav-style="bottom"] {
+  transition: transform 180ms ease;
+}
+.lp-body .lp-nav[data-nav-style="bottom"].lp-nav--scroll-hidden {
+  transform: translate(-50%, calc(100% + 2rem + env(safe-area-inset-bottom, 0px)));
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp-body .lp-nav[data-nav-style="bottom"] { transition: none; }
+}
