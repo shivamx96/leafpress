@@ -23,7 +23,7 @@ const publicRoot = join(workRoot, "public");
 const binaryPath = join(workRoot, "leafpress");
 
 const themes = ["classic", "aurora", "paper", "quiet", "terminal"];
-const navStyles = ["base", "sticky", "glassy"];
+const navStyles = ["base", "sticky", "glassy", "bottom"];
 const activeStyles = ["base", "underlined", "box"];
 
 function run(command, args, options = {}) {
@@ -82,13 +82,14 @@ function buildFixtures() {
   }
 
   for (const theme of themes) {
-    const fixtureName = `${theme}-everything`;
+   for (const navStyle of ["glassy", "bottom"]) {
+    const fixtureName = `${theme}-everything${navStyle === "bottom" ? "-bottom" : ""}`;
     const sourceRoot = join(workRoot, "sources", fixtureName);
     copyFixture(sourceRoot);
     const configPath = join(sourceRoot, "leafpress.json");
     const config = JSON.parse(readFileSync(configPath, "utf8"));
     config.site.baseURL = `http://${host}:${port}/${fixtureName}`;
-    config.theme = { ...config.theme, preset: theme, navStyle: "glassy" };
+    config.theme = { ...config.theme, preset: theme, navStyle };
     config.navigation = { mode: "explicit", everything: true, items: [
       { label: "Notes", path: "/notes/" },
       { label: "A very long section label that cannot always fit", path: "/notes/components/" },
@@ -99,6 +100,8 @@ function buildFixtures() {
     writeFileSync(configPath, JSON.stringify(config));
     run(binaryPath, ["build"], { cwd: sourceRoot });
     cpSync(join(sourceRoot, "_site"), join(publicRoot, fixtureName), { recursive: true });
+  }
+
   }
 
   // The fixture deliberately includes a domain-root-relative Markdown image.

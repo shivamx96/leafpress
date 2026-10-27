@@ -940,3 +940,12 @@ func TestEverythingConfiguration(t *testing.T) {
 		}
 	}
 }
+
+func TestBottomNavigationStyle(t *testing.T) {
+	for _, preset := range []string{"classic", "paper", "quiet", "aurora", "terminal"} {
+		cfg, err := Parse([]byte(`{"theme":{"preset":"` + preset + `","navStyle":"bottom"}}`))
+		if err != nil || cfg.Theme.NavStyle != "bottom" {
+			t.Fatalf("%s: config=%+v err=%v", preset, cfg, err)
+		}
+	}
+}

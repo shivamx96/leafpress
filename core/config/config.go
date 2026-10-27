@@ -139,7 +139,7 @@ type Theme struct {
 	Fonts          []FontFace `json:"fonts,omitempty"`
 	Accent         string     `json:"accent"`
 	Background     Background `json:"-"`              // Custom unmarshaling
-	NavStyle       string     `json:"navStyle"`       // "base", "sticky", or "glassy"
+	NavStyle       string     `json:"navStyle"`       // "base", "sticky", "glassy", or "bottom"
 	NavActiveStyle string     `json:"navActiveStyle"` // "base", "box", or "underlined"
 	ListColumns    int        `json:"listColumns"`    // 1, 2, or 3 columns on desktop
 }
@@ -665,9 +665,9 @@ func (c *Config) Validate() error {
 	}
 
 	// Validate navStyle
-	validNavStyles := map[string]bool{"base": true, "sticky": true, "glassy": true}
+	validNavStyles := map[string]bool{"base": true, "sticky": true, "glassy": true, "bottom": true}
 	if !validNavStyles[c.Theme.NavStyle] {
-		return fmt.Errorf("navStyle must be 'base', 'sticky', or 'glassy', got '%s'", c.Theme.NavStyle)
+		return fmt.Errorf("navStyle must be 'base', 'sticky', 'glassy', or 'bottom', got '%s'", c.Theme.NavStyle)
 	}
 
 	// Validate navActiveStyle

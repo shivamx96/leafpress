@@ -222,6 +222,29 @@ The picker uses a native disclosure with ordinary links, including without
 JavaScript. Escape closes it and restores focus; clicking or tabbing outside
 closes it. The current destination is highlighted in the menu and shortcuts.
 
+### Bottom navigation
+
+Set `theme.navStyle` to `"bottom"` for a persistent bottom dock. It works with
+both existing navigation and the Everything section picker:
+
+```json
+{
+  "theme": { "navStyle": "bottom" },
+  "navigation": { "everything": true }
+}
+```
+
+Site identity remains at the top and links home. The dock holds navigation and
+reader tools, with menus opening upward. Its surface and corners follow the
+selected preset: rounded Classic/Aurora, restrained Quiet, and squared
+Paper/Terminal. Light and dark modes use the preset's existing colors.
+
+The dock respects the device's bottom safe area and reserves space beneath the
+footer. Its measured height updates on resize/font loading, keeping the last
+content reachable without treating the dock as a top header for anchor links.
+Without JavaScript, ordinary links and the native Everything picker still work.
+When Everything is disabled, long legacy section lists scroll horizontally.
+
 ### `build`
 
 The CLI honors `build`; the renderer accepts and validates it for shape parity

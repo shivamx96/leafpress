@@ -576,7 +576,7 @@ const baseTemplate = `<!DOCTYPE html>
 <html lang="en" class="lp-no-js" data-lp-theme="{{.Site.Theme.ResolvedPreset}}">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0{{if eq .Site.Theme.NavStyle "bottom"}}, viewport-fit=cover{{end}}">
   <meta name="color-scheme" content="light dark">
   <script>
     // Resolve the theme before styles load to avoid flashing the wrong scheme.
@@ -675,12 +675,13 @@ const baseTemplate = `<!DOCTYPE html>
   {{if .Site.ClientScriptPath}}<script src="{{.Site.BasePath}}/{{.Site.ClientScriptPath}}" defer></script>{{end}}
   {{if .Site.HeadExtra}}{{.Site.HeadExtra | safeHTML}}{{end}}
 </head>
-<body class="lp-body">
+<body class="lp-body{{if eq .Site.Theme.NavStyle "bottom"}} lp-body--bottom-nav{{end}}">
+  {{if eq .Site.Theme.NavStyle "bottom"}}<header class="lp-site-header"><a class="lp-site-title" href="{{.Site.BasePath}}/">{{.Site.Title}}</a></header>{{end}}
   {{if eq .Site.Theme.NavStyle "glassy"}}<div class="lp-nav-placeholder"></div>{{end}}
   <nav class="lp-nav" aria-label="Main navigation" data-nav-style="{{.Site.Theme.NavStyle}}"{{if .Site.Everything}} data-everything="true"{{end}}>
     <div class="lp-nav-container">
       <div class="lp-nav-brand">
-        <a class="lp-nav-title" title="{{.Site.Title}}" href="{{.Site.BasePath}}/">{{.Site.Title}}</a>
+        {{if ne .Site.Theme.NavStyle "bottom"}}<a class="lp-nav-title" title="{{.Site.Title}}" href="{{.Site.BasePath}}/">{{.Site.Title}}</a>{{end}}
         <div class="lp-nav-actions">
           {{if .Site.Search}}<button class="lp-search-toggle" aria-label="Search" title="Search (⌘K)">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1051,6 +1052,11 @@ const baseTemplate = `<!DOCTYPE html>
       var navThreshold = 0;
       var navFrame = 0;
       function measureNav() {
+        if (nav.getAttribute('data-nav-style') === 'bottom') {
+          document.documentElement.style.setProperty('--lp-bottom-nav-height', Math.ceil(nav.getBoundingClientRect().height) + 'px');
+          document.documentElement.style.setProperty('--lp-nav-offset', '16px');
+          return;
+        }
         var wasPill = nav.classList.contains('lp-nav--pill');
         nav.classList.remove('lp-nav--pill');
         var style = getComputedStyle(nav);

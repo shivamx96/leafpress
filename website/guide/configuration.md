@@ -121,7 +121,7 @@ remains on CLI builds.
 | `accent` | `"#50ac00"` | Accent color for links and highlights |
 | `background.light` | `"#ffffff"` | Light mode background (color or gradient) |
 | `background.dark` | `"#1a1a1a"` | Dark mode background (color or gradient) |
-| `navStyle` | `"base"` | `"base"`, `"sticky"`, or `"glassy"` |
+| `navStyle` | `"base"` | `"base"`, `"sticky"`, `"glassy"`, or `"bottom"` |
 | `navActiveStyle` | `"base"` | `"base"`, `"box"`, or `"underlined"` |
 | `listColumns` | `2` | List-page columns on desktop: `1`, `2`, or `3`. Mobile always uses one column |
 
