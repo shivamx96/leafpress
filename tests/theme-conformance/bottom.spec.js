@@ -22,7 +22,15 @@ for (const theme of themes) {
         } else {
           await expect(home.locator('.lp-dock-home-name')).toBeVisible();
           await home.locator('.lp-dock-home-name').evaluate(el => { el.textContent = 'A very long garden name '.repeat(10); });
-          await expect.poll(() => home.evaluate(el => el.getBoundingClientRect().width)).toBeLessThanOrEqual(160);
+          await page.setViewportSize({ width: 1400, height: 844 });
+          await expect(home.locator('.lp-dock-home-name')).toBeHidden();
+          await expect(home.locator('svg')).toBeVisible();
+          await expect(home).toHaveAccessibleName('The Theme Garden — Home');
+          await expect.poll(() => home.evaluate(el => el.getBoundingClientRect().width)).toBe(44);
+          await home.locator('.lp-dock-home-name').evaluate(el => { el.textContent = 'Garden'; });
+          await page.setViewportSize({ width, height: 844 });
+          await expect(home.locator('.lp-dock-home-name')).toBeVisible();
+          await expect(home.locator('svg')).toBeHidden();
         }
         await expect.poll(() => home.evaluate(el => {
           const r = el.getBoundingClientRect(), picker = document.querySelector('.lp-section-picker summary').getBoundingClientRect();
@@ -72,6 +80,10 @@ for (const theme of themes) {
       for (const fixture of [`${theme}-bottom-box`,`${theme}-everything-bottom`]) {
         await page.goto(`/${fixture}/notes/components/`);
         await expect(page.locator('.lp-dock-home')).toBeVisible();
+        await page.setViewportSize({width:1440, height:844});
+        await expect(page.locator('.lp-dock-home-icon')).toBeVisible();
+        await expect(page.locator('.lp-dock-home-name')).toBeHidden();
+        await page.setViewportSize({width:320, height:844});
         await expect(page.locator('.lp-site-header')).toHaveCount(0);
         await expect(page.getByRole('link',{name:'RSS feed',exact:true})).toBeVisible();
         await expect(page.locator('.lp-nav-actions button:visible')).toHaveCount(0);

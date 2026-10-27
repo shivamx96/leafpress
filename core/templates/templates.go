@@ -1056,8 +1056,21 @@ const baseTemplate = `<!DOCTYPE html>
       var navPlaceholder = document.querySelector('.lp-nav-placeholder');
       var navThreshold = 0;
       var navFrame = 0;
+      function measureDockHome() {
+        var home = nav.querySelector('.lp-dock-home');
+        if (!home) return;
+        home.classList.toggle('lp-dock-home--named', !mobileNav.matches);
+        if (!mobileNav.matches) {
+          var name = home.querySelector('.lp-dock-home-name');
+          // Measure the actual font and allocated width, including long names.
+          // Never leave a clipped label: the full identity remains in aria-label.
+          if (name.scrollWidth > name.clientWidth) home.classList.remove('lp-dock-home--named');
+        }
+        fitNavigation();
+      }
       function measureNav() {
         if (nav.getAttribute('data-nav-style') === 'bottom') {
+          measureDockHome();
           document.documentElement.style.setProperty('--lp-bottom-nav-height', Math.ceil(nav.getBoundingClientRect().height) + 'px');
           document.documentElement.style.setProperty('--lp-nav-offset', '16px');
           return;
