@@ -11,7 +11,8 @@ The site follows the reader's system appearance by default. Each click of the
 theme toggle switches between light and dark. Selecting the system's current
 appearance clears the saved override and resumes following the system.
 Otherwise, the selection is saved across visits and stays in effect even when
-the system appearance changes.
+the system appearance changes. The compact Site menu labels the current preference
+as **Auto**, **Dark**, or **Light**; Auto means following the system.
 
 ## Bundled Themes
 

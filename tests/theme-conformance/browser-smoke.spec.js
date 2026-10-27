@@ -75,3 +75,35 @@ for (const theme of ["classic", "aurora", "paper", "quiet", "terminal"]) {
     expect(errors).toEqual([]);
   });
 }
+
+for (const layout of ["classic-everything", "classic-everything-bottom"]) {
+  for (const system of ["light", "dark"]) {
+    test(`${layout} compact theme label reflects preference with ${system} system`, async ({ page }) => {
+      const opposite = system === "light" ? "dark" : "light";
+      const stateName = opposite === "dark" ? "Dark" : "Light";
+      await page.setViewportSize({ width: 375, height: 812 });
+      await page.emulateMedia({ colorScheme: system });
+      await page.goto(`/${layout}/notes/components/`);
+      const toggle = page.locator(".lp-theme-toggle");
+      const label = toggle.locator(".lp-nav-tool-label");
+      const openMenu = () => page.getByRole("button", { name: "Site menu", exact: true }).click();
+      await openMenu();
+      await expect(label).toBeVisible();
+      await expect(label).toHaveText("Auto");
+      await toggle.click();
+      await expect(label).toHaveText(stateName);
+      await page.reload();
+      await openMenu();
+      await expect(label).toHaveText(stateName);
+      // An OS change must not turn an explicit override into Auto.
+      await page.emulateMedia({ colorScheme: opposite });
+      await expect(label).toHaveText(stateName);
+      await page.emulateMedia({ colorScheme: system });
+      await toggle.click();
+      await expect(label).toHaveText("Auto");
+      await page.emulateMedia({ colorScheme: opposite });
+      await expect(label).toHaveText("Auto");
+      await expect(page.locator("html")).toHaveAttribute("data-theme", opposite);
+    });
+  }
+}
