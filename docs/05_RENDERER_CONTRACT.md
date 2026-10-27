@@ -246,6 +246,10 @@ section navigation and reader tools, with menus opening upward. Its surface and 
 selected preset: rounded Classic/Aurora, restrained Quiet, and squared
 Paper/Terminal. Light and dark modes use the preset's existing colors.
 
+The dock honors all three `navActiveStyle` values. Underlines stay inside the
+link bounds so scrolling cannot clip them; Aurora retains its gradient underline.
+Quiet adds font weight to the base active style to distinguish its neutral colors.
+
 The dock hides after 120px of downward scrolling and returns after 120px upward.
 Changing direction resets this distance. It stays visible at the top and bottom
 of the page, while menus are open, or while a dock control has keyboard focus.

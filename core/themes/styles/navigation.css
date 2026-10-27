@@ -333,3 +333,26 @@ html.lp-no-js .lp-nav[data-nav-style="bottom"] .lp-nav-tool-label { display: non
 @media (prefers-reduced-motion: reduce) {
   .lp-body .lp-nav[data-nav-style="bottom"] { transition: none; }
 }
+
+/* Keep active treatments inside scrollable dock links: outer shadows are
+ * clipped by the link row and can leave vertical rasterization artifacts. */
+.lp-nav[data-nav-style="bottom"] .lp-nav-link--active.lp-nav-active-underlined {
+  box-shadow: inset 0 -1px 0 var(--lp-accent);
+}
+[data-lp-theme="classic"] .lp-nav[data-nav-style="bottom"] .lp-nav-link--active.lp-nav-active-underlined {
+  box-shadow: inset 0 -2px 0 var(--lp-accent);
+}
+[data-lp-theme="paper"] .lp-nav[data-nav-style="bottom"] .lp-nav-link--active.lp-nav-active-underlined {
+  box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--lp-accent) 72%, transparent);
+}
+[data-lp-theme="terminal"] .lp-nav[data-nav-style="bottom"] .lp-nav-link--active.lp-nav-active-underlined {
+  box-shadow: inset 0 -1px 0 var(--lp-terminal-signal);
+}
+/* Aurora already draws its gradient underline inside the link. */
+[data-lp-theme="aurora"] .lp-nav[data-nav-style="bottom"] .lp-nav-link--active.lp-nav-active-underlined {
+  box-shadow: none;
+}
+/* Quiet's neutral accent is too close to muted text to carry state alone. */
+[data-lp-theme="quiet"] .lp-nav[data-nav-style="bottom"] .lp-nav-link--active.lp-nav-active-base {
+  font-weight: 600;
+}

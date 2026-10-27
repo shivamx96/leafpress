@@ -82,26 +82,27 @@ function buildFixtures() {
   }
 
   for (const theme of themes) {
-   for (const navStyle of ["glassy", "bottom"]) {
-    const fixtureName = `${theme}-everything${navStyle === "bottom" ? "-bottom" : ""}`;
-    const sourceRoot = join(workRoot, "sources", fixtureName);
-    copyFixture(sourceRoot);
-    const configPath = join(sourceRoot, "leafpress.json");
-    const config = JSON.parse(readFileSync(configPath, "utf8"));
-    config.site.baseURL = `http://${host}:${port}/${fixtureName}`;
-    config.theme = { ...config.theme, preset: theme, navStyle };
-    config.navigation = { mode: "explicit", everything: true, items: [
-      { label: "Notes", path: "/notes/" },
-      { label: "A very long section label that cannot always fit", path: "/notes/components/" },
-      { label: "Tags", path: "/tags/" },
-      { label: "External & more", path: "https://example.com/?a=1&b=2" }
-    ] };
-    config.build.outputDir = "_site";
-    writeFileSync(configPath, JSON.stringify(config));
-    run(binaryPath, ["build"], { cwd: sourceRoot });
-    cpSync(join(sourceRoot, "_site"), join(publicRoot, fixtureName), { recursive: true });
-  }
-
+    for (const navStyle of ["glassy", "bottom"]) {
+      for (const activeStyle of navStyle === "bottom" ? [null, ...activeStyles] : [null]) {
+        const fixtureName = `${theme}-everything${navStyle === "bottom" ? "-bottom" : ""}${activeStyle ? `-${activeStyle}` : ""}`;
+        const sourceRoot = join(workRoot, "sources", fixtureName);
+        copyFixture(sourceRoot);
+        const configPath = join(sourceRoot, "leafpress.json");
+        const config = JSON.parse(readFileSync(configPath, "utf8"));
+        config.site.baseURL = `http://${host}:${port}/${fixtureName}`;
+        config.theme = { ...config.theme, preset: theme, navStyle, ...(activeStyle ? { navActiveStyle: activeStyle } : {}) };
+        config.navigation = { mode: "explicit", everything: true, items: [
+          { label: "Notes", path: "/notes/" },
+          { label: "A very long section label that cannot always fit", path: "/notes/components/" },
+          { label: "Tags", path: "/tags/" },
+          { label: "External & more", path: "https://example.com/?a=1&b=2" }
+        ] };
+        config.build.outputDir = "_site";
+        writeFileSync(configPath, JSON.stringify(config));
+        run(binaryPath, ["build"], { cwd: sourceRoot });
+        cpSync(join(sourceRoot, "_site"), join(publicRoot, fixtureName), { recursive: true });
+      }
+    }
   }
 
   // The fixture deliberately includes a domain-root-relative Markdown image.
