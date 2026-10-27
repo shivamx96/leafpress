@@ -33,6 +33,7 @@ the historical `config.Default()` values.
     "title": "My Garden",
     "description": "Notes grown in public",
     "author": "Garden Author",
+    "footer": "",
     "baseURL": "https://example.com/notes",
     "image": "/static/uploads/social.jpg",
     "favicon": "/static/uploads/icon.png",
@@ -74,7 +75,7 @@ the historical `config.Default()` values.
 | Section | Field | Default |
 | --- | --- | --- |
 | `site` | `title` | `"My Garden"` |
-| | `description`, `author`, `baseURL`, `image`, `favicon`, `headExtra` | `""` |
+| | `description`, `author`, `footer`, `baseURL`, `image`, `favicon`, `headExtra` | `""` |
 | `theme` | `preset` | `"classic"` |
 | | `fontHeading` / `fontBody` / `fontMono` | `"Bricolage Grotesque"` / `"Inter"` / `"JetBrains Mono"` |
 | | `accent` | `"#50ac00"` |
@@ -120,6 +121,14 @@ set, otherwise `site.image`; home, section-home, tag-index and tag pages use
 `site.image`. Whenever an Open Graph image is emitted, a matching
 `twitter:image` and `summary_large_image` card are emitted. Without an image,
 the card remains `summary`.
+
+`footer` is an optional plain-text copyright line, shared by the CLI and renderer.
+Surrounding whitespace is trimmed; empty or whitespace-only text is unset.
+After trimming, at most 200 Unicode runes are allowed; newlines and control
+characters are rejected with an error naming `site.footer`. Output is HTML
+escaped, with no HTML or Markdown interpretation. A set footer takes precedence
+over `author`; otherwise the copyright line is `© {author}. All rights reserved.`
+when an author is set.
 
 ### `theme`
 
@@ -214,6 +223,17 @@ The full object read from stdin:
     `name` renders after "Grown with"; its optional `url` must be an absolute
     HTTP(S) URL. Omitting the block yields the default "Grown with leafpress"
     footer. It is structured, never raw HTML or script.
+  - `generatorCredit` is an optional boolean. Omitted or `true` keeps the
+    existing credit; `false` removes the entire "Grown with …" line.
+    `false` together with `footerAttribution` is an input error.
+  - `copyrightFallback` accepts only `""` (default, no fallback) or
+    `"title"`. Any other value is an input error. With `"title"`, when both
+    `site.footer` and `site.author` are unset and `site.title` is non-empty,
+    the copyright line is `© {title}. All rights reserved.`
+  - These host controls, including `footerAttribution`, appear only inside
+    `render`, never in `leafpress.json`. The copyright and credit lines are
+    independent; the CLI retains its default generator credit and has no title
+    fallback. All additions are optional and contractVersion remains 2.
 - `content` carries the in-memory equivalents of the filesystem inputs a CLI
   build reads:
   - `pages` (default `[]`) — the published pages (schema below).

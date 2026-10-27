@@ -93,11 +93,21 @@ default site.
 |--------|---------|-------------|
 | `title` | `"My Garden"` | Site title, shown in nav and browser tab |
 | `author` | `""` | Author name for RSS feed and footer copyright |
+| `footer` | `""` | Custom plain-text footer (up to 200 characters) |
 | `baseURL` | `""` | Canonical **absolute** URL (e.g. `https://example.com` or `https://example.com/notes`). Used for canonical links, and required for `sitemap.xml` and the RSS feed (see below). The internal link path is derived from its path component. |
 | `description` | `""` | Site description for SEO |
 | `image` | `""` | Default Open Graph and Twitter image for social sharing |
 | `favicon` | `""` | Single raster icon under `/static/`; empty uses built-in favicons |
 | `headExtra` | `""` | Custom HTML injected into `<head>` (see [Custom Head Content](#custom-head-content)) |
+
+#### Footer
+
+Set `site.footer` to a custom plain-text footer line. It takes precedence over
+`site.author`'s copyright line. Surrounding whitespace is trimmed; empty text
+uses the author copyright when available. The limit is 200 Unicode characters
+after trimming; newlines and control characters are rejected. HTML is escaped
+and Markdown is not interpreted. The default "Grown with leafpress" credit
+remains on CLI builds.
 
 ### `theme`
 

@@ -4,6 +4,12 @@ date: 2025-01-06
 toc: false
 ---
 
+## v1.1.0
+*October 27, 2026*
+
+- **Custom footer text for everyone.** Set `site.footer` to a plain-text line in place of the author copyright. [Details](/guide/configuration/#footer).
+- Hosts can hide the generator credit with `render.generatorCredit: false` and use the site title as a copyright fallback with `render.copyrightFallback: "title"`. These optional renderer controls keep contract version 2 and preserve existing defaults.
+
 ## v1.0.0
 *October 26, 2026*
 
