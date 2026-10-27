@@ -13,5 +13,5 @@ func CSSForPreset(name string) string {
 	if !ok {
 		definition, _ = themes.Lookup(themes.DefaultPreset)
 	}
-	return themes.BaseCSS + "\n" + definition.CSS
+	return themes.BaseCSS + "\n" + definition.CSS + "\n" + themes.NavigationCSS
 }

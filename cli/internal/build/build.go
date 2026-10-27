@@ -208,6 +208,10 @@ func (b *Builder) Build() (result *Stats, resultErr error) {
 		return nil, fmt.Errorf("invalid output routes: %w", err)
 	}
 
+	if err := sitegen.ValidateEverythingRoutes(pages, b.cfg.Navigation); err != nil {
+		return nil, err
+	}
+
 	// Escape page metadata before anything indexes or renders it: templates
 	// are text/template, so a quote in a title or description would otherwise
 	// break the og:/meta tag it lands in.
@@ -251,6 +255,7 @@ func (b *Builder) Build() (result *Stats, resultErr error) {
 	// Generate site data. Navigation is resolved by the shared builder so the
 	// CLI and renderer produce identical nav from identical config.
 	siteData := sitegen.SafeSiteData(templates.SiteData{
+		Everything:  b.cfg.Navigation.Everything,
 		Title:       b.cfg.Site.Title,
 		Description: b.cfg.Site.Description,
 		Author:      b.cfg.Site.Author,
@@ -349,6 +354,10 @@ func (b *Builder) Build() (result *Stats, resultErr error) {
 		return nil, fmt.Errorf("failed to generate auto indexes: %w", err)
 	}
 	b.logTiming("auto-indexes", time.Since(t0))
+
+	if err := b.generateEverything(pages, siteData); err != nil {
+		return nil, err
+	}
 
 	// Generate tag pages
 	t0 = time.Now()
@@ -847,6 +856,9 @@ func (b *Builder) rebuildMarkdownFile(relPath string, changeType ChangeType) (*I
 	}
 	if oldPage == nil {
 		candidatePages = append(candidatePages, changedPage)
+	}
+	if err := sitegen.ValidateEverythingRoutes(candidatePages, b.cfg.Navigation); err != nil {
+		return nil, err
 	}
 	if err := content.ValidateOutputRoutes(candidatePages); err != nil {
 		return nil, fmt.Errorf("invalid output routes after changing %s: %w", relPath, err)
@@ -1694,6 +1706,9 @@ func (b *Builder) reconcileContentOptionalBuiltins(pages []*content.Page) error 
 }
 
 func (b *Builder) refreshIncrementalContentArtifacts() error {
+	if err := b.generateEverything(b.pages, b.siteData); err != nil {
+		return err
+	}
 	if err := b.reconcileContentOptionalBuiltins(b.pages); err != nil {
 		return err
 	}
@@ -2017,4 +2032,20 @@ func extractBasePath(baseURL string) string {
 	// Remove trailing slash
 	path := strings.TrimSuffix(parsed.EscapedPath(), "/")
 	return path
+}
+
+// generateEverything is also refreshed for incremental additions, edits and deletions.
+func (b *Builder) generateEverything(pages []*content.Page, site templates.SiteData) error {
+	if !b.cfg.Navigation.Everything {
+		return nil
+	}
+	markup, err := sitegen.EverythingIndex(b.templates, site, pages, b.cfg.Navigation)
+	if err != nil {
+		return err
+	}
+	output := filepath.Join(b.outputDir, "everything", "index.html")
+	if err := os.MkdirAll(filepath.Dir(output), 0755); err != nil {
+		return err
+	}
+	return os.WriteFile(output, []byte(markup), 0644)
 }

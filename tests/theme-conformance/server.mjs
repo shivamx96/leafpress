@@ -81,6 +81,26 @@ function buildFixtures() {
     }
   }
 
+  for (const theme of themes) {
+    const fixtureName = `${theme}-everything`;
+    const sourceRoot = join(workRoot, "sources", fixtureName);
+    copyFixture(sourceRoot);
+    const configPath = join(sourceRoot, "leafpress.json");
+    const config = JSON.parse(readFileSync(configPath, "utf8"));
+    config.site.baseURL = `http://${host}:${port}/${fixtureName}`;
+    config.theme = { ...config.theme, preset: theme, navStyle: "glassy" };
+    config.navigation = { mode: "explicit", everything: true, items: [
+      { label: "Notes", path: "/notes/" },
+      { label: "A very long section label that cannot always fit", path: "/notes/components/" },
+      { label: "Tags", path: "/tags/" },
+      { label: "External & more", path: "https://example.com/?a=1&b=2" }
+    ] };
+    config.build.outputDir = "_site";
+    writeFileSync(configPath, JSON.stringify(config));
+    run(binaryPath, ["build"], { cwd: sourceRoot });
+    cpSync(join(sourceRoot, "_site"), join(publicRoot, fixtureName), { recursive: true });
+  }
+
   // The fixture deliberately includes a domain-root-relative Markdown image.
   // Each generated garden otherwise lives under a synthetic path so all
   // variants can share one test server.

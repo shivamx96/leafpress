@@ -80,3 +80,11 @@ npx playwright install firefox webkit
 LEAFPRESS_CONFORMANCE_BROWSER=firefox npm run test:themes -- browser-smoke.spec.js
 LEAFPRESS_CONFORMANCE_BROWSER=webkit npm run test:themes -- browser-smoke.spec.js
 ```
+
+## Everything navigation
+
+`everything.spec.js` exercises the opt-in picker in all five presets at 320,
+390, 600, and 1440 pixels. It checks measured shortcut overflow, preservation of
+all destinations and utility controls, search focus, Escape dismissal, and
+no-JavaScript access to the generated index. These fixtures use separate
+`<preset>-everything` paths so legacy navigation remains covered independently.
