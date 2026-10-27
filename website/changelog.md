@@ -7,14 +7,11 @@ toc: false
 ## v1.1.0
 *October 27, 2026*
 
-- **Custom footer text for everyone.** Set `site.footer` to a plain-text line in place of the author copyright. [Details](/guide/configuration/#footer).
-- Hosts can hide the generator credit with `render.generatorCredit: false` and use the site title as a copyright fallback with `render.copyrightFallback: "title"`. These optional renderer controls keep contract version 2 and preserve existing defaults.
-
-- **An Everything index and responsive navigation.** Enable `navigation.everything` to add `/everything/`, an alphabetical index of published pages. Section shortcuts adapt to available space, with a native Everything menu keeping destinations reachable on smaller screens and without JavaScript. [Details](/guide/configuration/#everything-and-responsive-sections).
-- **A bottom navigation dock for all five themes.** Set `theme.navStyle: "bottom"` for a compact dock with a Home icon, section links, and reader controls. Menus open upward, safe-area and footer spacing keep content reachable, and desktop spacing fits the visible links. [Details](/guide/theming/#bottom-navigation).
-- The bottom dock hides after 120px of downward scrolling and returns after 120px upward. It stays available at page boundaries and during menu or keyboard use, respects reduced-motion preferences, and remains visible without JavaScript.
-- The compact theme control now displays **Auto**, **Dark**, or **Light** to match the current preference. Auto follows system appearance; explicit overrides retain the existing switching behavior. [Details](/guide/theming/#light-and-dark-mode).
-- Fixed clipped active-link underlines and vertical rendering artifacts in the bottom dock while preserving each theme's treatment. Quiet's base active style now adds font weight so its neutral accent is easier to distinguish. Added rendered-pixel coverage for every theme and active-link style across desktop/mobile, light/dark, and legacy/Everything navigation.
+- **Footer controls:** Custom footer text and host-controlled generator credit. [Docs](/guide/configuration/#footer).
+- **Everything navigation:** An all-pages index with responsive section shortcuts. [Docs](/guide/configuration/#everything-and-responsive-sections).
+- **Bottom dock:** Theme-aware navigation that hides while scrolling down and returns on scrolling up. [Docs](/guide/theming/#bottom-navigation).
+- **Theme controls:** Compact menus show the current Auto, Dark, or Light mode. [Docs](/guide/theming/#light-and-dark-mode).
+- **Active-link fixes:** Correct dock underlines and a clearer active state in Quiet. [Docs](/guide/theming/#bottom-navigation).
 
 ## v1.0.0
 *October 26, 2026*
