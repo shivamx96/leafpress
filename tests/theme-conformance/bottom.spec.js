@@ -51,6 +51,11 @@ for (const theme of themes) {
         await expect(home).toHaveAccessibleName('The Theme Garden — Home');
         await expect(page.locator('.lp-site-header')).toHaveCount(0);
         await expect(home.locator('svg')).toBeVisible();
+        if (width === 1440) {
+          await page.setViewportSize({width:600, height:844});
+          await expectSymmetricIcons(page);
+          await page.setViewportSize({width, height:844});
+        }
         await expectSymmetricIcons(page);
         await expect(home.locator('.lp-dock-home-name')).toHaveCount(0);
         await expect.poll(() => home.evaluate(el => {

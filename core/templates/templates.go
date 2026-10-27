@@ -998,6 +998,14 @@ const baseTemplate = `<!DOCTYPE html>
       var sectionPicker = nav.querySelector('.lp-section-picker');
       var sectionNav = nav.querySelector('.lp-section-nav');
       var shortcuts = sectionNav ? sectionNav.querySelector('.lp-nav-links') : null;
+      var navigationFitFrame = 0;
+      function scheduleNavigationFit() {
+        if (navigationFitFrame) return;
+        navigationFitFrame = requestAnimationFrame(function() {
+          navigationFitFrame = 0;
+          fitNavigation();
+        });
+      }
       function fitNavigation() {
         if (!sectionNav) return;
         var bottomDock = nav.getAttribute('data-nav-style') === 'bottom';
@@ -1070,7 +1078,7 @@ const baseTemplate = `<!DOCTYPE html>
         placeSearch();
         window.addEventListener('resize', placeSearch);
         fitNavigation();
-        if (window.ResizeObserver) new ResizeObserver(fitNavigation).observe(sectionNav);
+        if (window.ResizeObserver) new ResizeObserver(scheduleNavigationFit).observe(sectionNav);
         window.addEventListener('resize', fitNavigation);
         if (document.fonts) document.fonts.ready.then(fitNavigation);
       }
