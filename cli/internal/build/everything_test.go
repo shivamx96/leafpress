@@ -80,5 +80,5 @@ func TestBottomNavigationBuild(t *testing.T) {
 	}
 	output := filepath.Join(dir, "_site", "everything", "index.html")
 	assertFileContains(t, output, `data-nav-style="bottom"`)
-	assertFileContains(t, output, `class="lp-site-title"`)
+	assertFileContains(t, output, `class="lp-dock-home"`)
 }
