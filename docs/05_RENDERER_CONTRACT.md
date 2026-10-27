@@ -93,7 +93,8 @@ the historical `config.Default()` values.
 
 On mobile, bundled navigation uses a single-line site title, a visible search
 button when enabled, and a Site menu disclosure for theme switching, graph,
-and RSS. Section links scroll horizontally. Sticky and glassy navigation measure
+and RSS. The theme control’s compact label reflects the preference: Auto for
+system appearance, or Dark/Light for a saved override. Section links scroll horizontally. Sticky and glassy navigation measure
 their rendered dimensions to maintain heading clearance and resize-aware spacing.
 On mobile, scrolled glassy navigation shows only the brand, search, and menu
 button. Its section links are available inside the Site menu in that state.

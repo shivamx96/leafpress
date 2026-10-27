@@ -741,7 +741,7 @@ const baseTemplate = `<!DOCTYPE html>
               <svg class="lp-theme-icon lp-theme-icon-dark" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
               </svg>
-              <span class="lp-nav-tool-label">Change theme</span>
+              <span class="lp-nav-tool-label">Auto</span>
             </button>
           </div>
         </div>
@@ -853,6 +853,11 @@ const baseTemplate = `<!DOCTYPE html>
       var label = 'Switch to ' + getEffectiveTheme(nextPreference) + ' theme';
       themeToggle.setAttribute('aria-label', label);
       themeToggle.setAttribute('title', label);
+      var stateLabel = themeToggle.querySelector('.lp-nav-tool-label');
+      if (stateLabel) {
+        stateLabel.textContent = themePreference === 'system' ? 'Auto'
+          : themePreference === 'dark' ? 'Dark' : 'Light';
+      }
     }
 
     function updateGraphTheme(theme) {
