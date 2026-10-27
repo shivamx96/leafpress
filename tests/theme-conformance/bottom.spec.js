@@ -1,5 +1,26 @@
 import { expect, test } from '@playwright/test';
 const themes = ['classic', 'aurora', 'paper', 'quiet', 'terminal'];
+async function expectSymmetricIcons(page) {
+  await expect.poll(() => page.locator('.lp-nav').evaluate(nav => {
+    const home = nav.querySelector('.lp-dock-home');
+    const group = nav.querySelector('.lp-dock-home-group').getBoundingClientRect();
+    const actions = nav.querySelector('.lp-nav-actions').getBoundingClientRect();
+    const controls = [...nav.querySelectorAll('.lp-nav-actions button, .lp-nav-actions .lp-rss-link')]
+      .filter(el => el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden')
+      .sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left);
+    const rect = home.getBoundingClientRect();
+    if (!controls.length) return false;
+    const first = controls[0].getBoundingClientRect();
+    const last = controls[controls.length - 1].getBoundingClientRect();
+    const dock = nav.getBoundingClientRect();
+    const center = r => (r.left + r.right) / 2;
+    return [home, ...controls].every(el => {
+      const r = el.getBoundingClientRect();
+      return Math.abs(r.width - 44) < 0.1 && Math.abs(r.height - 44) < 0.1;
+    }) && Math.abs((center(rect) - dock.left) - (dock.right - center(last))) < 1
+       && Math.abs((group.right - 0.5 - center(rect)) - (center(first) - actions.left - 0.5)) < 1;
+  })).toBe(true);
+}
 for (const theme of themes) {
   for (const colorScheme of ['light', 'dark']) {
     test(`${theme} bottom dock in ${colorScheme} preserves reading and opens upward`, async ({ page }) => {
@@ -17,6 +38,7 @@ for (const theme of themes) {
         await expect(home).toHaveAccessibleName('The Theme Garden — Home');
         await expect(page.locator('.lp-site-header')).toHaveCount(0);
         await expect(home.locator('svg')).toBeVisible();
+        await expectSymmetricIcons(page);
         await expect(home.locator('.lp-dock-home-name')).toHaveCount(0);
         await expect.poll(() => home.evaluate(el => {
           const r = el.getBoundingClientRect(), picker = document.querySelector('.lp-section-picker summary').getBoundingClientRect();
@@ -66,14 +88,15 @@ for (const theme of themes) {
       await page.evaluate(() => document.fonts.ready);
       const home = page.locator('.lp-dock-home');
       await expect(home.locator('svg')).toBeVisible();
-      await expect(home).toHaveCSS('border-right-width', '1px');
+        await expectSymmetricIcons(page);
+      await expect(page.locator('.lp-dock-home-group')).toHaveCSS('border-right-width', '1px');
       await expect.poll(() => home.evaluate(el => {
-        const home = el.getBoundingClientRect();
+        const home = el.parentElement.getBoundingClientRect();
         const links = document.querySelector('.lp-nav-container > .lp-nav-links').getBoundingClientRect();
         return links.left - home.right;
       })).toBeLessThanOrEqual(12);
       await expect.poll(() => home.evaluate(el => {
-        const home = el.getBoundingClientRect();
+        const home = el.parentElement.getBoundingClientRect();
         const links = document.querySelector('.lp-nav-container > .lp-nav-links').getBoundingClientRect();
         return links.left - home.right;
       })).toBeGreaterThanOrEqual(0);

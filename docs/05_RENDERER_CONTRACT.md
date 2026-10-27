@@ -237,7 +237,8 @@ both existing navigation and the Everything section picker:
 The dock begins with an always-visible Home icon on desktop and mobile,
 including without JavaScript. Its accessible label and tooltip retain the full
 site name. A divider separates Home from the adjacent section links, matching
-the utility divider on the right. There is no separate top masthead in bottom mode, so the
+the utility divider on the right. Both icon groups use 44px targets, equal
+outer insets, and matching icon-to-divider spacing. There is no separate top masthead in bottom mode, so the
 page title leads the content. Header navigation is unchanged. The dock holds
 section navigation and reader tools, with menus opening upward. Its surface and corners follow the
 selected preset: rounded Classic/Aurora, restrained Quiet, and squared

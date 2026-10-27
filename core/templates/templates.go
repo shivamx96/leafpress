@@ -680,9 +680,11 @@ const baseTemplate = `<!DOCTYPE html>
   <nav class="lp-nav" aria-label="Main navigation" data-nav-style="{{.Site.Theme.NavStyle}}"{{if .Site.Everything}} data-everything="true"{{end}}>
     <div class="lp-nav-container">
       {{if eq .Site.Theme.NavStyle "bottom"}}
+      <div class="lp-dock-home-group">
       <a class="lp-dock-home" href="{{.Site.BasePath}}/" aria-label="{{if .Site.Title}}{{.Site.Title}} — {{end}}Home" title="{{if .Site.Title}}{{.Site.Title}} — {{end}}Home"{{if eq .CurrentPath "/"}} aria-current="page"{{end}}>
         <svg class="lp-dock-home-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z"/></svg>
       </a>
+      </div>
       {{end}}
       <div class="lp-nav-brand">
         {{if ne .Site.Theme.NavStyle "bottom"}}<a class="lp-nav-title" title="{{.Site.Title}}" href="{{.Site.BasePath}}/">{{.Site.Title}}</a>{{end}}
