@@ -4,6 +4,14 @@ date: 2025-01-06
 toc: false
 ---
 
+## v1.1.2
+*November 9, 2026*
+
+- **Opt-in publishing:** Set `build.publish` to `"explicit"` to publish only notes marked `publish: true`. [Docs](/guide/configuration/#opt-in-publishing).
+- **Security:** Root `favicon.ico`, `favicon.svg`, `favicon-96x96.png` and `style.css` overrides that are symlinks pointing outside the project are now refused, as content and `static/` files already were. Before this, their targets were published. [Docs](/guide/theming/#custom-css).
+- **Safer `--config`:** A `--config` path that does not exist is now an error. Before this, `build` and `serve` silently used default settings, ignoring `build.ignore`. [Docs](/guide/configuration/).
+- An unreadable `style.css` now fails the build instead of publishing the site without custom styles.
+
 ## v1.1.1
 *October 27, 2026*
 
