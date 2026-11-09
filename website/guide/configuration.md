@@ -234,6 +234,7 @@ closes it. The current destination is highlighted in the menu and shortcuts.
 |--------|---------|-------------|
 | `outputDir` | `"_site"` | Build output directory |
 | `port` | `3000` | Dev server port |
+| `publish` | `"all"` | `"explicit"` requires `publish: true` on each Markdown note, including indexes |
 | `ignore` | `[]` | Glob patterns to exclude from builds, e.g. `["drafts/**", "*.draft.md", "private/**"]` |
 
 ### Ignore patterns
@@ -383,3 +384,19 @@ Both site fields require a site-relative path starting with `/`, without a
 scheme or host, `..` segments, query strings or fragments. The site's base
 path is added automatically. For hosted rendering, declare uploaded images in
 the caller asset manifest; a missing `/static/` reference produces a warning.
+
+## Opt-in publishing
+
+Notes are published by default. To require explicit permission for each note,
+set `"build": {"publish": "explicit"}` in `leafpress.json`. The default value is
+`"all"`; other values are rejected.
+
+In explicit mode, add `publish: true` to a note's YAML frontmatter to publish it.
+This also applies to authored home and section index notes. Generated listings
+can still show published children without publishing the excluded index content.
+In either mode, `publish: false` excludes a note even with `--drafts`.
+A note with `draft: true` additionally requires `--drafts`; that flag never
+bypasses publication permission. Hidden paths and `build.ignore` always win.
+
+This setting controls Markdown pages, not files copied from `static/` or other
+assets. Keep private files out of published asset directories.

@@ -89,6 +89,7 @@ the historical `config.Default()` values.
 | | `items` | `[]` |
 | `build` | `outputDir` / `port` | `"_site"` / `3000` |
 | | `ignore` | `[]` |
+| | `publish` | `"all"` (`"all"` or `"explicit"`) |
 | top | `contractVersion` | `2` |
 
 On mobile, bundled navigation uses a single-line site title, a visible search
@@ -506,3 +507,8 @@ registry; it never receives storage credentials.
 
 Exit codes: `0` success (warnings allowed), `1` invalid input, `2` internal
 render failure. Only JSON is ever written to stdout.
+
+The CLI applies `build.publish` before rendering: `explicit` requires per-note
+`publish: true`, including authored indexes. `publish: false` is always excluded;
+`--drafts` only overrides `draft`, never publication permission. The renderer
+validates the setting but receives an already-selected page set.

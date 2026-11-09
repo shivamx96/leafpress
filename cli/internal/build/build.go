@@ -200,10 +200,8 @@ func (b *Builder) Build() (result *Stats, resultErr error) {
 	}
 	b.logTiming("scan", time.Since(t0))
 
-	// Filter drafts
-	if !b.opts.IncludeDrafts {
-		pages = filterDrafts(pages)
-	}
+	// Apply publication and draft gates before deriving routes or indexes.
+	pages = filterPublishable(pages, b.cfg.Build.Publish, b.opts.IncludeDrafts)
 	if err := content.ValidateOutputRoutes(pages); err != nil {
 		return nil, fmt.Errorf("invalid output routes: %w", err)
 	}
@@ -834,9 +832,8 @@ func (b *Builder) rebuildMarkdownFile(relPath string, changeType ChangeType) (*I
 	sitegen.ApplyHomeTitle([]*content.Page{changedPage}, b.cfg.Site.Title)
 	sitegen.EscapePageMeta([]*content.Page{changedPage})
 
-	// Skip drafts if needed
-	if !b.opts.IncludeDrafts && changedPage.Draft {
-		// If it was previously not a draft but now is, treat as deletion
+	// Remove previously published output when either publication gate closes.
+	if !content.Publishable(changedPage, b.cfg.Build.Publish, b.opts.IncludeDrafts) {
 		if oldPage := b.pagesByPath[relPath]; oldPage != nil {
 			return b.handleDeletedFile(relPath)
 		}
@@ -1818,10 +1815,10 @@ func pinSEODescriptions(pages []*content.Page) {
 	}
 }
 
-func filterDrafts(pages []*content.Page) []*content.Page {
+func filterPublishable(pages []*content.Page, mode string, includeDrafts bool) []*content.Page {
 	var result []*content.Page
 	for _, p := range pages {
-		if !p.Draft {
+		if content.Publishable(p, mode, includeDrafts) {
 			result = append(result, p)
 		}
 	}

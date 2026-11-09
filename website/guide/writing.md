@@ -75,6 +75,7 @@ All fields are optional:
 - `toc` — Override global TOC setting: `true` or `false`
 - `description` — SEO meta description (auto-generated from content if omitted)
 - `image` — OG image path for social sharing
+- `publish` — Set `true` to opt in when `build.publish` is `"explicit"`; `false` always excludes the note, even with `--drafts`. Applies to index notes too.
 - `draft` — Set `true` to exclude from build
 - `readingTime` — Override calculated reading time (minutes)
 

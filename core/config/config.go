@@ -88,6 +88,7 @@ const (
 // Build holds operational settings. The CLI honors them; the renderer accepts
 // and validates them for shape parity but performs no I/O.
 type Build struct {
+	Publish   string   `json:"publish"` // all (default) or explicit
 	OutputDir string   `json:"outputDir"`
 	Port      int      `json:"port"`
 	Ignore    []string `json:"ignore"`
@@ -469,6 +470,7 @@ func Default() *Config {
 		},
 		Build: Build{
 			OutputDir: "_site",
+			Publish:   "all",
 			Port:      3000,
 			Ignore:    []string{},
 		},
@@ -522,6 +524,9 @@ func Parse(data []byte) (*Config, error) {
 	// unmarshaling over it means omitted booleans (features) keep their
 	// defaults; these backfills restore defaults for fields explicitly set
 	// to their zero value.
+	if cfg.Build.Publish == "" {
+		cfg.Build.Publish = "all"
+	}
 	if cfg.Build.OutputDir == "" {
 		cfg.Build.OutputDir = "_site"
 	}
@@ -620,6 +625,10 @@ func (c *Config) Validate() error {
 		if err := validateSiteImagePath(field.value); err != nil {
 			return fmt.Errorf("%s: %w", field.name, err)
 		}
+	}
+
+	if c.Build.Publish != "all" && c.Build.Publish != "explicit" {
+		return fmt.Errorf("build.publish must be all or explicit, got %q", c.Build.Publish)
 	}
 
 	// Validate port range
