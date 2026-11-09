@@ -149,6 +149,7 @@ growth: "seedling"
 | `title` | No | Filename | Page title |
 | `date` | No | File mtime | Publication date |
 | `tags` | No | `[]` | Categorization |
+| `publish` | No | Site policy | `true` opts in under `build.publish: "explicit"`; `false` always excludes |
 | `draft` | No | `false` | Exclude from build unless `--drafts` |
 | `growth` | No | `null` | `seedling` \| `budding` \| `evergreen` |
 
@@ -503,3 +504,19 @@ Server sends message on any `.md` or `style.css` change.
 
 - Custom shortcodes/components
 - Multiple output formats (gemini, plain text)
+
+## Opt-in publishing
+
+Notes are published by default. To require explicit permission for each note,
+set `"build": {"publish": "explicit"}` in `leafpress.json`. The default value is
+`"all"`; other values are rejected.
+
+In explicit mode, add `publish: true` to a note's YAML frontmatter to publish it.
+This also applies to authored home and section index notes. Generated listings
+can still show published children without publishing the excluded index content.
+In either mode, `publish: false` excludes a note even with `--drafts`.
+A note with `draft: true` additionally requires `--drafts`; that flag never
+bypasses publication permission. Hidden paths and `build.ignore` always win.
+
+This setting controls Markdown pages, not files copied from `static/` or other
+assets. Keep private files out of published asset directories.
