@@ -9,7 +9,7 @@ import (
 
 func TestStrictBuildPreservesPublishedOutput(t *testing.T) {
 	t.Chdir(t.TempDir())
-	withConfigFlag(t, "leafpress.json")
+	withConfigFlag(t, "")
 	if err := os.WriteFile("index.md", []byte("# Published\n"), 0644); err != nil {
 		t.Fatal(err)
 	}

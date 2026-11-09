@@ -9,7 +9,6 @@ import (
 
 	"github.com/shivamx96/leafpress/cli/internal/build"
 	"github.com/shivamx96/leafpress/cli/internal/server"
-	"github.com/shivamx96/leafpress/core/config"
 	"github.com/spf13/cobra"
 )
 
@@ -37,7 +36,7 @@ func serveCmd() *cobra.Command {
 
 func runServe(cmd *cobra.Command, args []string) error {
 	// Load config
-	cfg, err := config.Load(getConfigPath())
+	cfg, err := loadConfig()
 	if err != nil {
 		return fmt.Errorf("failed to load config: %w", err)
 	}

@@ -54,3 +54,44 @@ func TestIsOfflineReadsFlagAndEnvironment(t *testing.T) {
 		t.Error("--offline should disable downloads")
 	}
 }
+
+func TestLoadConfigRejectsMissingFlaggedFile(t *testing.T) {
+	t.Chdir(t.TempDir())
+	withConfigFlag(t, "leafpres.json")
+
+	_, err := loadConfig()
+	if err == nil || !strings.Contains(err.Error(), "leafpres.json") {
+		t.Fatalf("missing --config file should fail naming it, got: %v", err)
+	}
+}
+
+func TestLoadConfigDefaultsWhenUnflaggedFileMissing(t *testing.T) {
+	t.Chdir(t.TempDir())
+	withConfigFlag(t, "")
+
+	cfg, err := loadConfig()
+	if err != nil {
+		t.Fatalf("missing default leafpress.json should use defaults: %v", err)
+	}
+	if cfg.Build.OutputDir != "_site" {
+		t.Errorf("OutputDir = %q, want default _site", cfg.Build.OutputDir)
+	}
+}
+
+func TestLoadConfigReadsFlaggedFile(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	withConfigFlag(t, "custom.json")
+	if err := os.WriteFile(filepath.Join(dir, "custom.json"),
+		[]byte(`{"build":{"outputDir":"out"}}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := loadConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Build.OutputDir != "out" {
+		t.Errorf("OutputDir = %q, want out", cfg.Build.OutputDir)
+	}
+}

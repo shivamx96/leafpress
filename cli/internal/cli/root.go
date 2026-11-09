@@ -1,10 +1,13 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"strings"
 
+	"github.com/shivamx96/leafpress/core/config"
 	"github.com/spf13/cobra"
 )
 
@@ -53,6 +56,24 @@ func getConfigPath() string {
 		return cfgFile
 	}
 	return "leafpress.json"
+}
+
+// loadConfig loads the selected config file. Without --config, a missing
+// leafpress.json means "use defaults". An explicit --config naming a file
+// that does not exist is an error: falling back to defaults there would
+// silently drop build.ignore and outputDir, publishing notes the author
+// meant to keep out of the site.
+func loadConfig() (*config.Config, error) {
+	path := getConfigPath()
+	if cfgFile != "" {
+		if _, err := os.Stat(path); err != nil {
+			if errors.Is(err, fs.ErrNotExist) {
+				return nil, fmt.Errorf("config file %q does not exist", path)
+			}
+			return nil, fmt.Errorf("config file %q: %w", path, err)
+		}
+	}
+	return config.Load(path)
 }
 
 func isVerbose() bool {
