@@ -354,6 +354,11 @@ composes the shared base, selected bundled theme, self-hosted `@font-face`
 rules, and finally your custom stylesheet. Because `style.css` is last, it can
 override variables and classes without rewriting the selected theme.
 
+`style.css` and root favicon overrides (`favicon.ico`, `favicon.svg`,
+`favicon-96x96.png`) must be regular files. They can be symlinks only to files
+inside the project. A symlink pointing outside the project, or an override that
+cannot be read, fails the build instead of being published or skipped.
+
 ### Starting Point
 
 Run `leafpress init` to get a `style.css` you can modify. Or start from scratch using CSS variables:

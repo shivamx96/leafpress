@@ -1625,24 +1625,23 @@ func (b *Builder) copyFavicons() error {
 	}
 	for _, builtin := range assets.RootBuiltins() {
 		name := builtin.Asset.EffectiveOutputPath()
-		userPath := filepath.Join(b.rootDir, name)
 		outPath := filepath.Join(b.outputDir, name)
 
-		data, err := os.ReadFile(userPath)
+		data, found, err := readRootOverride(b.rootDir, name)
 		switch {
-		case err == nil:
+		case err != nil:
+			// A user override that exists but cannot be read must not be
+			// silently replaced by the built-in.
+			return fmt.Errorf("failed to read %s override: %w", name, err)
+		case found:
 			// User override wins.
 			if err := os.WriteFile(outPath, data, 0644); err != nil {
 				return fmt.Errorf("failed to write %s: %w", name, err)
 			}
-		case os.IsNotExist(err):
+		default:
 			if err := os.WriteFile(outPath, builtin.Content(), 0644); err != nil {
 				return fmt.Errorf("failed to write default %s: %w", name, err)
 			}
-		default:
-			// A user override that exists but cannot be read must not be
-			// silently replaced by the built-in.
-			return fmt.Errorf("failed to read %s override: %w", name, err)
 		}
 	}
 
@@ -1727,13 +1726,46 @@ func (b *Builder) refreshIncrementalContentArtifacts() error {
 
 // generateCSS writes the combined stylesheet
 func (b *Builder) generateCSS() error {
-	var userCSS string
-	userCSSPath := filepath.Join(b.rootDir, "style.css")
-	if data, err := os.ReadFile(userCSSPath); err == nil {
-		userCSS = string(data)
+	data, _, err := readRootOverride(b.rootDir, "style.css")
+	if err != nil {
+		return fmt.Errorf("failed to read style.css: %w", err)
 	}
+	userCSS := string(data)
 	outPath := filepath.Join(b.outputDir, "style.css")
 	return os.WriteFile(outPath, []byte(sitegen.Styles(userCSS, b.cfg.Theme)), 0644)
+}
+
+// readRootOverride reads an optional project-root build input such as
+// style.css or favicon.ico. found is false only when the file does not exist.
+// The file gets the same boundary check as content and static/: a symlink
+// that leaves the project is refused, so favicon.ico -> ~/.ssh/id_rsa cannot
+// publish the target. Anything other than a regular file (a directory, a
+// device) is an error, not a silent "no override".
+func readRootOverride(root, name string) (data []byte, found bool, err error) {
+	path := filepath.Join(root, name)
+	info, err := os.Lstat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, false, nil
+		}
+		return nil, false, err
+	}
+	if err := content.CheckSymlinkEscape(root, path, info.Mode()); err != nil {
+		return nil, false, err
+	}
+	if info.Mode()&os.ModeSymlink != 0 {
+		if info, err = os.Stat(path); err != nil {
+			return nil, false, err
+		}
+	}
+	if !info.Mode().IsRegular() {
+		return nil, false, fmt.Errorf("%s is not a regular file", name)
+	}
+	data, err = os.ReadFile(path)
+	if err != nil {
+		return nil, false, err
+	}
+	return data, true, nil
 }
 
 // generateRobotsTxt writes the robots.txt file
