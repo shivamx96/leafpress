@@ -11,6 +11,11 @@ config goes a long way.
 Configuration must contain exactly one JSON object. Unknown fields and trailing
 content are rejected; errors identify the configuration file.
 
+`build` and `serve` read `leafpress.json` by default and use the defaults when
+it is absent. To use another file, pass `--config <file>` (or `-c`). A
+`--config` path that does not exist is an error, so a typo cannot silently
+build with default settings and ignore your `build.ignore` rules.
+
 ## Strict builds
 
 For CI publishing, run `leafpress build --strict`. Any build warning, including

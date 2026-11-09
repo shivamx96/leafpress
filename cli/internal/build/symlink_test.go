@@ -120,3 +120,61 @@ func TestIncrementalRebuildRefusesSymlinkOutsideProject(t *testing.T) {
 		t.Fatalf("error should name the escape, got: %v", err)
 	}
 }
+
+// Root build inputs (favicons, style.css) are read outside the content and
+// static/ walkers, so they need the same boundary check.
+func TestBuildRefusesRootOverrideSymlinkOutsideProject(t *testing.T) {
+	for _, name := range []string{"favicon.ico", "style.css"} {
+		t.Run(name, func(t *testing.T) {
+			secret := secretOutside(t)
+			dir := newTestProject(t)
+			linkOrSkip(t, secret, filepath.Join(dir, name))
+
+			_, err := New(config.Default(), Options{}).Build()
+			if err == nil {
+				t.Fatalf("Build should refuse a %s symlink that leaves the project", name)
+			}
+			if !strings.Contains(err.Error(), "outside the project") {
+				t.Fatalf("error should name the escape, got: %v", err)
+			}
+			if data, readErr := os.ReadFile(filepath.Join(dir, "_site", name)); readErr == nil &&
+				strings.Contains(string(data), "private key material") {
+				t.Fatalf("the escaping %s target was published anyway", name)
+			}
+		})
+	}
+}
+
+func TestBuildFollowsRootOverrideSymlinkInsideProject(t *testing.T) {
+	dir := newTestProject(t)
+	assetsDir := filepath.Join(dir, "assets")
+	if err := os.MkdirAll(assetsDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(assetsDir, "custom.css"), []byte(".inside-link{color:red}"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	linkOrSkip(t, filepath.Join(assetsDir, "custom.css"), filepath.Join(dir, "style.css"))
+
+	if _, err := New(config.Default(), Options{}).Build(); err != nil {
+		t.Fatal(err)
+	}
+	css, err := os.ReadFile(filepath.Join(dir, "_site", "style.css"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(css), ".inside-link") {
+		t.Error("style.css linked inside the project should be included")
+	}
+}
+
+func TestBuildRejectsNonRegularStyleCSS(t *testing.T) {
+	dir := newTestProject(t)
+	if err := os.MkdirAll(filepath.Join(dir, "style.css"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	_, err := New(config.Default(), Options{}).Build()
+	if err == nil || !strings.Contains(err.Error(), "style.css") {
+		t.Fatalf("a style.css directory should fail the build, got: %v", err)
+	}
+}
