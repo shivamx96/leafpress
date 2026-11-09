@@ -17,6 +17,7 @@ type Frontmatter struct {
 	Date        string   `yaml:"date"`
 	Tags        []string `yaml:"tags"`
 	Draft       bool     `yaml:"draft"`
+	Publish     *bool    `yaml:"publish"`
 	Growth      string   `yaml:"growth"`
 	Sort        string   `yaml:"sort"`     // For _index.md files
 	TOC         *bool    `yaml:"toc"`      // Override site-wide TOC setting (nil = use site default)

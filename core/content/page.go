@@ -21,6 +21,7 @@ type Page struct {
 	Modified    time.Time // Last modified date (from modified, updated, or updatedAt)
 	Tags        []string
 	Draft       bool
+	Publish     *bool
 	Growth      string // seedling | budding | evergreen
 	TOC         *bool  // Override site-wide TOC setting (nil = use site default)
 	ShowList    *bool  // Show page list on section index (nil = true)
