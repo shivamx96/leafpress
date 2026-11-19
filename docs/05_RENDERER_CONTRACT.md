@@ -370,6 +370,15 @@ Each entry in `content.pages`:
   path, `markdown` becomes the intro above the child listing. An `isIndex` page
   with slug `""` is the garden home. `sort` (`date` | `title` | `growth`) and
   `showList` mirror the `_index.md` frontmatter keys.
+  Every required ancestor section is generated, including ancestors of empty
+  explicit indexes. Home and automatic navigation list only root notes and
+  top-level folders; each section lists immediate child folders and direct notes.
+  Explicit indexes retain their title, intro, sort and showList at any depth.
+  Generated sections are returned in `sections`; explicit non-root indexes stay
+  in `pages`. Note permalinks do not change. All required ancestor routes take
+  part in collision validation. Section feeds include descendant notes, sitemap
+  includes generated sections, and synthetic entries never enter authored-note
+  search, graph, backlink or feed-item collections.
 - `title` defaults to the slug; `growth` must be one of
   `seedling` | `budding` | `evergreen`; `readingTime`, when set, overrides the
   computed value and must be positive; timestamps are RFC3339.

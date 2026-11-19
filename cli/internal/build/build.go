@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"runtime"
 	"slices"
@@ -899,11 +900,11 @@ func (b *Builder) rebuildMarkdownFile(relPath string, changeType ChangeType) (*I
 
 	// Get section for this page
 	sectionSlug := listingSection(changedPage)
-	sectionsToRebuild[sectionSlug] = true
+	addSectionAncestors(sectionsToRebuild, sectionSlug)
 
 	// If old page existed, check what changed
 	if oldPage != nil {
-		sectionsToRebuild[listingSection(oldPage)] = true
+		addSectionAncestors(sectionsToRebuild, listingSection(oldPage))
 		// Tag listings contain page metadata, so rebuild every listing the old
 		// or new page belongs to even when its tag membership is unchanged.
 		for _, t := range oldPage.Tags {
@@ -941,6 +942,11 @@ func (b *Builder) rebuildMarkdownFile(relPath string, changeType ChangeType) (*I
 	resolverChanged := oldPage == nil || oldPage.Title != changedPage.Title || oldPage.Slug != changedPage.Slug
 	if resolverChanged || !slices.Equal(oldNav, b.siteData.Nav) {
 		addAllPages(pagesToRebuild, b.pages)
+	}
+	if !slices.Equal(oldNav, b.siteData.Nav) {
+		for section := range b.pagesBySection {
+			sectionsToRebuild[section] = true
+		}
 	}
 
 	// Render markdown for pages that need rebuilding
@@ -1068,9 +1074,16 @@ func (b *Builder) handleDeletedFile(relPath string) (*IncrementalStats, error) {
 	}
 
 	// Rebuild section index
-	sectionSlug := listingSection(oldPage)
-	if err := b.rebuildSectionListing(sectionSlug); err != nil {
-		return nil, err
+	sectionsToRebuild := make(map[string]bool)
+	addSectionAncestors(sectionsToRebuild, listingSection(oldPage))
+	// Every generated section also embeds the navigation changed by deletion.
+	for section := range b.pagesBySection {
+		sectionsToRebuild[section] = true
+	}
+	for section := range sectionsToRebuild {
+		if err := b.rebuildSectionListing(section); err != nil {
+			return nil, err
+		}
 	}
 
 	// Refresh every content-derived global artifact.
@@ -1081,11 +1094,24 @@ func (b *Builder) handleDeletedFile(relPath string) (*IncrementalStats, error) {
 	return stats, nil
 }
 
+func addSectionAncestors(sections map[string]bool, section string) {
+	for {
+		sections[section] = true
+		if section == "" {
+			return
+		}
+		section = path.Dir(section)
+		if section == "." {
+			section = ""
+		}
+	}
+}
+
 func listingSection(page *content.Page) string {
 	if page.IsIndex {
 		return page.Slug
 	}
-	section := filepath.Dir(page.Slug)
+	section := path.Dir(page.Slug)
 	if section == "." {
 		return ""
 	}
@@ -1178,7 +1204,7 @@ func (b *Builder) rebuildAutoIndex(sectionSlug string, pages []*content.Page) er
 
 	data := templates.IndexData{
 		Site:        b.siteData,
-		Title:       sitegen.SectionTitle(sectionSlug, sectionPages),
+		Title:       sitegen.SectionTitle(sectionSlug, pages),
 		Pages:       sectionPages,
 		ShowList:    true,
 		CurrentPath: "/" + sectionSlug + "/",
@@ -1349,25 +1375,10 @@ func (b *Builder) renderSectionIndex(indexPage *content.Page, allPages []*conten
 
 // generateAutoIndexes creates index pages for directories without _index.md
 func (b *Builder) generateAutoIndexes(pages []*content.Page, siteData templates.SiteData) error {
-	// Find all directories
-	dirs := make(map[string]bool)
-	indexedDirs := make(map[string]bool)
-
-	for _, page := range pages {
-		if page.IsIndex {
-			indexedDirs[page.Slug] = true
-		} else {
-			dir := filepath.Dir(page.Slug)
-			if dir != "." {
-				dirs[dir] = true
-			}
-		}
-	}
-
-	// Collect directories that need auto-indexes
+	children, indexes := sitegen.GroupSections(pages)
 	var dirsToIndex []string
-	for dir := range dirs {
-		if !indexedDirs[dir] {
+	for dir := range children {
+		if dir != "" && indexes[dir] == nil {
 			dirsToIndex = append(dirsToIndex, dir)
 		}
 	}
@@ -1413,7 +1424,7 @@ func (b *Builder) generateAutoIndexes(pages []*content.Page, siteData templates.
 				// automatic navigation does.
 				data := templates.IndexData{
 					Site:        siteData,
-					Title:       sitegen.SectionTitle(dir, sectionPages),
+					Title:       sitegen.SectionTitle(dir, pages),
 					Pages:       sectionPages,
 					ShowList:    true,
 					CurrentPath: "/" + dir + "/",
@@ -1859,17 +1870,7 @@ func filterPublishable(pages []*content.Page, mode string, includeDrafts bool) [
 
 // buildSectionIndex creates a map of section -> pages for O(1) lookups
 func buildSectionIndex(pages []*content.Page) map[string][]*content.Page {
-	index := make(map[string][]*content.Page)
-	for _, page := range pages {
-		if page.IsIndex {
-			continue
-		}
-		section := filepath.Dir(page.Slug)
-		if section == "." {
-			section = ""
-		}
-		index[section] = append(index[section], page)
-	}
+	index, _ := sitegen.GroupSections(pages)
 	return index
 }
 
@@ -1890,46 +1891,34 @@ func buildTagIndex(pages []*content.Page) map[string][]*content.Page {
 	return index
 }
 
-// getSectionPages returns pages in a section (falls back to linear scan if no index)
+// getSectionPages projects the immediate notes and folders in a section.
 func getSectionPages(section string, allPages []*content.Page) []*content.Page {
-	var result []*content.Page
-	for _, page := range allPages {
-		if page.IsIndex {
-			continue
-		}
-		pageDir := filepath.Dir(page.Slug)
-		if pageDir == "." {
-			pageDir = ""
-		}
-		if pageDir == section {
-			result = append(result, page)
-		}
-	}
-	return result
+	children, _ := sitegen.GroupSections(allPages)
+	return children[section]
 }
 
 // getSectionPagesFromIndex returns pages using the pre-built section index (O(1) lookup)
 func (b *Builder) getSectionPagesFromIndex(section string) []*content.Page {
 	if b.pagesBySection != nil {
-		return b.pagesBySection[section]
+		return slices.Clone(b.pagesBySection[section])
 	}
-	// Fallback to linear scan if index not built
+	// Project the hierarchy if the cached index has not been built.
 	return getSectionPages(section, b.pages)
 }
 
 func sortPages(pages []*content.Page, sortBy string) {
 	switch sortBy {
 	case "title":
-		sort.Slice(pages, func(i, j int) bool {
+		sort.SliceStable(pages, func(i, j int) bool {
 			return pages[i].Title < pages[j].Title
 		})
 	case "growth":
 		growthOrder := map[string]int{"seedling": 0, "budding": 1, "evergreen": 2, "": 3}
-		sort.Slice(pages, func(i, j int) bool {
+		sort.SliceStable(pages, func(i, j int) bool {
 			return growthOrder[pages[i].Growth] < growthOrder[pages[j].Growth]
 		})
 	default: // date - use display date logic (modified if present, otherwise created)
-		sort.Slice(pages, func(i, j int) bool {
+		sort.SliceStable(pages, func(i, j int) bool {
 			dateI := pages[i].Date
 			if pages[i].HasModified() {
 				dateI = pages[i].Modified

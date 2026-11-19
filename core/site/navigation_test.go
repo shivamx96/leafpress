@@ -78,3 +78,44 @@ func TestSectionTitleUsesFolderNameAsWritten(t *testing.T) {
 		t.Fatalf("automatic nav = %+v", nav)
 	}
 }
+
+func TestGroupSectionsDeepHierarchy(t *testing.T) {
+	pages := []*content.Page{
+		{Slug: "clients/acme/projects/plan", SourcePath: "Clients & Co/acme/projects/plan.md", Date: mustDate(t, "2026-01-01"), Modified: mustDate(t, "2026-03-01")},
+		{Slug: "clients/birch/projects/plan", Date: mustDate(t, "2026-02-01")},
+		{Slug: "now"},
+		{Slug: "archive/empty/nested", Title: "Empty", IsIndex: true},
+	}
+	children, indexes := GroupSections(pages)
+	want := map[string][]string{
+		"":                       {"now", "archive", "clients"},
+		"clients":                {"clients/acme", "clients/birch"},
+		"clients/acme":           {"clients/acme/projects"},
+		"clients/acme/projects":  {"clients/acme/projects/plan"},
+		"clients/birch":          {"clients/birch/projects"},
+		"clients/birch/projects": {"clients/birch/projects/plan"},
+		"archive":                {"archive/empty"},
+		"archive/empty":          {"archive/empty/nested"},
+		"archive/empty/nested":   nil,
+	}
+	got := make(map[string][]string)
+	for section, entries := range children {
+		got[section] = nil
+		for _, p := range entries {
+			got[section] = append(got[section], p.Slug)
+		}
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("children = %#v, want %#v", got, want)
+	}
+	if len(indexes) != 1 || indexes["archive/empty/nested"] != pages[3] {
+		t.Fatalf("authored indexes = %v", indexes)
+	}
+	clients := children[""][2]
+	if clients.Title != "Clients &amp; Co" || !clients.Date.Equal(pages[0].Modified) {
+		t.Fatalf("ancestor metadata = %+v", clients)
+	}
+	if len(pages) != 4 {
+		t.Fatal("grouping mutated authored pages")
+	}
+}
