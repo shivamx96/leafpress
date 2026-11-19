@@ -63,7 +63,10 @@ func (p *wikiLinkParser) Parse(_ ast.Node, block text.Reader, pc parser.Context)
 	if len(inner) == 0 || bytes.ContainsRune(inner, ']') {
 		return nil
 	}
-	parts := bytes.SplitN(inner, []byte{'|'}, 2)
+	// GFM tables require pipes inside cells to be escaped. Goldmark retains
+	// those escapes for custom inline parsers; decode them before resolving
+	// the target and label, while retaining the original source in Raw.
+	parts := bytes.SplitN(bytes.ReplaceAll(inner, []byte(`\|`), []byte{'|'}), []byte{'|'}, 2)
 	if len(parts[0]) == 0 {
 		return nil
 	}
