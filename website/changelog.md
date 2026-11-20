@@ -4,8 +4,11 @@ date: 2025-01-06
 toc: false
 ---
 
-## Unreleased
+## v1.1.3
+*November 20, 2026*
 
+- **Nested sections:** The CLI and renderer now preserve the full folder hierarchy, generating missing ancestor section homes and listing immediate child folders alongside direct notes. Existing note URLs stay unchanged. Required ancestor routes participate in collision validation; a note such as `clients.md` cannot share a route with the section for `clients/acme/plan.md`. [Docs](/guide/writing/).
+- **Wiki-links in tables:** Escaped pipe aliases now resolve consistently in rendered links, backlinks, and the graph. [Docs](/guide/wiki-links/).
 - **Security:** Release binaries and CI now use Go 1.27.4 to fix the HTTP/1 server crash advisory [GO-2026-6859](https://pkg.go.dev/vuln/GO-2026-6859). The minimum Go for source installs and Core consumers remains 1.26.
 
 ## v1.1.2
