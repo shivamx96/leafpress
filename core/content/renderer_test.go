@@ -378,6 +378,27 @@ func TestRender_DoesNotCollideWithLegacyCodePlaceholderText(t *testing.T) {
 
 // --- Broken wikilinks ---
 
+func TestRender_TableWikilinkAliasesMatchExtraction(t *testing.T) {
+	input := "| Link |\n| --- |\n| [[clients/acme/plan\\|Acme\\|Plan]] |\n"
+	pages := []*Page{{Slug: "clients/acme/plan", Permalink: "/clients/acme/plan/"}}
+	r := NewRenderer(NewLinkResolver(pages), true, "/g/test")
+	html, warnings := r.Render(input)
+	if len(warnings) != 0 {
+		t.Fatalf("warnings = %v", warnings)
+	}
+	if !strings.Contains(html, `<td><a class="lp-wikilink" href="/g/test/clients/acme/plan/">Acme|Plan</a></td>`) {
+		t.Fatalf("table alias did not resolve: %s", html)
+	}
+	links := ExtractWikiLinks(input)
+	if len(links) != 1 || links[0].Target != "clients/acme/plan" || links[0].Label != "Acme|Plan" || links[0].Raw != `[[clients/acme/plan\|Acme\|Plan]]` {
+		t.Fatalf("extracted links = %#v", links)
+	}
+	BuildBacklinks(append(pages, &Page{Slug: "source", RawContent: input}))
+	if len(pages[0].Backlinks) != 1 || pages[0].Backlinks[0].Slug != "source" {
+		t.Fatalf("table alias backlinks = %#v", pages[0].Backlinks)
+	}
+}
+
 func TestRender_BrokenWikilinkDefault(t *testing.T) {
 	r := NewRenderer(NewLinkResolver(nil), true, "")
 	html, warnings := r.Render("See [[missing-page]] here")

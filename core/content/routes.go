@@ -116,20 +116,19 @@ func ValidateOutputRoutes(pages []*Page) error {
 		}
 	}
 
-	// A direct child causes leafpress to synthesize its parent section route
-	// unless an explicit _index page already owns it.
+	// Every ancestor needs a section home, even above an empty explicit index.
 	for _, page := range pages {
-		if page == nil || page.IsIndex {
+		if page == nil {
 			continue
 		}
-		section := path.Dir(filepathToSlash(page.Slug))
-		if section == "." || indexBySection[section] {
-			continue
+		for section := path.Dir(page.Slug); section != "."; section = path.Dir(section) {
+			if !indexBySection[section] {
+				if err := claim(section, fmt.Sprintf("generated section %q", section)); err != nil {
+					return err
+				}
+			}
+			sections[strings.ToLower(section)] = true
 		}
-		if err := claim(section, fmt.Sprintf("generated section %q", section)); err != nil {
-			return err
-		}
-		sections[strings.ToLower(section)] = true
 	}
 
 	seenTags := make(map[string]bool)

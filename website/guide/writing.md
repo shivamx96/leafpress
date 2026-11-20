@@ -264,3 +264,23 @@ Organize content in folders under your site root. Create `folder/_index.md` for 
 ```
 
 Link to nested pages: `[[projects/website]]`
+
+Every folder containing published content gets a section home, including ancestors
+with no direct notes. For example, `clients/acme/projects/plan.md` produces
+`/clients/`, `/clients/acme/`, and `/clients/acme/projects/`, while the note stays
+at `/clients/acme/projects/plan/`. Home and automatic navigation show root notes
+and top-level folders only. Each section lists its immediate child folders and
+direct notes; deeper notes appear in their own section.
+
+Add `_index.md` at any depth to supply that section's title and introduction,
+choose `sort: date`, `title`, or `growth`, or hide its listing with
+`showList: false`. An empty published `_index.md` still creates a section and its
+ancestors. Hiding a listing does not hide its notes or change their URLs.
+Generated folders use their newest child's date when sorting; an explicit index
+uses its own metadata. A native site's home requires a root `_index.md`.
+
+Section RSS feeds include descendant notes at every depth. Generated section
+homes appear in the sitemap, but not as notes in search, the graph, or feeds.
+A note cannot share a route with any required ancestor section: `clients.md`
+and `clients/acme/projects/plan.md` conflict. Rename the note or make it
+`clients/_index.md` to give that section an introduction.

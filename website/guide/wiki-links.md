@@ -27,6 +27,16 @@ Link with the filename without `.md`, the page's URL slug, or its title:
 
 Example: `[[installation|Get started]]` renders as "Get started" but links to the installation page.
 
+Inside a Markdown table, escape each pipe in a wiki-link so it stays inside its cell:
+
+```markdown
+| Note |
+| --- |
+| [[clients/acme/plan\|Acme plan]] |
+```
+
+These links resolve normally and participate in backlinks and the graph.
+
 ### Case Insensitive
 
 Links are case-insensitive:

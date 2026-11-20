@@ -132,7 +132,21 @@ func Sitemap(pages []*content.Page, baseURL string) string {
 	sb.WriteString("\n")
 	sb.WriteString(`<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`)
 	sb.WriteString("\n")
-	for _, page := range pages {
+	// Section homes are real public routes, but must not enter authored-note
+	// indexes (search, graph, backlinks, or RSS items).
+	children, indexes := GroupSections(pages)
+	sitemapPages := append([]*content.Page(nil), pages...)
+	dirs := make([]string, 0, len(children))
+	for dir := range children {
+		if dir != "" && indexes[dir] == nil {
+			dirs = append(dirs, dir)
+		}
+	}
+	sort.Strings(dirs)
+	for _, dir := range dirs {
+		sitemapPages = append(sitemapPages, autoSectionEntry(dir, children[dir]))
+	}
+	for _, page := range sitemapPages {
 		loc := page.Permalink
 		if baseURL != "" {
 			loc = baseURL + page.Permalink
@@ -197,7 +211,7 @@ func Feeds(pages []*content.Page, siteData templates.SiteData, baseURL string, n
 				members = append(members, page)
 			}
 		}
-		title := sectionTitle(dir, children[dir])
+		title := sectionTitle(dir, pages)
 		if index := indexBySection[dir]; index != nil && index.Title != "" {
 			title = index.Title
 		}

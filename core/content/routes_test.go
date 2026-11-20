@@ -95,7 +95,7 @@ func TestValidateOutputRoutes(t *testing.T) {
 				{SourcePath: "one.md", Slug: "one", Tags: []string{"Go"}},
 				{SourcePath: "tags/go/feed.xml.md", Slug: "tags/go/feed.xml"},
 			},
-			want: `output route "/tags/go/"`, // the tag route itself is reserved first
+			want: `output route "/tags/"`, // the ancestor now owns a section route too
 		},
 		{
 			name: "page named after a page's index.html",
@@ -196,5 +196,24 @@ func TestFoldersCleaningToOneSectionAreRejected(t *testing.T) {
 		{SourcePath: "Q&A/Deep Dive/two.md", Slug: "Q-A/Deep-Dive/two"},
 	}); err != nil {
 		t.Fatalf("one folder rejected: %v", err)
+	}
+}
+
+func TestValidateAncestorRoutes(t *testing.T) {
+	for _, pages := range [][]*Page{
+		{{Slug: "clients"}, {Slug: "clients/acme/projects/plan"}},
+		{{Slug: "clients/acme"}, {Slug: "clients/acme/empty", IsIndex: true}},
+		{{Slug: "Clients", IsIndex: true}, {Slug: "clients/acme/plan"}},
+		{{Slug: "clients/feed.xml/deep/plan"}},
+	} {
+		if err := ValidateOutputRoutes(pages); err == nil {
+			t.Fatalf("accepted conflicting ancestors: %+v", pages)
+		}
+	}
+	if err := ValidateOutputRoutes([]*Page{
+		{Slug: "clients", IsIndex: true}, {Slug: "clients/acme", IsIndex: true},
+		{Slug: "clients/acme/projects/plan"}, {Slug: "clients/birch/projects/plan"},
+	}); err != nil {
+		t.Fatal(err)
 	}
 }

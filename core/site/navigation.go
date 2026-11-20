@@ -31,55 +31,67 @@ func BuildNavigation(pages []*content.Page, nav config.Navigation) []config.NavI
 	return items
 }
 
-// GroupSections partitions pages into per-section children and per-section
-// index pages, mirroring the CLI's filepath.Dir-based grouping. An index
-// page's slug is its section path ("" is the garden home).
+// GroupSections builds immediate-child listings for every section, including
+// ancestors with no direct notes. indexBySection contains only authored indexes;
+// synthetic entries live exclusively in listings, never in the authored pages.
 func GroupSections(pages []*content.Page) (children map[string][]*content.Page, indexBySection map[string]*content.Page) {
 	children = make(map[string][]*content.Page)
 	indexBySection = make(map[string]*content.Page)
+	// Keep one authored descendant for each folder's original display name.
+	representatives := make(map[string]*content.Page)
 	for _, p := range pages {
+		dir := p.Slug
 		if p.IsIndex {
-			indexBySection[p.Slug] = p
+			indexBySection[dir] = p
 		} else {
-			children[sectionOf(p.Slug)] = append(children[sectionOf(p.Slug)], p)
+			dir = sectionOf(p.Slug)
+			children[dir] = append(children[dir], p)
 		}
+		for ; dir != ""; dir = sectionOf(dir) {
+			if _, exists := representatives[dir]; !exists {
+				representatives[dir] = p
+			}
+			if _, exists := children[dir]; !exists {
+				children[dir] = nil
+			}
+		}
+	}
+	// Descendants precede parents so synthetic dates propagate all the way up.
+	dirs := make([]string, 0, len(representatives))
+	for dir := range representatives {
+		dirs = append(dirs, dir)
+	}
+	sort.Sort(sort.Reverse(sort.StringSlice(dirs)))
+	for _, dir := range dirs {
+		entry := indexBySection[dir]
+		if entry == nil {
+			entry = autoSectionEntry(dir, children[dir])
+			entry.Title = SectionTitle(dir, []*content.Page{representatives[dir]})
+		}
+		parent := sectionOf(dir)
+		children[parent] = append(children[parent], entry)
+	}
+	// Retain note input order and the existing alphabetical folder ordering.
+	for _, entries := range children {
+		sort.SliceStable(entries, func(i, j int) bool {
+			if entries[i].IsIndex != entries[j].IsIndex {
+				return !entries[i].IsIndex
+			}
+			return entries[i].IsIndex && entries[i].Slug < entries[j].Slug
+		})
 	}
 	return children, indexBySection
 }
 
-// TopLevelEntries returns the garden's public top level: root notes plus one
-// entry per section. Nested notes belong to their section home and never appear
-// directly at the root. This drives both the home listing and automatic nav.
+// TopLevelEntries returns root notes and immediate top-level folders.
 func TopLevelEntries(pages []*content.Page) []*content.Page {
 	return RootEntries(GroupSections(pages))
 }
 
-// RootEntries returns root notes plus one entry per section, given a section
-// grouping (see GroupSections).
-func RootEntries(children map[string][]*content.Page, indexBySection map[string]*content.Page) []*content.Page {
-	sectionDirs := make([]string, 0, len(children)+len(indexBySection))
-	for dir := range children {
-		if dir != "" {
-			sectionDirs = append(sectionDirs, dir)
-		}
-	}
-	for dir := range indexBySection {
-		if dir != "" && children[dir] == nil {
-			sectionDirs = append(sectionDirs, dir) // index page of an empty section
-		}
-	}
-	sort.Strings(sectionDirs)
-
-	entries := make([]*content.Page, 0, len(children[""])+len(sectionDirs))
-	entries = append(entries, children[""]...)
-	for _, dir := range sectionDirs {
-		if p := indexBySection[dir]; p != nil {
-			entries = append(entries, p)
-		} else {
-			entries = append(entries, autoSectionEntry(dir, children[dir]))
-		}
-	}
-	return entries
+// RootEntries returns the home listing from a GroupSections projection.
+// The returned slice can be sorted without changing the grouping.
+func RootEntries(children map[string][]*content.Page, _ map[string]*content.Page) []*content.Page {
+	return append([]*content.Page(nil), children[""]...)
 }
 
 // TitleCase title-cases an auto-index section name, matching the CLI's
@@ -150,9 +162,7 @@ func sectionOf(slug string) string {
 	return dir
 }
 
-// autoSectionEntry is the single homepage/nav link for a section that has no
-// explicit index page. The section's real children remain on its generated
-// section home instead of being flattened into the garden home.
+// autoSectionEntry represents a generated section in its parent listing.
 func autoSectionEntry(slug string, children []*content.Page) *content.Page {
 	entry := &content.Page{
 		Title:     SectionTitle(slug, children),
