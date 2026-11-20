@@ -4,6 +4,10 @@ date: 2025-01-06
 toc: false
 ---
 
+## Unreleased
+
+- **Security:** Release binaries and CI now use Go 1.27.4 to fix the HTTP/1 server crash advisory [GO-2026-6859](https://pkg.go.dev/vuln/GO-2026-6859). The minimum Go for source installs and Core consumers remains 1.26.
+
 ## v1.1.2
 *November 9, 2026*
 
