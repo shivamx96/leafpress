@@ -49,7 +49,7 @@ jobs:
 
       - uses: actions/setup-go@v7
         with:
-          go-version: "1.27.2"
+          go-version: "1.27.4"
 
       - name: Install leafpress
         run: go install github.com/shivamx96/leafpress/cli/cmd/leafpress@latest
@@ -81,6 +81,9 @@ The same settings can be committed in `netlify.toml`:
   command = "go install github.com/shivamx96/leafpress/cli/cmd/leafpress@latest && leafpress build"
   publish = "_site"
 ```
+
+Netlify automatically serves the generated `_site/404.html` for missing paths;
+no catch-all redirect is needed. See Netlify’s [custom 404 handling](https://docs.netlify.com/manage/routing/redirects/redirect-options/#custom-404-page-handling).
 
 ## Custom domain and security
 
