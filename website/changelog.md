@@ -11,6 +11,9 @@ toc: false
   client-frame mask randomness with `crypto/rand`. leafpress uses WebSockets
   for development-server live reload; generated static sites do not use this
   Go dependency.
+- The starter home from `leafpress init` now shows wiki-link syntax as code
+  instead of linking to a nonexistent note, so a fresh garden passes
+  `leafpress build --strict`.
 
 ## v1.1.3
 *November 20, 2026*

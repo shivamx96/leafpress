@@ -137,7 +137,7 @@ This is your digital garden. Start writing!
 ## Getting Started
 
 1. Edit this file or create new ones with ` + "`leafpress new <name>`" + `
-2. Use [[wiki-links]] to connect your thoughts
+2. Use ` + "`[[page-name]]`" + ` to link to an existing note
 3. Run ` + "`leafpress serve`" + ` to preview your garden
 4. Run ` + "`leafpress build`" + ` to generate your static site
 `
