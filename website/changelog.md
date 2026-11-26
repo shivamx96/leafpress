@@ -4,6 +4,14 @@ date: 2025-01-06
 toc: false
 ---
 
+## Unreleased
+
+- Updated the CLI's Gorilla WebSocket dependency to the upstream fix for
+  [GO-2026-6278](https://pkg.go.dev/vuln/GO-2026-6278), which replaces weak
+  client-frame mask randomness with `crypto/rand`. leafpress uses WebSockets
+  for development-server live reload; generated static sites do not use this
+  Go dependency.
+
 ## v1.1.3
 *November 20, 2026*
 
