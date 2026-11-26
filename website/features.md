@@ -22,7 +22,7 @@ Everything you need to build a digital garden, nothing you don't.
 
 **Table of Contents** — Auto-generated from your headings. Toggle globally or per-page.
 
-**Anchored Headings** — Hover over any heading to reveal a `#` link for deep linking and sharing.
+**Anchored Headings** — Hover over a level-two or level-three heading (`##` or `###`) to reveal a `#` link for deep linking and sharing.
 
 **Footnotes** — Add references with `[^1]` and definitions with `[^1]: ...`. Renders as superscript links with a footnote section at the bottom.
 
@@ -72,7 +72,7 @@ integration without giving leafpress access to a hosting account.
 
 **Dark Mode** — Follows your system preference by default. The toggle switches between light and dark; switching back to your system's current appearance restores automatic switching.
 
-**Navigation** — Multiple styles (base, sticky, glassmorphic). Box or underlined active link indicators. Explicit items can link to pages in the garden or to external URLs.
+**Navigation** — Multiple styles (`base`, `sticky`, `glassy`, and `bottom`). Box or underlined active link indicators. Explicit items can link to pages in the garden or to external URLs.
 
 **Custom CSS** — Drop in a `style.css` to override anything.
 

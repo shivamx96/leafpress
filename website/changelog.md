@@ -1,6 +1,6 @@
 ---
 title: "Changelog"
-date: 2025-01-06
+date: 2026-01-06
 toc: false
 ---
 
@@ -11,6 +11,9 @@ toc: false
   client-frame mask randomness with `crypto/rand`. leafpress uses WebSockets
   for development-server live reload; generated static sites do not use this
   Go dependency.
+- The starter home from `leafpress init` now shows wiki-link syntax as code
+  instead of linking to a nonexistent note, so a fresh garden passes
+  `leafpress build --strict`.
 
 ## v1.1.3
 *November 20, 2026*
@@ -35,6 +38,15 @@ toc: false
 - **Bottom dock:** Theme-aware navigation that hides while scrolling down and returns on scrolling up. [Docs](/guide/theming/#bottom-navigation).
 - **Theme controls:** Compact menus show the current Auto, Dark, or Light mode. [Docs](/guide/theming/#light-and-dark-mode).
 - **Active-link fixes:** Correct dock underlines and a clearer active state in Quiet. [Docs](/guide/theming/#bottom-navigation).
+
+## Core v1.1.0
+*October 27, 2026*
+
+- Published the `core/v1.1.0` Go module with the footer, Everything navigation,
+  bottom dock, and theme-control changes listed under v1.1.1 above.
+- This was a Core-only tag; there was no CLI or binary v1.1.0 release. The
+  v1.1.1 release shipped those features to CLI users and corrected the CLI's
+  checksum for the published Core module, including its license.
 
 ## v1.0.0
 *October 26, 2026*

@@ -55,11 +55,16 @@ Backlinks make your garden bidirectional. When you link A → B, readers of B ca
 
 ## Broken Links
 
-During build, leafpress warns about broken links:
+A normal build prints a warning count (`Warnings: N`). Use `leafpress build
+--verbose` (or `-v`) to see each warning:
 
+```text
+warning: broken link: [[nonexistent-page]]
 ```
-Warning: broken link: [[nonexistent-page]]
-```
+
+`leafpress build --strict` also prints warning details and fails without
+replacing the last successful output. Use it in CI to prevent publishing broken
+links.
 
 Broken links render with a subtle broken-link style, so readers know something's missing.
 

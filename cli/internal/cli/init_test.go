@@ -105,3 +105,19 @@ func TestInitDoesNotDuplicateGitignoreEntry(t *testing.T) {
 		t.Errorf("init should append _site/ to an existing .gitignore:\n%s", data)
 	}
 }
+
+func TestInitGardenBuildsInStrictMode(t *testing.T) {
+	t.Chdir(t.TempDir())
+	withConfigFlag(t, "")
+	if err := runInit(nil, nil); err != nil {
+		t.Fatal(err)
+	}
+	cmd := buildCmd()
+	cmd.SetArgs([]string{"--strict"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("fresh garden should build without warnings: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join("_site", "index.html")); err != nil {
+		t.Fatalf("strict build did not publish the starter home: %v", err)
+	}
+}

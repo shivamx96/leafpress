@@ -13,7 +13,11 @@ Create pages using Markdown files with YAML frontmatter.
 leafpress new "My First Note"
 ```
 
-Creates `my-first-note.md` with frontmatter.
+Creates `my-first-note.md` with `draft: true` and `growth: "seedling"` in its
+frontmatter. Preview it with `leafpress serve --drafts`, or include it in a
+build with `leafpress build --drafts`. Remove `draft` or set it to `false` when
+it is ready to publish. With `build.publish: "explicit"`, also set `publish: true`.
+See [[guide/cli|CLI Reference]] for all commands and flags.
 
 ### Manually
 
@@ -94,6 +98,12 @@ All fields are optional:
 ### Standard Markdown
 
 All CommonMark syntax works: headings, bold, italic, lists, links, images, code blocks.
+
+### Raw HTML
+
+The CLI renders raw HTML in your Markdown as written, so only build content
+you trust. The hosted `leafpress-render` bridge escapes raw HTML in Markdown;
+its `site.headExtra` and custom CSS remain trusted owner configuration.
 
 ### Wiki Links
 
@@ -277,7 +287,9 @@ choose `sort: date`, `title`, or `growth`, or hide its listing with
 `showList: false`. An empty published `_index.md` still creates a section and its
 ancestors. Hiding a listing does not hide its notes or change their URLs.
 Generated folders use their newest child's date when sorting; an explicit index
-uses its own metadata. A native site's home requires a root `_index.md`.
+uses its own metadata. Create a root `index.md` (as `leafpress init` does) or
+`_index.md` for the home page. Without either published root index, the CLI
+does not generate `index.html`; section homes are still generated.
 
 Section RSS feeds include descendant notes at every depth. Generated section
 homes appear in the sitemap, but not as notes in search, the graph, or feeds.

@@ -19,7 +19,7 @@ few supporting directories:
 | `core/` | `github.com/shivamx96/leafpress/core`. Markdown rendering, configuration, templates, themes, embedded assets, and the `leafpress-render` bridge. Published as a library. |
 | `cli/` | `github.com/shivamx96/leafpress/cli`. The `leafpress` binary: `init`, `new`, `build`, `serve`, `update`, `version`. Depends on a released Core version. |
 | `website/` | Source for [leafpress.in](https://leafpress.in), built with leafpress itself. Includes the changelog and the install script. |
-| `docs/` | Design documents and maintainer runbooks. Start with `docs/01_PRD.md` and `docs/06_RELEASE_PROCESS.md`. |
+| `docs/` | Design documents and maintainer runbooks. Start with `docs/MAINTENANCE.md` and `docs/06_RELEASE_PROCESS.md`; `docs/03_PUBLISHING.md` describes the publishing boundary. `docs/01_PRD.md` retains design context. |
 | `tests/theme-conformance/` | Playwright browser suite covering every theme, navigation style, viewport, and colour scheme. |
 | `benchmark/` | Reproducible build-time comparison against other static site generators. |
 | `testdata/` | Fixture gardens used by Go tests and the browser suite. |

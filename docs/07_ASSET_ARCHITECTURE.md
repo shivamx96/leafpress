@@ -316,9 +316,10 @@ Image metadata includes both `og:image` and `twitter:image` and selects a
 - The CLI and hosted consumers share one vocabulary for assets; conformance
   can be tested (a parity suite proves `_site/` and the renderer output
   describe the same set of output paths and contents).
-- Exported sites become self-contained for every bundled or declared family;
-  the deprecated compatibility mode is the one documented exception until it
-  is retired.
+- Exported sites are self-contained for every bundled or declared family.
+  The CLI downloads other Google Fonts families and self-hosts them; the
+  renderer never downloads fonts and warns before falling back to the system
+  stack when a family has no local source. `remoteFonts` has been removed.
 - The `core` module grows by the embedded built-ins (a curated, bounded set of
   woff2 files) in exchange for removing the third-party origin.
 - The artifact protocol change is additive; existing consumers that ignore

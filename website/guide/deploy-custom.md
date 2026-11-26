@@ -23,35 +23,15 @@ This creates your site in `_site/` (or your configured `outputDir`). Upload this
 See [[guide/deploy-netlify|Deploy to Netlify]] for deployment with Netlify's
 official CLI.
 
-For Git-based continuous deployment:
-
-### Git Integration
-
-1. Push your site to GitHub/GitLab
-2. Connect repo in Netlify dashboard
-3. Set build settings:
-   - **Build command**: `go install github.com/shivamx96/leafpress/cli/cmd/leafpress@latest && leafpress build`
-   - **Publish directory**: `_site`
-
-### netlify.toml
-
-```toml
-[build]
-  command = "go install github.com/shivamx96/leafpress/cli/cmd/leafpress@latest && leafpress build"
-  publish = "_site"
-
-[[redirects]]
-  from = "/*"
-  to = "/404.html"
-  status = 404
-```
+The same guide includes Git-based build settings and the `netlify.toml`
+configuration.
 
 ## Docker/Nginx
 
 ### Dockerfile
 
 ```dockerfile
-FROM golang:1.27.2-alpine AS builder
+FROM golang:1.27.4-alpine AS builder
 RUN go install github.com/shivamx96/leafpress/cli/cmd/leafpress@latest
 WORKDIR /site
 COPY . .
@@ -73,6 +53,17 @@ server {
 
     location / {
         try_files $uri $uri/ =404;
+    }
+
+    # The generated app bundle changes URL whenever its contents change.
+    location ~ "^/static/leafpress/app\.[0-9a-f]{32}\.js$" {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # Other assets keep their URLs and must be revalidated.
+    location ~* \.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2)$ {
+        add_header Cache-Control "no-cache";
     }
 
     error_page 404 /404.html;

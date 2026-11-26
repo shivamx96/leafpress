@@ -1,5 +1,10 @@
 # leafpress
 
+This document records product goals and illustrative implementation sketches.
+For supported commands and configuration, use the [CLI reference](../website/guide/cli.md)
+and [configuration guide](../website/guide/configuration.md). The
+[renderer contract](05_RENDERER_CONTRACT.md) defines hosted integrations.
+
 ## Overview
 
 leafpress is a CLI-driven static site generator purpose-built for digital gardens. It transforms a folder of Markdown files into a clean, interlinked website with minimal configuration. The aesthetic is terminal-inspired—focused, distraction-free, and typographically sharp.
@@ -20,10 +25,10 @@ leafpress is a CLI-driven static site generator purpose-built for digital garden
 
 | Command | Description |
 |---------|-------------|
-| `leafpress init` | Scaffolds `leafpress.json` and optional `style.css` in current directory |
+| `leafpress init` | Scaffolds config, commented CSS, static media directories, and a sample home when no Markdown exists |
 | `leafpress serve` | Starts dev server with live reload (default: `localhost:3000`) |
 | `leafpress build` | Generates static site into `_site/` |
-| `leafpress new <name>` | Creates a new page with frontmatter template |
+| `leafpress new <name>` | Creates a draft page with seedling growth and dated frontmatter |
 | `leafpress update` | Updates the CLI from the latest release |
 | `leafpress version` | Prints the installed version |
 
@@ -33,22 +38,29 @@ leafpress is a CLI-driven static site generator purpose-built for digital garden
 --config, -c       Config file (global; default: ./leafpress.json)
 --verbose, -v      Verbose output (global)
 serve --port, -p   Override serve port
-build/serve -d     Include draft pages
+serve --host      Bind address (default: 127.0.0.1)
+build/serve --drafts, -d  Include drafts, subject to publishing policy
+build/serve --offline    Disable font downloads
+build --strict    Fail on warnings without replacing output
+build --cpuprofile <file>  Write CPU profile
+build --memprofile <file>  Write heap profile
+update --force, -f  Reinstall the latest release
 ```
 
 ---
 
 ## Directory Structure
 
-### After `leafpress init`
+### Garden layout
 
-User runs command inside their existing notes/garden folder:
+Run `init` inside the garden folder. The example below includes notes added
+after initialization; `init` only adds a sample home if no Markdown exists:
 
 ```
 my-garden/                      # User's garden root
 ├── leafpress.json              # Config (generated)
-├── style.css                   # Optional overrides (generated, empty)
-├── static/                     # User-created, for images/fonts/etc
+├── style.css                   # Optional overrides (generated with guidance comments)
+├── static/                     # Created with images/, video/, audio/ subdirectories
 ├── index.md                    # Home page
 ├── now.md
 ├── projects/
@@ -259,7 +271,7 @@ Semantic HTML with `lp-` prefixed classes. User overrides via `style.css`.
 
 ```html
 <aside class="lp-backlinks">
-  <h2 class="lp-backlinks-title">Linked from</h2>
+  <h2 class="lp-backlinks-title">Referenced from</h2>
   <ul class="lp-backlinks-list">
     {{ range .Backlinks }}
     <li><a class="lp-backlink" href="{{ .Path }}">{{ .Title }}</a></li>
@@ -328,7 +340,8 @@ not accepted; CLI builds retain the leafpress attribution.
 
 ### User Override (`style.css`)
 
-Generated as empty file. User adds overrides:
+Generated with comments linking to the theming guide and listing supported
+CSS variables. User adds overrides:
 
 ```css
 /* Dark mode */
@@ -389,6 +402,11 @@ _site/
 ## Generated Files on `leafpress init`
 
 ### `leafpress.json`
+
+A representative configuration is shown below. `init` serializes all defaults
+from `config.Default()`, including empty identity fields, full theme defaults,
+`contractVersion`, navigation fields, and build policy. The configuration guide
+describes the complete schema.
 
 ```json
 {
@@ -495,15 +513,10 @@ Server sends message on any `.md` or `style.css` change.
 | Broken wiki-link | Warn in console, render as plain text with `lp-broken-link` class |
 | Missing frontmatter | Use defaults (title from filename, date from mtime) |
 | Duplicate slugs | Error on build, list conflicts |
-| Invalid config JSON | Error with line number |
+| Invalid config JSON | Error naming the configuration file and parse failure |
 | Port in use | Auto-increment port, notify user |
 
 ---
-
-## Future Considerations
-
-- Custom shortcodes/components
-- Multiple output formats (gemini, plain text)
 
 ## Opt-in publishing
 
@@ -520,3 +533,8 @@ bypasses publication permission. Hidden paths and `build.ignore` always win.
 
 This setting controls Markdown pages, not files copied from `static/` or other
 assets. Keep private files out of published asset directories.
+
+## Future Considerations
+
+- Custom shortcodes/components
+- Multiple output formats (gemini, plain text)

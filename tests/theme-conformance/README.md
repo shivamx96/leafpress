@@ -58,7 +58,7 @@ its HTML report to `playwright-report/`.
 
 ## Mobile navigation regression checks
 
-`navigation.spec.js` adds 25 regression tests for long branding, overflow links,
+`navigation.spec.js` adds 40 regression tests for long branding, overflow links,
 heading fragments, changing header dimensions, viewport changes, and the mobile
 Site menu disclosure, including section links in the compact floating state. Run them against WebKit with:
 
@@ -72,7 +72,7 @@ navigation. Browser-engine checks do not replace a real-device Safari review.
 
 ## Secondary browser smoke checks
 
-CI runs `browser-smoke.spec.js` on Firefox and WebKit (five tests per engine),
+CI runs `browser-smoke.spec.js` on Firefox and WebKit (11 tests per engine),
 while Chromium retains the complete conformance matrix. To reproduce locally:
 
 ```sh

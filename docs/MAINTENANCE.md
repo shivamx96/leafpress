@@ -107,7 +107,7 @@ build/output safety, running-executable replacement, filesystem watching, and
 serving the rebuilt page. These jobs execute native binaries; cross-compilation
 in the release matrix alone cannot exercise operating-system behavior.
 
-Firefox and WebKit each run four essential-reader smoke tests on Linux. These
+Firefox and WebKit each run 11 reader smoke tests on Linux. These
 check article rendering, theme switching, search, and graph interactions without
 repeating the full Chromium visual matrix. The release workflow reuses all of
 these checks, so failures block publication. Real-device Safari review remains

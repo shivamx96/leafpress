@@ -32,6 +32,12 @@ Available binaries:
 - `leafpress-vX.X.X-darwin-arm64.tar.gz` (macOS Apple Silicon)
 - `leafpress-vX.X.X-linux-amd64.tar.gz` (Linux x86_64)
 - `leafpress-vX.X.X-linux-arm64.tar.gz` (Linux ARM64)
+- `leafpress-vX.X.X-windows-amd64.zip` (Windows x86_64)
+- `leafpress-vX.X.X-windows-arm64.zip` (Windows ARM64)
+
+On Windows, extract the ZIP and add the folder containing `leafpress.exe` to
+your `PATH`. Run `leafpress version` in a new terminal to verify the install.
+The quick-install shell script above is for macOS and Linux.
 
 ### Build from Source
 
@@ -41,6 +47,12 @@ cd leafpress/cli
 go build -o leafpress ./cmd/leafpress
 sudo mv leafpress /usr/local/bin/
 ```
+
+## Obsidian
+
+The Obsidian plugin is planned and is not yet available. You can use the CLI
+with your vault today; see [[guide/writing|Writing Content]] for supported
+Obsidian syntax and [[guide/configuration|Configuration]] for publishing rules.
 
 ## Create Your First Site
 
@@ -99,8 +111,15 @@ leafpress update
 
 This checks GitHub for the latest release and replaces your binary automatically. Use `--force` to reinstall even if you're on the latest version.
 
+## Security updates
+
+Only the latest stable release receives security fixes. Use `leafpress update`
+to stay current. Report suspected vulnerabilities privately using the
+[security policy](https://github.com/shivamx96/leafpress/blob/main/SECURITY.md).
+
 ## Next Steps
 
+- [[guide/cli|CLI Reference]] — Commands and flags
 - [[guide/writing|Writing Content]] — Learn the markdown features
 - [[guide/configuration|Configuration]] — Customize your site
 

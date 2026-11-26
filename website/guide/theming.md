@@ -461,8 +461,11 @@ Key classes you might want to customize:
 - `.lp-backlinks` — Backlinks section
 - `.lp-toc` — Table of contents
 - `.lp-callout` — Callout boxes
-- `.lp-graph` — Graph container
-- `.lp-search` — Search component
+- `.lp-graph-overlay` — Graph overlay
+- `.lp-graph-panel-body` — Graph panel content
+- `.lp-search-overlay` — Search overlay
+- `.lp-search-input` — Search input
+- `.lp-search-results` — Search results
 
 ## Custom favicon
 
