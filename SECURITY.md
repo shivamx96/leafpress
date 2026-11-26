@@ -8,9 +8,6 @@ or pull request for a security problem.
 Preferred channel: GitHub private vulnerability reporting at
 <https://github.com/shivamx96/leafpress/security/advisories/new>.
 
-<!-- TODO(maintainer): decide whether to publish an email fallback here.
-     If so, consider a dedicated alias rather than a personal address. -->
-
 Include as much of the following as you can:
 
 - the leafpress version (`leafpress version`) or the Core module version;
@@ -26,16 +23,14 @@ otherwise.
 
 ## Supported versions
 
-leafpress is in pre-release. Only the latest release receives security fixes.
+Only the latest stable release receives security fixes.
 Users should upgrade with `leafpress update` or reinstall from
 <https://leafpress.in/install.sh>.
 
 | Version | Supported |
 |---------|-----------|
-| Latest `v1.0.0-rc.N` | Yes |
+| Latest stable release | Yes |
 | Older releases | No |
-
-Once `v1.0.0` ships this table will be updated with a support window.
 
 ## Scope
 
@@ -64,10 +59,12 @@ These are design decisions or outside leafpress's control. Reports are still
 welcome if you think a default should change, but they are not treated as
 vulnerabilities.
 
-- **Raw HTML in Markdown is rendered as written.** leafpress is a
+- **Raw HTML in CLI Markdown is rendered as written.** The CLI is a
   single-author publishing tool. Authors are trusted, so `<script>` and other
-  HTML in a note reaches the output. Hosts that render untrusted Markdown
-  through `leafpress-render` are responsible for sanitising input or output.
+  HTML in a note reaches the output. The `leafpress-render` bridge instead
+  escapes raw HTML in Markdown. Its `site.headExtra` and `content.styleCSS`
+  remain trusted owner configuration; hosts must not expose those fields to
+  untrusted users. See the [renderer trust boundary](docs/05_RENDERER_CONTRACT.md#trust-boundary).
 - **`leafpress serve` exposed on a non-loopback interface.** The preview
   server binds to `127.0.0.1` by default. Exposing it deliberately with
   another host is the operator's choice; the server is a development tool,

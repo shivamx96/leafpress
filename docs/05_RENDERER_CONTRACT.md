@@ -160,8 +160,9 @@ change those sizes or invert the hierarchy between heading levels.
 
 ### `features`
 
-The six reader-feature toggles, grouped. Defaults are all `true` in both the
-CLI and the renderer — introducing a config never flips a feature on or off
+The seven reader-feature toggles, grouped. Six default to `true`; `sharing`
+defaults to `false` in both the CLI and the renderer. Introducing a config
+never flips a feature on or off
 relative to omitting it. `search-index.json` is emitted regardless of the
 `search` toggle (it also powers hover link previews); `search` only controls
 the search UI.

@@ -1,5 +1,8 @@
 # leafpress Obsidian Plugin - PRD
 
+**Status: planned, not yet available.** This document describes the proposed
+plugin, not a shipped integration. Use the CLI with your vault today.
+
 ## Overview
 Enable Obsidian users to initialize, preview, and build their vaults as
 leafpress digital gardens without using a terminal. The plugin bundles the

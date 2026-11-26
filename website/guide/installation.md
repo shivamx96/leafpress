@@ -48,6 +48,12 @@ go build -o leafpress ./cmd/leafpress
 sudo mv leafpress /usr/local/bin/
 ```
 
+## Obsidian
+
+The Obsidian plugin is planned and is not yet available. You can use the CLI
+with your vault today; see [[guide/writing|Writing Content]] for supported
+Obsidian syntax and [[guide/configuration|Configuration]] for publishing rules.
+
 ## Create Your First Site
 
 ```bash
@@ -104,6 +110,12 @@ leafpress update
 ```
 
 This checks GitHub for the latest release and replaces your binary automatically. Use `--force` to reinstall even if you're on the latest version.
+
+## Security updates
+
+Only the latest stable release receives security fixes. Use `leafpress update`
+to stay current. Report suspected vulnerabilities privately using the
+[security policy](https://github.com/shivamx96/leafpress/blob/main/SECURITY.md).
 
 ## Next Steps
 

@@ -99,6 +99,12 @@ All fields are optional:
 
 All CommonMark syntax works: headings, bold, italic, lists, links, images, code blocks.
 
+### Raw HTML
+
+The CLI renders raw HTML in your Markdown as written, so only build content
+you trust. The hosted `leafpress-render` bridge escapes raw HTML in Markdown;
+its `site.headExtra` and custom CSS remain trusted owner configuration.
+
 ### Wiki Links
 
 Connect pages with double brackets:
