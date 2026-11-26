@@ -12,6 +12,9 @@ Everything you need to get started with leafpress.
 2. [[guide/writing|Writing Content]] — Create pages with Markdown
 3. [[guide/wiki-links|Wiki Links]] — Connect your pages
 
+[[guide/cli|CLI Reference]] lists every command and flag, including draft
+previews, strict builds, and profiling.
+
 ## Customization
 
 4. [[guide/configuration|Configuration]] — All config options explained

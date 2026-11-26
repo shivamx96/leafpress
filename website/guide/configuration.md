@@ -116,6 +116,12 @@ remains on CLI builds.
 
 ### `theme`
 
+The defaults below are for the `classic` preset. Selecting another preset
+changes its fonts, accent, backgrounds, and navigation defaults; explicit
+settings override the selected preset. For example, `aurora` uses `glassy`
+navigation with `box` active links, while `paper` uses `sticky` navigation with
+`underlined` active links. See [[guide/theming|Theming]] for the presets.
+
 | Option | Default | Description |
 |--------|---------|-------------|
 | `preset` | `"classic"` | Bundled visual theme: `"classic"`, `"aurora"`, `"paper"`, `"quiet"`, or `"terminal"` |

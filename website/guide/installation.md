@@ -32,6 +32,12 @@ Available binaries:
 - `leafpress-vX.X.X-darwin-arm64.tar.gz` (macOS Apple Silicon)
 - `leafpress-vX.X.X-linux-amd64.tar.gz` (Linux x86_64)
 - `leafpress-vX.X.X-linux-arm64.tar.gz` (Linux ARM64)
+- `leafpress-vX.X.X-windows-amd64.zip` (Windows x86_64)
+- `leafpress-vX.X.X-windows-arm64.zip` (Windows ARM64)
+
+On Windows, extract the ZIP and add the folder containing `leafpress.exe` to
+your `PATH`. Run `leafpress version` in a new terminal to verify the install.
+The quick-install shell script above is for macOS and Linux.
 
 ### Build from Source
 
@@ -101,6 +107,7 @@ This checks GitHub for the latest release and replaces your binary automatically
 
 ## Next Steps
 
+- [[guide/cli|CLI Reference]] — Commands and flags
 - [[guide/writing|Writing Content]] — Learn the markdown features
 - [[guide/configuration|Configuration]] — Customize your site
 
