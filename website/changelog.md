@@ -4,16 +4,12 @@ date: 2026-01-06
 toc: false
 ---
 
-## Unreleased
+## v1.1.4
+*November 26, 2026*
 
-- Updated the CLI's Gorilla WebSocket dependency to the upstream fix for
-  [GO-2026-6278](https://pkg.go.dev/vuln/GO-2026-6278), which replaces weak
-  client-frame mask randomness with `crypto/rand`. leafpress uses WebSockets
-  for development-server live reload; generated static sites do not use this
-  Go dependency.
-- The starter home from `leafpress init` now shows wiki-link syntax as code
-  instead of linking to a nonexistent note, so a fresh garden passes
-  `leafpress build --strict`.
+- Updated WebSocket dependencies to address GO-2026-6278.
+- Fixed the starter garden so fresh sites pass strict builds.
+- Added a CLI reference and corrected installation, configuration, and deployment docs.
 
 ## v1.1.3
 *November 20, 2026*
